@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import Header from "@/components/Header";
-import BottomNav from "@/components/BottomNav";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -40,12 +38,8 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Header />
-        <main className="flex flex-col flex-1 max-w-2xl mx-auto w-full pb-20">
-          {children}
-        </main>
-        <BottomNav />
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
         <SpeedInsights />
         <Analytics />
       </body>

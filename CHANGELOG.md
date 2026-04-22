@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.0 — Auth, Covered Calls, Wheel, Income Dashboard
+
+- Google OAuth login via Supabase — unauthenticated users redirected to login
+- Covered Call Optimizer — strike/expiry comparison grid with annualized returns
+- Wheel Visualizer — timeline view of sell put → assigned → sell call → called away cycles
+- Income Dashboard — $20k starting capital, YTD income, monthly breakdown chart
+- App restructured with route groups (login page has no nav)
+- Bottom nav now includes Income tab
+
 ## v0.3.0 — Discovery Dashboard, Ticker Detail, PMCC Analyzer & Portfolio
 
 - Discovery dashboard with ranked watchlist showing scores, sparklines, volume indicators

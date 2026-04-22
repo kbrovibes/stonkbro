@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { mockPositions } from "@/lib/mock/stocks";
 
 function formatCurrency(n: number) {
@@ -43,6 +44,18 @@ export default function PortfolioPage() {
             ${totalIncome.toLocaleString()}
           </p>
         </div>
+      </div>
+
+      {/* Strategy links */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <Link href="/covered-calls" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900">Covered Calls</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">Optimize strikes</p>
+        </Link>
+        <Link href="/wheel" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900">The Wheel</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">View cycles</p>
+        </Link>
       </div>
 
       {/* Positions */}
