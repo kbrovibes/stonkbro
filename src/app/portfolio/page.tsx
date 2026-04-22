@@ -1,18 +1,96 @@
-export default function PortfolioPage() {
+import { mockPositions } from "@/lib/mock/stocks";
+
+function formatCurrency(n: number) {
+  const prefix = n >= 0 ? "+$" : "-$";
+  return prefix + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 0 });
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; color: string }> = {
+    active: { label: "Active", color: "bg-stone-100 text-stone-600" },
+    profit_target: { label: "Profit Target", color: "bg-emerald-50 text-emerald-700" },
+    needs_roll: { label: "Needs Roll", color: "bg-amber-50 text-amber-700" },
+    warning: { label: "Warning", color: "bg-red-50 text-red-600" },
+  };
+  const { label, color } = config[status] || config.active;
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
-      <div className="flex flex-col items-center gap-4 max-w-sm">
-        <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center">
-          <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-          </svg>
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-stone-900">No open positions yet</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Your PMCC, covered call, and put positions will show up here.
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
+  );
+}
+
+export default function PortfolioPage() {
+  const totalPnl = mockPositions.reduce((sum, p) => sum + p.totalPnl, 0);
+  const totalIncome = mockPositions.reduce((sum, p) => sum + p.incomeCollected, 0);
+
+  return (
+    <div className="flex flex-col flex-1 px-4 py-5">
+      {/* Summary */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-stone-900">Portfolio</h2>
+        <span className="text-xs text-stone-400">{mockPositions.length} positions</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="rounded-xl border border-stone-200 bg-white p-3">
+          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Total P&L</p>
+          <p className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {formatCurrency(totalPnl)}
           </p>
         </div>
+        <div className="rounded-xl border border-stone-200 bg-white p-3">
+          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Income Collected</p>
+          <p className="text-xl font-bold mt-1 text-stone-900">
+            ${totalIncome.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {/* Positions */}
+      <div className="flex flex-col gap-3">
+        {mockPositions.map((pos, i) => (
+          <div key={i} className="rounded-xl border border-stone-200 bg-white p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-stone-900">{pos.symbol}</span>
+                <span className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">
+                  {pos.strategy}
+                </span>
+              </div>
+              <StatusBadge status={pos.status} />
+            </div>
+
+            {/* Legs */}
+            <div className="flex flex-col gap-1.5 mb-3">
+              {pos.legs.map((leg, j) => (
+                <div key={j} className="flex items-center justify-between text-xs">
+                  <span className="text-stone-500 truncate mr-2">{leg.description}</span>
+                  <span className={`font-semibold shrink-0 ${leg.pnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                    {leg.pnl >= 0 ? "+" : ""}{leg.pnl}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-[10px] text-stone-400">P&L</p>
+                  <p className={`text-sm font-bold ${pos.totalPnl >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                    {formatCurrency(pos.totalPnl)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-stone-400">Income</p>
+                  <p className="text-sm font-bold text-stone-900">${pos.incomeCollected.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-stone-400">{pos.daysOpen}d open</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

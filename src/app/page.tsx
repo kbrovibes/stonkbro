@@ -1,18 +1,65 @@
+import Link from "next/link";
+import { mockStocks } from "@/lib/mock/stocks";
+import Sparkline from "@/components/Sparkline";
+import ScoreBadge from "@/components/ScoreBadge";
+
 export default function DiscoverPage() {
+  const sorted = [...mockStocks].sort((a, b) => b.score - a.score);
+
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
-      <div className="flex flex-col items-center gap-4 max-w-sm">
-        <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center">
-          <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-          </svg>
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-stone-900">Your watchlist is empty</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Add tickers to start scanning for explosive setups.
-          </p>
-        </div>
+    <div className="flex flex-col flex-1 px-4 py-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-stone-900">Discovery</h2>
+        <span className="text-xs font-medium text-stone-400">
+          {sorted.length} tickers
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {sorted.map((stock) => (
+          <Link
+            key={stock.symbol}
+            href={`/ticker/${stock.symbol}`}
+            className="flex items-center gap-3 p-3 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+          >
+            <ScoreBadge score={stock.score} />
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-stone-900">{stock.symbol}</span>
+                <span className="text-xs text-stone-400 truncate">{stock.name}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs font-medium text-stone-700">
+                  ${stock.price.toFixed(2)}
+                </span>
+                <span
+                  className={`text-xs font-medium ${
+                    stock.changePct >= 0 ? "text-emerald-600" : "text-red-500"
+                  }`}
+                >
+                  {stock.changePct >= 0 ? "+" : ""}{stock.changePct.toFixed(2)}%
+                </span>
+                {stock.volumeRatio >= 2 && (
+                  <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                    {stock.volumeRatio.toFixed(1)}x vol
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="w-16 h-8 shrink-0">
+              <Sparkline
+                data={stock.sparkline}
+                color={stock.changePct >= 0 ? "#059669" : "#ef4444"}
+              />
+            </div>
+
+            <svg className="w-4 h-4 text-stone-300 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
+        ))}
       </div>
     </div>
   );
