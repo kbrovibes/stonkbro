@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "30 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron",
+      "schedule": "0 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron",
+      "schedule": "30 19 * * 1-5"
+    }
+  ]
+}
