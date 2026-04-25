@@ -97,6 +97,9 @@ export default async function PortfolioPage() {
     status: string;
     entry_date: string | null;
     notes: string | null;
+    trailing_stop_pct: number | null;
+    peak_price: number | null;
+    entry_price_per_share: number | null;
     position_legs: Array<{
       id: string;
       type: string;
@@ -109,6 +112,9 @@ export default async function PortfolioPage() {
     totalPnl: number;
     premiumCollected: number;
     daysOpen: number;
+    gainFromEntry: number | null;
+    pctFromPeak: number | null;
+    drawdownTriggered: boolean;
     legDetails: Array<{
       description: string;
       pnl: number;
@@ -147,6 +153,24 @@ export default async function PortfolioPage() {
         legDetails.push({ description: desc, pnl: Math.round(pnl) });
       }
 
+      // Gain from entry and drawdown tracking
+      const entryPPS = pos.entry_price_per_share as number | null;
+      const peakP = pos.peak_price as number | null;
+      const trailingPct = pos.trailing_stop_pct as number | null;
+
+      const gainFromEntry =
+        entryPPS && entryPPS > 0 && currentPrice > 0
+          ? ((currentPrice - entryPPS) / entryPPS) * 100
+          : null;
+
+      const pctFromPeak =
+        peakP && peakP > 0 && currentPrice > 0
+          ? ((currentPrice - peakP) / peakP) * 100
+          : null;
+
+      const drawdownTriggered =
+        trailingPct != null && pctFromPeak != null && pctFromPeak <= -trailingPct;
+
       return {
         id: pos.id,
         symbol: pos.symbol,
@@ -154,11 +178,17 @@ export default async function PortfolioPage() {
         status: pos.status,
         entry_date: pos.entry_date,
         notes: pos.notes,
+        trailing_stop_pct: trailingPct,
+        peak_price: peakP,
+        entry_price_per_share: entryPPS,
         position_legs: legs,
         quote,
         totalPnl: Math.round(totalPnl),
         premiumCollected: Math.round(premiumCollected),
         daysOpen: daysFromEntry(pos.entry_date),
+        gainFromEntry,
+        pctFromPeak,
+        drawdownTriggered,
         legDetails,
       };
     }
@@ -167,6 +197,18 @@ export default async function PortfolioPage() {
   const activePositions = enrichedPositions.filter((p) => p.status === "active");
   const totalPnl = enrichedPositions.reduce((sum, p) => sum + p.totalPnl, 0);
   const totalPremium = enrichedPositions.reduce((sum, p) => sum + p.premiumCollected, 0);
+
+  // Gain tracking summary
+  const positionsWithGain = activePositions.filter((p) => p.gainFromEntry != null);
+  const bestPerformer = positionsWithGain.length > 0
+    ? positionsWithGain.reduce((best, p) => (p.gainFromEntry! > (best.gainFromEntry ?? -Infinity) ? p : best))
+    : null;
+  const totalGainPct = positionsWithGain.length > 0
+    ? positionsWithGain.reduce((sum, p) => sum + p.gainFromEntry!, 0) / positionsWithGain.length
+    : null;
+  const positionsAtRisk = activePositions.filter(
+    (p) => p.pctFromPeak != null && p.pctFromPeak <= -5
+  );
 
   if (positions.length === 0) {
     return (
@@ -233,6 +275,48 @@ export default async function PortfolioPage() {
         </div>
       </div>
 
+      {/* Gain tracking summary */}
+      {positionsWithGain.length > 0 && (
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <div className="rounded-xl border border-stone-200 bg-white p-3">
+            <p className="text-[10px] text-stone-400 uppercase tracking-wider">Best Performer</p>
+            {bestPerformer ? (
+              <>
+                <p className="text-sm font-bold mt-1 text-emerald-700">{bestPerformer.symbol}</p>
+                <p className="text-[10px] text-emerald-600">+{bestPerformer.gainFromEntry!.toFixed(1)}%</p>
+              </>
+            ) : (
+              <p className="text-sm font-bold mt-1 text-stone-400">--</p>
+            )}
+          </div>
+          <div className="rounded-xl border border-stone-200 bg-white p-3">
+            <p className="text-[10px] text-stone-400 uppercase tracking-wider">Avg Gain</p>
+            <p className={`text-xl font-bold mt-1 ${totalGainPct != null && totalGainPct >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+              {totalGainPct != null ? `${totalGainPct >= 0 ? "+" : ""}${totalGainPct.toFixed(1)}%` : "--"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-stone-200 bg-white p-3">
+            <p className="text-[10px] text-stone-400 uppercase tracking-wider">At Risk</p>
+            <p className={`text-xl font-bold mt-1 ${positionsAtRisk.length > 0 ? "text-red-600" : "text-stone-900"}`}>
+              {positionsAtRisk.length}
+            </p>
+            {positionsAtRisk.length > 0 && (
+              <p className="text-[10px] text-red-500">&gt;5% drawdown</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Positions at risk alert */}
+      {positionsAtRisk.length > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-5">
+          <p className="text-xs font-semibold text-red-700 mb-1">Drawdown Warning</p>
+          <p className="text-[10px] text-red-600">
+            {positionsAtRisk.map((p) => `${p.symbol} (${p.pctFromPeak!.toFixed(1)}%)`).join(", ")} pulling back from peak
+          </p>
+        </div>
+      )}
+
       {/* Strategy links */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         <Link href="/covered-calls" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
@@ -248,7 +332,15 @@ export default async function PortfolioPage() {
       {/* Positions */}
       <div className="flex flex-col gap-3">
         {enrichedPositions.map((pos) => (
-          <div key={pos.id} className="rounded-xl border border-stone-200 bg-white p-4">
+          <div key={pos.id} className={`rounded-xl border p-4 ${
+            pos.drawdownTriggered
+              ? "border-red-300 bg-red-50/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]"
+              : pos.pctFromPeak != null && pos.pctFromPeak <= -5
+                ? "border-amber-300 bg-amber-50/20 shadow-[0_0_12px_rgba(245,158,11,0.12)]"
+                : pos.gainFromEntry != null && pos.gainFromEntry >= 50
+                  ? "border-emerald-300 bg-white shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                  : "border-stone-200 bg-white"
+          }`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-stone-900">{pos.symbol}</span>
@@ -277,6 +369,61 @@ export default async function PortfolioPage() {
                 </div>
               ))}
             </div>
+
+            {/* Gain & Drawdown Tracking */}
+            {(pos.gainFromEntry != null || pos.pctFromPeak != null) && (
+              <div className={`flex items-center gap-3 mb-3 p-2 rounded-lg ${
+                pos.drawdownTriggered
+                  ? "bg-red-50 ring-1 ring-red-200"
+                  : pos.pctFromPeak != null && pos.pctFromPeak <= -5
+                    ? "bg-amber-50 ring-1 ring-amber-200"
+                    : pos.gainFromEntry != null && pos.gainFromEntry >= 50
+                      ? "bg-emerald-50 ring-1 ring-emerald-200"
+                      : "bg-stone-50"
+              }`}>
+                {pos.gainFromEntry != null && (
+                  <div className="flex-1">
+                    <p className="text-[10px] text-stone-400">Gain from Entry</p>
+                    <p className={`text-sm font-bold ${
+                      pos.gainFromEntry >= 50
+                        ? "text-emerald-600"
+                        : pos.gainFromEntry >= 0
+                          ? "text-emerald-700"
+                          : "text-red-600"
+                    }`}>
+                      {pos.gainFromEntry >= 0 ? "+" : ""}{pos.gainFromEntry.toFixed(1)}%
+                    </p>
+                  </div>
+                )}
+                {pos.pctFromPeak != null && (
+                  <div className="flex-1">
+                    <p className="text-[10px] text-stone-400">From Peak</p>
+                    <p className={`text-sm font-bold ${
+                      pos.drawdownTriggered
+                        ? "text-red-600"
+                        : pos.pctFromPeak <= -5
+                          ? "text-amber-600"
+                          : "text-stone-600"
+                    }`}>
+                      {pos.pctFromPeak.toFixed(1)}%
+                    </p>
+                  </div>
+                )}
+                {pos.drawdownTriggered && (
+                  <div className="flex-1 text-right">
+                    <span className="text-[10px] font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                      STOP TRIGGERED
+                    </span>
+                  </div>
+                )}
+                {!pos.drawdownTriggered && pos.trailing_stop_pct != null && (
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] text-stone-400">Trail Stop</p>
+                    <p className="text-xs font-semibold text-stone-600">{pos.trailing_stop_pct}%</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-stone-100">

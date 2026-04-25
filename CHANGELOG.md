@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.10.0 — Sector Discovery, Explosive Finder, Trailing Stops, PMCC Picks
+
+- Sector Discovery — browse 8 curated sectors (AI Infra, Quantum, Nuclear, Space, Fintech, Biotech, EV, AI Software) with 70+ tickers
+- Explosive Stock Finder — Claude AI analyzes sectors for 10x potential stocks with specific entry strategies
+- Trailing Stop System — set % trailing stops on positions, auto-track peak price, drawdown alerts
+- Risk Dashboard — portfolio-level view of all positions with trailing stops, color-coded by risk
+- PMCC Picks — auto-scan sectors for best PMCC setups ranked by monthly income and capital efficiency
+- Portfolio enhanced with gain/drawdown tracking, % from peak, stop trigger visualization
+- Summary Dashboard — quick stats, positions needing attention, action cards
+- Updated nav: Discover / Sectors / Research / Positions / More
+- DB migration: trailing_stop_pct, peak_price, entry_price_per_share on positions
+
 ## v0.9.0 — Tradier Integration + Mock Fallback
 
 - Replaced yahoo-finance2 (broken on Vercel) with Tradier API for reliable server-side market data

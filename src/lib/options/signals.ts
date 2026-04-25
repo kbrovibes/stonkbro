@@ -12,6 +12,9 @@ export type TrackedPosition = {
     currentPrice?: number;
   }[];
   entryDate: string;
+  trailing_stop_pct?: number | null;
+  peak_price?: number | null;
+  entry_price_per_share?: number | null;
 };
 
 /**
@@ -156,6 +159,51 @@ export function generateAlerts(
             details: `Earnings date: ${quote.earningsDate}`,
           });
         }
+      }
+    }
+
+    // === TRAILING STOP SIGNALS ===
+    if (pos.trailing_stop_pct && pos.peak_price && quote) {
+      const stopPct = pos.trailing_stop_pct;
+      const peak = pos.peak_price;
+      const drawdown = ((peak - quote.price) / peak) * 100;
+
+      // Stop triggered
+      if (quote.price < peak * (1 - stopPct / 100)) {
+        alerts.push({
+          action: "CLOSE",
+          symbol: pos.symbol,
+          strategy: pos.strategy,
+          message: `TRAILING STOP TRIGGERED: ${pos.symbol} dropped ${drawdown.toFixed(1)}% from peak of $${peak.toFixed(2)}`,
+          urgency: "high",
+          details: `Stop: ${stopPct}%, Current: $${quote.price.toFixed(2)}, Peak: $${peak.toFixed(2)}`,
+        });
+      }
+      // Warning: halfway to trigger
+      else if (quote.price < peak * (1 - stopPct / 200)) {
+        alerts.push({
+          action: "WARNING",
+          symbol: pos.symbol,
+          strategy: pos.strategy,
+          message: `${pos.symbol} down ${drawdown.toFixed(1)}% from peak — approaching ${stopPct}% trailing stop`,
+          urgency: "medium",
+          details: `Current: $${quote.price.toFixed(2)}, Peak: $${peak.toFixed(2)}, Trigger: $${(peak * (1 - stopPct / 100)).toFixed(2)}`,
+        });
+      }
+    }
+
+    // === GAIN TRACKING ===
+    if (pos.entry_price_per_share && pos.entry_price_per_share > 0 && quote) {
+      const gainPct = ((quote.price - pos.entry_price_per_share) / pos.entry_price_per_share) * 100;
+      if (gainPct >= 100) {
+        alerts.push({
+          action: "WARNING",
+          symbol: pos.symbol,
+          strategy: pos.strategy,
+          message: `${pos.symbol} up ${gainPct.toFixed(0)}% from entry — consider taking profits or tightening trailing stop`,
+          urgency: "low",
+          details: `Entry: $${pos.entry_price_per_share.toFixed(2)}, Current: $${quote.price.toFixed(2)}`,
+        });
       }
     }
   }

@@ -100,3 +100,55 @@ export async function updatePositionStatus(
 export async function closePosition(positionId: string) {
   return updatePositionStatus(positionId, "closed");
 }
+
+export async function updateTrailingStop(
+  positionId: string,
+  trailingStopPct: number,
+  peakPrice: number,
+  entryPricePerShare: number
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("positions")
+    .update({
+      trailing_stop_pct: trailingStopPct,
+      peak_price: peakPrice,
+      entry_price_per_share: entryPricePerShare,
+    })
+    .eq("id", positionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePeakPrice(positionId: string, peakPrice: number) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("positions")
+    .update({ peak_price: peakPrice })
+    .eq("id", positionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeTrailingStop(positionId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("positions")
+    .update({
+      trailing_stop_pct: null,
+      peak_price: null,
+      entry_price_per_share: null,
+    })
+    .eq("id", positionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}

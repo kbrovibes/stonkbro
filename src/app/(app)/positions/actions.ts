@@ -7,6 +7,8 @@ import {
   createPosition,
   updatePositionStatus,
   closePosition,
+  updateTrailingStop,
+  removeTrailingStop,
   type CreatePositionData,
   type PositionLeg,
 } from "@/lib/db/positions";
@@ -66,4 +68,34 @@ export async function closePositionAction(positionId: string) {
   await closePosition(positionId);
   revalidatePath("/positions");
   revalidatePath(`/positions/${positionId}`);
+}
+
+export async function setTrailingStopAction(
+  positionId: string,
+  trailingStopPct: number,
+  currentPrice: number
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  await updateTrailingStop(positionId, trailingStopPct, currentPrice, currentPrice);
+  revalidatePath("/positions");
+  revalidatePath(`/positions/${positionId}`);
+  revalidatePath("/risk");
+}
+
+export async function removeTrailingStopAction(positionId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  await removeTrailingStop(positionId);
+  revalidatePath("/positions");
+  revalidatePath(`/positions/${positionId}`);
+  revalidatePath("/risk");
 }

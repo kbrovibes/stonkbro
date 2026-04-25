@@ -2,6 +2,16 @@ import Link from "next/link";
 
 const links = [
   {
+    title: "Sector Discovery",
+    description: "Browse stocks by sector theme.",
+    href: "/sectors",
+  },
+  {
+    title: "Explosive Finder",
+    description: "AI-powered search for 10x stocks.",
+    href: "/explosive",
+  },
+  {
     title: "Watchlists",
     description: "Organize tickers into custom watchlists for tracking.",
     href: "/watchlists",
@@ -15,6 +25,16 @@ const links = [
     title: "Suggestions",
     description: "On-demand CSP, CC, PMCC recommendations for any ticker.",
     href: "/suggestions",
+  },
+  {
+    title: "PMCC Picks",
+    description: "Auto-ranked best PMCC setups for income.",
+    href: "/pmcc-picks",
+  },
+  {
+    title: "PMCC Scanner",
+    description: "Scan for Poor Man's Covered Call opportunities.",
+    href: "/scanner",
   },
   {
     title: "Covered Calls",
@@ -33,8 +53,13 @@ const links = [
   },
   {
     title: "Portfolio",
-    description: "Live P&L tracking with real market data.",
+    description: "Live P&L with gain tracking, drawdowns, and trailing stops.",
     href: "/portfolio",
+  },
+  {
+    title: "Risk Dashboard",
+    description: "Monitor portfolio risk, Greeks exposure, and concentration.",
+    href: "/risk",
   },
   {
     title: "Settings",

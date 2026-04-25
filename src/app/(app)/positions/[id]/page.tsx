@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { getPosition } from "@/lib/db/positions";
+import { getQuote } from "@/lib/market/yahoo";
 import { notFound } from "next/navigation";
 import StatusActions from "./StatusActions";
+import TrailingStopConfig from "./TrailingStopConfig";
 
 function legLabel(type: string) {
   const map: Record<string, string> = {
@@ -76,6 +78,21 @@ export default async function PositionDetailPage({
   }
 
   if (!position) notFound();
+
+  // Fetch live quote for trailing stop
+  const quote = await getQuote(position.symbol);
+  const currentPrice = quote?.price ?? 0;
+
+  // Update peak price if current price is higher
+  if (
+    position.trailing_stop_pct !== null &&
+    position.peak_price !== null &&
+    currentPrice > position.peak_price
+  ) {
+    const { updatePeakPrice } = await import("@/lib/db/positions");
+    await updatePeakPrice(position.id, currentPrice);
+    position.peak_price = currentPrice;
+  }
 
   const legs = position.position_legs ?? [];
   const status = position.status ?? "active";
@@ -299,6 +316,54 @@ export default async function PositionDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Live Price & Gain Summary */}
+      {quote && (
+        <div className="rounded-xl border border-stone-200 bg-white p-4 mb-5">
+          <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+            Live Quote
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p className="text-[10px] text-stone-400">Price</p>
+              <p className="text-sm font-bold text-stone-900">
+                ${currentPrice.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-stone-400">Change</p>
+              <p
+                className={`text-sm font-bold ${
+                  quote.changePct >= 0 ? "text-emerald-600" : "text-red-600"
+                }`}
+              >
+                {quote.changePct >= 0 ? "+" : ""}
+                {quote.changePct.toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-stone-400">Volume</p>
+              <p className="text-sm font-bold text-stone-900">
+                {quote.volumeRatio.toFixed(1)}x avg
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trailing Stop */}
+      {status === "active" && (
+        <div className="mb-5">
+          <TrailingStopConfig
+            positionId={id}
+            symbol={position.symbol}
+            currentPrice={currentPrice}
+            trailingStopPct={position.trailing_stop_pct ?? null}
+            peakPrice={position.peak_price ?? null}
+            entryPricePerShare={position.entry_price_per_share ?? null}
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <StatusActions positionId={id} currentStatus={status} />
