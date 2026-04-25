@@ -1,17 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import { createClient } from "@/lib/supabase-browser";
 
 export default function LoginPage() {
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,9 +42,16 @@ export default function LoginPage() {
 
         <div className="w-16 h-px bg-stone-200" />
 
+        {error && (
+          <div className="w-full px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
         <button
           onClick={handleGoogleLogin}
-          className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-sm font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition-colors"
+          disabled={loading}
+          className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-sm font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 disabled:opacity-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -50,7 +71,7 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          Continue with Google
+          {loading ? "Redirecting..." : "Continue with Google"}
         </button>
 
         <p className="text-xs text-stone-400 text-center">
