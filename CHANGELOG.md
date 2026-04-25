@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.0 — Live PMCC Scanner
+
+- PMCC Scanner with real options chain data via Yahoo Finance
+- Scans 12 tickers for PMCC setups: finds LEAPS + short calls, grades A/B/C
+- Shows capital required, monthly premium, annualized return, breakeven
+- Add any custom ticker to scan
+- Real market data layer (quotes, options chains) in src/lib/market/
+- PMCC analysis engine in src/lib/options/ with delta estimation
+- New "PMCC" tab in bottom nav
+
 ## v0.4.0 — Auth, Covered Calls, Wheel, Income Dashboard
 
 - Google OAuth login via Supabase — unauthenticated users redirected to login
