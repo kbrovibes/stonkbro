@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.8.0 — All Real Data: No More Mocks
+
+- Portfolio page now reads real positions from Supabase with live P&L from Yahoo Finance
+- PMCC analyzer fetches real options chains and runs live PMCC analysis
+- Covered Call Optimizer uses real chains for user's stock positions, plus custom ticker lookup
+- Wheel Visualizer reads actual CSP/CC/Wheel positions and builds real cycle timelines
+- Income Dashboard calculates real premium income from Supabase positions
+- Trade Signals page — live roll/close/profit alerts against real positions and market data
+- Cron job now reads all users' positions and watchlists from Supabase (no more hardcoded mock data)
+- Signals API route for on-demand position checking
+- Added Trade Signals to More menu
+
 ## v0.7.0 — Full App: Watchlists, Positions, Research, Suggestions
 
 - Watchlist management — create named watchlists, add/remove tickers, default watchlist

@@ -7,8 +7,13 @@ const links = [
     href: "/watchlists",
   },
   {
+    title: "Trade Signals",
+    description: "Live roll/close alerts based on your active positions.",
+    href: "/signals",
+  },
+  {
     title: "Suggestions",
-    description: "AI-generated trade ideas based on your watchlists.",
+    description: "On-demand CSP, CC, PMCC recommendations for any ticker.",
     href: "/suggestions",
   },
   {
@@ -27,8 +32,8 @@ const links = [
     href: "/income",
   },
   {
-    title: "Portfolio (old)",
-    description: "Legacy portfolio view with basic position tracking.",
+    title: "Portfolio",
+    description: "Live P&L tracking with real market data.",
     href: "/portfolio",
   },
   {

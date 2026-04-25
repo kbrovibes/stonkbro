@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
 import { sendDailyBriefing } from "@/lib/notifications/email";
+import { supabaseAdmin } from "@/lib/supabase";
 
-// Verify cron secret to prevent unauthorized access
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // no secret configured = allow (dev mode)
+  if (!cronSecret) return true;
   return authHeader === `Bearer ${cronSecret}`;
 }
 
@@ -16,76 +16,98 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const alertEmail = process.env.ALERT_EMAIL;
-  if (!alertEmail) {
-    return NextResponse.json({ error: "ALERT_EMAIL not configured" }, { status: 500 });
-  }
-
   try {
-    // TODO: Load positions from Supabase once persistence is built.
-    // For now, use mock positions to demonstrate the alert system.
-    const mockPositions: TrackedPosition[] = [
-      {
-        symbol: "NVDA",
-        strategy: "PMCC",
-        legs: [
-          { type: "leaps_call", strike: 800, expiry: "2027-01-15", entryPrice: 185.00 },
-          { type: "short_call", strike: 1000, expiry: "2026-05-16", entryPrice: 9.20, currentPrice: 4.10 },
-        ],
-        entryDate: "2026-01-15",
-      },
-      {
-        symbol: "PLTR",
-        strategy: "PMCC",
-        legs: [
-          { type: "leaps_call", strike: 55, expiry: "2027-01-15", entryPrice: 22.50 },
-          { type: "short_call", strike: 85, expiry: "2026-05-16", entryPrice: 2.80, currentPrice: 1.20 },
-        ],
-        entryDate: "2026-02-03",
-      },
-      {
-        symbol: "AAPL",
-        strategy: "Covered Call",
-        legs: [
-          { type: "shares", strike: 0, expiry: "2099-12-31", entryPrice: 178.00 },
-          { type: "short_call", strike: 195, expiry: "2026-05-16", entryPrice: 3.40, currentPrice: 2.80 },
-        ],
-        entryDate: "2026-03-10",
-      },
-      {
-        symbol: "AMD",
-        strategy: "Cash-Secured Put",
-        legs: [
-          { type: "short_put", strike: 145, expiry: "2026-05-16", entryPrice: 4.20, currentPrice: 1.80 },
-        ],
-        entryDate: "2026-04-01",
-      },
-    ];
+    // Get all users with alert_email configured
+    const { data: settings } = await supabaseAdmin
+      .from("user_settings")
+      .select("user_id, alert_email")
+      .not("alert_email", "is", null);
 
-    // Get all unique symbols from positions + watchlist
-    const positionSymbols = [...new Set(mockPositions.map((p) => p.symbol))];
-    const watchlistSymbols = ["TSLA", "META", "MSFT", "SOFI", "COIN", "SMCI"];
-    const allSymbols = [...new Set([...positionSymbols, ...watchlistSymbols])];
+    // Also check ALERT_EMAIL env var as fallback
+    const fallbackEmail = process.env.ALERT_EMAIL;
+    const results: { userId: string; email: string; alertCount: number }[] = [];
 
-    // Fetch live quotes
-    const quotes = await getQuotes(allSymbols);
-    const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+    // Get all users who have active positions
+    const { data: allPositions } = await supabaseAdmin
+      .from("positions")
+      .select("*, position_legs(*)")
+      .eq("status", "active");
 
-    // Generate alerts
-    const alerts = generateAlerts(mockPositions, quoteMap);
+    if (!allPositions || allPositions.length === 0) {
+      return NextResponse.json({ success: true, message: "No active positions across any users" });
+    }
 
-    // Send email
-    await sendDailyBriefing(alertEmail, alerts);
+    // Group positions by user
+    const positionsByUser = new Map<string, typeof allPositions>();
+    for (const pos of allPositions) {
+      const userId = pos.user_id;
+      if (!positionsByUser.has(userId)) positionsByUser.set(userId, []);
+      positionsByUser.get(userId)!.push(pos);
+    }
+
+    // Get all watchlist symbols across all users
+    const { data: allWatchlistItems } = await supabaseAdmin
+      .from("watchlist_items")
+      .select("symbol, watchlist_id, watchlists!inner(user_id)")
+      .limit(200);
+
+    const watchlistByUser = new Map<string, string[]>();
+    if (allWatchlistItems) {
+      for (const item of allWatchlistItems) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const userId = (item.watchlists as any)?.user_id;
+        if (userId) {
+          if (!watchlistByUser.has(userId)) watchlistByUser.set(userId, []);
+          watchlistByUser.get(userId)!.push(item.symbol);
+        }
+      }
+    }
+
+    // Process each user
+    for (const [userId, userPositions] of positionsByUser) {
+      // Find email for this user
+      const userSetting = settings?.find((s) => s.user_id === userId);
+      const email = userSetting?.alert_email || fallbackEmail;
+      if (!email) continue;
+
+      // Convert positions to TrackedPosition format
+      const tracked: TrackedPosition[] = userPositions.map((p) => ({
+        symbol: p.symbol,
+        strategy: p.strategy as TrackedPosition["strategy"],
+        legs: (p.position_legs || []).map((leg: { type: string; strike: number; expiry: string; entry_price: number }) => ({
+          type: leg.type,
+          strike: Number(leg.strike),
+          expiry: leg.expiry,
+          entryPrice: Number(leg.entry_price),
+        })),
+        entryDate: p.entry_date,
+      }));
+
+      // Get unique symbols from positions + watchlist
+      const posSymbols = [...new Set(tracked.map((t) => t.symbol))];
+      const watchSymbols = watchlistByUser.get(userId) || [];
+      const allSymbols = [...new Set([...posSymbols, ...watchSymbols])];
+
+      // Fetch live quotes
+      const quotes = await getQuotes(allSymbols);
+      const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+
+      // Generate alerts
+      const alerts = generateAlerts(tracked, quoteMap);
+
+      // Send email
+      if (alerts.length > 0 || new Date().getHours() === 13) {
+        // Always send morning briefing (9:30am ET = 13:30 UTC), otherwise only if alerts
+        await sendDailyBriefing(email, alerts);
+      }
+
+      results.push({ userId, email, alertCount: alerts.length });
+    }
 
     return NextResponse.json({
       success: true,
-      alertCount: alerts.length,
-      alerts: alerts.map((a) => ({
-        action: a.action,
-        symbol: a.symbol,
-        urgency: a.urgency,
-        message: a.message,
-      })),
+      usersProcessed: results.length,
+      results,
     });
   } catch (e) {
     console.error("Cron error:", e);
