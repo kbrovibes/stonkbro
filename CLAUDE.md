@@ -10,7 +10,7 @@ Explosive stock discovery + options strategy automation. Find stocks ready to mo
 - **Auth**: Supabase Auth
 - **Deployment**: Vercel
 - **Analytics**: Vercel Analytics + Speed Insights
-- **Market Data**: Yahoo Finance (quotes + options chains)
+- **Market Data**: Tradier API (quotes + options chains with Greeks) — falls back to mock data when TRADIER_API_TOKEN is not set
 - **AI**: Anthropic Claude SDK (research engine)
 - **Email**: Resend (alert briefings)
 

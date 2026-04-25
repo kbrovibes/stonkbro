@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.9.0 — Tradier Integration + Mock Fallback
+
+- Replaced yahoo-finance2 (broken on Vercel) with Tradier API for reliable server-side market data
+- Real Greeks from Tradier: delta, gamma, theta, vega, IV on every option contract
+- PMCC engine now uses real delta when available instead of estimated
+- Mock data fallback when TRADIER_API_TOKEN is not set — app is fully functional with realistic data
+- Market data layer split into types.ts, tradier.ts, mock.ts with automatic provider selection
+- Removed yahoo-finance2 dependency
+
 ## v0.8.0 — All Real Data: No More Mocks
 
 - Portfolio page now reads real positions from Supabase with live P&L from Yahoo Finance

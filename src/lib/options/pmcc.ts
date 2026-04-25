@@ -61,25 +61,29 @@ export function findPMCCSetups(
     return [];
   }
 
-  // Estimate delta from moneyness (rough approximation without BSM)
-  function estimateDelta(strike: number, price: number, dte: number, type: "call" | "put"): number {
-    const moneyness = price / strike;
-    const timeAdjust = Math.sqrt(dte / 365);
-
-    if (type === "call") {
+  // Use real delta from Greeks if available, otherwise estimate from moneyness
+  function getDelta(contract: OptionContract, price: number): number {
+    // Prefer real Greeks from Tradier
+    if (contract.delta !== undefined && contract.delta !== null) {
+      return Math.abs(contract.delta);
+    }
+    // Fallback: estimate from moneyness
+    const moneyness = price / contract.strike;
+    const timeAdjust = Math.sqrt(contract.dte / 365);
+    if (contract.type === "call") {
       if (moneyness > 1.2) return Math.min(0.95, 0.5 + (moneyness - 1) * 1.5 / timeAdjust);
       if (moneyness > 1) return 0.5 + (moneyness - 1) * 2.5;
       if (moneyness > 0.8) return 0.5 - (1 - moneyness) * 2.5;
       return Math.max(0.05, 0.5 - (1 - moneyness) * 3);
     }
-    return 0; // not used for PMCC
+    return 0;
   }
 
   const setups: PMCCCandidate[] = [];
 
   // Find best LEAPS (delta 0.65-0.85)
   const bestLeaps = leapsCandidates
-    .map((l) => ({ ...l, estDelta: estimateDelta(l.strike, stockPrice, l.dte, "call") }))
+    .map((l) => ({ ...l, estDelta: getDelta(l, stockPrice) }))
     .filter((l) => l.estDelta >= 0.60 && l.estDelta <= 0.90)
     .sort((a, b) => {
       // Prefer delta around 0.75 and longer DTE
@@ -91,7 +95,7 @@ export function findPMCCSetups(
 
   // Find best short calls (delta 0.15-0.35)
   const bestShorts = shortCandidates
-    .map((s) => ({ ...s, estDelta: estimateDelta(s.strike, stockPrice, s.dte, "call") }))
+    .map((s) => ({ ...s, estDelta: getDelta(s, stockPrice) }))
     .filter((s) => s.estDelta >= 0.10 && s.estDelta <= 0.40)
     .sort((a, b) => {
       // Prefer delta around 0.25 and 30-45 DTE
