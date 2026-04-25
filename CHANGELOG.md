@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.7.0 — Full App: Watchlists, Positions, Research, Suggestions
+
+- Watchlist management — create named watchlists, add/remove tickers, default watchlist
+- Position tracking — log PMCC, CC, CSP, Wheel trades with individual legs, track status
+- Deep Research Engine — Claude AI analyzes your watchlist stocks and generates specific trade suggestions (CSPs, CCs, PMCCs) with reasoning
+- Options Suggestions — on-demand CSP, CC, and PMCC recommendations for any ticker with live options data
+- Supabase persistence — 7 tables (watchlists, positions, legs, research reports, trade suggestions, user settings)
+- Updated navigation: Discover / PMCC / Research / Positions / More
+- More page links to Watchlists, Suggestions, Covered Calls, Wheel, Income, Settings
+- Settings page with starting cash ($20k) and alert email inputs
+
 ## v0.6.0 — Cron Alerts & Trade Signals
 
 - Vercel cron jobs: runs 3x daily on market days (9:30am, 12pm, 3:30pm ET)

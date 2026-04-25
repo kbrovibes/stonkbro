@@ -72,19 +72,33 @@ export default async function TickerPage({ params }: { params: Params }) {
       {/* Technicals */}
       <TechnicalIndicators stock={stock} />
 
-      {/* Options CTA */}
-      <Link
-        href={`/ticker/${stock.symbol}/pmcc`}
-        className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
-      >
-        <div>
-          <h3 className="text-sm font-bold text-stone-900">PMCC Analyzer</h3>
-          <p className="text-xs text-stone-500 mt-0.5">View LEAPS + short call setups</p>
-        </div>
-        <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-        </svg>
-      </Link>
+      {/* Options CTAs */}
+      <div className="flex flex-col gap-2">
+        <Link
+          href={`/suggestions/${stock.symbol}`}
+          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+        >
+          <div>
+            <h3 className="text-sm font-bold text-stone-900">Options Suggestions</h3>
+            <p className="text-xs text-stone-500 mt-0.5">CSP, Covered Call, and PMCC recommendations</p>
+          </div>
+          <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </Link>
+        <Link
+          href={`/ticker/${stock.symbol}/pmcc`}
+          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+        >
+          <div>
+            <h3 className="text-sm font-bold text-stone-900">PMCC Analyzer</h3>
+            <p className="text-xs text-stone-500 mt-0.5">View LEAPS + short call setups</p>
+          </div>
+          <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </Link>
+      </div>
 
       {/* News */}
       {news.length > 0 && (
