@@ -12,7 +12,7 @@ export default function LoginPage() {
     setError(null);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -21,6 +21,9 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
         setLoading(false);
+      } else if (data?.url) {
+        // Manually redirect if Supabase doesn't auto-redirect
+        window.location.href = data.url;
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
