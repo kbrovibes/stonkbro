@@ -10,8 +10,9 @@ Explosive stock discovery + options strategy automation. Find stocks ready to mo
 - **Auth**: Supabase Auth
 - **Deployment**: Vercel
 - **Analytics**: Vercel Analytics + Speed Insights
-- **Market Data**: Polygon.io (equities + options chains)
-- **News/Sentiment**: Finnhub
+- **Market Data**: Yahoo Finance (quotes + options chains)
+- **AI**: Anthropic Claude SDK (research engine)
+- **Email**: Resend (alert briefings)
 
 ## Project Structure
 
@@ -41,8 +42,9 @@ supabase/
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase anon key (RLS-protected) |
 | `SUPABASE_URL` | Server | Supabase project URL (server-side) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Supabase admin key (bypasses RLS) |
-| `POLYGON_API_KEY` | Server | Polygon.io market data |
-| `FINNHUB_API_KEY` | Server | Finnhub news & sentiment |
+| `ANTHROPIC_API_KEY` | Server | Claude AI research engine |
+| `RESEND_API_KEY` | Server | Email alert briefings |
+| `CRON_SECRET` | Server | Bearer token for cron endpoint |
 
 ## Coding Conventions
 
@@ -62,3 +64,13 @@ See `AGENTS.md` for the full protocol.
 ## Changelog Discipline
 
 Every commit touching `src/` must also update `CHANGELOG.md` and create/update a release file in `releases/`.
+
+## Documentation Discipline
+
+When a feature is added, removed, or significantly changed (new pages, API routes, DB schema changes), also update:
+1. **README.md** — update the relevant section (Features, API Routes, Tech Stack, Roadmap, or Version History)
+2. **docs/index.html** — update the corresponding visual section (feature cards, API table, stack cards, timeline, or roadmap)
+
+See `scripts/update-docs.md` for detailed guidance on what to update and what to skip.
+
+Do NOT update docs for bug fixes, refactors, or non-user-facing changes.
