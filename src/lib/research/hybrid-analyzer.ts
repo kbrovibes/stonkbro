@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { generateText, AIProvider } from "@/lib/ai/provider";
 import { QuoteData } from "@/lib/market/types";
 import { analyzeMultiple, formatForClaude, TechnicalSignals } from "@/lib/analysis/technicals";
 
@@ -20,23 +20,17 @@ export type HybridResult = {
 
 export async function runHybridResearch(
   symbols: string[],
-  quotes: QuoteData[]
+  quotes: QuoteData[],
+  provider?: AIProvider
 ): Promise<HybridResult> {
   // Step 1: Compute all technicals in code (no AI needed)
   const technicals = await analyzeMultiple(symbols, quotes);
 
-  // Step 2: Format condensed summary for Claude
+  // Step 2: Format condensed summary
   const condensed = formatForClaude(technicals);
 
-  // Step 3: Short, focused Claude prompt
-  const client = new Anthropic();
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    messages: [
-      {
-        role: "user",
-        content: `You are an options strategist managing a $20,000 portfolio. Below are pre-computed technical signals for stocks. The code has already calculated RSI, MACD, Bollinger Bands, SMAs, volume, support/resistance, and composite scores.
+  // Step 3: Short, focused AI prompt
+  const promptText = `You are an options strategist managing a $20,000 portfolio. Below are pre-computed technical signals for stocks. The code has already calculated RSI, MACD, Bollinger Bands, SMAs, volume, support/resistance, and composite scores.
 
 YOUR JOB: Don't recalculate anything. Instead:
 1. Identify the top 3-5 actionable trades based on these signals
@@ -63,12 +57,15 @@ PART 2 — TRADES (JSON array):
 ]
 \`\`\`
 
-Be specific. Reference the actual RSI, MACD, volume numbers in your reasoning. No generic advice.`,
-      },
-    ],
+Be specific. Reference the actual RSI, MACD, volume numbers in your reasoning. No generic advice.`;
+
+  const result = await generateText({
+    prompt: promptText,
+    maxTokens: 2000,
+    provider,
   });
 
-  const responseText = response.content[0].type === "text" ? response.content[0].text : "";
+  const responseText = result.text;
 
   // Parse response
   let report = responseText;

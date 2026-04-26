@@ -390,8 +390,8 @@ export default function ResearchPage() {
         </div>
         <p className="text-[10px] text-stone-400">
           {mode === "hybrid"
-            ? "Code computes technicals first, Claude focuses on trade reasoning — faster, cheaper"
-            : "Claude analyzes everything from scratch — slower, more thorough"}
+            ? "Code computes technicals first, AI focuses on trade reasoning — faster, cheaper"
+            : "AI analyzes everything from scratch — slower, more thorough"}
         </p>
 
         <button
@@ -442,7 +442,7 @@ export default function ResearchPage() {
         <div className="flex flex-col items-center py-8 gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-            <span className="text-sm text-stone-600 font-medium">Claude is analyzing your stocks...</span>
+            <span className="text-sm text-stone-600 font-medium">AI is analyzing your stocks...</span>
           </div>
           <p className="text-xs text-stone-400 text-center max-w-xs">
             Fetching live market data, analyzing technicals, and generating specific trade recommendations. This usually takes 15-30 seconds.
@@ -624,7 +624,7 @@ export default function ResearchPage() {
             Ready to research
           </h3>
           <p className="text-xs text-stone-500 mt-1 max-w-xs">
-            Enter stock symbols and hit Run Research. Claude will analyze live
+            Enter stock symbols and hit Run Research. AI will analyze live
             market data and generate specific options trade suggestions.
           </p>
         </div>

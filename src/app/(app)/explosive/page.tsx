@@ -365,7 +365,7 @@ function ExplosivePage() {
             Find your next 10x
           </h3>
           <p className="text-xs text-stone-500 mt-1 max-w-xs">
-            Select a sector and let Claude analyze live market data to find stocks with explosive growth potential and optimal entry strategies.
+            Select a sector and let AI analyze live market data to find stocks with explosive growth potential and optimal entry strategies.
           </p>
         </div>
       )}

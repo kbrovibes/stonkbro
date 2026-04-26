@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { generateText } from "@/lib/ai/provider";
 import { createClient } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { getSector, getAllSectorTickers } from "@/lib/market/sectors";
@@ -67,8 +67,6 @@ export async function POST(request: Request) {
 
     const quoteContext = formatQuoteContext(quotes);
 
-    const client = new Anthropic();
-
     const prompt = `You are an elite growth investor and options strategist hunting for stocks with 10x potential. Analyze these stocks and find the most explosive opportunities.
 
 SECTOR: ${sectorName}
@@ -112,17 +110,12 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
   }
 ]`;
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      messages: [{ role: "user", content: prompt }],
+    const aiResult = await generateText({
+      prompt,
+      maxTokens: 4096,
     });
 
-    // Extract text from response
-    const responseText = message.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
+    const responseText = aiResult.text;
 
     // Parse into report + picks
     const picksMarker = "PICKS_JSON:";

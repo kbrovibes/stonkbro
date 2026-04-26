@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { generateText, AIProvider } from "@/lib/ai/provider";
 import type { QuoteData } from "@/lib/market/yahoo";
 
 export type TradeSuggestion = {
@@ -13,6 +13,8 @@ export type TradeSuggestion = {
 
 export type ResearchResult = {
   report: string;
+  provider?: string;
+  fallback?: boolean;
   suggestions: TradeSuggestion[];
 };
 
@@ -145,36 +147,21 @@ function parseResponse(text: string): ResearchResult {
 
 export async function runDeepResearch(
   symbols: string[],
-  quotes: QuoteData[]
+  quotes: QuoteData[],
+  provider?: AIProvider
 ): Promise<ResearchResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not set");
-  }
-
-  const client = new Anthropic({ apiKey });
   const prompt = buildPrompt(quotes);
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+  const result = await generateText({
+    prompt,
+    maxTokens: 8192,
+    provider,
   });
 
-  // Extract text from response
-  const text = message.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
-
-  if (!text) {
-    throw new Error("Empty response from Claude");
+  if (!result.text) {
+    throw new Error("Empty response from AI provider");
   }
 
-  return parseResponse(text);
+  const parsed = parseResponse(result.text);
+  return { ...parsed, provider: result.provider, fallback: result.fallback };
 }
