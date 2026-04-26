@@ -84,6 +84,7 @@ export default function TodayPage() {
   const [recommendations, setRecommendations] = useState<ThemeResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -95,6 +96,8 @@ export default function TodayPage() {
         setError(data.error);
       } else {
         setRecommendations(data.recommendations || []);
+        const hasRunning = (data.running || []).length > 0;
+        setIsRunning(hasRunning);
         setError(null);
       }
     } catch {
@@ -108,21 +111,42 @@ export default function TodayPage() {
     fetchRecs();
   }, [fetchRecs]);
 
+  // Poll while running
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/recommendations?view=status");
+        const data = await res.json();
+        if ((data.running || []).length === 0) {
+          setIsRunning(false);
+          setRefreshing(false);
+          // Fetch completed results
+          fetchRecs();
+        }
+      } catch {
+        // keep polling
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isRunning, fetchRecs]);
+
   async function handleForceRefresh() {
     setRefreshing(true);
+    setIsRunning(true);
     try {
       const res = await fetch("/api/recommendations", { method: "POST" });
       const data = await res.json();
       if (data.error) {
         setError(data.error);
-      } else {
-        setRecommendations(data.recommendations || []);
-        setError(null);
+        setRefreshing(false);
+        setIsRunning(false);
       }
+      // Don't set recommendations here — we'll poll for completion
     } catch {
-      setError("Failed to refresh");
-    } finally {
+      setError("Failed to start recommendations");
       setRefreshing(false);
+      setIsRunning(false);
     }
   }
 
@@ -178,6 +202,17 @@ export default function TodayPage() {
           Next: {formatTime(nextRefresh)}
         </span>
       </div>
+
+      {/* In progress banner */}
+      {isRunning && (
+        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-sky-800">Generating recommendations...</p>
+            <p className="text-[10px] text-sky-600">This runs in the background. You can close this page and come back.</p>
+          </div>
+        </div>
+      )}
 
       {/* Loading state */}
       {loading && (

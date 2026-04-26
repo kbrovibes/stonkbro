@@ -28,21 +28,21 @@ export interface ThemeResult {
   expiresAt: string;
 }
 
-// Universe of liquid, optionable stocks to scan
+export interface RecommendationBatch {
+  id: string;
+  status: "running" | "completed" | "failed";
+  themes: ThemeResult[];
+  createdAt: string;
+  error?: string;
+}
+
 const SCAN_UNIVERSE = [
-  // Mega-cap tech
   "NVDA", "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NFLX", "AMD", "AVGO",
-  // Growth / momentum
   "PLTR", "CRWD", "SNOW", "DDOG", "NET", "MSTR", "COIN", "SQ", "SHOP", "UBER",
-  // Semis
   "MU", "QCOM", "MRVL", "AMAT", "LRCX", "KLAC", "ARM", "SMCI",
-  // Energy / industrial
   "XOM", "CVX", "LNG", "CAT", "GE", "RTX",
-  // Consumer
   "COST", "WMT", "TGT", "NKE", "SBUX", "DIS",
-  // Finance
   "JPM", "GS", "V", "MA",
-  // Health
   "UNH", "LLY", "ABBV", "JNJ",
 ];
 
@@ -57,7 +57,6 @@ function loadPrompt(theme: RecommendationTheme): string {
 }
 
 function nextExpiresAt(): string {
-  // Expires in 2 hours (aligned with cron schedule)
   return new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 }
 
@@ -81,9 +80,7 @@ Now analyze these signals and pick your 5 best ${theme.replace("_", " ")} candid
     maxTokens: 3000,
   });
 
-  const text = result.text;
-
-  const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+  const jsonMatch = result.text.match(/```json\s*([\s\S]*?)```/);
   if (!jsonMatch) return [];
 
   try {
@@ -93,52 +90,101 @@ Now analyze these signals and pick your 5 best ${theme.replace("_", " ")} candid
   }
 }
 
-export async function generateAllRecommendations(): Promise<ThemeResult[]> {
-  // 1. Fetch quotes for the entire scan universe
-  const quotes = await getQuotes(SCAN_UNIVERSE);
-  const validSymbols = quotes.map((q) => q.symbol);
-
-  // 2. Compute technicals locally
-  const technicals = await analyzeMultiple(validSymbols, quotes);
-  const condensed = formatForClaude(technicals);
-
-  const today = new Date().toISOString().split("T")[0];
-  const expiresAt = nextExpiresAt();
+/**
+ * Create a "running" batch record and return the ID immediately.
+ */
+export async function createPendingBatch(userId?: string): Promise<string> {
+  // Insert a placeholder for each theme
+  const batchId = crypto.randomUUID();
   const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium"];
 
-  // 3. Generate all three themes in parallel
-  const results = await Promise.allSettled(
-    themes.map(async (theme) => {
-      const picks = await generateForTheme(theme, condensed, today);
+  for (const theme of themes) {
+    await supabaseAdmin.from("daily_recommendations").insert({
+      id: `${batchId}-${theme}`,
+      user_id: userId || null,
+      theme,
+      status: "running",
+      generated_at: new Date().toISOString(),
+      expires_at: nextExpiresAt(),
+      picks: [],
+      model: "auto",
+    });
+  }
 
-      // Enrich picks with live price data
-      const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
-      const enriched = picks.map((p) => {
-        const q = quoteMap.get(p.symbol);
-        return { ...p, price: q?.price, changePct: q?.changePct };
-      });
+  return batchId;
+}
 
-      // 4. Cache in DB
-      await supabaseAdmin.from("daily_recommendations").insert({
+/**
+ * Generate all recommendations and update the batch records.
+ */
+export async function generateAllRecommendations(batchId?: string, userId?: string): Promise<ThemeResult[]> {
+  const actualBatchId = batchId || crypto.randomUUID();
+  const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium"];
+
+  // If no batch was pre-created, create running records now
+  if (!batchId) {
+    for (const theme of themes) {
+      await supabaseAdmin.from("daily_recommendations").upsert({
+        id: `${actualBatchId}-${theme}`,
+        user_id: userId || null,
         theme,
+        status: "running",
         generated_at: new Date().toISOString(),
-        expires_at: expiresAt,
-        picks: enriched,
+        expires_at: nextExpiresAt(),
+        picks: [],
         model: "auto",
       });
+    }
+  }
 
-      return {
-        theme,
-        picks: enriched,
-        generatedAt: new Date().toISOString(),
-        expiresAt,
-      };
-    })
-  );
+  try {
+    const quotes = await getQuotes(SCAN_UNIVERSE);
+    const validSymbols = quotes.map((q) => q.symbol);
+    const technicals = await analyzeMultiple(validSymbols, quotes);
+    const condensed = formatForClaude(technicals);
+    const today = new Date().toISOString().split("T")[0];
+    const expiresAt = nextExpiresAt();
 
-  return results
-    .filter((r) => r.status === "fulfilled")
-    .map((r) => (r as PromiseFulfilledResult<ThemeResult>).value);
+    const results = await Promise.allSettled(
+      themes.map(async (theme) => {
+        try {
+          const picks = await generateForTheme(theme, condensed, today);
+          const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+          const enriched = picks.map((p) => {
+            const q = quoteMap.get(p.symbol);
+            return { ...p, price: q?.price, changePct: q?.changePct };
+          });
+
+          // Update record as completed
+          await supabaseAdmin
+            .from("daily_recommendations")
+            .update({ status: "completed", picks: enriched, expires_at: expiresAt })
+            .eq("id", `${actualBatchId}-${theme}`);
+
+          return { theme, picks: enriched, generatedAt: new Date().toISOString(), expiresAt };
+        } catch (e) {
+          await supabaseAdmin
+            .from("daily_recommendations")
+            .update({ status: "failed", error_message: String(e) })
+            .eq("id", `${actualBatchId}-${theme}`);
+          throw e;
+        }
+      })
+    );
+
+    return results
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => (r as PromiseFulfilledResult<ThemeResult>).value);
+  } catch (e) {
+    // Mark all as failed
+    for (const theme of themes) {
+      await supabaseAdmin
+        .from("daily_recommendations")
+        .update({ status: "failed", error_message: String(e) })
+        .eq("id", `${actualBatchId}-${theme}`);
+    }
+    throw e;
+  }
 }
 
 export async function getCachedRecommendations(): Promise<ThemeResult[]> {
@@ -150,6 +196,7 @@ export async function getCachedRecommendations(): Promise<ThemeResult[]> {
       .from("daily_recommendations")
       .select("*")
       .eq("theme", theme)
+      .eq("status", "completed")
       .order("generated_at", { ascending: false })
       .limit(1)
       .single();
@@ -165,4 +212,60 @@ export async function getCachedRecommendations(): Promise<ThemeResult[]> {
   }
 
   return results;
+}
+
+export async function getRecommendationHistory(limit = 10): Promise<RecommendationBatch[]> {
+  const { data } = await supabaseAdmin
+    .from("daily_recommendations")
+    .select("*")
+    .order("generated_at", { ascending: false })
+    .limit(limit * 3); // 3 themes per batch
+
+  if (!data) return [];
+
+  // Group by batch (records created at the same time)
+  const batches = new Map<string, { themes: ThemeResult[]; status: string; createdAt: string; error?: string }>();
+
+  for (const row of data) {
+    // Batch key = generated_at rounded to the minute
+    const batchKey = row.id.includes("-") ? row.id.split("-").slice(0, -1).join("-") : row.generated_at;
+
+    if (!batches.has(batchKey)) {
+      batches.set(batchKey, { themes: [], status: row.status, createdAt: row.generated_at, error: row.error_message });
+    }
+    const batch = batches.get(batchKey)!;
+
+    if (row.status === "running") batch.status = "running";
+    if (row.status === "failed" && batch.status !== "running") batch.status = "failed";
+
+    if (row.status === "completed" && row.picks) {
+      batch.themes.push({
+        theme: row.theme,
+        picks: row.picks as Pick[],
+        generatedAt: row.generated_at,
+        expiresAt: row.expires_at,
+      });
+    }
+  }
+
+  return [...batches.entries()]
+    .map(([id, b]) => ({
+      id,
+      status: b.status as "running" | "completed" | "failed",
+      themes: b.themes,
+      createdAt: b.createdAt,
+      error: b.error,
+    }))
+    .slice(0, limit);
+}
+
+export async function getRunningBatches(): Promise<{ id: string; theme: string; status: string }[]> {
+  const { data } = await supabaseAdmin
+    .from("daily_recommendations")
+    .select("id, theme, status")
+    .eq("status", "running")
+    .order("generated_at", { ascending: false })
+    .limit(3);
+
+  return data || [];
 }
