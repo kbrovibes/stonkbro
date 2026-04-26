@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { getWatchlistsWithItems } from "@/lib/db/watchlists";
 import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
+import { getEarningsCalendar } from "@/lib/market/earnings";
 import WatchlistWidget from "./WatchlistWidget";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export default async function DiscoverPage() {
     quotes: QuoteData[];
   }
   let watchlists: WatchlistData[] = [];
+  let allSymbols: string[] = [];
 
   if (user) {
     try {
@@ -28,7 +30,7 @@ export default async function DiscoverPage() {
         symbols.forEach((s: string) => symbolSet.add(s));
         watchlists.push({ id: wl.id, name: wl.name, symbols, quotes: [] });
       }
-      const allSymbols = [...symbolSet];
+      allSymbols = [...symbolSet];
 
       if (allSymbols.length > 0) {
         const allQuotes = await getQuotes(allSymbols);
@@ -39,6 +41,19 @@ export default async function DiscoverPage() {
       }
     } catch {
       // Fall back
+    }
+  }
+
+  // Fetch earnings for watchlist stocks
+  let upcomingEarnings: { symbol: string; earningsDate: string; daysUntil: number; timing: string; category: string }[] = [];
+  if (allSymbols.length > 0) {
+    try {
+      const earnings = await getEarningsCalendar(allSymbols);
+      upcomingEarnings = earnings
+        .filter((e) => e.category === "this_week" || e.category === "next_week")
+        .slice(0, 6);
+    } catch {
+      // ignore
     }
   }
 
@@ -53,7 +68,7 @@ export default async function DiscoverPage() {
   }));
 
   return (
-    <div className="flex flex-col flex-1 px-4 py-5">
+    <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       {watchlistWidgetData.length > 0 ? (
         <WatchlistWidget watchlists={watchlistWidgetData} />
       ) : (
@@ -71,6 +86,39 @@ export default async function DiscoverPage() {
           >
             Create Watchlist
           </Link>
+        </div>
+      )}
+
+      {/* Upcoming Earnings — condensed card */}
+      {upcomingEarnings.length > 0 && (
+        <div className="rounded-xl bg-white shadow-sm border border-stone-100 px-4 py-3">
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-sm font-bold text-stone-900">Upcoming Earnings</h3>
+            <Link href="/earnings" className="text-[10px] font-semibold text-sky-600 hover:text-sky-700">
+              Full Calendar
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {upcomingEarnings.map((e) => (
+              <Link
+                key={e.symbol}
+                href={`/suggestions/${e.symbol}`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors hover:bg-stone-50 ${
+                  e.category === "this_week"
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-amber-200 bg-amber-50 text-amber-700"
+                }`}
+              >
+                <span className="font-bold">{e.symbol}</span>
+                <span className="text-[10px] opacity-75">
+                  {e.daysUntil === 0 ? "today" : e.daysUntil === 1 ? "tmrw" : `${e.daysUntil}d`}
+                </span>
+                {e.timing !== "unknown" && (
+                  <span className="text-[9px] opacity-60 uppercase">{e.timing === "before_market" ? "BMO" : "AMC"}</span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>
