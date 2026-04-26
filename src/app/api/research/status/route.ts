@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { getUnopenedReports, markReportOpened, getReportById } from "@/lib/db/research";
+import { getRecentReports, markReportOpened, getReportById } from "@/lib/db/research";
 import { getSuggestions } from "@/lib/db/research";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +33,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ report, suggestions });
   }
 
-  // Otherwise return all unopened + running reports
-  const reports = await getUnopenedReports(user.id);
+  // Return last 5 research runs
+  const reports = await getRecentReports(user.id, 5);
   return NextResponse.json({ reports });
 }
 

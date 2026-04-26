@@ -403,10 +403,10 @@ export default function ResearchPage() {
         </button>
       </div>
 
-      {/* Recent/unopened reports */}
+      {/* Recent research runs */}
       {recentReports.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Recent</h3>
+          <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Recent Runs</h3>
           <div className="flex flex-col gap-2">
             {recentReports.map((r) => (
               <button
