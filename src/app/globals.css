@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-black-ops);
 }
 
 body {
