@@ -167,6 +167,7 @@ function formatInlineMarkdown(text: string): React.ReactNode {
 
 export default function ResearchPage() {
   const [symbolsInput, setSymbolsInput] = useState(DEFAULT_SYMBOLS);
+  const [mode, setMode] = useState<"hybrid" | "deep">("hybrid");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [runs, setRuns] = useState<ResearchRun[]>([]);
@@ -190,7 +191,7 @@ export default function ResearchPage() {
       const res = await fetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbols }),
+        body: JSON.stringify({ symbols, mode }),
       });
 
       if (!res.ok) {
@@ -266,6 +267,27 @@ export default function ResearchPage() {
           rows={2}
           className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-stone-400 resize-none"
         />
+        {/* Mode toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-stone-100">
+          <button
+            onClick={() => setMode("hybrid")}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "hybrid" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}
+          >
+            Hybrid (fast)
+          </button>
+          <button
+            onClick={() => setMode("deep")}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "deep" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}
+          >
+            Deep (thorough)
+          </button>
+        </div>
+        <p className="text-[10px] text-stone-400">
+          {mode === "hybrid"
+            ? "Code computes technicals first, Claude focuses on trade reasoning — faster, cheaper"
+            : "Claude analyzes everything from scratch — slower, more thorough"}
+        </p>
+
         <button
           onClick={runResearch}
           disabled={loading}

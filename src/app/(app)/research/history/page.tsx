@@ -3,6 +3,26 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+function SimpleMarkdown({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return (
+    <>
+      {lines.map((line, i) => {
+        if (line.startsWith("### ")) return <h3 key={i} className="text-sm font-bold text-stone-900 mt-3 mb-1">{line.replace(/^###\s*/, "")}</h3>;
+        if (line.startsWith("## ")) return <h2 key={i} className="text-sm font-extrabold text-stone-900 mt-4 mb-1">{line.replace(/^##\s*/, "")}</h2>;
+        if (line.startsWith("# ")) return <h1 key={i} className="text-base font-extrabold text-stone-900 mt-4 mb-2">{line.replace(/^#\s*/, "")}</h1>;
+        if (line.match(/^\s*[-*]\s/)) return <p key={i} className="text-xs text-stone-600 py-0.5 pl-3">• {line.replace(/^\s*[-*]\s*/, "")}</p>;
+        if (line.match(/^\d+\.\s/)) return <p key={i} className="text-xs text-stone-700 py-0.5">{line}</p>;
+        if (line.trim() === "") return <div key={i} className="h-1.5" />;
+        // Bold text
+        const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        if (formatted !== line) return <p key={i} className="text-xs text-stone-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
+        return <p key={i} className="text-xs text-stone-700 leading-relaxed">{line}</p>;
+      })}
+    </>
+  );
+}
+
 type Suggestion = {
   id: string;
   symbol: string;
@@ -164,8 +184,8 @@ export default function ResearchHistoryPage() {
                 {/* Full report */}
                 <div className="px-4 py-3 max-h-96 overflow-y-auto">
                   <h4 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">Full Report</h4>
-                  <div className="text-xs text-stone-700 leading-relaxed whitespace-pre-wrap">
-                    {report.report}
+                  <div className="text-xs text-stone-700 leading-relaxed">
+                    <SimpleMarkdown content={report.report} />
                   </div>
                 </div>
 

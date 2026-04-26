@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { runDeepResearch } from "@/lib/research/analyzer";
+import { runHybridResearch } from "@/lib/research/hybrid-analyzer";
 import { saveResearchReport, saveTradeSuggestion } from "@/lib/db/research";
 
 export const maxDuration = 120;
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const symbols: string[] = body.symbols;
+    const mode: "hybrid" | "deep" = body.mode || "hybrid";
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return NextResponse.json({ error: "symbols array is required" }, { status: 400 });
@@ -26,9 +28,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not fetch quotes for any of the provided symbols" }, { status: 400 });
     }
 
-    const result = await runDeepResearch(normalizedSymbols, quotes);
+    // Run research based on mode
+    let report: string;
+    let suggestions: { symbol: string; strategy: string; action: string; strike?: number; expiry?: string; premium?: number; reasoning: string }[];
+    let technicals = undefined;
+    let tokensSaved = undefined;
 
-    // Save to Supabase if user is authenticated
+    if (mode === "hybrid") {
+      const result = await runHybridResearch(normalizedSymbols, quotes);
+      report = result.report;
+      suggestions = result.suggestions;
+      technicals = result.technicals;
+      tokensSaved = result.tokensSaved;
+    } else {
+      const result = await runDeepResearch(normalizedSymbols, quotes);
+      report = result.report;
+      suggestions = result.suggestions;
+    }
+
+    // Save to Supabase
     let reportId: string | null = null;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -39,12 +57,11 @@ export async function POST(request: Request) {
           user.id,
           "manual",
           quotes.map((q) => q.symbol),
-          result.report
+          report
         );
         reportId = savedReport.id;
 
-        // Save each suggestion linked to the report
-        for (const suggestion of result.suggestions) {
+        for (const suggestion of suggestions) {
           await saveTradeSuggestion({
             report_id: reportId || undefined,
             user_id: user.id,
@@ -59,16 +76,18 @@ export async function POST(request: Request) {
         }
       } catch (e) {
         console.error("Failed to save research to DB:", e);
-        // Don't fail the response — the research itself succeeded
       }
     }
 
     return NextResponse.json({
-      report: result.report,
-      suggestions: result.suggestions,
+      report,
+      suggestions,
       symbolsAnalyzed: quotes.map((q) => q.symbol),
       timestamp: new Date().toISOString(),
       reportId,
+      mode,
+      technicals,
+      tokensSaved,
     });
   } catch (e) {
     console.error("Research API error:", e);
