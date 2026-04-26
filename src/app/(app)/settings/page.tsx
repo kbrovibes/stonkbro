@@ -3,60 +3,121 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-interface TradierProfile {
-  env: string;
-  profile: { name: string; id: string };
-  account: {
-    accountNumber: string;
-    type: string;
-    classification: string;
-    status: string;
-    dayTrader: boolean;
-  } | null;
-  error?: string;
+interface Settings {
+  starting_cash: number;
+  alert_email: string;
+  ai_provider: string;
+  alert_position_signals: boolean;
+  alert_explosive_movers: boolean;
+  alert_earnings: boolean;
+  alert_recommendations: boolean;
+  alert_frequency: string;
+}
+
+function Toggle({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 ${
+        enabled ? "bg-sky-500" : "bg-stone-300"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          enabled ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  enabled,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
+      <div className="flex-1 mr-4">
+        <p className="text-sm font-medium text-stone-900">{label}</p>
+        <p className="text-xs text-stone-500 mt-0.5">{description}</p>
+      </div>
+      <Toggle enabled={enabled} onChange={onChange} />
+    </div>
+  );
 }
 
 export default function SettingsPage() {
-  const [startingCash, setStartingCash] = useState("20000");
-  const [alertEmail, setAlertEmail] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [tradierData, setTradierData] = useState<TradierProfile | null>(null);
-  const [tradierLoading, setTradierLoading] = useState(true);
-  const [tradierError, setTradierError] = useState<string | null>(null);
-  const [envMode, setEnvMode] = useState<"sandbox" | "production">("sandbox");
-
-  const fetchTradierUsage = useCallback(async () => {
-    setTradierLoading(true);
-    setTradierError(null);
-    try {
-      const res = await fetch("/api/tradier-usage");
-      const data = await res.json();
-      if (data.error) {
-        setTradierError(data.error);
-      } else {
-        setTradierData(data);
-        setEnvMode(data.env === "production" ? "production" : "sandbox");
-      }
-    } catch {
-      setTradierError("Failed to connect to API");
-    } finally {
-      setTradierLoading(false);
-    }
-  }, []);
+  const [settings, setSettings] = useState<Settings>({
+    starting_cash: 20000,
+    alert_email: "",
+    ai_provider: "claude",
+    alert_position_signals: true,
+    alert_explosive_movers: true,
+    alert_earnings: true,
+    alert_recommendations: true,
+    alert_frequency: "three_daily",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTradierUsage();
-  }, [fetchTradierUsage]);
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) setSettings(d.settings);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const saveField = useCallback(
+    async (updates: Partial<Settings>) => {
+      const newSettings = { ...settings, ...updates };
+      setSettings(newSettings);
+      setSaving(true);
+
+      try {
+        await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        setLastSaved(new Date().toLocaleTimeString());
+      } catch {
+        // Revert on error
+        setSettings(settings);
+      }
+      setSaving(false);
+    },
+    [settings]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center flex-1 py-20">
+        <span className="text-sm text-stone-400">Loading settings...</span>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col flex-1 px-4 py-6">
       <div className="max-w-2xl mx-auto w-full flex flex-col gap-5">
-        {/* Back + Title */}
+        {/* Header */}
         <div className="flex items-center gap-3">
           <Link
             href="/more"
@@ -66,208 +127,145 @@ export default function SettingsPage() {
               <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
             </svg>
           </Link>
-          <h2 className="text-lg font-bold text-stone-900">Settings</h2>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-stone-900">Settings</h2>
+          </div>
+          {lastSaved && !saving && (
+            <span className="text-[10px] text-emerald-600 font-medium">Saved</span>
+          )}
+          {saving && (
+            <span className="text-[10px] text-stone-400">Saving...</span>
+          )}
         </div>
 
-        {/* Tradier API */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-stone-900">Tradier API</h3>
-            <button
-              onClick={fetchTradierUsage}
-              disabled={tradierLoading}
-              className="text-xs text-sky-600 hover:text-sky-800 active:opacity-60 transition-colors disabled:opacity-40"
-            >
-              {tradierLoading ? "Loading..." : "Refresh"}
-            </button>
+        {/* Alert Preferences */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-1">
+          <div className="py-3 border-b border-stone-100">
+            <h3 className="text-sm font-semibold text-stone-900">Email Alerts</h3>
+            <p className="text-xs text-stone-500 mt-0.5">Choose what shows up in your daily briefing</p>
           </div>
-          <p className="mt-1 text-sm text-stone-500">
-            Market data provider status and account info.
-          </p>
 
-          <div className="mt-4 flex flex-col gap-3">
-            {/* Environment Toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-stone-700">Environment</p>
-                <p className="text-[10px] text-stone-400 mt-0.5">
-                  Production requires a funded Tradier account
-                </p>
-              </div>
+          <ToggleRow
+            label="Position Signals"
+            description="Roll, close, and profit target alerts for your open positions"
+            enabled={settings.alert_position_signals}
+            onChange={(v) => saveField({ alert_position_signals: v })}
+          />
+          <ToggleRow
+            label="Explosive Movers"
+            description="Stocks making 5%+ moves or 3x volume with trade suggestions"
+            enabled={settings.alert_explosive_movers}
+            onChange={(v) => saveField({ alert_explosive_movers: v })}
+          />
+          <ToggleRow
+            label="Earnings Alerts"
+            description="Warn when your positions have earnings approaching"
+            enabled={settings.alert_earnings}
+            onChange={(v) => saveField({ alert_earnings: v })}
+          />
+          <ToggleRow
+            label="AI Recommendations"
+            description="Include AI-generated trade suggestions in briefings"
+            enabled={settings.alert_recommendations}
+            onChange={(v) => saveField({ alert_recommendations: v })}
+          />
+        </div>
+
+        {/* Frequency */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900">Alert Frequency</h3>
+          <p className="text-xs text-stone-500 mt-0.5 mb-3">How often you want email briefings</p>
+
+          <div className="flex flex-col gap-1.5">
+            {[
+              { value: "morning_only", label: "Morning only", desc: "One email at 9:30 AM ET" },
+              { value: "three_daily", label: "3x daily", desc: "9:30 AM, 12 PM, 3:30 PM ET" },
+              { value: "realtime", label: "Every alert", desc: "Email for each significant event" },
+            ].map((opt) => (
               <button
-                onClick={() => {
-                  if (envMode === "sandbox") {
-                    // Don't actually switch — just show the intent
-                    setEnvMode("sandbox");
-                  }
-                }}
-                className="relative inline-flex h-7 w-[120px] items-center rounded-full border border-stone-200 bg-stone-100 p-0.5 transition-colors"
+                key={opt.value}
+                onClick={() => saveField({ alert_frequency: opt.value })}
+                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                  settings.alert_frequency === opt.value
+                    ? "border-sky-300 bg-sky-50"
+                    : "border-stone-200 bg-white hover:bg-stone-50"
+                }`}
               >
-                <span
-                  className={`absolute h-6 w-[58px] rounded-full bg-white shadow-sm transition-all duration-200 ${
-                    envMode === "production" ? "left-[60px]" : "left-0.5"
-                  }`}
-                />
-                <span
-                  className={`relative z-10 flex-1 text-center text-[10px] font-semibold transition-colors ${
-                    envMode === "sandbox" ? "text-stone-900" : "text-stone-400"
-                  }`}
-                >
-                  Sandbox
-                </span>
-                <span
-                  className={`relative z-10 flex-1 text-center text-[10px] font-semibold transition-colors ${
-                    envMode === "production" ? "text-stone-900" : "text-stone-400"
-                  }`}
-                >
-                  Prod
-                </span>
+                <div className="text-left">
+                  <p className={`text-sm font-medium ${settings.alert_frequency === opt.value ? "text-sky-700" : "text-stone-700"}`}>
+                    {opt.label}
+                  </p>
+                  <p className="text-xs text-stone-500">{opt.desc}</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  settings.alert_frequency === opt.value
+                    ? "border-sky-500"
+                    : "border-stone-300"
+                }`}>
+                  {settings.alert_frequency === opt.value && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+                  )}
+                </div>
               </button>
-            </div>
-
-            <div className="border-t border-stone-100/80" />
-
-            {/* API Status */}
-            {tradierLoading ? (
-              <div className="flex items-center gap-2 py-3">
-                <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
-                <span className="text-xs text-stone-400">Checking connection...</span>
-              </div>
-            ) : tradierError ? (
-              <div className="flex items-center gap-2 py-3">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
-                <span className="text-xs text-red-500">{tradierError}</span>
-              </div>
-            ) : tradierData ? (
-              <div className="flex flex-col gap-3">
-                {/* Connection status */}
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-xs font-medium text-green-700">Connected</span>
-                  <span className="text-[10px] text-stone-400">
-                    {tradierData.env === "sandbox" ? "sandbox.tradier.com" : "api.tradier.com"}
-                  </span>
-                </div>
-
-                {/* Profile Info */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">Account</p>
-                    <p className="text-sm font-semibold text-stone-900 tabular-nums mt-0.5">
-                      {tradierData.account?.accountNumber || "N/A"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">Status</p>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">
-                      {tradierData.account?.status || "N/A"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">Type</p>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">
-                      {tradierData.account?.classification || "N/A"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wide">Name</p>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">
-                      {tradierData.profile.name}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Sandbox notice */}
-                {tradierData.env === "sandbox" && (
-                  <div className="px-3 py-2 rounded-lg bg-sky-50 border border-sky-100">
-                    <p className="text-xs text-sky-700 font-medium">Sandbox Mode</p>
-                    <p className="text-[10px] text-sky-600 mt-0.5">
-                      Using delayed/simulated data. Upgrade to a production API key for real-time quotes.
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : null}
+            ))}
           </div>
         </div>
 
-        {/* Account Settings */}
+        {/* AI Provider */}
         <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Account Settings</h3>
-          <p className="mt-1 text-sm text-stone-500">
-            Configure your trading account defaults.
-          </p>
+          <h3 className="text-sm font-semibold text-stone-900">AI Provider</h3>
+          <p className="text-xs text-stone-500 mt-0.5 mb-3">Primary AI for research (auto-fallback if rate limited)</p>
 
-          <div className="mt-4 flex flex-col gap-4">
-            <div>
-              <label
-                htmlFor="starting-cash"
-                className="block text-xs font-medium text-stone-700 mb-1"
+          <div className="flex gap-2">
+            {[
+              { value: "claude", label: "Claude" },
+              { value: "gemini", label: "Gemini" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => saveField({ ai_provider: opt.value })}
+                className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  settings.ai_provider === opt.value
+                    ? "border-sky-300 bg-sky-50 text-sky-700"
+                    : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                }`}
               >
-                Starting Cash
-              </label>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Account */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900">Account</h3>
+          <div className="mt-3 flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-stone-700 mb-1">Starting Cash</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">
-                  $
-                </span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">$</span>
                 <input
-                  id="starting-cash"
                   type="text"
                   inputMode="numeric"
-                  value={startingCash}
-                  onChange={(e) => setStartingCash(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3 pl-7 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="20000"
+                  value={settings.starting_cash}
+                  onChange={(e) => setSettings({ ...settings, starting_cash: Number(e.target.value) || 0 })}
+                  onBlur={() => saveField({ starting_cash: settings.starting_cash })}
+                  className="w-full rounded-lg border border-stone-300 bg-white px-3 pl-7 py-2 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
             </div>
 
             <div>
-              <label
-                htmlFor="alert-email"
-                className="block text-xs font-medium text-stone-700 mb-1"
-              >
-                Alert Email
-              </label>
+              <label className="block text-xs font-medium text-stone-700 mb-1">Alert Email</label>
               <input
-                id="alert-email"
                 type="email"
-                value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
+                value={settings.alert_email || ""}
+                onChange={(e) => setSettings({ ...settings, alert_email: e.target.value })}
+                onBlur={() => saveField({ alert_email: settings.alert_email })}
                 className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 placeholder="you@example.com"
               />
             </div>
-
-            <button
-              onClick={handleSave}
-              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors"
-            >
-              {saved ? "Saved!" : "Save Settings"}
-            </button>
-          </div>
-        </div>
-
-        {/* Coming soon cards */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Alert Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500">
-            Configure how you want to be notified about breakout signals and
-            position triggers.
-          </p>
-          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 text-xs text-stone-400 font-medium">
-            Coming soon
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Scoring Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500">
-            Tune the weights for technical indicators in the explosive stock
-            scoring engine.
-          </p>
-          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 text-xs text-stone-400 font-medium">
-            Coming soon
           </div>
         </div>
       </div>
