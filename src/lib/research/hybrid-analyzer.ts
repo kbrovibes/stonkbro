@@ -37,6 +37,12 @@ YOUR JOB: Don't recalculate anything. Instead:
 2. For each, recommend a specific strategy (CSP, CC, or PMCC) with reasoning
 3. Consider: signal confluence, risk/reward, and which setups align best with income generation
 
+IMPORTANT — EARNINGS AWARENESS:
+- Stocks with earnings within 7 days have elevated IV — IDEAL for selling premium (CSPs, CCs)
+- Recommend "sell put before earnings" plays when IV is high and you'd want to own the stock
+- WARN about any recommended trade where earnings fall DURING the option's expiration — the holder faces binary risk
+- If a stock has earnings in 1-2 days, suggest waiting until after unless selling premium specifically
+
 TECHNICAL SIGNALS:
 ${condensed}
 

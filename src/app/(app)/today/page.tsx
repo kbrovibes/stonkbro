@@ -3,6 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
+// --- Earnings types ---
+
+interface EarningsEvent {
+  symbol: string;
+  name: string;
+  earningsDate: string;
+  daysUntil: number;
+  timing: "before_market" | "after_market" | "unknown";
+  category: "this_week" | "next_week" | "later";
+}
+
 // --- Types ---
 
 interface Mover {
@@ -130,6 +141,10 @@ export default function TodayPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
+  // Earnings
+  const [earnings, setEarnings] = useState<EarningsEvent[]>([]);
+  const [earningsLoading, setEarningsLoading] = useState(true);
+
   // Alerts
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
@@ -175,6 +190,25 @@ export default function TodayPage() {
     }
   }, []);
 
+  const fetchEarnings = useCallback(async () => {
+    setEarningsLoading(true);
+    try {
+      const top20 = "NVDA,AAPL,MSFT,GOOGL,AMZN,META,TSLA,NFLX,AMD,AVGO,PLTR,CRWD,COIN,SHOP,JPM,GS,COST,DIS,BA,UBER";
+      const res = await fetch(`/api/earnings?symbols=${top20}`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      // Only show this_week and next_week
+      const filtered = (data.earnings || []).filter(
+        (e: EarningsEvent) => e.category === "this_week" || e.category === "next_week"
+      );
+      setEarnings(filtered);
+    } catch {
+      setEarnings([]);
+    } finally {
+      setEarningsLoading(false);
+    }
+  }, []);
+
   const fetchAlerts = useCallback(async () => {
     setAlertsLoading(true);
     try {
@@ -192,9 +226,9 @@ export default function TodayPage() {
   }, []);
 
   const fetchAll = useCallback(async () => {
-    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchAlerts()]);
+    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchEarnings(), fetchAlerts()]);
     setLastUpdated(Date.now());
-  }, [fetchMovers, fetchRecs, fetchAlerts]);
+  }, [fetchMovers, fetchRecs, fetchEarnings, fetchAlerts]);
 
   // Initial load
   useEffect(() => {
@@ -223,7 +257,7 @@ export default function TodayPage() {
     setCollapsed((prev) => ({ ...prev, [theme]: !prev[theme] }));
   }
 
-  const anyLoading = moversLoading || recsLoading || alertsLoading;
+  const anyLoading = moversLoading || recsLoading || earningsLoading || alertsLoading;
 
   // ---- Render ----
 
@@ -517,16 +551,94 @@ export default function TodayPage() {
       </Section>
 
       {/* ================================================================= */}
-      {/* Section 3: Earnings This Week (placeholder) */}
+      {/* Section 3: Earnings This Week */}
       {/* ================================================================= */}
-      <Section title="Earnings This Week">
-        <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-          <span className="text-2xl mb-2 block">📅</span>
-          <p className="text-sm font-medium text-stone-600">Earnings calendar coming soon</p>
-          <p className="text-[10px] text-stone-400 mt-1">
-            Stocks reporting this week with IV analysis and strategy suggestions.
-          </p>
-        </div>
+      <Section
+        title="Earnings Ahead"
+        badge={
+          earnings.length > 0 ? (
+            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+              {earnings.length} upcoming
+            </span>
+          ) : null
+        }
+      >
+        {earningsLoading && (
+          <div className="flex items-center justify-center py-10">
+            <Spinner />
+          </div>
+        )}
+
+        {!earningsLoading && earnings.length === 0 && (
+          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
+            <p className="text-sm text-stone-500">No imminent earnings</p>
+            <p className="text-[10px] text-stone-400 mt-1">Top 20 tickers have no reports this or next week.</p>
+          </div>
+        )}
+
+        {!earningsLoading && earnings.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {earnings.map((e) => {
+              const isThisWeek = e.category === "this_week";
+              return (
+                <div
+                  key={e.symbol}
+                  className={`rounded-xl border px-4 py-3 ${
+                    isThisWeek
+                      ? "border-red-200 bg-red-50"
+                      : "border-amber-200 bg-amber-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/ticker/${e.symbol}`}
+                        className="text-sm font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                      >
+                        {e.symbol}
+                      </Link>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        isThisWeek
+                          ? "text-red-700 bg-red-100"
+                          : "text-amber-700 bg-amber-100"
+                      }`}>
+                        {e.timing === "before_market" ? "BMO" : e.timing === "after_market" ? "AMC" : "TBD"}
+                      </span>
+                      <span className="text-[11px] text-stone-500">
+                        {new Date(e.earningsDate + "T12:00:00").toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold tabular-nums ${
+                        isThisWeek ? "text-red-600" : "text-amber-600"
+                      }`}>
+                        {e.daysUntil === 0 ? "Today" : e.daysUntil === 1 ? "Tomorrow" : `${e.daysUntil}d`}
+                      </span>
+                      <Link
+                        href={`/ticker/${e.symbol}`}
+                        className="text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                      >
+                        View Options &rarr;
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Link to full calendar */}
+            <Link
+              href="/earnings"
+              className="mt-1 text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors text-center"
+            >
+              See Full Calendar &rarr;
+            </Link>
+          </div>
+        )}
       </Section>
 
       {/* ================================================================= */}

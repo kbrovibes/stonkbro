@@ -43,6 +43,10 @@ export type TechnicalSignals = {
   nearestSupport: number;
   nearestResistance: number;
 
+  // Earnings
+  earningsDate: string | null;
+  daysToEarnings: number | null;
+
   // Composite
   score: number; // 0-100 composite signal strength
   signals: string[]; // Human-readable signal descriptions
@@ -150,6 +154,19 @@ export async function analyzeTechnicals(symbol: string, quote: QuoteData): Promi
   const distFrom52High = quote.fiftyTwoWeekHigh > 0 ? ((quote.fiftyTwoWeekHigh - quote.price) / quote.fiftyTwoWeekHigh) * 100 : 0;
   const distFrom52Low = quote.fiftyTwoWeekLow > 0 ? ((quote.price - quote.fiftyTwoWeekLow) / quote.fiftyTwoWeekLow) * 100 : 0;
 
+  // Earnings
+  const earningsDate = quote.earningsDate ?? null;
+  let daysToEarnings: number | null = null;
+  if (earningsDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const earningsDay = new Date(earningsDate);
+    earningsDay.setHours(0, 0, 0, 0);
+    const diffMs = earningsDay.getTime() - today.getTime();
+    daysToEarnings = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (daysToEarnings < 0) daysToEarnings = null; // past earnings, ignore
+  }
+
   // Build signals list
   const signals: string[] = [];
   if (macdCross === "bullish") signals.push("MACD bullish crossover");
@@ -167,6 +184,7 @@ export async function analyzeTechnicals(symbol: string, quote: QuoteData): Promi
   if (change5d > 10) signals.push(`+${change5d.toFixed(1)}% in 5 days`);
   if (change5d < -10) signals.push(`${change5d.toFixed(1)}% in 5 days`);
   if (change20d > 20) signals.push(`+${change20d.toFixed(0)}% in 20 days — strong momentum`);
+  if (daysToEarnings !== null && daysToEarnings <= 7) signals.push(`Earnings in ${daysToEarnings}d — elevated IV expected`);
 
   // Composite score
   let score = 50;
@@ -182,6 +200,7 @@ export async function analyzeTechnicals(symbol: string, quote: QuoteData): Promi
   if (volumeRatio >= 2) score += 10;
   if (volumeRatio >= 1.5) score += 5;
   if (bbSqueeze) score += 8;
+  if (daysToEarnings !== null && daysToEarnings <= 7) score += 5; // elevated IV = good for selling premium
   if (change5d > 5) score += 5;
   if (change20d > 10) score += 5;
   if (distFrom52High < 10) score += 5;
@@ -216,6 +235,8 @@ export async function analyzeTechnicals(symbol: string, quote: QuoteData): Promi
     change20d: Math.round(change20d * 100) / 100,
     nearestSupport: Math.round(support * 100) / 100,
     nearestResistance: Math.round(resistance * 100) / 100,
+    earningsDate,
+    daysToEarnings,
     score,
     signals,
   };
@@ -246,6 +267,9 @@ export function formatForClaude(signals: TechnicalSignals[]): string {
       `  Volume: ${s.volumeRatio}x avg${s.volumeSpike ? " SPIKE" : ""} | 1d: ${s.change1d > 0 ? "+" : ""}${s.change1d.toFixed(1)}% | 5d: ${s.change5d > 0 ? "+" : ""}${s.change5d.toFixed(1)}% | 20d: ${s.change20d > 0 ? "+" : ""}${s.change20d.toFixed(1)}%`,
       `  52w: ${s.distFrom52High.toFixed(0)}% below high, ${s.distFrom52Low.toFixed(0)}% above low`,
       `  S/R: support $${s.nearestSupport.toFixed(2)}, resistance $${s.nearestResistance.toFixed(2)}`,
+      s.daysToEarnings !== null && s.daysToEarnings <= 30
+        ? `  Earnings: in ${s.daysToEarnings} days (${s.earningsDate})`
+        : `  Earnings: NONE UPCOMING`,
       s.signals.length > 0 ? `  Signals: ${s.signals.join(", ")}` : "",
     ].filter(Boolean);
     return lines.join("\n");

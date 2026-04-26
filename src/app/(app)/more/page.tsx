@@ -17,6 +17,11 @@ const links = [
     href: "/watchlists",
   },
   {
+    title: "Earnings Calendar",
+    description: "See who reports this week and find earnings plays.",
+    href: "/earnings",
+  },
+  {
     title: "Trade Signals",
     description: "Live roll/close alerts based on your active positions.",
     href: "/signals",

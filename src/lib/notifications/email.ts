@@ -71,6 +71,17 @@ export async function sendDailyBriefing(to: string, alerts: AlertItem[]) {
           </div>
           <table style="width: 100%; border-collapse: collapse;">${lowUrgency.map(renderAlert).join("")}</table>
         ` : ""}
+
+        ${(() => {
+          const moverAlerts = alerts.filter((a) => a.action === "BUY" && a.details?.includes("Suggested:"));
+          return moverAlerts.length > 0 ? `
+            <div style="padding: 16px 16px 4px; border-top: 1px solid #f5f5f4;">
+              <h2 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; margin: 0;">Market Movers</h2>
+              <p style="color: #a8a29e; font-size: 11px; margin: 4px 0 0 0;">Explosive moves detected in today's scan</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse;">${moverAlerts.map(renderAlert).join("")}</table>
+          ` : "";
+        })()}
       `}
 
       <div style="padding: 16px; text-align: center; border-top: 1px solid #f5f5f4;">

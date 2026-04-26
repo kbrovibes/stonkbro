@@ -103,6 +103,12 @@ After the report, output a JSON array of specific trade suggestions in exactly t
 
 For PMCC trades, use the LEAPS strike as "strike" and estimate the net debit as "premium" (negative number). For AVOID, omit strike/expiry/premium.
 
+IMPORTANT — EARNINGS AWARENESS:
+- Stocks with earnings within 7 days have elevated IV — IDEAL for selling premium (CSPs, CCs)
+- Recommend "sell put before earnings" plays when IV is high and you'd want to own the stock
+- WARN about any recommended trade where earnings fall DURING the option's expiration — the holder faces binary risk
+- If a stock has earnings in 1-2 days, suggest waiting until after unless selling premium specifically
+
 Be aggressive with your analysis but disciplined with risk management. Prioritize trades with the best risk/reward and highest probability of profit.`;
 }
 

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
-import { sendDailyBriefing } from "@/lib/notifications/email";
+import { sendDailyBriefing, AlertItem } from "@/lib/notifications/email";
 import { supabaseAdmin } from "@/lib/supabase";
+import { scanForMovers } from "@/lib/analysis/movers";
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -33,16 +34,14 @@ export async function GET(request: Request) {
       .select("*, position_legs(*)")
       .eq("status", "active");
 
-    if (!allPositions || allPositions.length === 0) {
-      return NextResponse.json({ success: true, message: "No active positions across any users" });
-    }
-
     // Group positions by user
-    const positionsByUser = new Map<string, typeof allPositions>();
-    for (const pos of allPositions) {
-      const userId = pos.user_id;
-      if (!positionsByUser.has(userId)) positionsByUser.set(userId, []);
-      positionsByUser.get(userId)!.push(pos);
+    const positionsByUser = new Map<string, NonNullable<typeof allPositions>>();
+    if (allPositions) {
+      for (const pos of allPositions) {
+        const userId = pos.user_id;
+        if (!positionsByUser.has(userId)) positionsByUser.set(userId, []);
+        positionsByUser.get(userId)!.push(pos);
+      }
     }
 
     // Get all watchlist symbols across all users
@@ -62,6 +61,9 @@ export async function GET(request: Request) {
         }
       }
     }
+
+    // Collect alerts per user, then combine with movers before sending
+    const allAlertsByUser = new Map<string, { email: string; alerts: AlertItem[] }>();
 
     // Process each user
     for (const [userId, userPositions] of positionsByUser) {
@@ -95,18 +97,57 @@ export async function GET(request: Request) {
       // Generate alerts
       const alerts = generateAlerts(tracked, quoteMap);
 
-      // Send email
-      if (alerts.length > 0 || new Date().getHours() === 13) {
+      allAlertsByUser.set(userId, { email, alerts });
+    }
+
+    // Scan for explosive movers across the full universe
+    let moverAlerts: AlertItem[] = [];
+    let moversScanned = 0;
+    try {
+      const { movers, scannedCount } = await scanForMovers();
+      moversScanned = scannedCount;
+      moverAlerts = movers.map((mover) => ({
+        action: "BUY" as const,
+        symbol: mover.symbol,
+        strategy: mover.suggestedPlay,
+        message: `${mover.symbol} ${mover.direction === "up" ? "+" : ""}${mover.changePct.toFixed(1)}% on ${mover.volumeRatio.toFixed(1)}x volume — ${mover.reasoning}`,
+        urgency: "medium" as const,
+        details: `$${mover.price.toFixed(2)} · Suggested: ${mover.suggestedPlay}`,
+      }));
+    } catch (err) {
+      console.error("Movers scan failed:", err);
+    }
+
+    // Ensure all users with emails are included, even those without positions
+    if (settings) {
+      for (const s of settings) {
+        if (s.alert_email && !allAlertsByUser.has(s.user_id)) {
+          allAlertsByUser.set(s.user_id, { email: s.alert_email, alerts: [] });
+        }
+      }
+    }
+    // Also ensure fallback email gets movers if no user-specific settings exist
+    if (fallbackEmail && allAlertsByUser.size === 0) {
+      allAlertsByUser.set("fallback", { email: fallbackEmail, alerts: [] });
+    }
+
+    // Send emails: combine position alerts with mover alerts per user
+    for (const [userId, { email, alerts }] of allAlertsByUser) {
+      const combined = [...alerts, ...moverAlerts];
+
+      if (combined.length > 0 || new Date().getHours() === 13) {
         // Always send morning briefing (9:30am ET = 13:30 UTC), otherwise only if alerts
-        await sendDailyBriefing(email, alerts);
+        await sendDailyBriefing(email, combined);
       }
 
-      results.push({ userId, email, alertCount: alerts.length });
+      results.push({ userId, email, alertCount: combined.length });
     }
 
     return NextResponse.json({
       success: true,
       usersProcessed: results.length,
+      moversFound: moverAlerts.length,
+      moversScanned,
       results,
     });
   } catch (e) {
