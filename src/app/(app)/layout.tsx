@@ -9,7 +9,7 @@ export default function AppLayout({
   return (
     <>
       <Header />
-      <main className="flex flex-col flex-1 pt-14 pb-16 max-w-2xl mx-auto w-full">
+      <main className="flex flex-col flex-1 pt-16 pb-16 max-w-2xl mx-auto w-full">
         {children}
       </main>
       <BottomNav />

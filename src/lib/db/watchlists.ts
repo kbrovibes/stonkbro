@@ -98,6 +98,18 @@ export async function getDefaultWatchlist(userId: string) {
   return data;
 }
 
+export async function getWatchlistsWithItems(userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("watchlists")
+    .select("*, watchlist_items(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getAllWatchlistSymbols(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase

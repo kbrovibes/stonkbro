@@ -1,39 +1,29 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
-import LogoutButton from "./LogoutButton";
+import ProfileMenu from "./ProfileMenu";
 
 export default async function Header() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const initials = user
+    ? (user.user_metadata?.full_name || user.email || "")
+        .split(/[\s@]/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s: string) => s[0].toUpperCase())
+        .join("")
+    : "";
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-100">
-      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-baseline gap-0.5">
-          <span className="text-xl font-extrabold tracking-tight text-stone-900">stonk</span>
-          <span className="text-2xl font-display text-sky-600 -tracking-wide">BRO</span>
+          <span className="text-2xl font-extrabold tracking-tight text-stone-900">stonk</span>
+          <span className="text-3xl font-display text-sky-600 -tracking-wide leading-none">BRO</span>
         </Link>
         {user && (
-          <div className="flex items-center gap-2">
-            <Link
-              href="/settings"
-              className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-50 active:bg-stone-100 transition-colors"
-              aria-label="Settings"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                <path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.445.443.919.587 1.416l1.473.295a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.416l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.416.587l-.295 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.416-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.416l-1.473-.295A1 1 0 0 1 1 10.68V9.32a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 3.22l1.25.834a6.957 6.957 0 0 1 1.416-.587l.295-1.473ZM13 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" clipRule="evenodd" />
-              </svg>
-            </Link>
-            <LogoutButton />
-            <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center text-xs font-bold text-white">
-              {(user.user_metadata?.full_name || user.email || "")
-                .split(/[\s@]/)
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((s: string) => s[0].toUpperCase())
-                .join("")}
-            </div>
-          </div>
+          <ProfileMenu initials={initials} email={user.email || ""} />
         )}
       </div>
     </header>
