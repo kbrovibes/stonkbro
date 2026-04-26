@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createPositionAction } from "../actions";
+import QuickLog from "./QuickLog";
 
 type Strategy = "PMCC" | "Covered Call" | "Cash-Secured Put" | "The Wheel";
 
@@ -38,6 +39,8 @@ const strategies: { value: Strategy; label: string; description: string }[] = [
   },
 ];
 
+const validStrategies: string[] = strategies.map((s) => s.value);
+
 function defaultLegs(strategy: Strategy): LegInput[] {
   switch (strategy) {
     case "PMCC":
@@ -69,17 +72,172 @@ function legTypeLabel(type: string) {
   return map[type] ?? type;
 }
 
-export default function NewPositionPage() {
+type QuickLogLeg = {
+  type: string;
+  strike: number;
+  expiry: string;
+  price: number;
+  quantity?: number;
+};
+
+/**
+ * Parse query params into pre-fill data.
+ * Supports two formats:
+ *   Simple: ?symbol=AVIS&strategy=Cash-Secured Put&strike=200&expiry=2026-05-30&premium=8.50
+ *   PMCC:   ?symbol=NVDA&strategy=PMCC&leaps_strike=180&leaps_expiry=2027-01-15&leaps_price=42.50&short_strike=220&short_expiry=2026-06-20&short_price=3.20
+ */
+function parseQueryParams(searchParams: URLSearchParams): {
+  symbol: string | null;
+  strategy: Strategy | null;
+  legs: QuickLogLeg[];
+  quantity: number;
+  hasAllRequired: boolean;
+} {
+  const symbol = searchParams.get("symbol")?.toUpperCase() || null;
+  const strategyRaw = searchParams.get("strategy");
+  const strategy =
+    strategyRaw && validStrategies.includes(strategyRaw)
+      ? (strategyRaw as Strategy)
+      : null;
+  const quantity = parseInt(searchParams.get("quantity") || "1") || 1;
+
+  const legs: QuickLogLeg[] = [];
+
+  if (strategy === "PMCC") {
+    // Multi-leg format
+    const leapsStrike = parseFloat(searchParams.get("leaps_strike") || "");
+    const leapsExpiry = searchParams.get("leaps_expiry") || "";
+    const leapsPrice = parseFloat(searchParams.get("leaps_price") || "");
+    const shortStrike = parseFloat(searchParams.get("short_strike") || "");
+    const shortExpiry = searchParams.get("short_expiry") || "";
+    const shortPrice = parseFloat(searchParams.get("short_price") || "");
+
+    if (!isNaN(leapsStrike) && leapsExpiry && !isNaN(leapsPrice)) {
+      legs.push({
+        type: "leaps_call",
+        strike: leapsStrike,
+        expiry: leapsExpiry,
+        price: leapsPrice,
+        quantity,
+      });
+    }
+    if (!isNaN(shortStrike) && shortExpiry && !isNaN(shortPrice)) {
+      legs.push({
+        type: "short_call",
+        strike: shortStrike,
+        expiry: shortExpiry,
+        price: shortPrice,
+        quantity,
+      });
+    }
+  } else if (strategy === "Covered Call") {
+    const strike = parseFloat(searchParams.get("strike") || "");
+    const expiry = searchParams.get("expiry") || "";
+    const premium = parseFloat(searchParams.get("premium") || "");
+    const costBasis = parseFloat(searchParams.get("cost_basis") || "");
+
+    if (!isNaN(costBasis)) {
+      legs.push({
+        type: "shares",
+        strike: 0,
+        expiry: "",
+        price: costBasis,
+        quantity: quantity * 100,
+      });
+    }
+    if (!isNaN(strike) && expiry && !isNaN(premium)) {
+      legs.push({
+        type: "short_call",
+        strike,
+        expiry,
+        price: premium,
+        quantity,
+      });
+    }
+  } else if (strategy === "Cash-Secured Put" || strategy === "The Wheel") {
+    const strike = parseFloat(searchParams.get("strike") || "");
+    const expiry = searchParams.get("expiry") || "";
+    const premium = parseFloat(searchParams.get("premium") || "");
+
+    if (!isNaN(strike) && expiry && !isNaN(premium)) {
+      legs.push({
+        type: "short_put",
+        strike,
+        expiry,
+        price: premium,
+        quantity,
+      });
+    }
+  }
+
+  const hasAllRequired = !!symbol && !!strategy && legs.length > 0;
+
+  return { symbol, strategy, legs, quantity, hasAllRequired };
+}
+
+/** Convert QuickLog legs back to form LegInputs */
+function quickLegsToFormLegs(legs: QuickLogLeg[]): LegInput[] {
+  return legs.map((leg) => ({
+    type: leg.type,
+    strike: leg.strike ? String(leg.strike) : "",
+    expiry: leg.expiry || "",
+    entry_price: leg.price ? String(leg.price) : "",
+    quantity: String(leg.quantity ?? 1),
+  }));
+}
+
+function NewPositionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  const parsed = parseQueryParams(searchParams);
+
+  const [mode, setMode] = useState<"quick" | "form">(
+    parsed.hasAllRequired ? "quick" : "form"
+  );
   const [step, setStep] = useState(1);
-  const [symbol, setSymbol] = useState("");
-  const [strategy, setStrategy] = useState<Strategy | null>(null);
-  const [legs, setLegs] = useState<LegInput[]>([]);
+  const [symbol, setSymbol] = useState(parsed.symbol ?? "");
+  const [strategy, setStrategy] = useState<Strategy | null>(parsed.strategy);
+  const [legs, setLegs] = useState<LegInput[]>(
+    parsed.legs.length > 0
+      ? quickLegsToFormLegs(parsed.legs)
+      : parsed.strategy
+        ? defaultLegs(parsed.strategy)
+        : []
+  );
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
+  // If we have pre-filled data but not enough for quick log, skip to appropriate step
+  useEffect(() => {
+    if (mode === "form" && parsed.symbol && parsed.strategy) {
+      if (parsed.legs.length > 0) {
+        setStep(3); // go to review
+      } else {
+        setStep(2); // go to leg entry
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleEditFromQuickLog() {
+    setMode("form");
+    setStep(3); // Jump to review/notes step since all data is filled
+  }
+
+  // Quick Log mode
+  if (mode === "quick" && parsed.hasAllRequired) {
+    return (
+      <QuickLog
+        symbol={parsed.symbol!}
+        strategy={parsed.strategy!}
+        legs={parsed.legs}
+        onEdit={handleEditFromQuickLog}
+      />
+    );
+  }
+
+  // Full form mode below
   function selectStrategy(s: Strategy) {
     setStrategy(s);
     setLegs(defaultLegs(s));
@@ -92,10 +250,6 @@ export default function NewPositionPage() {
       copy[index] = { ...copy[index], [field]: value };
       return copy;
     });
-  }
-
-  function canProceedStep1() {
-    return symbol.trim().length > 0 && strategy !== null;
   }
 
   function canProceedStep2() {
@@ -421,5 +575,26 @@ export default function NewPositionPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NewPositionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col flex-1 px-4 py-5">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
+            <div className="h-5 w-28 rounded bg-stone-100 animate-pulse" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-10 rounded-lg bg-stone-100 animate-pulse" />
+            <div className="h-24 rounded-xl bg-stone-100 animate-pulse" />
+          </div>
+        </div>
+      }
+    >
+      <NewPositionForm />
+    </Suspense>
   );
 }
