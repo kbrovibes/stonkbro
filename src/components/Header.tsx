@@ -10,8 +10,8 @@ export default async function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-100">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-baseline gap-0.5">
-          <span className="text-lg font-extrabold tracking-tight text-stone-900">stonk</span>
-          <span className="text-xl font-display text-sky-600 -tracking-wide">BRO</span>
+          <span className="text-xl font-extrabold tracking-tight text-stone-900">stonk</span>
+          <span className="text-2xl font-display text-sky-600 -tracking-wide">BRO</span>
         </Link>
         {user && (
           <div className="flex items-center gap-2">
