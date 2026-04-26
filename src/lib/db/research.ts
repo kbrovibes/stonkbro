@@ -1,5 +1,64 @@
 import { createClient } from "@/lib/supabase-server";
 
+export async function createPendingReport(
+  userId: string,
+  trigger: "cron" | "manual" | "on_demand",
+  symbols: string[],
+  mode: string = "deep"
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("research_reports")
+    .insert({
+      user_id: userId,
+      trigger,
+      symbols_analyzed: symbols,
+      report: "",
+      status: "running",
+      mode,
+      opened: false,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function completeReport(reportId: string, report: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("research_reports")
+    .update({ report, status: "completed" })
+    .eq("id", reportId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function failReport(reportId: string, errorMsg: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("research_reports")
+    .update({ report: `Error: ${errorMsg}`, status: "failed" })
+    .eq("id", reportId);
+
+  if (error) throw error;
+}
+
+export async function markReportOpened(reportId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("research_reports")
+    .update({ opened: true })
+    .eq("id", reportId);
+
+  if (error) throw error;
+}
+
+// Legacy compat
 export async function saveResearchReport(
   userId: string,
   trigger: "cron" | "manual" | "on_demand",
@@ -14,6 +73,8 @@ export async function saveResearchReport(
       trigger,
       symbols_analyzed: symbols,
       report,
+      status: "completed",
+      opened: false,
     })
     .select()
     .single();
@@ -22,7 +83,7 @@ export async function saveResearchReport(
   return data;
 }
 
-export async function getRecentReports(userId: string, limit = 10) {
+export async function getRecentReports(userId: string, limit = 20) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("research_reports")
@@ -30,6 +91,32 @@ export async function getRecentReports(userId: string, limit = 10) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getUnopenedReports(userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("research_reports")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("opened", false)
+    .in("status", ["completed", "running"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getReportById(reportId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("research_reports")
+    .select("*")
+    .eq("id", reportId)
+    .single();
 
   if (error) throw error;
   return data;

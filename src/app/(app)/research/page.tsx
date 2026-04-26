@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 
 type TradeSuggestion = {
@@ -165,6 +165,15 @@ function formatInlineMarkdown(text: string): React.ReactNode {
   return <>{parts}</>;
 }
 
+type RecentReport = {
+  id: string;
+  status: "running" | "completed" | "failed";
+  symbols_analyzed: string[];
+  mode: string;
+  created_at: string;
+  opened: boolean;
+};
+
 export default function ResearchPage() {
   const [symbolsInput, setSymbolsInput] = useState(DEFAULT_SYMBOLS);
   const [mode, setMode] = useState<"hybrid" | "deep">("hybrid");
@@ -172,6 +181,91 @@ export default function ResearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [runs, setRuns] = useState<ResearchRun[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
+  const [pollingId, setPollingId] = useState<string | null>(null);
+
+  // Load recent/unopened reports on mount
+  useEffect(() => {
+    fetch("/api/research/status")
+      .then((r) => r.json())
+      .then((d) => setRecentReports(d.reports || []))
+      .catch(() => {});
+  }, []);
+
+  // Poll for running report completion
+  useEffect(() => {
+    if (!pollingId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/research/status?id=${pollingId}`);
+        const data = await res.json();
+        if (data.report?.status === "completed") {
+          clearInterval(interval);
+          setPollingId(null);
+          setLoading(false);
+          const newRun: ResearchRun = {
+            id: data.report.id,
+            report: data.report.report,
+            suggestions: (data.suggestions || []).map((s: TradeSuggestion) => s),
+            symbolsAnalyzed: data.report.symbols_analyzed,
+            timestamp: data.report.created_at,
+            dismissed: new Set(),
+            accepted: new Set(),
+          };
+          setRuns((prev) => [newRun, ...prev]);
+          setExpandedReport(newRun.id);
+          // Mark as opened
+          fetch("/api/research/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reportId: data.report.id }),
+          });
+          // Remove from recent
+          setRecentReports((prev) => prev.filter((r) => r.id !== data.report.id));
+        } else if (data.report?.status === "failed") {
+          clearInterval(interval);
+          setPollingId(null);
+          setLoading(false);
+          setError(data.report.report || "Research failed");
+        }
+      } catch {
+        // Keep polling
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [pollingId]);
+
+  const openRecentReport = useCallback(async (reportId: string) => {
+    try {
+      const res = await fetch(`/api/research/status?id=${reportId}`);
+      const data = await res.json();
+      if (data.report?.status === "completed") {
+        const newRun: ResearchRun = {
+          id: data.report.id,
+          report: data.report.report,
+          suggestions: (data.suggestions || []).map((s: TradeSuggestion) => s),
+          symbolsAnalyzed: data.report.symbols_analyzed,
+          timestamp: data.report.created_at,
+          dismissed: new Set(),
+          accepted: new Set(),
+        };
+        setRuns((prev) => [newRun, ...prev.filter((r) => r.id !== reportId)]);
+        setExpandedReport(newRun.id);
+        // Mark as opened
+        fetch("/api/research/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reportId }),
+        });
+        setRecentReports((prev) => prev.filter((r) => r.id !== reportId));
+      } else if (data.report?.status === "running") {
+        setPollingId(reportId);
+        setLoading(true);
+      }
+    } catch {
+      setError("Failed to load report");
+    }
+  }, []);
 
   const runResearch = useCallback(async () => {
     const symbols = symbolsInput
@@ -200,24 +294,36 @@ export default function ResearchPage() {
       }
 
       const data = await res.json();
-      const newRun: ResearchRun = {
-        id: crypto.randomUUID(),
-        report: data.report,
-        suggestions: data.suggestions,
-        symbolsAnalyzed: data.symbolsAnalyzed,
-        timestamp: data.timestamp,
-        dismissed: new Set(),
-        accepted: new Set(),
-      };
 
-      setRuns((prev) => [newRun, ...prev]);
-      setExpandedReport(newRun.id);
+      if (data.reportId && data.report) {
+        // Completed inline
+        const newRun: ResearchRun = {
+          id: data.reportId,
+          report: data.report,
+          suggestions: data.suggestions,
+          symbolsAnalyzed: data.symbolsAnalyzed,
+          timestamp: data.timestamp,
+          dismissed: new Set(),
+          accepted: new Set(),
+        };
+        setRuns((prev) => [newRun, ...prev]);
+        setExpandedReport(newRun.id);
+        setLoading(false);
+        // Mark as opened
+        fetch("/api/research/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reportId: data.reportId }),
+        });
+      } else if (data.reportId) {
+        // Still running — poll
+        setPollingId(data.reportId);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
       setLoading(false);
     }
-  }, [symbolsInput]);
+  }, [symbolsInput, mode]);
 
   const handleSuggestionAction = (
     runId: string,
@@ -296,6 +402,40 @@ export default function ResearchPage() {
           {loading ? "Analyzing..." : "Run Research"}
         </button>
       </div>
+
+      {/* Recent/unopened reports */}
+      {recentReports.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Recent</h3>
+          <div className="flex flex-col gap-2">
+            {recentReports.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => openRecentReport(r.id)}
+                className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {r.status === "running" ? (
+                    <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  )}
+                  <span className="text-xs font-bold text-stone-900 truncate">
+                    {r.symbols_analyzed.slice(0, 4).join(", ")}
+                    {r.symbols_analyzed.length > 4 && ` +${r.symbols_analyzed.length - 4}`}
+                  </span>
+                  <span className="text-[10px] text-stone-400 shrink-0">
+                    {r.status === "running" ? "running..." : new Date(r.created_at).toLocaleString(undefined, { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </div>
+                <span className="text-[10px] font-medium text-sky-600 shrink-0">
+                  {r.status === "running" ? "In progress" : "View"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
