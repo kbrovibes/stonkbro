@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 
 type TradeSuggestion = {
   symbol: string;
@@ -241,11 +242,19 @@ export default function ResearchPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      <div>
-        <h2 className="text-lg font-extrabold text-stone-900">Deep Research</h2>
-        <p className="text-xs text-stone-500 mt-0.5">
-          AI-powered options analysis with specific trade suggestions
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-stone-900">Deep Research</h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            AI-powered options analysis with specific trade suggestions
+          </p>
+        </div>
+        <Link
+          href="/research/history"
+          className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors"
+        >
+          History
+        </Link>
       </div>
 
       {/* Input */}

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { getSector, getAllSectorTickers } from "@/lib/market/sectors";
+import { saveResearchReport } from "@/lib/db/research";
 import type { QuoteData } from "@/lib/market/yahoo";
 
 export const maxDuration = 120;
@@ -156,12 +158,31 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
       report = responseText;
     }
 
+    // Save to Supabase
+    let reportId: string | null = null;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      try {
+        const saved = await saveResearchReport(
+          user.id,
+          "manual",
+          quotes.map((q) => q.symbol),
+          report
+        );
+        reportId = saved.id;
+      } catch (e) {
+        console.error("Failed to save explosive research:", e);
+      }
+    }
+
     return NextResponse.json({
       report,
       picks,
       sector: sectorName,
       tickersAnalyzed: quotes.map((q) => q.symbol),
       timestamp: new Date().toISOString(),
+      reportId,
     });
   } catch (e) {
     console.error("Explosive API error:", e);

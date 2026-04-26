@@ -1,0 +1,188 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+
+type Suggestion = {
+  id: string;
+  symbol: string;
+  strategy: string;
+  action: string;
+  strike?: number;
+  expiry?: string;
+  premium?: number;
+  reasoning: string;
+  status: string;
+};
+
+type Report = {
+  id: string;
+  trigger: string;
+  symbols: string[];
+  report: string;
+  createdAt: string;
+  suggestions: Suggestion[];
+};
+
+function strategyColor(strategy: string) {
+  switch (strategy) {
+    case "CSP": return "bg-sky-50 text-sky-700";
+    case "CC": return "bg-amber-50 text-amber-700";
+    case "PMCC": return "bg-emerald-50 text-emerald-700";
+    case "AVOID": return "bg-red-50 text-red-700";
+    default: return "bg-stone-100 text-stone-600";
+  }
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "yesterday";
+  return `${days}d ago`;
+}
+
+export default function ResearchHistoryPage() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/research/history")
+      .then((r) => r.json())
+      .then((d) => { setReports(d.reports || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-stone-900">Research History</h2>
+          <p className="text-xs text-stone-500 mt-0.5">{reports.length} past research runs</p>
+        </div>
+        <Link
+          href="/research"
+          className="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800 transition-colors"
+        >
+          New Research
+        </Link>
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse mr-2" />
+          <span className="text-xs text-stone-500">Loading history...</span>
+        </div>
+      )}
+
+      {!loading && reports.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-bold text-stone-900">No research yet</h3>
+          <p className="text-xs text-stone-500 mt-1">Run your first research to see history here.</p>
+          <Link href="/research" className="mt-4 px-4 py-2 rounded-lg bg-stone-900 text-white text-xs font-semibold">
+            Run Research
+          </Link>
+        </div>
+      )}
+
+      {!loading && reports.map((report) => {
+        const isExpanded = expandedId === report.id;
+        return (
+          <div key={report.id} className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+            {/* Header — clickable to expand */}
+            <button
+              onClick={() => setExpandedId(isExpanded ? null : report.id)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-stone-900">
+                    {report.symbols.slice(0, 5).join(", ")}
+                    {report.symbols.length > 5 && ` +${report.symbols.length - 5}`}
+                  </span>
+                  <span className="text-[10px] text-stone-400">{timeAgo(report.createdAt)}</span>
+                  {report.trigger === "cron" && (
+                    <span className="text-[10px] bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full">auto</span>
+                  )}
+                </div>
+                {report.suggestions.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {report.suggestions.slice(0, 4).map((s, i) => (
+                      <span key={i} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${strategyColor(s.strategy)}`}>
+                        {s.symbol} {s.strategy}
+                      </span>
+                    ))}
+                    {report.suggestions.length > 4 && (
+                      <span className="text-[10px] text-stone-400">+{report.suggestions.length - 4}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <svg className={`w-4 h-4 text-stone-400 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {/* Expanded content */}
+            {isExpanded && (
+              <div className="border-t border-stone-100">
+                {/* Suggestions */}
+                {report.suggestions.length > 0 && (
+                  <div className="px-4 py-3 border-b border-stone-100">
+                    <h4 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">Trade Suggestions</h4>
+                    <div className="flex flex-col gap-2">
+                      {report.suggestions.map((s) => (
+                        <div key={s.id} className="flex items-start gap-2 p-2 rounded-lg bg-stone-50">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${strategyColor(s.strategy)}`}>
+                            {s.strategy}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <Link href={`/ticker/${s.symbol}`} className="text-xs font-bold text-stone-900 hover:text-sky-700">
+                                {s.symbol}
+                              </Link>
+                              <span className="text-[10px] text-stone-400">{s.action}</span>
+                              {s.strike && <span className="text-[10px] text-stone-500">${s.strike}</span>}
+                            </div>
+                            <p className="text-[10px] text-stone-500 mt-0.5 leading-relaxed">{s.reasoning}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Full report */}
+                <div className="px-4 py-3 max-h-96 overflow-y-auto">
+                  <h4 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">Full Report</h4>
+                  <div className="text-xs text-stone-700 leading-relaxed whitespace-pre-wrap">
+                    {report.report}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 py-2 border-t border-stone-100 flex items-center justify-between">
+                  <span className="text-[10px] text-stone-400">
+                    {new Date(report.createdAt).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-stone-400">
+                    {report.symbols.length} tickers · {report.suggestions.length} suggestions
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
