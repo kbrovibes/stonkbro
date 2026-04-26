@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
+import { isAdmin } from "@/lib/db/admin";
 import ProfileMenu from "./ProfileMenu";
 
 export default async function Header() {
@@ -15,6 +16,8 @@ export default async function Header() {
         .join("")
     : "";
 
+  const adminFlag = user ? await isAdmin(user.id) : false;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-100">
       <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -23,7 +26,7 @@ export default async function Header() {
           <span className="text-3xl font-display text-sky-600 -tracking-wide leading-none">BRO</span>
         </Link>
         {user && (
-          <ProfileMenu initials={initials} email={user.email || ""} />
+          <ProfileMenu initials={initials} email={user.email || ""} isAdmin={adminFlag} />
         )}
       </div>
     </header>

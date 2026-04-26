@@ -1,10 +1,12 @@
 /**
  * Unified AI provider abstraction.
  * Routes to Claude or Gemini based on config, with auto-fallback on rate limits.
+ * Tracks token usage per call.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getDefaultAIProvider, trackTokenUsage } from "@/lib/db/admin";
 
 export type AIProvider = "claude" | "gemini";
 
@@ -12,21 +14,22 @@ export type GenerateOptions = {
   prompt: string;
   systemPrompt?: string;
   maxTokens?: number;
-  provider?: AIProvider; // Override per-call
+  provider?: AIProvider;
+  feature?: string;
+  userId?: string;
 };
 
 export type GenerateResult = {
   text: string;
   provider: AIProvider;
-  fallback: boolean; // true if we fell back to the other provider
+  fallback: boolean;
+  inputTokens: number;
+  outputTokens: number;
 };
 
-function getDefaultProvider(): AIProvider {
-  // Can be overridden by env var for global default
-  return (process.env.DEFAULT_AI_PROVIDER as AIProvider) || "claude";
-}
+type RawResult = { text: string; inputTokens: number; outputTokens: number; model: string };
 
-async function callClaude(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<string> {
+async function callClaude(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
   const client = new Anthropic();
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -34,10 +37,15 @@ async function callClaude(prompt: string, systemPrompt?: string, maxTokens = 400
     ...(systemPrompt ? { system: systemPrompt } : {}),
     messages: [{ role: "user", content: prompt }],
   });
-  return response.content[0].type === "text" ? response.content[0].text : "";
+  return {
+    text: response.content[0].type === "text" ? response.content[0].text : "",
+    inputTokens: response.usage?.input_tokens ?? 0,
+    outputTokens: response.usage?.output_tokens ?? 0,
+    model: "claude-sonnet-4-20250514",
+  };
 }
 
-async function callGemini(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<string> {
+async function callGemini(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -49,7 +57,13 @@ async function callGemini(prompt: string, systemPrompt?: string, maxTokens = 400
   });
 
   const result = await model.generateContent(prompt);
-  return result.response.text();
+  const meta = result.response.usageMetadata;
+  return {
+    text: result.response.text(),
+    inputTokens: meta?.promptTokenCount ?? 0,
+    outputTokens: meta?.candidatesTokenCount ?? 0,
+    model: "gemini-2.5-flash",
+  };
 }
 
 function isRateLimitError(e: unknown): boolean {
@@ -66,37 +80,69 @@ function isRateLimitError(e: unknown): boolean {
 
 /**
  * Generate text using the configured AI provider with auto-fallback.
- *
- * Flow:
- * 1. Try the preferred provider
- * 2. If rate limited, automatically try the other provider
- * 3. If both fail, throw the original error
  */
 export async function generateText(options: GenerateOptions): Promise<GenerateResult> {
-  const { prompt, systemPrompt, maxTokens } = options;
-  const preferred = options.provider || getDefaultProvider();
+  const { prompt, systemPrompt, maxTokens, feature, userId } = options;
+
+  // Resolve provider: explicit override > DB config > env var > claude
+  let preferred: AIProvider;
+  if (options.provider) {
+    preferred = options.provider;
+  } else {
+    try {
+      preferred = await getDefaultAIProvider();
+    } catch {
+      preferred = (process.env.DEFAULT_AI_PROVIDER as AIProvider) || "claude";
+    }
+  }
+
   const fallbackProvider: AIProvider = preferred === "claude" ? "gemini" : "claude";
 
   // Try preferred provider
   try {
-    const text = preferred === "claude"
+    const raw = preferred === "claude"
       ? await callClaude(prompt, systemPrompt, maxTokens)
       : await callGemini(prompt, systemPrompt, maxTokens);
-    return { text, provider: preferred, fallback: false };
+
+    // Fire-and-forget token tracking
+    if (feature) {
+      trackTokenUsage({
+        userId,
+        provider: preferred,
+        feature,
+        inputTokens: raw.inputTokens,
+        outputTokens: raw.outputTokens,
+        model: raw.model,
+        fallback: false,
+      });
+    }
+
+    return { text: raw.text, provider: preferred, fallback: false, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
   } catch (e) {
     console.error(`${preferred} error:`, e);
 
-    // If rate limited, try fallback
     if (isRateLimitError(e)) {
       console.log(`${preferred} rate limited, falling back to ${fallbackProvider}`);
       try {
-        const text = fallbackProvider === "claude"
+        const raw = fallbackProvider === "claude"
           ? await callClaude(prompt, systemPrompt, maxTokens)
           : await callGemini(prompt, systemPrompt, maxTokens);
-        return { text, provider: fallbackProvider, fallback: true };
+
+        if (feature) {
+          trackTokenUsage({
+            userId,
+            provider: fallbackProvider,
+            feature,
+            inputTokens: raw.inputTokens,
+            outputTokens: raw.outputTokens,
+            model: raw.model,
+            fallback: true,
+          });
+        }
+
+        return { text: raw.text, provider: fallbackProvider, fallback: true, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
       } catch (fallbackError) {
         console.error(`${fallbackProvider} fallback also failed:`, fallbackError);
-        // Throw original error since both failed
         throw e;
       }
     }

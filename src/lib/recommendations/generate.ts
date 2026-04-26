@@ -78,6 +78,7 @@ ${condensedSignals}
 
 Now analyze these signals and pick your 5 best ${theme.replace("_", " ")} candidates. Return ONLY the JSON array, wrapped in a json code fence.`,
     maxTokens: 3000,
+    feature: "recommendations",
   });
 
   const jsonMatch = result.text.match(/```json\s*([\s\S]*?)```/);

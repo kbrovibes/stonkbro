@@ -154,7 +154,8 @@ function parseResponse(text: string): ResearchResult {
 export async function runDeepResearch(
   symbols: string[],
   quotes: QuoteData[],
-  provider?: AIProvider
+  provider?: AIProvider,
+  userId?: string
 ): Promise<ResearchResult> {
   const prompt = buildPrompt(quotes);
 
@@ -162,6 +163,8 @@ export async function runDeepResearch(
     prompt,
     maxTokens: 8192,
     provider,
+    feature: "research",
+    userId,
   });
 
   if (!result.text) {

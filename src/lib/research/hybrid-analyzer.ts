@@ -21,7 +21,8 @@ export type HybridResult = {
 export async function runHybridResearch(
   symbols: string[],
   quotes: QuoteData[],
-  provider?: AIProvider
+  provider?: AIProvider,
+  userId?: string
 ): Promise<HybridResult> {
   // Step 1: Compute all technicals in code (no AI needed)
   const technicals = await analyzeMultiple(symbols, quotes);
@@ -69,6 +70,8 @@ Be specific. Reference the actual RSI, MACD, volume numbers in your reasoning. N
     prompt: promptText,
     maxTokens: 2000,
     provider,
+    feature: "hybrid_research",
+    userId,
   });
 
   const responseText = result.text;

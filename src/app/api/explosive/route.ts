@@ -113,6 +113,7 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
     const aiResult = await generateText({
       prompt,
       maxTokens: 4096,
+      feature: "explosive",
     });
 
     const responseText = aiResult.text;
