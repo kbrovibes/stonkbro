@@ -1,62 +1,112 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { SECTORS } from "@/lib/market/sectors";
 
-const colorMap: Record<string, { bg: string; border: string; text: string; tag: string }> = {
-  violet: { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", tag: "bg-violet-100 text-violet-700" },
-  sky: { bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700", tag: "bg-sky-100 text-sky-700" },
-  indigo: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700", tag: "bg-indigo-100 text-indigo-700" },
-  emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", tag: "bg-emerald-100 text-emerald-700" },
-  amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", tag: "bg-amber-100 text-amber-700" },
-  rose: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", tag: "bg-rose-100 text-rose-700" },
-  lime: { bg: "bg-lime-50", border: "border-lime-200", text: "text-lime-700", tag: "bg-lime-100 text-lime-700" },
+const colorMap: Record<string, { accent: string; badge: string; dot: string }> = {
+  violet: { accent: "text-violet-600", badge: "bg-violet-50 text-violet-600", dot: "bg-violet-500" },
+  sky: { accent: "text-sky-600", badge: "bg-sky-50 text-sky-600", dot: "bg-sky-500" },
+  indigo: { accent: "text-indigo-600", badge: "bg-indigo-50 text-indigo-600", dot: "bg-indigo-500" },
+  emerald: { accent: "text-emerald-600", badge: "bg-emerald-50 text-emerald-600", dot: "bg-emerald-500" },
+  amber: { accent: "text-amber-600", badge: "bg-amber-50 text-amber-600", dot: "bg-amber-500" },
+  rose: { accent: "text-rose-600", badge: "bg-rose-50 text-rose-600", dot: "bg-rose-500" },
+  lime: { accent: "text-lime-600", badge: "bg-lime-50 text-lime-600", dot: "bg-lime-500" },
 };
 
 export default function SectorsPage() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
   return (
-    <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+    <div className="flex flex-col flex-1 px-4 py-5 gap-4">
       <div>
-        <h2 className="text-lg font-extrabold text-stone-900">Sector Discovery</h2>
+        <h2 className="text-lg font-bold text-stone-900">Sector Discovery</h2>
         <p className="text-xs text-stone-500 mt-0.5">
           Find explosive stocks by sector theme
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         {SECTORS.map((sector) => {
           const colors = colorMap[sector.color] ?? colorMap.violet;
+          const isExpanded = expanded === sector.slug;
+
           return (
-            <Link
+            <div
               key={sector.slug}
-              href={`/sectors/${sector.slug}`}
-              className={`rounded-xl border ${colors.border} ${colors.bg} p-4 hover:shadow-sm transition-shadow`}
+              className={`rounded-xl bg-white shadow-sm overflow-hidden transition-all ${
+                isExpanded ? "col-span-2" : ""
+              }`}
             >
-              <div className="flex items-center justify-between mb-1.5">
-                <h3 className={`text-sm font-bold ${colors.text}`}>
-                  {sector.name}
-                </h3>
-                <span className="text-[10px] font-semibold text-stone-400 bg-white/60 px-2 py-0.5 rounded-full">
-                  {sector.tickers.length} tickers
-                </span>
-              </div>
-              <p className="text-xs text-stone-600 leading-relaxed mb-3">
-                {sector.description}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {sector.catalysts.slice(0, 3).map((catalyst) => (
-                  <span
-                    key={catalyst}
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colors.tag}`}
+              {/* Card face */}
+              <button
+                onClick={() => setExpanded(isExpanded ? null : sector.slug)}
+                className="w-full text-left px-3 py-3 hover:bg-stone-50 active:bg-sky-50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />
+                  <h3 className={`text-xs font-bold ${colors.accent} leading-tight`}>
+                    {sector.name}
+                  </h3>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-stone-400 font-medium">
+                    {sector.tickers.length} tickers
+                  </span>
+                  <svg
+                    className={`w-3 h-3 text-stone-300 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
                   >
-                    {catalyst}
-                  </span>
-                ))}
-                {sector.catalysts.length > 3 && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">
-                    +{sector.catalysts.length - 3} more
-                  </span>
-                )}
-              </div>
-            </Link>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* Expanded detail */}
+              {isExpanded && (
+                <div className="px-3 pb-3 border-t border-stone-100/80">
+                  <p className="text-[11px] text-stone-500 leading-relaxed mt-2 mb-2.5">
+                    {sector.description}
+                  </p>
+
+                  {/* Catalyst badges */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {sector.catalysts.map((c) => (
+                      <span
+                        key={c}
+                        className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${colors.badge}`}
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Ticker badges */}
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {sector.tickers.map((t) => (
+                      <Link
+                        key={t}
+                        href={`/ticker/${t}`}
+                        className="text-[10px] font-bold text-sky-600 hover:text-sky-800 bg-stone-50 hover:bg-stone-100 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        {t}
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Explore link */}
+                  <Link
+                    href={`/sectors/${sector.slug}`}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                  >
+                    Explore sector
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
