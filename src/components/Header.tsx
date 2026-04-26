@@ -13,11 +13,16 @@ export default async function Header() {
           stonkbro
         </Link>
         {user && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-stone-400 hidden sm:block">
-              {user.email}
-            </span>
+          <div className="flex items-center gap-2">
             <LogoutButton />
+            <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center text-xs font-bold text-white">
+              {(user.user_metadata?.full_name || user.email || "")
+                .split(/[\s@]/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((s: string) => s[0].toUpperCase())
+                .join("")}
+            </div>
           </div>
         )}
       </div>
