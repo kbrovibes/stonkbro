@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.16.0 — Morning Briefing Email
+
+- Comprehensive pre-market email digest with 5 sections: action alerts, expiring positions, earnings today, market movers, AI picks
+- Dedicated cron endpoint: `/api/cron/morning-briefing` — schedule at 9:00 AM ET
+- Rich HTML email template with color-coded sections and urgency badges
+- Integrates smart roll advisor alerts + trailing stop signals + position alerts
+- Pulls latest AI recommendations from Supabase
+
 ## v0.15.0 — Options Flow Scanner
 
 - Unusual options activity detection across watchlist + sector tickers
