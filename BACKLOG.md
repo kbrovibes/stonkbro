@@ -9,6 +9,7 @@
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation
 - [ ] **34 — Scoring Engine** · Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`
+- [ ] **47 — Force Email Test Button** · Manual trigger button to send research email briefing for e2e testing
 
 ## 📋 P2 — Do Next
 
