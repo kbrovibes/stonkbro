@@ -3,9 +3,9 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
-## ✅ P1 — Do First
-
 - [ ] **31 — Tradier Live Data Activation** · Verify sandbox token, swap mock→real across all routes, add error handling for rate limits
+
+## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation
 - [ ] **34 — Scoring Engine** · Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`
