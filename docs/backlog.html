@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>stonkbro — Backlog Status</title>
+  <meta name="description" content="Live backlog status for stonkbro: what's shipped, what's next, what's in progress.">
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-alt: #f5f5f4;
+      --border: #e7e5e4;
+      --text: #1c1917;
+      --text-muted: #78716c;
+      --accent: #16a34a;
+      --accent-light: #dcfce7;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --sky: #0284c7;
+      --sky-light: #e0f2fe;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,250,249,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); padding: 0 2rem;
+    }
+    nav .inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; height: 56px;
+    }
+    nav .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; color: #15803d; text-decoration: none; }
+    nav .links { display: flex; gap: 1.5rem; }
+    nav .links a { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+    nav .links a:hover { color: var(--text); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    .hero { text-align: center; padding: 2rem 0 2.5rem; }
+    .hero h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .hero .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem; text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat .num { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 0.25rem; }
+    .stat.green .num { color: var(--accent); }
+    .stat.blue .num { color: var(--blue); }
+    .stat.amber .num { color: var(--amber); }
+
+    .section { margin-bottom: 2.5rem; }
+    .section-header {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-header h2 { font-size: 1rem; font-weight: 700; }
+    .section-header .count {
+      font-size: 0.7rem; font-weight: 600; background: var(--surface-alt);
+      padding: 2px 8px; border-radius: 999px; color: var(--text-muted);
+    }
+
+    .item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+      margin-bottom: 0.625rem; box-shadow: var(--shadow);
+      transition: border-color 0.15s;
+    }
+    .item:hover { border-color: #d6d3d1; }
+    .item-header { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .item-number {
+      font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+      background: var(--surface-alt); padding: 1px 6px; border-radius: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .item-title { font-weight: 600; font-size: 0.9375rem; }
+    .item-desc { color: var(--text-muted); font-size: 0.8125rem; margin-top: 0.25rem; }
+    .item-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; display: inline-block; }
+
+    .badge {
+      font-size: 0.625rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-progress { background: var(--amber-light); color: var(--amber); }
+    .badge-p1 { background: var(--red-light); color: var(--red); }
+    .badge-p2 { background: var(--blue-light); color: var(--blue); }
+    .badge-done { background: var(--accent-light); color: var(--accent); }
+    .badge-idea { background: var(--purple-light); color: var(--purple); }
+
+    .removed-item {
+      padding: 0.5rem 0; border-bottom: 1px solid var(--surface-alt);
+      font-size: 0.8125rem;
+    }
+    .removed-item:last-child { border-bottom: none; }
+    .removed-title { text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
+    .removed-reason { color: var(--text-muted); font-size: 0.75rem; }
+
+    .footer {
+      text-align: center; padding: 2rem 0; color: var(--text-muted);
+      font-size: 0.75rem; border-top: 1px solid var(--border);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+
+    .empty { color: var(--text-muted); font-size: 0.875rem; font-style: italic; padding: 1rem 0; }
+
+    @media (max-width: 600px) {
+      .container { padding: 1rem 1rem 3rem; }
+      .stats { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .stat { padding: 0.75rem; }
+      .stat .num { font-size: 1.5rem; }
+      .hero h1 { font-size: 1.375rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="inner">
+      <a class="logo" href="index.html">stonkbro</a>
+      <div class="links">
+        <a href="index.html">Home</a>
+        <a href="backlog.html" style="color: var(--text); font-weight: 600;">Backlog</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Backlog Status</h1>
+      <p class="subtitle">Updated Sunday, April 26, 2026</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat green">
+        <div class="num">31</div>
+        <div class="label">Shipped</div>
+      </div>
+      <div class="stat amber">
+        <div class="num">0</div>
+        <div class="label">Building</div>
+      </div>
+      <div class="stat blue">
+        <div class="num">16</div>
+        <div class="label">Queued</div>
+      </div>
+    </div>
+
+    
+
+    
+    <div class="section">
+      <div class="section-header">
+        <h2>Recently Shipped</h2>
+        <span class="count">5 of 31</span>
+      </div>
+      
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#47</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Force Email Test Button</span>
+      </div>
+      <p class="item-desc">Manual trigger button to send research email briefing for e2e testing</p>
+      <span class="item-date">2026-04-26</span>
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#1</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">App Shell &amp; Navigation</span>
+      </div>
+      <p class="item-desc">Layout, bottom nav, empty state pages</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#2</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Discovery Dashboard</span>
+      </div>
+      <p class="item-desc">Ranked watchlist with live Yahoo Finance data</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#3</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Ticker Detail</span>
+      </div>
+      <p class="item-desc">Live quotes, SMAs, volume, 52w range, earnings</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#4</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">PMCC Scanner</span>
+      </div>
+      <p class="item-desc">Real options chain scanning for PMCC setups</p>
+      
+    </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>P1 — Up Next</h2>
+        <span class="count">4</span>
+      </div>
+      
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#31</span>
+        <span class="badge badge-p1">P1</span>
+        <span class="item-title">Tradier Live Data Activation</span>
+      </div>
+      <p class="item-desc">Verify sandbox token, swap mock→real across all routes, add error handling for rate limits</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#32</span>
+        <span class="badge badge-p1">P1</span>
+        <span class="item-title">Push Notifications</span>
+      </div>
+      <p class="item-desc">Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#33</span>
+        <span class="badge badge-p1">P1</span>
+        <span class="item-title">News &amp; Sentiment Pipeline</span>
+      </div>
+      <p class="item-desc">Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#34</span>
+        <span class="badge badge-p1">P1</span>
+        <span class="item-title">Scoring Engine</span>
+      </div>
+      <p class="item-desc">Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`</p>
+      
+    </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>P2 — Future</h2>
+        <span class="count">12</span>
+      </div>
+      
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#35</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Smart Roll Advisor</span>
+      </div>
+      <p class="item-desc">Auto-detect when to roll options: DTE &lt; 7, delta drift, profit &gt; 50% of max, approaching earnings — surface on Today page</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#36</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">AI Earnings Plays</span>
+      </div>
+      <p class="item-desc">Pre-earnings strategy generator: IV rank check, straddle pricing, suggest CSP/iron condor with risk/reward, flag on earnings calendar</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#37</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Options Flow Scanner</span>
+      </div>
+      <p class="item-desc">Unusual activity detection (large blocks, OI spikes, put/call ratio extremes) for watchlist + sector tickers</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#38</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Trade Journal &amp; Analytics</span>
+      </div>
+      <p class="item-desc">Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#39</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Broker API Integration</span>
+      </div>
+      <p class="item-desc">Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#40</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">One-Click Order Staging</span>
+      </div>
+      <p class="item-desc">From any AI suggestion → pre-filled order form in broker, confirm and send</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#41</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Rules-Based Automation</span>
+      </div>
+      <p class="item-desc">User-defined rules: auto-roll at 50% profit, close at 21 DTE, defend at 2x premium lost, trailing stop triggers</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#42</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Backtesting Engine</span>
+      </div>
+      <p class="item-desc">Test PMCC/CSP strategies against historical options data, validate scoring model</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#43</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Portfolio Greeks Dashboard</span>
+      </div>
+      <p class="item-desc">Aggregate delta/theta/vega exposure across all positions, sector correlation matrix</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#44</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Morning Briefing Email</span>
+      </div>
+      <p class="item-desc">Daily pre-market digest: overnight movers, earnings today, expiring positions, AI picks — one email to start the day</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#45</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Watchlist Price Alerts</span>
+      </div>
+      <p class="item-desc">Set price/volume thresholds on watchlist tickers, trigger push/email when hit</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#46</span>
+        <span class="badge badge-p2">P2</span>
+        <span class="item-title">Position Health Scores</span>
+      </div>
+      <p class="item-desc">Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges</p>
+      
+    </div>
+    </div>
+
+    
+
+    <div class="section">
+      <div class="section-header">
+        <h2>All Shipped</h2>
+        <span class="count">31</span>
+      </div>
+      
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#47</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Force Email Test Button</span>
+      </div>
+      <p class="item-desc">Manual trigger button to send research email briefing for e2e testing</p>
+      <span class="item-date">2026-04-26</span>
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#1</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">App Shell &amp; Navigation</span>
+      </div>
+      <p class="item-desc">Layout, bottom nav, empty state pages</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#2</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Discovery Dashboard</span>
+      </div>
+      <p class="item-desc">Ranked watchlist with live Yahoo Finance data</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#3</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Ticker Detail</span>
+      </div>
+      <p class="item-desc">Live quotes, SMAs, volume, 52w range, earnings</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#4</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">PMCC Scanner</span>
+      </div>
+      <p class="item-desc">Real options chain scanning for PMCC setups</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#5</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Options Suggestions</span>
+      </div>
+      <p class="item-desc">On-demand CSP, CC, PMCC recs with live data</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#6</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Deep Research Engine</span>
+      </div>
+      <p class="item-desc">Claude AI analysis with trade suggestions</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#7</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Watchlist Management</span>
+      </div>
+      <p class="item-desc">Create/manage named watchlists, Supabase persistence</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#8</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Position Tracking</span>
+      </div>
+      <p class="item-desc">Log trades with legs, track status</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#9</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Portfolio (Live)</span>
+      </div>
+      <p class="item-desc">Real P&amp;L from Supabase positions + Yahoo quotes</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#10</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">PMCC Analyzer (Live)</span>
+      </div>
+      <p class="item-desc">Real options chains for PMCC setup analysis</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#11</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Covered Call Optimizer (Live)</span>
+      </div>
+      <p class="item-desc">Real chains for user positions + custom ticker</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#12</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Wheel Visualizer (Live)</span>
+      </div>
+      <p class="item-desc">Real cycle data from Supabase positions</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#13</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Income Dashboard (Live)</span>
+      </div>
+      <p class="item-desc">Real premium income from position data</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#14</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Trade Signals</span>
+      </div>
+      <p class="item-desc">Live roll/close/profit alerts against real positions</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#15</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Cron Alerts (Real Data)</span>
+      </div>
+      <p class="item-desc">Reads all users' positions + watchlists from Supabase</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#16</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Google Auth</span>
+      </div>
+      <p class="item-desc">Supabase auth with Google OAuth</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#17</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Sector Discovery</span>
+      </div>
+      <p class="item-desc">Browse 8 curated sectors with 70+ tickers</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#18</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Explosive Stock Finder</span>
+      </div>
+      <p class="item-desc">Claude AI analyzes sectors for 10x potential with entry strategies</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#19</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Trailing Stop System</span>
+      </div>
+      <p class="item-desc">Per-position trailing %, peak price tracking, drawdown alerts</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#20</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Risk Dashboard</span>
+      </div>
+      <p class="item-desc">Portfolio-level trailing stops, color-coded risk, drawdown tracking</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#21</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">PMCC Picks Auto-Scanner</span>
+      </div>
+      <p class="item-desc">Sector-wide scan ranked by monthly income / capital efficiency</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#22</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Today/Plays Dashboard</span>
+      </div>
+      <p class="item-desc">Explosive movers, premium plays, earnings ahead, position alerts</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#23</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">QuickLog Position Entry</span>
+      </div>
+      <p class="item-desc">One-tap trade logging from AI suggestions with URL pre-fill</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#24</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Daily Recommendations Engine</span>
+      </div>
+      <p class="item-desc">3 AI prompt themes, cron 4x daily, cached in Supabase</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#25</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Earnings Calendar</span>
+      </div>
+      <p class="item-desc">Full calendar with Tradier data, grouped by week, position cross-ref</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#26</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Market Movers Detector</span>
+      </div>
+      <p class="item-desc">Universe-wide scan for 5%+ moves / 2.5x volume spikes</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#27</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Resend Email Alerts</span>
+      </div>
+      <p class="item-desc">Email briefings via Resend with movers + signals sections</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#28</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Alert Preferences</span>
+      </div>
+      <p class="item-desc">iOS-style toggles, frequency selector, AI provider choice, auto-save</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#29</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">PWA Manifest &amp; Icons</span>
+      </div>
+      <p class="item-desc">Web app manifest, home screen install, generated PNG icons</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#30</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Hybrid Research Mode</span>
+      </div>
+      <p class="item-desc">Combined fast + deep research with background persistence</p>
+      
+    </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-header">
+        <h2>Removed</h2>
+        <span class="count">3</span>
+      </div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1.25rem;">
+        
+          <div class="removed-item">
+            <span class="removed-title">Paper Trading Mode</span>
+            <br><span class="removed-reason">Deprioritized: trades real capital; simulated P&amp;L adds friction without insight</span>
+          </div>
+          <div class="removed-item">
+            <span class="removed-title">Position Persistence from Research</span>
+            <br><span class="removed-reason">Superseded by QuickLog (#23)</span>
+          </div>
+          <div class="removed-item">
+            <span class="removed-title">Portfolio Risk Dashboard (old scope)</span>
+            <br><span class="removed-reason">Merged into Risk Dashboard (#20) + future Portfolio Greeks (#43)</span>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>stonkbro backlog &middot; auto-generated from <a href="https://github.com/kbrovibes/stonkbro/blob/main/BACKLOG.md">BACKLOG.md</a></p>
+  </div>
+</body>
+</html>
