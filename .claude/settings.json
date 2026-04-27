@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"BACKLOG.md\"; then node scripts/generate-backlog-page.js && git add docs/backlog.html; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}
