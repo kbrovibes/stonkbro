@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.12.0 — Scoring Engine
+
+- Quantitative stock scoring engine in `src/lib/scoring/` — scores 0-100 across 4 dimensions (25 pts each)
+- Volume score: unusual activity detection via volume ratio thresholds
+- Momentum score: price change magnitude + direction + volume confluence
+- Technical score: SMA positioning, 52-week range placement, uptrend confirmation
+- Earnings proximity score: catalyst timing boost (imminent earnings = max score)
+- Letter grades A-F based on composite score
+- Scanner API now returns scored + sorted results with full breakdown
+
 ## v0.11.0 — Tradier Live Data Activation
 
 - Centralized Tradier API client (`tradier-client.ts`) — single source for base URL, auth headers, and rate limit tracking

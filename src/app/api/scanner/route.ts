@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getQuotes } from "@/lib/market/yahoo";
+import { scoreStocks } from "@/lib/scoring";
 
 // Default watchlist for PMCC candidates — high-beta, liquid options
 const DEFAULT_TICKERS = [
@@ -15,16 +16,9 @@ export async function GET(request: Request) {
 
   try {
     const quotes = await getQuotes(tickers);
+    const scored = scoreStocks(quotes);
 
-    // Sort by volume ratio (explosive potential proxy)
-    const sorted = quotes.sort((a, b) => {
-      // Simple scoring: volume ratio + momentum + MA position
-      const scoreA = a.volumeRatio * 20 + (a.changePct > 0 ? 10 : 0) + (a.above50sma ? 15 : 0) + (a.above200sma ? 10 : 0);
-      const scoreB = b.volumeRatio * 20 + (b.changePct > 0 ? 10 : 0) + (b.above50sma ? 15 : 0) + (b.above200sma ? 10 : 0);
-      return scoreB - scoreA;
-    });
-
-    return NextResponse.json({ quotes: sorted });
+    return NextResponse.json({ quotes: scored });
   } catch (e) {
     console.error("Scanner error:", e);
     return NextResponse.json({ error: "Failed to fetch quotes" }, { status: 500 });
