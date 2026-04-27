@@ -5,6 +5,7 @@
 
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
+- [ ] **48 — Auto-Refresh Ticker Data** · Poll quotes every 60s on pages with live ticker data during market hours
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
 - [ ] **48 — Top CSP Picks Page** · Standalone page showing best CSP options today grouped by premium, return, with strike/DTE suggestions and rationale; auto-refresh every 4 hours
 
