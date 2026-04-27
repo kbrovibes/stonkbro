@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.13.0 — Smart Roll Advisor
+
+- Multi-factor roll detection: combines DTE urgency + profit capture + strike proximity + earnings timing into a 0-100 roll score
+- Specific roll direction recommendations ("roll up and out to $X with 30-45 DTE")
+- Smart roll alerts replace basic ROLL signals in the signals pipeline — no duplicate alerts
+- Roll recommendations surfaced on Today page via existing Position Alerts section
+- API returns both alerts and detailed `rollRecommendations` array with full scoring breakdown
+
 ## v0.12.0 — Scoring Engine
 
 - Quantitative stock scoring engine in `src/lib/scoring/` — scores 0-100 across 4 dimensions (25 pts each)

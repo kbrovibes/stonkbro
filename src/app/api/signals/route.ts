@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { getPositions } from "@/lib/db/positions";
 import { getQuotes } from "@/lib/market/yahoo";
 import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
+import { analyzeRollOpportunities, rollRecommendationsToAlerts } from "@/lib/options/roll-advisor";
 
 export const dynamic = "force-dynamic";
 
@@ -43,11 +44,35 @@ export async function GET() {
     const quotes = await getQuotes(symbols);
     const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
 
-    // Generate alerts
-    const alerts = generateAlerts(tracked, quoteMap);
+    // Generate basic alerts
+    const basicAlerts = generateAlerts(tracked, quoteMap);
+
+    // Generate smart roll recommendations
+    const rollRecs = analyzeRollOpportunities(tracked, quoteMap);
+    const rollAlerts = rollRecommendationsToAlerts(rollRecs);
+
+    // Merge: smart roll alerts replace basic ROLL alerts for the same symbol+strike
+    const rollKeys = new Set(rollRecs.map((r) => `${r.symbol}:${r.strike}`));
+    const filteredBasic = basicAlerts.filter((a) => {
+      if (a.action !== "ROLL") return true;
+      // Check if a smart roll covers this symbol+strike
+      const strikeMatch = a.message.match(/\$(\d+)/);
+      if (strikeMatch) {
+        const key = `${a.symbol}:${parseInt(strikeMatch[1])}`;
+        if (rollKeys.has(key)) return false; // smart roll replaces it
+      }
+      return true;
+    });
+
+    const allAlerts = [...filteredBasic, ...rollAlerts];
+
+    // Sort by urgency
+    const urgencyOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    allAlerts.sort((a, b) => (urgencyOrder[a.urgency] ?? 2) - (urgencyOrder[b.urgency] ?? 2));
 
     return NextResponse.json({
-      alerts,
+      alerts: allAlerts,
+      rollRecommendations: rollRecs,
       positionCount: activePositions.length,
       symbolsChecked: symbols.length,
     });
