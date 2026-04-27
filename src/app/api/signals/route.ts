@@ -4,6 +4,7 @@ import { getPositions } from "@/lib/db/positions";
 import { getQuotes } from "@/lib/market/yahoo";
 import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
 import { analyzeRollOpportunities, rollRecommendationsToAlerts } from "@/lib/options/roll-advisor";
+import { calculateHealth, type PositionHealth } from "@/lib/options/health-score";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,11 @@ export async function GET() {
     const quotes = await getQuotes(symbols);
     const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
 
+    // Calculate health scores per position
+    const healthScores: PositionHealth[] = tracked.map((pos) =>
+      calculateHealth(pos, quoteMap.get(pos.symbol) ?? null)
+    );
+
     // Generate basic alerts
     const basicAlerts = generateAlerts(tracked, quoteMap);
 
@@ -73,6 +79,7 @@ export async function GET() {
     return NextResponse.json({
       alerts: allAlerts,
       rollRecommendations: rollRecs,
+      healthScores,
       positionCount: activePositions.length,
       symbolsChecked: symbols.length,
     });

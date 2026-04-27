@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.17.0 — Position Health Scores
+
+- Per-position health metric (0-100) across 3 dimensions: DTE urgency (40%), strike risk (35%), profit progress (25%)
+- Color-coded status: healthy (emerald), watch (amber), danger (orange), critical (red)
+- DTE scoring: 30+ DTE = healthy, 7-14 = caution, < 3 = danger
+- Strike risk: OTM distance tracking, ITM detection
+- Profit tracking: % of premium captured vs entry
+- Health scores included in `/api/signals` response alongside alerts
+- Module: `src/lib/options/health-score.ts` — pure functions, fully testable
+
 ## v0.16.0 — Morning Briefing Email
 
 - Comprehensive pre-market email digest with 5 sections: action alerts, expiring positions, earnings today, market movers, AI picks
