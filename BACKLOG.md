@@ -3,13 +3,14 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
+- [ ] **35 — Smart Roll Advisor** · Auto-detect when to roll options: DTE < 7, delta drift, profit > 50% of max, approaching earnings — surface on Today page
+
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
 
 ## 📋 P2 — Do Next
 
-- [ ] **35 — Smart Roll Advisor** · Auto-detect when to roll options: DTE < 7, delta drift, profit > 50% of max, approaching earnings — surface on Today page
 - [ ] **36 — AI Earnings Plays** · Pre-earnings strategy generator: IV rank check, straddle pricing, suggest CSP/iron condor with risk/reward, flag on earnings calendar
 - [ ] **37 — Options Flow Scanner** · Unusual activity detection (large blocks, OI spikes, put/call ratio extremes) for watchlist + sector tickers
 - [ ] **38 — Trade Journal & Analytics** · Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade
