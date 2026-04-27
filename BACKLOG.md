@@ -3,8 +3,6 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
-- [ ] **31 — Tradier Live Data Activation** · Verify sandbox token, swap mock→real across all routes, add error handling for rate limits
-
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation
@@ -63,6 +61,7 @@
 - [x] **28 — Alert Preferences** · iOS-style toggles, frequency selector, AI provider choice, auto-save
 - [x] **29 — PWA Manifest & Icons** · Web app manifest, home screen install, generated PNG icons
 - [x] **30 — Hybrid Research Mode** · Combined fast + deep research with background persistence
+- [x] **31 — Tradier Live Data Activation** · Centralized client, env-aware URLs, rate limit tracking, backoff — `5d75a7c` 2026-04-26
 
 ## Removed
 
