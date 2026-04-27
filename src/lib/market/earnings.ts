@@ -18,24 +18,18 @@ export type EarningsEvent = {
 // Tradier beta endpoint
 // ---------------------------------------------------------------------------
 
-const TRADIER_BASE = "https://sandbox.tradier.com";
-
-function getHeaders(): Record<string, string> {
-  return {
-    Authorization: `Bearer ${process.env.TRADIER_API_TOKEN}`,
-    Accept: "application/json",
-  };
-}
+import { getTradierBase, tradierFetch } from "./tradier-client";
 
 async function fetchFromTradier(
   symbols: string[]
 ): Promise<EarningsEvent[] | null> {
   try {
-    const res = await fetch(
-      `${TRADIER_BASE}/beta/markets/fundamentals/calendars?symbols=${symbols.join(",")}`,
-      { headers: getHeaders(), next: { revalidate: 3600 } }
+    // Earnings uses the beta endpoint (not v1), so construct full URL
+    const res = await tradierFetch(
+      `${getTradierBase()}/beta/markets/fundamentals/calendars?symbols=${symbols.join(",")}`,
+      { revalidate: 3600 }
     );
-    if (!res.ok) return null;
+    if (!res) return null;
 
     const data = await res.json();
     if (!data || !Array.isArray(data)) return null;

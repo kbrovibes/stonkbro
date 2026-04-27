@@ -2,6 +2,8 @@
  * Fetch historical price data from Tradier (or generate mock).
  */
 
+import { tradierFetch } from "./tradier-client";
+
 export type DailyBar = {
   date: string;
   open: number;
@@ -12,24 +14,17 @@ export type DailyBar = {
 };
 
 async function tradierHistory(symbol: string, days: number): Promise<DailyBar[]> {
-  const token = process.env.TRADIER_API_TOKEN;
-  if (!token) return mockHistory(symbol, days);
+  if (!process.env.TRADIER_API_TOKEN) return mockHistory(symbol, days);
 
   const end = new Date();
   const start = new Date();
   start.setDate(start.getDate() - Math.ceil(days * 1.5)); // extra buffer for weekends
 
   try {
-    const res = await fetch(
-      `https://sandbox.tradier.com/v1/markets/history?symbol=${symbol}&interval=daily&start=${start.toISOString().split("T")[0]}&end=${end.toISOString().split("T")[0]}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      }
+    const res = await tradierFetch(
+      `/markets/history?symbol=${symbol}&interval=daily&start=${start.toISOString().split("T")[0]}&end=${end.toISOString().split("T")[0]}`
     );
-    if (!res.ok) return mockHistory(symbol, days);
+    if (!res) return mockHistory(symbol, days);
 
     const data = await res.json();
     const history = data.history?.day;

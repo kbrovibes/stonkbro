@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.11.0 — Tradier Live Data Activation
+
+- Centralized Tradier API client (`tradier-client.ts`) — single source for base URL, auth headers, and rate limit tracking
+- Environment-aware base URL: `TRADIER_ENV=production` switches from sandbox to `api.tradier.com` across all endpoints
+- Rate limit monitoring: reads `X-Ratelimit-*` headers from every Tradier response, tracks remaining quota in-memory
+- Exponential backoff on 429 (rate limited) with configurable retry count
+- Distinct error handling: 401 (bad token) fails fast, 429 retries with backoff, network errors retry
+- `/api/tradier-usage` now returns rate limit state (allowed/used/available/resetsAt)
+- All Tradier-calling modules (quotes, options, history, earnings) now use the centralized client
+
 ## v0.10.1 — Force Email Test Button
 
 - Send Test Email button on Settings page — trigger a full email briefing on demand to verify e2e email delivery

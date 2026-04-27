@@ -1,26 +1,14 @@
 import { NextResponse } from "next/server";
-
-const TRADIER_BASE = process.env.TRADIER_ENV === "production"
-  ? "https://api.tradier.com/v1"
-  : "https://sandbox.tradier.com/v1";
-
-function getHeaders(): Record<string, string> {
-  return {
-    Authorization: `Bearer ${process.env.TRADIER_API_TOKEN}`,
-    Accept: "application/json",
-  };
-}
+import { tradierFetch, getRateLimitState } from "@/lib/market/tradier-client";
 
 export async function GET() {
   try {
-    const res = await fetch(`${TRADIER_BASE}/user/profile`, {
-      headers: getHeaders(),
-    });
+    const res = await tradierFetch("/user/profile");
 
-    if (!res.ok) {
+    if (!res) {
       return NextResponse.json(
-        { error: "Failed to fetch Tradier profile", status: res.status },
-        { status: res.status }
+        { error: "Failed to fetch Tradier profile" },
+        { status: 502 }
       );
     }
 
@@ -30,6 +18,8 @@ export async function GET() {
     // Extract account info
     const account = profile?.account;
     const accountData = Array.isArray(account) ? account[0] : account;
+
+    const rateLimit = getRateLimitState();
 
     return NextResponse.json({
       env: process.env.TRADIER_ENV === "production" ? "production" : "sandbox",
@@ -46,6 +36,12 @@ export async function GET() {
             dayTrader: accountData.day_trader ?? false,
           }
         : null,
+      rateLimit: {
+        allowed: rateLimit.allowed,
+        used: rateLimit.used,
+        available: rateLimit.available,
+        resetsAt: rateLimit.expiresAt > 0 ? new Date(rateLimit.expiresAt).toISOString() : null,
+      },
     });
   } catch (e) {
     console.error("Tradier usage API error:", e);

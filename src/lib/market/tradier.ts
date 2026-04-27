@@ -1,21 +1,10 @@
 import { QuoteData, OptionContract, OptionsChain } from "./types";
-
-const TRADIER_BASE = "https://sandbox.tradier.com/v1";
-
-function getHeaders(): Record<string, string> {
-  return {
-    Authorization: `Bearer ${process.env.TRADIER_API_TOKEN}`,
-    Accept: "application/json",
-  };
-}
+import { tradierFetch } from "./tradier-client";
 
 export async function tradierGetQuote(symbol: string): Promise<QuoteData | null> {
   try {
-    const res = await fetch(`${TRADIER_BASE}/markets/quotes?symbols=${symbol}`, {
-      headers: getHeaders(),
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
+    const res = await tradierFetch(`/markets/quotes?symbols=${symbol}`, { revalidate: 60 });
+    if (!res) return null;
 
     const data = await res.json();
     const q = data.quotes?.quote;
@@ -56,11 +45,8 @@ export async function tradierGetQuotes(symbols: string[]): Promise<QuoteData[]> 
   if (symbols.length === 0) return [];
 
   try {
-    const res = await fetch(`${TRADIER_BASE}/markets/quotes?symbols=${symbols.join(",")}`, {
-      headers: getHeaders(),
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return [];
+    const res = await tradierFetch(`/markets/quotes?symbols=${symbols.join(",")}`, { revalidate: 60 });
+    if (!res) return [];
 
     const data = await res.json();
     const quotes = data.quotes?.quote;
@@ -105,10 +91,8 @@ export async function tradierGetQuotes(symbols: string[]): Promise<QuoteData[]> 
 
 export async function tradierGetExpirations(symbol: string): Promise<string[]> {
   try {
-    const res = await fetch(`${TRADIER_BASE}/markets/options/expirations?symbol=${symbol}`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) return [];
+    const res = await tradierFetch(`/markets/options/expirations?symbol=${symbol}`);
+    if (!res) return [];
 
     const data = await res.json();
     const dates = data.expirations?.date;
@@ -121,11 +105,10 @@ export async function tradierGetExpirations(symbol: string): Promise<string[]> {
 
 export async function tradierGetOptionsChain(symbol: string, expiration: string): Promise<{ calls: OptionContract[]; puts: OptionContract[] }> {
   try {
-    const res = await fetch(
-      `${TRADIER_BASE}/markets/options/chains?symbol=${symbol}&expiration=${expiration}&greeks=true`,
-      { headers: getHeaders() }
+    const res = await tradierFetch(
+      `/markets/options/chains?symbol=${symbol}&expiration=${expiration}&greeks=true`
     );
-    if (!res.ok) return { calls: [], puts: [] };
+    if (!res) return { calls: [], puts: [] };
 
     const data = await res.json();
     const options = data.options?.option;
