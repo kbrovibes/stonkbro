@@ -152,7 +152,7 @@
 
     <div class="stats">
       <div class="stat green">
-        <div class="num">31</div>
+        <div class="num">38</div>
         <div class="label">Shipped</div>
       </div>
       <div class="stat amber">
@@ -160,7 +160,7 @@
         <div class="label">Building</div>
       </div>
       <div class="stat blue">
-        <div class="num">16</div>
+        <div class="num">9</div>
         <div class="label">Queued</div>
       </div>
     </div>
@@ -171,7 +171,7 @@
     <div class="section">
       <div class="section-header">
         <h2>Recently Shipped</h2>
-        <span class="count">5 of 31</span>
+        <span class="count">5 of 38</span>
       </div>
       
     <div class="item">
@@ -224,25 +224,16 @@
     <div class="section">
       <div class="section-header">
         <h2>P1 — Up Next</h2>
-        <span class="count">4</span>
+        <span class="count">2</span>
       </div>
       
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#31</span>
-        <span class="badge badge-p1">P1</span>
-        <span class="item-title">Tradier Live Data Activation</span>
-      </div>
-      <p class="item-desc">Verify sandbox token, swap mock→real across all routes, add error handling for rate limits</p>
-      
-    </div>
     <div class="item">
       <div class="item-header">
         <span class="item-number">#32</span>
         <span class="badge badge-p1">P1</span>
         <span class="item-title">Push Notifications</span>
       </div>
-      <p class="item-desc">Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone</p>
+      <p class="item-desc">Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`</p>
       
     </div>
     <div class="item">
@@ -251,16 +242,7 @@
         <span class="badge badge-p1">P1</span>
         <span class="item-title">News &amp; Sentiment Pipeline</span>
       </div>
-      <p class="item-desc">Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation</p>
-      
-    </div>
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#34</span>
-        <span class="badge badge-p1">P1</span>
-        <span class="item-title">Scoring Engine</span>
-      </div>
-      <p class="item-desc">Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`</p>
+      <p class="item-desc">Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`</p>
       
     </div>
     </div>
@@ -268,43 +250,16 @@
     <div class="section">
       <div class="section-header">
         <h2>P2 — Future</h2>
-        <span class="count">12</span>
+        <span class="count">7</span>
       </div>
       
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#35</span>
-        <span class="badge badge-p2">P2</span>
-        <span class="item-title">Smart Roll Advisor</span>
-      </div>
-      <p class="item-desc">Auto-detect when to roll options: DTE &lt; 7, delta drift, profit &gt; 50% of max, approaching earnings — surface on Today page</p>
-      
-    </div>
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#36</span>
-        <span class="badge badge-p2">P2</span>
-        <span class="item-title">AI Earnings Plays</span>
-      </div>
-      <p class="item-desc">Pre-earnings strategy generator: IV rank check, straddle pricing, suggest CSP/iron condor with risk/reward, flag on earnings calendar</p>
-      
-    </div>
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#37</span>
-        <span class="badge badge-p2">P2</span>
-        <span class="item-title">Options Flow Scanner</span>
-      </div>
-      <p class="item-desc">Unusual activity detection (large blocks, OI spikes, put/call ratio extremes) for watchlist + sector tickers</p>
-      
-    </div>
     <div class="item">
       <div class="item-header">
         <span class="item-number">#38</span>
         <span class="badge badge-p2">P2</span>
         <span class="item-title">Trade Journal &amp; Analytics</span>
       </div>
-      <p class="item-desc">Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade</p>
+      <p class="item-desc">Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade — `NEEDS_INPUT: requires new page and UI decisions — what should the journal page look like?`</p>
       
     </div>
     <div class="item">
@@ -313,7 +268,7 @@
         <span class="badge badge-p2">P2</span>
         <span class="item-title">Broker API Integration</span>
       </div>
-      <p class="item-desc">Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write</p>
+      <p class="item-desc">Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write — `NEEDS_INPUT: requires broker API credentials and scope decisions`</p>
       
     </div>
     <div class="item">
@@ -354,29 +309,11 @@
     </div>
     <div class="item">
       <div class="item-header">
-        <span class="item-number">#44</span>
-        <span class="badge badge-p2">P2</span>
-        <span class="item-title">Morning Briefing Email</span>
-      </div>
-      <p class="item-desc">Daily pre-market digest: overnight movers, earnings today, expiring positions, AI picks — one email to start the day</p>
-      
-    </div>
-    <div class="item">
-      <div class="item-header">
         <span class="item-number">#45</span>
         <span class="badge badge-p2">P2</span>
         <span class="item-title">Watchlist Price Alerts</span>
       </div>
       <p class="item-desc">Set price/volume thresholds on watchlist tickers, trigger push/email when hit</p>
-      
-    </div>
-    <div class="item">
-      <div class="item-header">
-        <span class="item-number">#46</span>
-        <span class="badge badge-p2">P2</span>
-        <span class="item-title">Position Health Scores</span>
-      </div>
-      <p class="item-desc">Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges</p>
       
     </div>
     </div>
@@ -386,7 +323,7 @@
     <div class="section">
       <div class="section-header">
         <h2>All Shipped</h2>
-        <span class="count">31</span>
+        <span class="count">38</span>
       </div>
       
     <div class="item">
@@ -666,6 +603,69 @@
         <span class="item-title">Hybrid Research Mode</span>
       </div>
       <p class="item-desc">Combined fast + deep research with background persistence</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#31</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Tradier Live Data Activation</span>
+      </div>
+      <p class="item-desc">Centralized client, env-aware URLs, rate limit tracking, backoff — `5d75a7c` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#34</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Scoring Engine</span>
+      </div>
+      <p class="item-desc">Quantitative 0-100 scoring (volume + momentum + technical + earnings) — `210c815` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#35</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Smart Roll Advisor</span>
+      </div>
+      <p class="item-desc">Multi-factor roll detection (DTE + profit + strike + earnings) with scoring — `b575467` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#36</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">AI Earnings Plays</span>
+      </div>
+      <p class="item-desc">Pre-earnings strategy generator with IV analysis + AI suggestions — `0b74670` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#37</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Options Flow Scanner</span>
+      </div>
+      <p class="item-desc">Unusual activity detection (blocks, OI walls, PCR extremes) — `cbf55b7` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#44</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Morning Briefing Email</span>
+      </div>
+      <p class="item-desc">Pre-market email digest with 5 sections — `2dd1482` 2026-04-26</p>
+      
+    </div>
+    <div class="item">
+      <div class="item-header">
+        <span class="item-number">#46</span>
+        <span class="badge badge-done">Shipped</span>
+        <span class="item-title">Position Health Scores</span>
+      </div>
+      <p class="item-desc">Per-position health metric (DTE + strike + profit) with color badges — `6a747d7` 2026-04-26</p>
       
     </div>
     </div>

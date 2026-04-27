@@ -10,8 +10,16 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [testError, setTestError] = useState("");
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotifPermission(Notification.permission);
+    } else {
+      setNotifPermission("unsupported");
+    }
+
     fetch("/api/settings")
       .then((r) => r.json())
       .then((d) => {
@@ -40,6 +48,55 @@ export default function SettingsPage() {
       // silent
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleEnableNotifications() {
+    setSubscribing(true);
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+      if (permission !== "granted") {
+        setSubscribing(false);
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      });
+
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+    } catch {
+      // silent
+    } finally {
+      setSubscribing(false);
+    }
+  }
+
+  async function handleDisableNotifications() {
+    setSubscribing(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+        await subscription.unsubscribe();
+      }
+      setNotifPermission("default");
+    } catch {
+      // silent
+    } finally {
+      setSubscribing(false);
     }
   }
 
@@ -160,6 +217,42 @@ export default function SettingsPage() {
             )}
             {testStatus === "error" && (
               <p className="text-xs text-red-500">{testError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900">Push Notifications</h3>
+          <p className="mt-1 text-sm text-stone-500">
+            Get notified on your phone when positions need action or explosive movers are detected.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            {notifPermission === "unsupported" ? (
+              <p className="text-xs text-stone-400">Push notifications are not supported in this browser.</p>
+            ) : notifPermission === "granted" ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">Enabled</span>
+                <button
+                  onClick={handleDisableNotifications}
+                  disabled={subscribing}
+                  className="text-xs text-stone-500 hover:text-stone-700 underline underline-offset-2 disabled:opacity-50"
+                >
+                  {subscribing ? "..." : "Disable"}
+                </button>
+              </div>
+            ) : notifPermission === "denied" ? (
+              <p className="text-xs text-red-500">
+                Notifications blocked. Open your browser settings to re-enable them for this site.
+              </p>
+            ) : (
+              <button
+                onClick={handleEnableNotifications}
+                disabled={subscribing}
+                className="self-start rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-500 active:bg-purple-400 transition-colors disabled:opacity-50"
+              >
+                {subscribing ? "Enabling..." : "Enable Notifications"}
+              </button>
             )}
           </div>
         </div>

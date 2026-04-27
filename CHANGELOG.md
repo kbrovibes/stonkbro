@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.18.0 — Backlog Status Page, Push Notifications, Auto-Update Hook
+
+- Backlog Status Page — static HTML at docs/backlog.html auto-generated from BACKLOG.md, served via GitHub Pages
+- Push Notifications — Web Push API with service worker, enable/disable from Settings, notification on backlog changes
+- Auto-Update Hook — Claude Code PostToolUse hook regenerates backlog page + sends push notification when BACKLOG.md is modified
+- New API routes: POST /api/push/subscribe, DELETE /api/push/subscribe, POST /api/push/send
+
 ## v0.17.1 — Options Flow UI on Today Page
 
 - New "Options Flow" section on Today's Plays page between Earnings and Position Alerts

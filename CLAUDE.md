@@ -45,6 +45,8 @@ supabase/
 | `ANTHROPIC_API_KEY` | Server | Claude AI research engine |
 | `RESEND_API_KEY` | Server | Email alert briefings |
 | `CRON_SECRET` | Server | Bearer token for cron endpoint |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public | VAPID public key for Web Push |
+| `VAPID_PRIVATE_KEY` | Server | VAPID private key for Web Push |
 
 ## Coding Conventions
 
