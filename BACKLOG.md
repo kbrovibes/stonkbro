@@ -3,8 +3,6 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
-- [ ] **34 — Scoring Engine** · Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`
-
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
@@ -63,6 +61,7 @@
 - [x] **29 — PWA Manifest & Icons** · Web app manifest, home screen install, generated PNG icons
 - [x] **30 — Hybrid Research Mode** · Combined fast + deep research with background persistence
 - [x] **31 — Tradier Live Data Activation** · Centralized client, env-aware URLs, rate limit tracking, backoff — `5d75a7c` 2026-04-26
+- [x] **34 — Scoring Engine** · Quantitative 0-100 scoring (volume + momentum + technical + earnings) — `210c815` 2026-04-26
 
 ## Removed
 
