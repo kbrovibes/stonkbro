@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.17.1 — Options Flow UI on Today Page
+
+- New "Options Flow" section on Today's Plays page between Earnings and Position Alerts
+- Shows tickers with unusual options activity: large blocks, OI walls, speculative bets, P/C ratio extremes
+- Collapsible per-ticker cards with sentiment badge (bullish/bearish/neutral), activity score bar, volume stats
+- Expand to see individual flow signals with type labels, direction arrows, significance scores
+- Put/call ratio highlighted when extreme (>1.5 red, <0.5 green)
+- Fetched in parallel with other Today page sections via Refresh All
+
 ## v0.17.0 — Position Health Scores
 
 - Per-position health metric (0-100) across 3 dimensions: DTE urgency (40%), strike risk (35%), profit progress (25%)

@@ -57,6 +57,24 @@ interface Alert {
   leg?: { strike: number; expiry: string; type: string };
 }
 
+interface FlowSignal {
+  type: string;
+  direction: "bullish" | "bearish" | "neutral";
+  description: string;
+  significance: number;
+}
+
+interface FlowSummary {
+  symbol: string;
+  price: number;
+  signals: FlowSignal[];
+  putCallRatio: number | null;
+  totalCallVolume: number;
+  totalPutVolume: number;
+  sentiment: "bullish" | "bearish" | "neutral";
+  activityScore: number;
+}
+
 // --- Constants ---
 
 const THEME_META: Record<string, { label: string; emoji: string }> = {
@@ -69,6 +87,20 @@ const ALERT_META: Record<string, { label: string; color: string; border: string;
   CLOSE: { label: "Close", color: "text-red-600", border: "border-red-200", bg: "bg-red-50" },
   ROLL: { label: "Roll", color: "text-amber-600", border: "border-amber-200", bg: "bg-amber-50" },
   WARNING: { label: "Warning", color: "text-yellow-600", border: "border-yellow-200", bg: "bg-yellow-50" },
+};
+
+const SENTIMENT_META: Record<string, { label: string; color: string; bg: string }> = {
+  bullish: { label: "Bullish", color: "text-emerald-700", bg: "bg-emerald-50" },
+  bearish: { label: "Bearish", color: "text-red-700", bg: "bg-red-50" },
+  neutral: { label: "Neutral", color: "text-stone-600", bg: "bg-stone-100" },
+};
+
+const FLOW_TYPE_LABELS: Record<string, string> = {
+  large_block: "Block",
+  oi_spike: "OI Spike",
+  pcr_extreme: "P/C Ratio",
+  otm_speculative: "Spec Bet",
+  volume_wall: "Wall",
 };
 
 // --- Helpers ---
@@ -150,6 +182,12 @@ export default function TodayPage() {
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [alertsError, setAlertsError] = useState<string | null>(null);
 
+  // Flow
+  const [flow, setFlow] = useState<FlowSummary[]>([]);
+  const [flowLoading, setFlowLoading] = useState(true);
+  const [flowError, setFlowError] = useState<string | null>(null);
+  const [flowExpanded, setFlowExpanded] = useState<Record<string, boolean>>({});
+
   // Global
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
@@ -225,10 +263,26 @@ export default function TodayPage() {
     }
   }, []);
 
+  const fetchFlow = useCallback(async () => {
+    setFlowLoading(true);
+    try {
+      const res = await fetch("/api/flow");
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setFlow(data.flow || []);
+      setFlowError(null);
+    } catch {
+      setFlowError("Could not load flow data");
+      setFlow([]);
+    } finally {
+      setFlowLoading(false);
+    }
+  }, []);
+
   const fetchAll = useCallback(async () => {
-    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchEarnings(), fetchAlerts()]);
+    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchEarnings(), fetchAlerts(), fetchFlow()]);
     setLastUpdated(Date.now());
-  }, [fetchMovers, fetchRecs, fetchEarnings, fetchAlerts]);
+  }, [fetchMovers, fetchRecs, fetchEarnings, fetchAlerts, fetchFlow]);
 
   // Initial load
   useEffect(() => {
@@ -257,7 +311,7 @@ export default function TodayPage() {
     setCollapsed((prev) => ({ ...prev, [theme]: !prev[theme] }));
   }
 
-  const anyLoading = moversLoading || recsLoading || earningsLoading || alertsLoading;
+  const anyLoading = moversLoading || recsLoading || earningsLoading || alertsLoading || flowLoading;
 
   // ---- Render ----
 
@@ -642,7 +696,141 @@ export default function TodayPage() {
       </Section>
 
       {/* ================================================================= */}
-      {/* Section 4: Position Alerts */}
+      {/* Section 4: Options Flow */}
+      {/* ================================================================= */}
+      <Section
+        title="Options Flow"
+        badge={
+          flow.length > 0 ? (
+            <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">
+              {flow.length} active
+            </span>
+          ) : null
+        }
+      >
+        {flowLoading && (
+          <div className="flex items-center justify-center py-10">
+            <Spinner />
+          </div>
+        )}
+
+        {flowError && !flowLoading && (
+          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3">
+            <p className="text-xs text-red-600">{flowError}</p>
+          </div>
+        )}
+
+        {!flowLoading && !flowError && flow.length === 0 && (
+          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
+            <p className="text-sm text-stone-500">No unusual activity</p>
+            <p className="text-[10px] text-stone-400 mt-1">Options flow looks normal across tracked tickers.</p>
+          </div>
+        )}
+
+        {!flowLoading && flow.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {flow.map((f) => {
+              const sentMeta = SENTIMENT_META[f.sentiment] || SENTIMENT_META.neutral;
+              const isExpanded = flowExpanded[f.symbol] ?? false;
+
+              return (
+                <div key={f.symbol} className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+                  {/* Header — always visible */}
+                  <button
+                    onClick={() => setFlowExpanded((prev) => ({ ...prev, [f.symbol]: !prev[f.symbol] }))}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-stone-50 active:bg-violet-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                        fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                      <Link
+                        href={`/ticker/${f.symbol}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                      >
+                        {f.symbol}
+                      </Link>
+                      <span className="text-xs text-stone-400 tabular-nums">${f.price.toFixed(2)}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${sentMeta.bg} ${sentMeta.color}`}>
+                        {sentMeta.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-stone-400">{f.signals.length} signal{f.signals.length !== 1 ? "s" : ""}</span>
+                      {/* Activity score bar */}
+                      <div className="w-12 h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            f.activityScore >= 60 ? "bg-violet-500" : f.activityScore >= 30 ? "bg-amber-400" : "bg-stone-300"
+                          }`}
+                          style={{ width: `${f.activityScore}%` }}
+                        />
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Stats row */}
+                  <div className="px-4 pb-2 flex items-center gap-4 text-[10px] text-stone-400">
+                    <span>Calls: {f.totalCallVolume.toLocaleString()} vol</span>
+                    <span>Puts: {f.totalPutVolume.toLocaleString()} vol</span>
+                    {f.putCallRatio != null && (
+                      <span className={f.putCallRatio >= 1.5 ? "text-red-500 font-semibold" : f.putCallRatio <= 0.5 ? "text-emerald-600 font-semibold" : ""}>
+                        P/C: {f.putCallRatio.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Expanded signals */}
+                  {isExpanded && (
+                    <div className="px-4 pb-3 flex flex-col gap-1.5">
+                      {f.signals.map((sig, i) => {
+                        const dirColor = sig.direction === "bullish"
+                          ? "text-emerald-600"
+                          : sig.direction === "bearish"
+                          ? "text-red-500"
+                          : "text-stone-500";
+
+                        return (
+                          <div key={i} className="rounded-lg bg-stone-50 px-3 py-2">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                                {FLOW_TYPE_LABELS[sig.type] || sig.type}
+                              </span>
+                              <span className={`text-[10px] font-semibold ${dirColor}`}>
+                                {sig.direction === "bullish" ? "▲" : sig.direction === "bearish" ? "▼" : "—"} {sig.direction}
+                              </span>
+                              <div className="flex-1" />
+                              <span className="text-[10px] text-stone-400">sig: {sig.significance}</span>
+                            </div>
+                            <p className="text-[11px] text-stone-600">{sig.description}</p>
+                          </div>
+                        );
+                      })}
+
+                      {/* CTA */}
+                      <div className="flex justify-end mt-1">
+                        <Link
+                          href={`/suggestions/${f.symbol}`}
+                          className="text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                        >
+                          View Options &rarr;
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
+      {/* ================================================================= */}
+      {/* Section 5: Position Alerts */}
       {/* ================================================================= */}
       <Section
         title="Position Alerts"
