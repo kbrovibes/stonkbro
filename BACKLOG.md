@@ -3,19 +3,20 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
+- [ ] **44 — Morning Briefing Email** · Daily pre-market digest: overnight movers, earnings today, expiring positions, AI picks — one email to start the day
+
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
 
 ## 📋 P2 — Do Next
 
-- [ ] **38 — Trade Journal & Analytics** · Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade
-- [ ] **39 — Broker API Integration** · Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write
+- [ ] **38 — Trade Journal & Analytics** · Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade — `NEEDS_INPUT: requires new page and UI decisions — what should the journal page look like?`
+- [ ] **39 — Broker API Integration** · Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write — `NEEDS_INPUT: requires broker API credentials and scope decisions`
 - [ ] **40 — One-Click Order Staging** · From any AI suggestion → pre-filled order form in broker, confirm and send
 - [ ] **41 — Rules-Based Automation** · User-defined rules: auto-roll at 50% profit, close at 21 DTE, defend at 2x premium lost, trailing stop triggers
 - [ ] **42 — Backtesting Engine** · Test PMCC/CSP strategies against historical options data, validate scoring model
 - [ ] **43 — Portfolio Greeks Dashboard** · Aggregate delta/theta/vega exposure across all positions, sector correlation matrix
-- [ ] **44 — Morning Briefing Email** · Daily pre-market digest: overnight movers, earnings today, expiring positions, AI picks — one email to start the day
 - [ ] **45 — Watchlist Price Alerts** · Set price/volume thresholds on watchlist tickers, trigger push/email when hit
 - [ ] **46 — Position Health Scores** · Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges
 
