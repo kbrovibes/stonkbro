@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.15.0 — Options Flow Scanner
+
+- Unusual options activity detection across watchlist + sector tickers
+- Large block detection: volume > 3x open interest with minimum 500 contracts
+- OI concentration walls: strikes holding > 15% of total OI (support/resistance)
+- OTM speculative bets: > 10% OTM with 2000+ volume
+- Put/call ratio extremes: PCR > 2.0 (bearish) or < 0.3 (bullish)
+- Activity score (0-100) and sentiment classification per ticker
+- New API endpoint: `/api/flow?tickers=NVDA,AAPL` — scans 15-ticker default universe
+
 ## v0.14.0 — AI Earnings Plays
 
 - Pre-earnings strategy generator: scans 24-ticker universe for earnings in next 14 days
