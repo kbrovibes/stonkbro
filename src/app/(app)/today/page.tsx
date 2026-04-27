@@ -5,15 +5,6 @@ import Link from "next/link";
 
 // --- Earnings types ---
 
-interface EarningsEvent {
-  symbol: string;
-  name: string;
-  earningsDate: string;
-  daysUntil: number;
-  timing: "before_market" | "after_market" | "unknown";
-  category: "this_week" | "next_week" | "later";
-}
-
 // --- Types ---
 
 interface Mover {
@@ -49,13 +40,6 @@ interface ThemeResult {
   expiresAt: string;
 }
 
-interface Alert {
-  symbol: string;
-  type: "CLOSE" | "ROLL" | "WARNING";
-  message: string;
-  urgency?: string;
-  leg?: { strike: number; expiry: string; type: string };
-}
 
 interface FlowSignal {
   type: string;
@@ -81,12 +65,6 @@ const THEME_META: Record<string, { label: string; emoji: string }> = {
   moonshot: { label: "Moonshots", emoji: "🚀" },
   local_optimization: { label: "Buy the Dip", emoji: "📉" },
   csp_premium: { label: "CSP Premium", emoji: "💰" },
-};
-
-const ALERT_META: Record<string, { label: string; color: string; border: string; bg: string }> = {
-  CLOSE: { label: "Close", color: "text-red-600", border: "border-red-200", bg: "bg-red-50" },
-  ROLL: { label: "Roll", color: "text-amber-600", border: "border-amber-200", bg: "bg-amber-50" },
-  WARNING: { label: "Warning", color: "text-yellow-600", border: "border-yellow-200", bg: "bg-yellow-50" },
 };
 
 const SENTIMENT_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -174,13 +152,8 @@ export default function TodayPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   // Earnings
-  const [earnings, setEarnings] = useState<EarningsEvent[]>([]);
-  const [earningsLoading, setEarningsLoading] = useState(true);
 
   // Alerts
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(true);
-  const [alertsError, setAlertsError] = useState<string | null>(null);
 
   // Flow
   const [flow, setFlow] = useState<FlowSummary[]>([]);
@@ -228,40 +201,6 @@ export default function TodayPage() {
     }
   }, []);
 
-  const fetchEarnings = useCallback(async () => {
-    setEarningsLoading(true);
-    try {
-      const top20 = "NVDA,AAPL,MSFT,GOOGL,AMZN,META,TSLA,NFLX,AMD,AVGO,PLTR,CRWD,COIN,SHOP,JPM,GS,COST,DIS,BA,UBER";
-      const res = await fetch(`/api/earnings?symbols=${top20}`);
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      // Only show this_week and next_week
-      const filtered = (data.earnings || []).filter(
-        (e: EarningsEvent) => e.category === "this_week" || e.category === "next_week"
-      );
-      setEarnings(filtered);
-    } catch {
-      setEarnings([]);
-    } finally {
-      setEarningsLoading(false);
-    }
-  }, []);
-
-  const fetchAlerts = useCallback(async () => {
-    setAlertsLoading(true);
-    try {
-      const res = await fetch("/api/signals");
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setAlerts(data.alerts || []);
-      setAlertsError(null);
-    } catch {
-      setAlertsError("Could not load alerts");
-      setAlerts([]);
-    } finally {
-      setAlertsLoading(false);
-    }
-  }, []);
 
   const fetchFlow = useCallback(async () => {
     setFlowLoading(true);
@@ -280,9 +219,9 @@ export default function TodayPage() {
   }, []);
 
   const fetchAll = useCallback(async () => {
-    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchEarnings(), fetchAlerts(), fetchFlow()]);
+    await Promise.allSettled([fetchMovers(), fetchRecs(), fetchFlow()]);
     setLastUpdated(Date.now());
-  }, [fetchMovers, fetchRecs, fetchEarnings, fetchAlerts, fetchFlow]);
+  }, [fetchMovers, fetchRecs, fetchFlow]);
 
   // Initial load
   useEffect(() => {
@@ -311,7 +250,7 @@ export default function TodayPage() {
     setCollapsed((prev) => ({ ...prev, [theme]: !prev[theme] }));
   }
 
-  const anyLoading = moversLoading || recsLoading || earningsLoading || alertsLoading || flowLoading;
+  const anyLoading = moversLoading || recsLoading || flowLoading;
 
   // ---- Render ----
 
@@ -604,96 +543,6 @@ export default function TodayPage() {
         )}
       </Section>
 
-      {/* ================================================================= */}
-      {/* Section 3: Earnings This Week */}
-      {/* ================================================================= */}
-      <Section
-        title="Earnings Ahead"
-        badge={
-          earnings.length > 0 ? (
-            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
-              {earnings.length} upcoming
-            </span>
-          ) : null
-        }
-      >
-        {earningsLoading && (
-          <div className="flex items-center justify-center py-10">
-            <Spinner />
-          </div>
-        )}
-
-        {!earningsLoading && earnings.length === 0 && (
-          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-            <p className="text-sm text-stone-500">No imminent earnings</p>
-            <p className="text-[10px] text-stone-400 mt-1">Top 20 tickers have no reports this or next week.</p>
-          </div>
-        )}
-
-        {!earningsLoading && earnings.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {earnings.map((e) => {
-              const isThisWeek = e.category === "this_week";
-              return (
-                <div
-                  key={e.symbol}
-                  className={`rounded-xl border px-4 py-3 ${
-                    isThisWeek
-                      ? "border-red-200 bg-red-50"
-                      : "border-amber-200 bg-amber-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/ticker/${e.symbol}`}
-                        className="text-sm font-bold text-stone-900 hover:text-sky-600 transition-colors"
-                      >
-                        {e.symbol}
-                      </Link>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                        isThisWeek
-                          ? "text-red-700 bg-red-100"
-                          : "text-amber-700 bg-amber-100"
-                      }`}>
-                        {e.timing === "before_market" ? "BMO" : e.timing === "after_market" ? "AMC" : "TBD"}
-                      </span>
-                      <span className="text-[11px] text-stone-500">
-                        {new Date(e.earningsDate + "T12:00:00").toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-semibold tabular-nums ${
-                        isThisWeek ? "text-red-600" : "text-amber-600"
-                      }`}>
-                        {e.daysUntil === 0 ? "Today" : e.daysUntil === 1 ? "Tomorrow" : `${e.daysUntil}d`}
-                      </span>
-                      <Link
-                        href={`/ticker/${e.symbol}`}
-                        className="text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
-                      >
-                        View Options &rarr;
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Link to full calendar */}
-            <Link
-              href="/earnings"
-              className="col-span-2 mt-1 text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors text-center"
-            >
-              See Full Calendar &rarr;
-            </Link>
-          </div>
-        )}
-      </Section>
 
       {/* ================================================================= */}
       {/* Section 4: Options Flow */}
@@ -829,71 +678,6 @@ export default function TodayPage() {
         )}
       </Section>
 
-      {/* ================================================================= */}
-      {/* Section 5: Position Alerts */}
-      {/* ================================================================= */}
-      <Section
-        title="Position Alerts"
-        badge={
-          alerts.length > 0 ? (
-            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
-              {alerts.length} alert{alerts.length !== 1 ? "s" : ""}
-            </span>
-          ) : null
-        }
-      >
-        {alertsLoading && (
-          <div className="flex items-center justify-center py-10">
-            <Spinner />
-          </div>
-        )}
-
-        {alertsError && !alertsLoading && (
-          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3">
-            <p className="text-xs text-red-600">{alertsError}</p>
-          </div>
-        )}
-
-        {!alertsLoading && !alertsError && alerts.length === 0 && (
-          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-            <p className="text-sm text-stone-500">Your positions look good</p>
-            <p className="text-[10px] text-stone-400 mt-1">No roll, close, or warning signals right now.</p>
-          </div>
-        )}
-
-        {!alertsLoading && alerts.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {alerts.map((alert, i) => {
-              const meta = ALERT_META[alert.type] || ALERT_META.WARNING;
-              return (
-                <Link
-                  key={`${alert.symbol}-${i}`}
-                  href="/positions"
-                  className={`rounded-xl border ${meta.border} ${meta.bg} px-4 py-3 flex items-start gap-3 hover:opacity-90 transition-opacity`}
-                >
-                  <span className={`text-[10px] font-bold ${meta.color} uppercase mt-0.5 shrink-0`}>
-                    {meta.label}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-stone-800">
-                      {alert.symbol}
-                      {alert.leg && (
-                        <span className="font-normal text-stone-500">
-                          {" "}&middot; {alert.leg.type} ${alert.leg.strike} {alert.leg.expiry}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-[11px] text-stone-600 mt-0.5">{alert.message}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-stone-300 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                  </svg>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </Section>
     </div>
   );
 }
