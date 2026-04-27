@@ -4,13 +4,15 @@
 
 1. Read `CLAUDE.md` for project context
 2. Read `BACKLOG.md` to find the next task
-3. Pick the first unchecked `[ ]` item in the queue
-4. Read the linked spec in `specs/`
-5. Implement exactly what the spec says — no more, no less
-6. Update `BACKLOG.md` (check off the item)
-7. Update `CHANGELOG.md` with a user-facing entry
-8. Create/update `releases/v{version}-{slug}.md` with technical details
-9. Commit and push
+3. Pick the first unchecked `[ ]` item from `P1 — Do First`. If P1 is empty, pick from `P2 — Do Next`
+4. Move it to `🔄 In Progress` and commit
+5. Read the linked spec in `specs/` (or write one if missing)
+6. Implement exactly what the spec says — no more, no less
+7. Update `BACKLOG.md` (move to Done), `CHANGELOG.md`, and `releases/`
+8. Commit and push
+9. Loop: go back to step 2
+
+See `RUNNER.md` for the full autonomous loop system and `run-backlog.sh` for hands-off execution.
 
 ## Core Rules
 

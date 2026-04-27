@@ -5,16 +5,25 @@
 
 ## ✅ P1 — Do First
 
+- [ ] **31 — Tradier Live Data Activation** · Verify sandbox token, swap mock→real across all routes, add error handling for rate limits
+- [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone
+- [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation
+- [ ] **34 — Scoring Engine** · Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`
+
 ## 📋 P2 — Do Next
 
-- [ ] **24 — Resend Email Integration** · Configure Resend API key, activate email alerts
-- [ ] **25 — Paper Trading Mode** · Simulate trades with $20k starting cash, track performance
-- [ ] **26 — Position Persistence from Research** · Accept a research suggestion → auto-create position
-- [ ] **19 — Broker API Integration** · Connect to Tradier/IBKR for one-click execution
-- [ ] **20 — Rules-Based Automation** · Define rules for auto-rolling, profit-taking, defense
-- [ ] **21 — Portfolio Risk Dashboard** · Correlation matrix, sector exposure, delta exposure
-- [ ] **22 — Backtesting Engine** · Test scoring model against historical data
-- [ ] **23 — PWA + Push Notifications** · Install to home screen, push alerts
+- [ ] **35 — Smart Roll Advisor** · Auto-detect when to roll options: DTE < 7, delta drift, profit > 50% of max, approaching earnings — surface on Today page
+- [ ] **36 — AI Earnings Plays** · Pre-earnings strategy generator: IV rank check, straddle pricing, suggest CSP/iron condor with risk/reward, flag on earnings calendar
+- [ ] **37 — Options Flow Scanner** · Unusual activity detection (large blocks, OI spikes, put/call ratio extremes) for watchlist + sector tickers
+- [ ] **38 — Trade Journal & Analytics** · Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade
+- [ ] **39 — Broker API Integration** · Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write
+- [ ] **40 — One-Click Order Staging** · From any AI suggestion → pre-filled order form in broker, confirm and send
+- [ ] **41 — Rules-Based Automation** · User-defined rules: auto-roll at 50% profit, close at 21 DTE, defend at 2x premium lost, trailing stop triggers
+- [ ] **42 — Backtesting Engine** · Test PMCC/CSP strategies against historical options data, validate scoring model
+- [ ] **43 — Portfolio Greeks Dashboard** · Aggregate delta/theta/vega exposure across all positions, sector correlation matrix
+- [ ] **44 — Morning Briefing Email** · Daily pre-market digest: overnight movers, earnings today, expiring positions, AI picks — one email to start the day
+- [ ] **45 — Watchlist Price Alerts** · Set price/volume thresholds on watchlist tickers, trigger push/email when hit
+- [ ] **46 — Position Health Scores** · Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges
 
 ## 💡 IDEAS — Unreviewed
 <!-- Claude adds brainstorm items here. Karthik reviews via git diff and promotes to P1/P2 to approve. -->
@@ -38,3 +47,23 @@
 - [x] **14 — Trade Signals** · Live roll/close/profit alerts against real positions
 - [x] **15 — Cron Alerts (Real Data)** · Reads all users' positions + watchlists from Supabase
 - [x] **16 — Google Auth** · Supabase auth with Google OAuth
+- [x] **17 — Sector Discovery** · Browse 8 curated sectors with 70+ tickers
+- [x] **18 — Explosive Stock Finder** · Claude AI analyzes sectors for 10x potential with entry strategies
+- [x] **19 — Trailing Stop System** · Per-position trailing %, peak price tracking, drawdown alerts
+- [x] **20 — Risk Dashboard** · Portfolio-level trailing stops, color-coded risk, drawdown tracking
+- [x] **21 — PMCC Picks Auto-Scanner** · Sector-wide scan ranked by monthly income / capital efficiency
+- [x] **22 — Today/Plays Dashboard** · Explosive movers, premium plays, earnings ahead, position alerts
+- [x] **23 — QuickLog Position Entry** · One-tap trade logging from AI suggestions with URL pre-fill
+- [x] **24 — Daily Recommendations Engine** · 3 AI prompt themes, cron 4x daily, cached in Supabase
+- [x] **25 — Earnings Calendar** · Full calendar with Tradier data, grouped by week, position cross-ref
+- [x] **26 — Market Movers Detector** · Universe-wide scan for 5%+ moves / 2.5x volume spikes
+- [x] **27 — Resend Email Alerts** · Email briefings via Resend with movers + signals sections
+- [x] **28 — Alert Preferences** · iOS-style toggles, frequency selector, AI provider choice, auto-save
+- [x] **29 — PWA Manifest & Icons** · Web app manifest, home screen install, generated PNG icons
+- [x] **30 — Hybrid Research Mode** · Combined fast + deep research with background persistence
+
+## Removed
+
+- ~~**Paper Trading Mode**~~ — Deprioritized: trades real capital; simulated P&L adds friction without insight
+- ~~**Position Persistence from Research**~~ — Superseded by QuickLog (#23)
+- ~~**Portfolio Risk Dashboard (old scope)**~~ — Merged into Risk Dashboard (#20) + future Portfolio Greeks (#43)
