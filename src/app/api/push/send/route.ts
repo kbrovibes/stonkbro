@@ -4,14 +4,13 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
-
-webpush.setVapidDetails(
-  "mailto:k4rthikr+stonkbro@gmail.com",
-  VAPID_PUBLIC,
-  VAPID_PRIVATE
-);
+function getWebPush() {
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const priv = process.env.VAPID_PRIVATE_KEY;
+  if (!pub || !priv) throw new Error("VAPID keys not configured");
+  webpush.setVapidDetails("mailto:k4rthikr+stonkbro@gmail.com", pub, priv);
+  return webpush;
+}
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
 
   for (const sub of subs) {
     try {
-      await webpush.sendNotification(
+      await getWebPush().sendNotification(
         {
           endpoint: sub.endpoint,
           keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth },
