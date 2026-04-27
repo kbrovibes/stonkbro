@@ -1,16 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function SettingsPage() {
   const [startingCash, setStartingCash] = useState("20000");
   const [alertEmail, setAlertEmail] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [testError, setTestError] = useState("");
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings) {
+          setStartingCash(String(d.settings.starting_cash || "20000"));
+          setAlertEmail(d.settings.alert_email || "");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          starting_cash: Number(startingCash) || 20000,
+          alert_email: alertEmail || null,
+        }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleTestEmail() {
+    setTestStatus("sending");
+    setTestError("");
+    try {
+      const res = await fetch("/api/email/test", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setTestStatus("error");
+        setTestError(data.error || "Failed to send");
+        return;
+      }
+      setTestStatus("sent");
+      setTimeout(() => setTestStatus("idle"), 3000);
+    } catch {
+      setTestStatus("error");
+      setTestError("Network error");
+    }
   }
 
   return (
@@ -79,22 +128,39 @@ export default function SettingsPage() {
 
             <button
               onClick={handleSave}
-              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors"
+              disabled={saving}
+              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-50"
             >
-              {saved ? "Saved!" : "Save Settings"}
+              {saved ? "Saved!" : saving ? "Saving..." : "Save Settings"}
             </button>
           </div>
         </div>
 
-        {/* Coming soon cards */}
+        {/* Alert Preferences */}
         <div className="rounded-xl bg-white shadow-sm px-4 py-3">
           <h3 className="text-sm font-semibold text-stone-900">Alert Preferences</h3>
           <p className="mt-1 text-sm text-stone-500">
             Configure how you want to be notified about breakout signals and
             position triggers.
           </p>
-          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 text-xs text-stone-400 font-medium">
-            Coming soon
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              onClick={handleTestEmail}
+              disabled={!alertEmail || testStatus === "sending"}
+              className="self-start rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 active:bg-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {testStatus === "sending"
+                ? "Sending..."
+                : testStatus === "sent"
+                ? "Sent! Check your inbox"
+                : "Send Test Email"}
+            </button>
+            {!alertEmail && (
+              <p className="text-xs text-stone-400">Save an alert email above first.</p>
+            )}
+            {testStatus === "error" && (
+              <p className="text-xs text-red-500">{testError}</p>
+            )}
           </div>
         </div>
 

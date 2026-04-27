@@ -2,7 +2,6 @@
 
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
-- [ ] **47 — Force Email Test Button** · Manual trigger button to send research email briefing for e2e testing
 
 ## ✅ P1 — Do First
 
@@ -31,6 +30,8 @@
 
 ## ✅ Done
 <!-- Completed items land here with git SHA and date -->
+
+- [x] **47 — Force Email Test Button** · Manual trigger button to send research email briefing for e2e testing (2026-04-26)
 
 - [x] **01 — App Shell & Navigation** · Layout, bottom nav, empty state pages
 - [x] **02 — Discovery Dashboard** · Ranked watchlist with live Yahoo Finance data

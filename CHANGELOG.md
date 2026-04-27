@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.10.1 — Force Email Test Button
+
+- Send Test Email button on Settings page — trigger a full email briefing on demand to verify e2e email delivery
+- Settings page now loads saved values from Supabase on mount and persists changes via API
+- New API route POST /api/email/test — reuses cron pipeline scoped to authenticated user
+
 ## v0.10.0 — Sector Discovery, Explosive Finder, Trailing Stops, PMCC Picks
 
 - Sector Discovery — browse 8 curated sectors (AI Infra, Quantum, Nuclear, Space, Fintech, Biotech, EV, AI Software) with 70+ tickers
