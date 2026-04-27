@@ -3,8 +3,6 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
-- [ ] **37 — Options Flow Scanner** · Unusual activity detection (large blocks, OI spikes, put/call ratio extremes) for watchlist + sector tickers
-
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
@@ -63,6 +61,7 @@
 - [x] **34 — Scoring Engine** · Quantitative 0-100 scoring (volume + momentum + technical + earnings) — `210c815` 2026-04-26
 - [x] **35 — Smart Roll Advisor** · Multi-factor roll detection (DTE + profit + strike + earnings) with scoring — `b575467` 2026-04-26
 - [x] **36 — AI Earnings Plays** · Pre-earnings strategy generator with IV analysis + AI suggestions — `0b74670` 2026-04-26
+- [x] **37 — Options Flow Scanner** · Unusual activity detection (blocks, OI walls, PCR extremes) — `cbf55b7` 2026-04-26
 
 ## Removed
 
