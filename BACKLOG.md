@@ -3,6 +3,8 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
+- [ ] **46 — Position Health Scores** · Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges
+
 ## ✅ P1 — Do First
 - [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
@@ -16,8 +18,6 @@
 - [ ] **42 — Backtesting Engine** · Test PMCC/CSP strategies against historical options data, validate scoring model
 - [ ] **43 — Portfolio Greeks Dashboard** · Aggregate delta/theta/vega exposure across all positions, sector correlation matrix
 - [ ] **45 — Watchlist Price Alerts** · Set price/volume thresholds on watchlist tickers, trigger push/email when hit
-- [ ] **46 — Position Health Scores** · Per-position health metric (theta decay progress, delta risk, DTE urgency) with color-coded badges
-
 ## 💡 IDEAS — Unreviewed
 <!-- Claude adds brainstorm items here. Karthik reviews via git diff and promotes to P1/P2 to approve. -->
 
