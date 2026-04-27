@@ -527,6 +527,70 @@
     }
     .method-get { background: var(--accent-light); color: var(--accent-dark); }
     .method-post { background: var(--blue-light); color: var(--blue); }
+
+    /* ---- BACKLOG MODE ---- */
+    .backlog-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+    }
+    @media (max-width: 768px) { .backlog-grid { grid-template-columns: 1fr; } }
+    .backlog-col h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .backlog-rule {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      font-size: 0.875rem;
+    }
+    .backlog-rule .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+    .cmd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .cmd-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .cmd-card code {
+      display: block;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      background: var(--accent-light);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      margin-bottom: 0.6rem;
+    }
+    .cmd-card p { font-size: 0.825rem; color: var(--text-muted); line-height: 1.5; }
+    .status-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    .status-chip {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
   </style>
 </head>
 <body>
@@ -541,6 +605,7 @@
         <a href="#stack">Stack</a>
         <a href="#api">API</a>
         <a href="#roadmap">Roadmap</a>
+        <a href="#backlog-mode">Backlog Mode</a>
         <a href="https://stonkbro.vercel.app">Launch App</a>
         <a href="https://github.com/kbrovibes/stonkbro">GitHub</a>
       </div>
@@ -549,9 +614,9 @@
 
   <!-- HERO -->
   <header class="hero">
-    <div class="badge">v0.8.0 &mdash; All Real Data</div>
+    <div class="badge">v0.10.0 &mdash; Autonomous Backlog Mode</div>
     <h1>Your <span class="gradient">AI-powered</span><br>options trading copilot</h1>
-    <p>Find explosive stocks, analyze PMCC setups, track positions, and get real-time trade signals &mdash; all from one app.</p>
+    <p>Find explosive stocks, analyze PMCC setups, track positions, and get real-time trade signals &mdash; all from one app. Now with autonomous AI development mode.</p>
     <div class="cta-row">
       <a href="https://stonkbro.vercel.app" class="btn btn-primary">Launch App</a>
       <a href="https://github.com/kbrovibes/stonkbro" class="btn btn-outline">View Source</a>
@@ -597,8 +662,8 @@
   <section id="features">
     <div class="inner">
       <div class="section-label">Features</div>
-      <div class="section-title">16 production features. Zero mock data.</div>
-      <div class="section-desc">Every feature pulls live market data from Yahoo Finance and persists real positions in Supabase.</div>
+      <div class="section-title">20+ production features. Zero mock data.</div>
+      <div class="section-desc">Every feature pulls live market data from Tradier and persists real positions in Supabase. Tradier provides real Greeks on every contract.</div>
 
       <div class="features-grid">
 
@@ -610,10 +675,38 @@
         </div>
 
         <div class="feature-card">
+          <div class="card-icon bg-blue">&#x1F30F;</div>
+          <h3>Sector Discovery</h3>
+          <p>Browse 8 curated sectors (AI Infra, Quantum, Nuclear, Space, Fintech, Biotech, EV, AI Software) with 70+ pre-loaded tickers. Expandable card grid with live quotes.</p>
+          <span class="tag bg-blue">70+ Tickers</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-icon bg-purple">&#x1F525;</div>
+          <h3>Explosive Finder</h3>
+          <p>Claude AI analyzes each sector to surface the highest-conviction 10x potential stocks, with specific entry strategies and risk reasoning.</p>
+          <span class="tag bg-purple">AI-Powered</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-icon bg-amber">&#x2600;</div>
+          <h3>Daily Recommendations</h3>
+          <p>AI-generated daily stock picks across 3 themes (momentum, value, contrarian) — cached by cron at market open, refreshable on demand. Collapsible theme cards with next-refresh countdown.</p>
+          <span class="tag bg-amber">Cron-Cached</span>
+        </div>
+
+        <div class="feature-card">
           <div class="card-icon bg-blue">&#x1F4CA;</div>
           <h3>PMCC Scanner</h3>
-          <p>Scans real options chains for optimal LEAPS + short call pairings. Grades A/B/C by capital efficiency and annualized return.</p>
+          <p>Scans real options chains for optimal LEAPS + short call pairings. Grades A/B/C by capital efficiency and annualized return. Real delta from Tradier.</p>
           <span class="tag bg-blue">Options Chains</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-icon bg-blue">&#x1F3AF;</div>
+          <h3>PMCC Picks</h3>
+          <p>Auto-scan sectors for the best PMCC setups ranked by monthly income and capital efficiency. Combines sector discovery with options analysis.</p>
+          <span class="tag bg-blue">Auto-Scan</span>
         </div>
 
         <div class="feature-card">
@@ -631,9 +724,16 @@
         </div>
 
         <div class="feature-card">
+          <div class="card-icon bg-red">&#x1F6D1;</div>
+          <h3>Trailing Stop System</h3>
+          <p>Set % trailing stops on positions. App tracks peak price automatically, calculates drawdown, and flags when stop triggers. Color-coded risk view.</p>
+          <span class="tag bg-red">Risk Management</span>
+        </div>
+
+        <div class="feature-card">
           <div class="card-icon bg-amber">&#x1F4B0;</div>
           <h3>Portfolio (Live P&L)</h3>
-          <p>Real P&L from Supabase positions + live Yahoo quotes. Summary cards, per-position breakdown, individual leg performance.</p>
+          <p>Real P&L from Supabase positions + live Tradier quotes. Summary cards, per-position breakdown, gain/drawdown tracking, % from peak visualization.</p>
           <span class="tag bg-amber">Real-Time</span>
         </div>
 
@@ -675,8 +775,15 @@
         <div class="feature-card">
           <div class="card-icon bg-red">&#x1F4E7;</div>
           <h3>Automated Cron Alerts</h3>
-          <p>Vercel cron runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks all positions, sends email briefings via Resend.</p>
+          <p>Vercel cron runs multiple times daily on market days. Checks all positions, generates daily recommendations, sends email briefings via Resend.</p>
           <span class="tag bg-red">Automated</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-icon bg-purple">&#x1F4CA;</div>
+          <h3>Admin Panel + Token Tracking</h3>
+          <p>Admin-gated settings panel for switching AI providers and viewing real-time token usage per feature. Backed by <code>ai_token_usage</code> table with full audit trail.</p>
+          <span class="tag bg-purple">Admin</span>
         </div>
 
         <div class="feature-card">
@@ -827,8 +934,8 @@
   <section>
     <div class="inner">
       <div class="section-label">Database</div>
-      <div class="section-title">7 tables, full RLS</div>
-      <div class="section-desc">Every table has row-level security. Users only see their own data.</div>
+      <div class="section-title">10 tables, full RLS</div>
+      <div class="section-desc">Every user-scoped table has row-level security. Global config tables have public read, admin write. Users only see their own data.</div>
 
       <table class="schema-table">
         <thead>
@@ -848,7 +955,7 @@
           <tr>
             <td><code>positions</code></td>
             <td>Options/stock positions</td>
-            <td>symbol, strategy, status, entry_date</td>
+            <td>symbol, strategy, status, trailing_stop_pct, peak_price</td>
           </tr>
           <tr>
             <td><code>position_legs</code></td>
@@ -866,9 +973,24 @@
             <td>symbol, strategy, strike, premium, reasoning</td>
           </tr>
           <tr>
+            <td><code>daily_recommendations</code></td>
+            <td>Cron-cached daily AI stock picks</td>
+            <td>date, theme, picks (jsonb), generated_at</td>
+          </tr>
+          <tr>
             <td><code>user_settings</code></td>
-            <td>Preferences &amp; account defaults</td>
-            <td>starting_cash ($20k), alert_email</td>
+            <td>Preferences, admin flag &amp; account defaults</td>
+            <td>starting_cash, alert_email, is_admin</td>
+          </tr>
+          <tr>
+            <td><code>app_config</code></td>
+            <td>Global AI provider settings</td>
+            <td>key, value — public read, admin write</td>
+          </tr>
+          <tr>
+            <td><code>ai_token_usage</code></td>
+            <td>Token audit trail per AI call</td>
+            <td>feature, user_id, input_tokens, output_tokens, model</td>
           </tr>
         </tbody>
       </table>
@@ -879,7 +1001,7 @@
   <section id="api" style="background: var(--surface-alt);">
     <div class="inner">
       <div class="section-label">API</div>
-      <div class="section-title">4 backend routes</div>
+      <div class="section-title">12 backend routes</div>
       <div class="section-desc">Server-side endpoints for market data, AI analysis, signals, and automated alerts.</div>
 
       <table class="api-table">
@@ -890,22 +1012,62 @@
           <tr>
             <td><code>/api/research</code></td>
             <td><span class="method-badge method-post">POST</span></td>
-            <td>Run Claude AI analysis on up to 20 symbols. Returns markdown report + trade suggestions.</td>
+            <td>Run Claude AI deep research on up to 20 symbols. Returns markdown report + trade suggestions.</td>
+          </tr>
+          <tr>
+            <td><code>/api/recommendations</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Daily AI stock picks across 3 themes. Served from cache; force-refresh via query param.</td>
+          </tr>
+          <tr>
+            <td><code>/api/explosive</code></td>
+            <td><span class="method-badge method-post">POST</span></td>
+            <td>Claude AI explosive stock finder for a given sector. Returns high-conviction picks with entry strategies.</td>
           </tr>
           <tr>
             <td><code>/api/options?symbol=X</code></td>
             <td><span class="method-badge method-get">GET</span></td>
-            <td>Fetch PMCC setups for a symbol from live options chains.</td>
+            <td>Fetch PMCC setups for a symbol from live Tradier options chains with real Greeks.</td>
+          </tr>
+          <tr>
+            <td><code>/api/pmcc-scan</code></td>
+            <td><span class="method-badge method-post">POST</span></td>
+            <td>Batch PMCC scan across a list of tickers. Returns ranked setups by monthly income.</td>
+          </tr>
+          <tr>
+            <td><code>/api/scanner</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Discovery scoring engine — ranks watchlist tickers by explosive potential score.</td>
           </tr>
           <tr>
             <td><code>/api/signals</code></td>
             <td><span class="method-badge method-get">GET</span></td>
-            <td>Check active positions for roll/close/profit alerts.</td>
+            <td>Check active positions for roll/close/profit alerts. Returns urgency-sorted signal list.</td>
+          </tr>
+          <tr>
+            <td><code>/api/movers</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Top market movers and unusual volume across watchlist symbols.</td>
+          </tr>
+          <tr>
+            <td><code>/api/earnings</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Upcoming earnings dates for watchlist symbols — risk flag for options positions.</td>
           </tr>
           <tr>
             <td><code>/api/cron</code></td>
             <td><span class="method-badge method-get">GET</span></td>
-            <td>Automated daily briefing (Vercel cron, 3x/day on market days).</td>
+            <td>Automated multi-purpose cron (Vercel cron). Runs position alerts, daily recs refresh, email briefings.</td>
+          </tr>
+          <tr>
+            <td><code>/api/admin</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Admin stats — token usage by feature, current AI provider config. Admin-gated.</td>
+          </tr>
+          <tr>
+            <td><code>/api/admin/provider</code></td>
+            <td><span class="method-badge method-post">POST</span></td>
+            <td>Toggle AI provider (Anthropic / OpenAI) and default model. Updates <code>app_config</code> table.</td>
           </tr>
         </tbody>
       </table>
@@ -916,15 +1078,29 @@
   <section>
     <div class="inner">
       <div class="section-label">History</div>
-      <div class="section-title">From zero to 16 features</div>
+      <div class="section-title">From zero to 20+ features</div>
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
         <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.10</div>
+          <div class="tl-content">
+            <h4>Sector Discovery, Explosive Finder, Trailing Stops, PMCC Picks</h4>
+            <p>8 curated sectors with 70+ tickers, Claude AI explosive stock finder, trailing stop system with peak tracking, PMCC auto-scan ranked by income.</p>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot">0.9</div>
+          <div class="tl-content">
+            <h4>Tradier Integration + Mock Fallback</h4>
+            <p>Replaced Yahoo Finance with Tradier for real Greeks (delta, gamma, theta, vega, IV). Automatic mock fallback when API key not set.</p>
+          </div>
+        </div>
+        <div class="tl-item">
           <div class="tl-dot">0.8</div>
           <div class="tl-content">
             <h4>All Real Data: No More Mocks</h4>
-            <p>Every page wired to live Yahoo Finance + Supabase. Zero hardcoded data remaining.</p>
+            <p>Every page wired to live market data + Supabase. Zero hardcoded data remaining.</p>
           </div>
         </div>
         <div class="tl-item">
@@ -985,14 +1161,21 @@
     <div class="inner">
       <div class="section-label">Roadmap</div>
       <div class="section-title">What's next</div>
-      <div class="section-desc">The backlog for the next wave of features.</div>
+      <div class="section-desc">Current P2 backlog — items Claude can pick up and implement autonomously once promoted to P1.</div>
 
       <div class="roadmap-list">
+        <div class="roadmap-item">
+          <div class="num">24</div>
+          <div>
+            <h4>Email Activation</h4>
+            <p>Configure Resend API key to activate automated email alert briefings</p>
+          </div>
+        </div>
         <div class="roadmap-item">
           <div class="num">25</div>
           <div>
             <h4>Paper Trading Mode</h4>
-            <p>Simulate trades with virtual capital, track hypothetical performance</p>
+            <p>Simulate trades with $20k virtual capital, track hypothetical performance</p>
           </div>
         </div>
         <div class="roadmap-item">
@@ -1037,12 +1220,92 @@
             <p>Install to home screen with native push notifications</p>
           </div>
         </div>
-        <div class="roadmap-item">
-          <div class="num">24</div>
-          <div>
-            <h4>Email Activation</h4>
-            <p>Configure Resend API key to activate automated email alerts</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUTONOMOUS BACKLOG MODE -->
+  <section id="backlog-mode">
+    <div class="inner">
+      <div class="section-label">Developer</div>
+      <div class="section-title">Autonomous Backlog Mode</div>
+      <div class="section-desc">Claude Code can pick items from the backlog, implement them, commit, and loop — without supervision. Karthik reviews diffs and promotes items to approve them.</div>
+
+      <div class="cmd-grid" style="margin-bottom: 2.5rem;">
+        <div class="cmd-card">
+          <code>/project:generate-backlog</code>
+          <p>Analyze the codebase for bugs, gaps, and ideas. Adds confirmed items to BACKLOG.md P2, and feature ideas to IDEAS.md for review.</p>
+        </div>
+        <div class="cmd-card">
+          <code>/project:list-backlog</code>
+          <p>Print a clean count of P1 / P2 / In Progress / Done items and list each title. Read-only, no file changes.</p>
+        </div>
+        <div class="cmd-card">
+          <code>/project:work-backlog</code>
+          <p>Pick the next P1 item (or P2 if P1 empty), implement it fully, run build, commit on success, and loop to the next item.</p>
+        </div>
+        <div class="cmd-card">
+          <code>./run-backlog.sh</code>
+          <p>Shell loop that re-invokes <code>/project:work-backlog</code> until Claude writes a status file — DONE, BLOCKED, NEEDS_INPUT, or LOOP_DETECTED.</p>
+        </div>
+      </div>
+
+      <div class="backlog-grid">
+        <div class="backlog-col">
+          <h3>Auto-approved (Claude just does it)</h3>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--accent);"></div>
+            <span>Bug fixes with clear reproduction in the task description</span>
           </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--accent);"></div>
+            <span>Missing error handling, null checks, TypeScript type fixes</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--accent);"></div>
+            <span>Console.log cleanup and minor copy/label fixes</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--accent);"></div>
+            <span>Test additions for existing behavior</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--accent);"></div>
+            <span>Performance improvements with no behavior change</span>
+          </div>
+        </div>
+        <div class="backlog-col">
+          <h3>Requires stopping (NEEDS_INPUT)</h3>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--red);"></div>
+            <span>New pages, routes, or major UI sections not in the task</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--red);"></div>
+            <span>New external API or data source integrations</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--red);"></div>
+            <span>Changes to core business logic or calculations</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--red);"></div>
+            <span>Anything requiring new environment variables</span>
+          </div>
+          <div class="backlog-rule">
+            <div class="dot" style="background: var(--red);"></div>
+            <span>Deleting or renaming existing database tables or routes</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.75rem;">Exit status written to .claude-status</div>
+        <div class="status-chips">
+          <span class="status-chip bg-green">DONE: all items complete</span>
+          <span class="status-chip bg-red">BLOCKED: [task] — [reason]</span>
+          <span class="status-chip bg-amber">NEEDS_INPUT: [task] — [what is needed]</span>
+          <span class="status-chip" style="background: var(--purple-light); color: var(--purple);">LOOP_DETECTED: [what is repeating]</span>
         </div>
       </div>
     </div>
