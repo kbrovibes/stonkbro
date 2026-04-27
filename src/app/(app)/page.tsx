@@ -51,7 +51,7 @@ export default async function DiscoverPage() {
       const earnings = await getEarningsCalendar(allSymbols);
       upcomingEarnings = earnings
         .filter((e) => e.category === "this_week" || e.category === "next_week")
-        .slice(0, 6);
+        .slice(0, 12);
     } catch {
       // ignore
     }
@@ -70,7 +70,18 @@ export default async function DiscoverPage() {
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       {watchlistWidgetData.length > 0 ? (
-        <WatchlistWidget watchlists={watchlistWidgetData} />
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-stone-800">Watchlists</h2>
+            <Link
+              href="/watchlists"
+              className="text-[11px] font-semibold text-sky-600 hover:text-sky-800 transition-colors"
+            >
+              Manage Watchlists
+            </Link>
+          </div>
+          <WatchlistWidget watchlists={watchlistWidgetData} />
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
           <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
