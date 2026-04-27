@@ -3,10 +3,11 @@
 ## 🔄 In Progress
 <!-- Claude moves items here when starting work, back to Done when committed -->
 
-## ✅ P1 — Do First
-- [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone
-- [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation
 - [ ] **34 — Scoring Engine** · Quantitative stock scoring (technicals + volume profile + sector momentum + earnings proximity), populate empty `src/lib/scoring/`
+
+## ✅ P1 — Do First
+- [ ] **32 — Push Notifications** · Web Push API via service worker, subscribe from settings, deliver position signals + movers + earnings alerts to phone — `NEEDS_INPUT: requires VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY env vars for Web Push; generate with web-push library or provide existing keys`
+- [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
 
 ## 📋 P2 — Do Next
 
