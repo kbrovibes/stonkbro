@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.14.0 — AI Earnings Plays
+
+- Pre-earnings strategy generator: scans 24-ticker universe for earnings in next 14 days
+- IV analysis: ATM straddle pricing, expected move %, average IV across near-term chain
+- AI-powered strategy suggestions: CSP, iron condor, credit spreads, straddles with specific strikes and risk/reward
+- New API endpoint: `/api/earnings-plays` returns plays data + AI suggestions
+- Earnings play analysis module: `src/lib/options/earnings-plays.ts`
+
 ## v0.13.0 — Smart Roll Advisor
 
 - Multi-factor roll detection: combines DTE urgency + profit capture + strike proximity + earnings timing into a 0-100 roll score
