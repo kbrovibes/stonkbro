@@ -382,7 +382,7 @@ export default function TodayPage() {
         )}
 
         {!moversLoading && movers.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {movers.map((m) => {
               const isUp = m.direction === "up";
               return (
@@ -492,7 +492,7 @@ export default function TodayPage() {
         )}
 
         {!recsLoading && recommendations.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {recommendations.map((rec) => {
               const meta = THEME_META[rec.theme] || { label: rec.theme, emoji: "📊" };
               const isCollapsed = collapsed[rec.theme] ?? false;
@@ -631,7 +631,7 @@ export default function TodayPage() {
         )}
 
         {!earningsLoading && earnings.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {earnings.map((e) => {
               const isThisWeek = e.category === "this_week";
               return (
@@ -687,7 +687,7 @@ export default function TodayPage() {
             {/* Link to full calendar */}
             <Link
               href="/earnings"
-              className="mt-1 text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors text-center"
+              className="col-span-2 mt-1 text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors text-center"
             >
               See Full Calendar &rarr;
             </Link>
@@ -728,7 +728,7 @@ export default function TodayPage() {
         )}
 
         {!flowLoading && flow.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {flow.map((f) => {
               const sentMeta = SENTIMENT_META[f.sentiment] || SENTIMENT_META.neutral;
               const isExpanded = flowExpanded[f.symbol] ?? false;
@@ -862,7 +862,7 @@ export default function TodayPage() {
         )}
 
         {!alertsLoading && alerts.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {alerts.map((alert, i) => {
               const meta = ALERT_META[alert.type] || ALERT_META.WARNING;
               return (
