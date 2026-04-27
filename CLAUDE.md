@@ -74,3 +74,31 @@ When a feature is added, removed, or significantly changed (new pages, API route
 See `scripts/update-docs.md` for detailed guidance on what to update and what to skip.
 
 Do NOT update docs for bug fixes, refactors, or non-user-facing changes.
+
+## Autonomous Backlog Mode
+
+### What Claude auto-approves (never ask, just do):
+- Bug fixes with clear reproduction in the task description
+- Missing error handling or null checks
+- TypeScript type fixes
+- Console.log cleanup
+- Test additions for existing behavior
+- Minor copy or label fixes
+- Performance improvements with no behavior change
+
+### What Claude must NOT do without stopping:
+- Add new pages, routes, or major UI sections
+- Integrate new external APIs or data sources
+- Change how core calculations or business logic work
+- Anything requiring new environment variables
+- Delete or rename existing database tables or API routes
+
+### Commit format:
+- `fix: [description]` for bug fixes
+- `feat: [description]` for new functionality
+- `chore: [description]` for non-functional changes
+- `wip: starting [task]` when beginning a task (immediately before implementation)
+
+### Exit protocol:
+When done or blocked, always write to .claude-status before stopping.
+Format: "DONE | BLOCKED | LOOP_DETECTED | NEEDS_INPUT: [explanation]"

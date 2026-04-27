@@ -1,6 +1,11 @@
 # Backlog
 
-## Queue
+## 🔄 In Progress
+<!-- Claude moves items here when starting work, back to Done when committed -->
+
+## ✅ P1 — Do First
+
+## 📋 P2 — Do Next
 
 - [ ] **24 — Resend Email Integration** · Configure Resend API key, activate email alerts
 - [ ] **25 — Paper Trading Mode** · Simulate trades with $20k starting cash, track performance
@@ -11,7 +16,11 @@
 - [ ] **22 — Backtesting Engine** · Test scoring model against historical data
 - [ ] **23 — PWA + Push Notifications** · Install to home screen, push alerts
 
-## Done
+## 💡 IDEAS — Unreviewed
+<!-- Claude adds brainstorm items here. Karthik reviews via git diff and promotes to P1/P2 to approve. -->
+
+## ✅ Done
+<!-- Completed items land here with git SHA and date -->
 
 - [x] **01 — App Shell & Navigation** · Layout, bottom nav, empty state pages
 - [x] **02 — Discovery Dashboard** · Ranked watchlist with live Yahoo Finance data
