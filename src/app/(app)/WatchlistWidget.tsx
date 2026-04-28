@@ -26,7 +26,6 @@ export default function WatchlistWidget({ watchlists }: { watchlists: Watchlist[
         const avgReturn = groupReturn(wl.tickers);
         return (
           <div key={wl.id}>
-            {/* Section header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-stone-800">{wl.name}</span>
@@ -46,26 +45,20 @@ export default function WatchlistWidget({ watchlists }: { watchlists: Watchlist[
               </Link>
             </div>
 
-            {/* 3-col ticker cards */}
             {wl.tickers.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {wl.tickers.map((t) => {
                   const up = t.changePct >= 0;
                   return (
                     <Link
                       key={t.symbol}
                       href={`/ticker/${t.symbol}`}
-                      className={`rounded-xl border px-3 py-2 text-center transition-colors hover:opacity-80 ${
-                        up
-                          ? "bg-white border-emerald-200"
-                          : "bg-white border-red-200"
+                      className={`rounded-lg p-2 transition-all hover:scale-[1.02] active:scale-95 ${
+                        up ? "bg-emerald-50 hover:bg-emerald-100/80" : "bg-red-50 hover:bg-red-100/80"
                       }`}
                     >
-                      <div className="text-xs font-bold text-stone-900">{t.symbol}</div>
-                      <div className="text-[10px] text-stone-500 tabular-nums mt-0.5">
-                        ${t.price < 1000 ? t.price.toFixed(2) : t.price.toFixed(0)}
-                      </div>
-                      <div className={`text-[11px] font-bold tabular-nums mt-0.5 ${
+                      <div className="text-[11px] font-extrabold text-stone-900 leading-none">{t.symbol}</div>
+                      <div className={`text-[10px] font-bold tabular-nums leading-none mt-1 ${
                         up ? "text-emerald-600" : "text-red-500"
                       }`}>
                         {up ? "+" : ""}{t.changePct.toFixed(1)}%
@@ -75,7 +68,7 @@ export default function WatchlistWidget({ watchlists }: { watchlists: Watchlist[
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-stone-200 px-4 py-4 text-center">
+              <div className="rounded-lg border border-dashed border-stone-200 px-4 py-3 text-center">
                 <Link href={`/watchlists/${wl.id}`} className="text-[11px] text-sky-600 font-medium hover:text-sky-800">
                   + Add tickers
                 </Link>
