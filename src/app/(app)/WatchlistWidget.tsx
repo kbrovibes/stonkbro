@@ -58,7 +58,10 @@ export default function WatchlistWidget({ watchlists }: { watchlists: Watchlist[
                       }`}
                     >
                       <div className="text-[11px] font-extrabold text-stone-900 leading-none">{t.symbol}</div>
-                      <div className={`text-[10px] font-bold tabular-nums leading-none mt-1 ${
+                      <div className="text-[10px] text-stone-500 tabular-nums leading-none mt-1">
+                        ${t.price < 1000 ? t.price.toFixed(2) : t.price.toFixed(0)}
+                      </div>
+                      <div className={`text-[10px] font-bold tabular-nums leading-none mt-0.5 ${
                         up ? "text-emerald-600" : "text-red-500"
                       }`}>
                         {up ? "+" : ""}{t.changePct.toFixed(1)}%
