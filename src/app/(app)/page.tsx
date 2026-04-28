@@ -18,7 +18,7 @@ export default async function DiscoverPage() {
     symbols: string[];
     quotes: QuoteData[];
   }
-  let watchlists: WatchlistData[] = [];
+  const watchlists: WatchlistData[] = [];
   let allSymbols: string[] = [];
 
   if (user) {

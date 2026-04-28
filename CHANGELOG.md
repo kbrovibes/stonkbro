@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.18.1 — Sparkline Caching
+
+- Sparkline Caching — new `market_sparklines` table in Supabase to store 5-day price history
+- Background Refresh Cron — dedicated `/api/cron/sparklines` endpoint to pre-fetch and cache sparklines for all active tickers
+- API Performance — `/api/sparklines` now reads from cache with 2-hour TTL, falling back to live fetch on cache miss
+- Home page loading speed significantly improved by eliminating redundant history fetches
+
 ## v0.18.0 — Backlog Status Page, Push Notifications, Auto-Update Hook
 
 - Backlog Status Page — static HTML at docs/backlog.html auto-generated from BACKLOG.md, served via GitHub Pages
