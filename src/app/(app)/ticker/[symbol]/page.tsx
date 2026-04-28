@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getQuote } from "@/lib/market/yahoo";
+import StockChart from "@/components/StockChart";
 
 type Params = Promise<{ symbol: string }>;
 
@@ -71,6 +72,9 @@ export default async function TickerPage({ params }: { params: Params }) {
           </span>
         </div>
       </div>
+
+      {/* Chart */}
+      <StockChart symbol={quote.symbol} currentPrice={quote.price} />
 
       {/* Signals */}
       {signals.length > 0 && (
