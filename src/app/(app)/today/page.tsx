@@ -109,6 +109,10 @@ function updatedAgoText(ts: number | null): string {
   return `Updated ${Math.floor(mins / 60)}h ago`;
 }
 
+function isStale(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() > 4 * 60 * 60 * 1000;
+}
+
 // --- Spinner component ---
 
 function Spinner({ size = "w-5 h-5" }: { size?: string }) {
@@ -364,12 +368,18 @@ export default function TodayPage() {
                   </p>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 justify-end">
+                  <div className="flex items-center gap-2 justify-end flex-wrap">
+                    <Link
+                      href={`/ticker/${m.symbol}`}
+                      className="text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                    >
+                      Research &rarr;
+                    </Link>
                     <Link
                       href={`/suggestions/${m.symbol}`}
                       className="text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
                     >
-                      View Options &rarr;
+                      Options &rarr;
                     </Link>
                     <Link
                       href={`/positions/new?symbol=${m.symbol}&strategy=Cash-Secured Put`}
@@ -454,7 +464,11 @@ export default function TodayPage() {
                       <span className="text-sm font-bold text-stone-900">{meta.label}</span>
                       <span className="text-[10px] text-stone-400 font-medium">{rec.picks.length} picks</span>
                     </div>
-                    <span className="text-[10px] text-stone-400">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      isStale(rec.generatedAt)
+                        ? "text-amber-700 bg-amber-50"
+                        : "text-stone-400"
+                    }`}>
                       {formatTimeAgo(rec.generatedAt)}
                     </span>
                   </button>
@@ -523,8 +537,14 @@ export default function TodayPage() {
                             </div>
                           )}
 
-                          {/* Log Trade button */}
-                          <div className="flex justify-end mt-2">
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 justify-end mt-2">
+                            <Link
+                              href={`/ticker/${pick.symbol}`}
+                              className="text-[11px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                            >
+                              Research &rarr;
+                            </Link>
                             <Link
                               href={`/positions/new?symbol=${pick.symbol}&strategy=${encodeURIComponent(pick.action?.split(" ")[0] === "Sell" ? "Cash-Secured Put" : "Covered Call")}`}
                               className="inline-flex items-center rounded-lg bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"

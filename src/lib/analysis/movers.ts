@@ -139,13 +139,17 @@ function buildReasoning(
 
 /**
  * Full scan: fetches quotes for the entire scan universe and detects movers.
+ * Optionally merges extra tickers (e.g. user watchlists) into the universe.
  * Callable on-demand from API routes or cron jobs.
  */
-export async function scanForMovers(): Promise<{
+export async function scanForMovers(extraTickers?: string[]): Promise<{
   movers: ExplosiveMover[];
   scannedCount: number;
 }> {
-  const quotes = await getQuotes(SCAN_UNIVERSE);
+  const tickers = extraTickers?.length
+    ? [...new Set([...SCAN_UNIVERSE, ...extraTickers])]
+    : SCAN_UNIVERSE;
+  const quotes = await getQuotes(tickers);
   const movers = detectExplosiveMovers(quotes);
   return { movers, scannedCount: quotes.length };
 }

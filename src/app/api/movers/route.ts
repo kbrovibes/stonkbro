@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 import { scanForMovers } from "@/lib/analysis/movers";
+import { createClient } from "@/lib/supabase-server";
+import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const { movers, scannedCount } = await scanForMovers();
+    let watchlistSymbols: string[] = [];
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        watchlistSymbols = await getAllWatchlistSymbols(user.id);
+      }
+    } catch {
+      // watchlist unavailable — continue without it
+    }
+
+    const { movers, scannedCount } = await scanForMovers(watchlistSymbols);
 
     return NextResponse.json({
       movers,
       scannedCount,
+      watchlistAdded: watchlistSymbols.length,
       timestamp: new Date().toISOString(),
     });
   } catch (e) {

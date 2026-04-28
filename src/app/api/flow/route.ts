@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getQuotes, getAllOptionsChains } from "@/lib/market/yahoo";
 import { analyzeFlow, type FlowSummary } from "@/lib/options/flow-scanner";
+import { createClient } from "@/lib/supabase-server";
+import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +16,27 @@ const DEFAULT_UNIVERSE = [
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tickersParam = searchParams.get("tickers");
-  const tickers = tickersParam
-    ? tickersParam.split(",").map((t) => t.trim().toUpperCase())
-    : DEFAULT_UNIVERSE;
+
+  let tickers: string[];
+  if (tickersParam) {
+    // Explicit override takes precedence
+    tickers = tickersParam.split(",").map((t) => t.trim().toUpperCase());
+  } else {
+    // Merge DEFAULT_UNIVERSE with user's watchlist tickers
+    let watchlistSymbols: string[] = [];
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        watchlistSymbols = await getAllWatchlistSymbols(user.id);
+      }
+    } catch {
+      // watchlist unavailable — continue without it
+    }
+    tickers = [...new Set([...DEFAULT_UNIVERSE, ...watchlistSymbols])];
+  }
 
   try {
     // Fetch quotes for all tickers
