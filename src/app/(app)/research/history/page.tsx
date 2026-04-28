@@ -182,7 +182,7 @@ export default function ResearchHistoryPage() {
                 )}
 
                 {/* Full report */}
-                <div className="px-4 py-3 max-h-96 overflow-y-auto">
+                <div className="px-4 py-4">
                   <h4 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">Full Report</h4>
                   <div className="text-xs text-stone-700 leading-relaxed">
                     <SimpleMarkdown content={report.report} />

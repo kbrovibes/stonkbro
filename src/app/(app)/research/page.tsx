@@ -1,9 +1,24 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 
+const ALL_TICKERS = [
+  "AAPL","ABNB","AEHR","AFRM","AI","AMD","AMZN","ANET","ARM","ARQQ","ASTS",
+  "AVGO","AXON","BA","BABA","BEAM","BILL","BLNK","BKNG","CAT","CCJ","CEG",
+  "CELH","CFLT","CHPT","COIN","COST","CRDO","CRSP","CRWD","DAL","DDOG",
+  "DIS","DNA","DNN","EXPE","F","GE","GKOS","GM","GOOG","GOOGL","GS",
+  "HIMS","HOOD","INTC","IONQ","JPM","KTOS","LAZR","LCID","LEU","LHX",
+  "LIDR","LLY","LULU","LUNR","MA","MDB","MELI","META","MRNA","MRVL",
+  "MSFT","MSTR","MU","NET","NFLX","NIO","NNE","NU","NVDA","OKLO",
+  "ORCL","PATH","PLTR","PYPL","QBTS","QCOM","QS","QUBT","RDDT","RDW",
+  "RGTI","RIVN","RKLB","ROKU","RXRX","S","SDGR","SHOP","SMCI","SMR",
+  "SNAP","SNOW","SOFI","SPOT","SQ","TEM","TGT","TOST","TSLA","TSM",
+  "UBER","UEC","UNH","UPST","UUUU","V","VERV","VRT","VST","WMT","ZS",
+];
+
 type TradeSuggestion = {
+  id?: string;
   symbol: string;
   strategy: string;
   action: string;
@@ -13,45 +28,36 @@ type TradeSuggestion = {
   reasoning: string;
 };
 
-type ResearchRun = {
+type ResearchEntry = {
   id: string;
-  report: string;
-  suggestions: TradeSuggestion[];
-  symbolsAnalyzed: string[];
+  status: "pending" | "running" | "completed" | "failed";
+  symbols: string[];
+  mode: string;
+  report?: string;
+  suggestions?: TradeSuggestion[];
   timestamp: string;
+  error?: string;
   dismissed: Set<number>;
   accepted: Set<number>;
 };
 
-const DEFAULT_SYMBOLS = "NVDA, AAPL, MSFT, TSLA, AMD, PLTR, META, AMZN";
-
 function strategyColor(strategy: string) {
   switch (strategy) {
-    case "CSP":
-      return "bg-sky-50 text-sky-700 border-sky-200";
-    case "CC":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    case "PMCC":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "AVOID":
-      return "bg-red-50 text-red-700 border-red-200";
-    default:
-      return "bg-stone-100 text-stone-600 border-stone-200";
+    case "CSP": return "bg-sky-50 text-sky-700 border-sky-200";
+    case "CC": return "bg-amber-50 text-amber-700 border-amber-200";
+    case "PMCC": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "AVOID": return "bg-red-50 text-red-700 border-red-200";
+    default: return "bg-stone-100 text-stone-600 border-stone-200";
   }
 }
 
 function strategyLabel(strategy: string) {
   switch (strategy) {
-    case "CSP":
-      return "Cash-Secured Put";
-    case "CC":
-      return "Covered Call";
-    case "PMCC":
-      return "Poor Man's CC";
-    case "AVOID":
-      return "Avoid";
-    default:
-      return strategy;
+    case "CSP": return "Cash-Secured Put";
+    case "CC": return "Covered Call";
+    case "PMCC": return "Poor Man's CC";
+    case "AVOID": return "Avoid";
+    default: return strategy;
   }
 }
 
@@ -60,226 +66,462 @@ function formatDollar(n: number | undefined) {
   return (n < 0 ? "-" : "") + "$" + Math.abs(n).toFixed(2);
 }
 
-// Simple markdown renderer for the report
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Simple markdown renderer
 function MarkdownReport({ content }: { content: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
 
+  function fmt(text: string): React.ReactNode {
+    const parts: React.ReactNode[] = [];
+    let remaining = text;
+    let key = 0;
+    while (remaining.length > 0) {
+      const m = remaining.match(/\*\*(.+?)\*\*/);
+      if (m && m.index !== undefined) {
+        if (m.index > 0) parts.push(remaining.substring(0, m.index));
+        parts.push(<span key={key++} className="font-semibold text-stone-900">{m[1]}</span>);
+        remaining = remaining.substring(m.index + m[0].length);
+      } else { parts.push(remaining); break; }
+    }
+    return <>{parts}</>;
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
     if (line.startsWith("#### ")) {
-      elements.push(
-        <h4 key={i} className="text-sm font-bold text-stone-800 mt-4 mb-1">
-          {line.replace(/^####\s*/, "")}
-        </h4>
-      );
+      elements.push(<h4 key={i} className="text-sm font-bold text-stone-800 mt-4 mb-1">{line.replace(/^####\s*/, "")}</h4>);
     } else if (line.startsWith("### ")) {
-      elements.push(
-        <h3 key={i} className="text-base font-extrabold text-stone-900 mt-5 mb-2">
-          {line.replace(/^###\s*/, "")}
-        </h3>
-      );
+      elements.push(<h3 key={i} className="text-base font-extrabold text-stone-900 mt-5 mb-2">{line.replace(/^###\s*/, "")}</h3>);
     } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2 key={i} className="text-lg font-extrabold text-stone-900 mt-6 mb-2 pb-1 border-b border-stone-200">
-          {line.replace(/^##\s*/, "")}
-        </h2>
-      );
+      elements.push(<h2 key={i} className="text-lg font-extrabold text-stone-900 mt-6 mb-2 pb-1 border-b border-stone-200">{line.replace(/^##\s*/, "")}</h2>);
     } else if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={i} className="text-xl font-extrabold text-stone-900 mt-6 mb-3">
-          {line.replace(/^#\s*/, "")}
-        </h1>
-      );
-    } else if (line.startsWith("- **") || line.startsWith("  - **")) {
-      const indent = line.startsWith("  ") ? "ml-4" : "";
-      const boldMatch = line.match(/\*\*(.+?)\*\*(.*)/);
-      if (boldMatch) {
-        elements.push(
-          <p key={i} className={`text-sm text-stone-700 ${indent} py-0.5`}>
-            <span className="font-semibold text-stone-900">{boldMatch[1]}</span>
-            {formatInlineMarkdown(boldMatch[2])}
-          </p>
-        );
-      } else {
-        elements.push(
-          <p key={i} className={`text-sm text-stone-700 ${indent} py-0.5`}>
-            {formatInlineMarkdown(line.replace(/^\s*-\s*/, ""))}
-          </p>
-        );
-      }
+      elements.push(<h1 key={i} className="text-xl font-extrabold text-stone-900 mt-6 mb-3">{line.replace(/^#\s*/, "")}</h1>);
     } else if (line.match(/^\s*-\s/)) {
       const indent = line.match(/^(\s*)/)?.[1]?.length || 0;
-      const ml = indent > 0 ? "ml-4" : "";
       elements.push(
-        <p key={i} className={`text-sm text-stone-600 ${ml} py-0.5 flex`}>
-          <span className="text-stone-400 mr-2 flex-shrink-0">-</span>
-          <span>{formatInlineMarkdown(line.replace(/^\s*-\s*/, ""))}</span>
+        <p key={i} className={`text-sm text-stone-600 ${indent > 0 ? "ml-4" : ""} py-0.5 flex`}>
+          <span className="text-stone-400 mr-2 shrink-0">-</span>
+          <span>{fmt(line.replace(/^\s*-\s*/, ""))}</span>
         </p>
       );
     } else if (line.match(/^\d+\.\s/)) {
-      elements.push(
-        <p key={i} className="text-sm text-stone-700 py-0.5">
-          {formatInlineMarkdown(line)}
-        </p>
-      );
+      elements.push(<p key={i} className="text-sm text-stone-700 py-0.5">{fmt(line)}</p>);
     } else if (line.trim() === "") {
       elements.push(<div key={i} className="h-2" />);
     } else {
-      elements.push(
-        <p key={i} className="text-sm text-stone-700 leading-relaxed">
-          {formatInlineMarkdown(line)}
-        </p>
-      );
+      elements.push(<p key={i} className="text-sm text-stone-700 leading-relaxed">{fmt(line)}</p>);
     }
   }
-
   return <div className="space-y-0">{elements}</div>;
 }
 
-function formatInlineMarkdown(text: string): React.ReactNode {
-  // Handle **bold** and *italic*
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
+// ---------------------------------------------------------------------------
+// Ticker chip input with autocomplete
+// ---------------------------------------------------------------------------
 
-  while (remaining.length > 0) {
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    if (boldMatch && boldMatch.index !== undefined) {
-      if (boldMatch.index > 0) {
-        parts.push(remaining.substring(0, boldMatch.index));
+function TickerInput({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (chips: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [focusedIdx, setFocusedIdx] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const q = draft.toUpperCase().trim();
+    if (!q) { setSuggestions([]); return; }
+    const matches = ALL_TICKERS
+      .filter((t) => t.includes(q) && !value.includes(t))
+      .sort((a, b) => {
+        const aStart = a.startsWith(q) ? 0 : 1;
+        const bStart = b.startsWith(q) ? 0 : 1;
+        return aStart - bStart || a.localeCompare(b);
+      })
+      .slice(0, 6);
+    setSuggestions(matches);
+    setFocusedIdx(-1);
+  }, [draft, value]);
+
+  function addTicker(sym: string) {
+    const upper = sym.toUpperCase().trim();
+    if (!upper || value.includes(upper)) return;
+    onChange([...value, upper]);
+    setDraft("");
+    setSuggestions([]);
+    inputRef.current?.focus();
+  }
+
+  function removeTicker(sym: string) {
+    onChange(value.filter((v) => v !== sym));
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if ((e.key === "Enter" || e.key === "," || e.key === "Tab") && draft.trim()) {
+      e.preventDefault();
+      if (focusedIdx >= 0 && suggestions[focusedIdx]) {
+        addTicker(suggestions[focusedIdx]);
+      } else {
+        addTicker(draft.trim());
       }
-      parts.push(
-        <span key={key++} className="font-semibold text-stone-900">
-          {boldMatch[1]}
-        </span>
-      );
-      remaining = remaining.substring(boldMatch.index + boldMatch[0].length);
-    } else {
-      parts.push(remaining);
-      break;
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Escape") {
+      setSuggestions([]);
+    } else if (e.key === "Backspace" && !draft && value.length > 0) {
+      onChange(value.slice(0, -1));
     }
   }
 
-  return <>{parts}</>;
+  return (
+    <div
+      className="relative flex flex-wrap items-center gap-1.5 px-2.5 py-2 rounded-xl border border-stone-200 bg-white min-h-[44px] cursor-text focus-within:border-stone-400 transition-colors"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {value.map((sym) => (
+        <span key={sym} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-900 text-white text-[11px] font-bold">
+          {sym}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); removeTicker(sym); }}
+            className="text-stone-400 hover:text-white leading-none"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value.toUpperCase())}
+        onKeyDown={handleKeyDown}
+        placeholder={value.length === 0 ? "Type a ticker… (NVDA, AAPL, TSLA)" : "Add more…"}
+        className="flex-1 min-w-[120px] text-sm placeholder:text-stone-300 bg-transparent outline-none"
+      />
+
+      {suggestions.length > 0 && (
+        <div className="absolute top-full left-0 z-20 w-full mt-1 rounded-xl bg-white border border-stone-200 shadow-lg py-1">
+          {suggestions.map((s, i) => (
+            <button
+              key={s}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); addTicker(s); }}
+              className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors ${
+                i === focusedIdx ? "bg-sky-50 text-sky-700" : "text-stone-800 hover:bg-stone-50"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-type RecentReport = {
-  id: string;
-  status: "running" | "completed" | "failed";
-  symbols_analyzed: string[];
-  mode: string;
-  created_at: string;
-  opened: boolean;
-};
+// ---------------------------------------------------------------------------
+// Entry card
+// ---------------------------------------------------------------------------
+
+function EntryCard({
+  entry,
+  expanded,
+  onToggle,
+  onRedo,
+  onSuggestionAction,
+}: {
+  entry: ResearchEntry;
+  expanded: boolean;
+  onToggle: () => void;
+  onRedo: (symbols: string[]) => void;
+  onSuggestionAction: (idx: number, action: "accept" | "dismiss") => void;
+}) {
+  const isRunning = entry.status === "pending" || entry.status === "running";
+  const isFailed = entry.status === "failed";
+
+  return (
+    <div className={`rounded-xl border bg-white overflow-hidden transition-colors ${
+      isFailed ? "border-red-200" : "border-stone-200"
+    }`}>
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button onClick={onToggle} className="flex-1 min-w-0 flex items-center gap-2 text-left">
+          {isRunning ? (
+            <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
+          ) : isFailed ? (
+            <div className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+          ) : (
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-stone-900">
+                {entry.symbols.slice(0, 5).join(", ")}
+                {entry.symbols.length > 5 && ` +${entry.symbols.length - 5}`}
+              </span>
+              <span className="text-[10px] text-stone-400">
+                {isRunning ? "analyzing…" : isFailed ? "failed" : timeAgo(entry.timestamp)}
+              </span>
+            </div>
+            {!isRunning && entry.suggestions && entry.suggestions.length > 0 && (
+              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                {entry.suggestions.slice(0, 4).map((s, i) => (
+                  <span key={i} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${strategyColor(s.strategy)}`}>
+                    {s.symbol} {s.strategy}
+                  </span>
+                ))}
+                {entry.suggestions.length > 4 && (
+                  <span className="text-[10px] text-stone-400">+{entry.suggestions.length - 4}</span>
+                )}
+              </div>
+            )}
+          </div>
+          {!isRunning && (
+            <svg className={`w-4 h-4 text-stone-400 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          )}
+        </button>
+        {/* Redo button */}
+        <button
+          onClick={() => onRedo(entry.symbols)}
+          className="shrink-0 px-2 py-1 rounded-lg border border-stone-200 text-[10px] font-semibold text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-colors"
+          title="Run research again for these tickers"
+        >
+          Redo
+        </button>
+      </div>
+
+      {/* Running state inline */}
+      {isRunning && (
+        <div className="px-4 pb-3">
+          <p className="text-xs text-stone-400">AI is analyzing market data and technicals…</p>
+          <div className="mt-2 h-0.5 bg-stone-100 rounded-full overflow-hidden">
+            <div className="h-full bg-sky-400 animate-pulse w-3/5 rounded-full" />
+          </div>
+        </div>
+      )}
+
+      {/* Failed state */}
+      {isFailed && (
+        <div className="px-4 pb-3">
+          <p className="text-xs text-red-600">{entry.error || "Research failed. Try again."}</p>
+        </div>
+      )}
+
+      {/* Expanded content */}
+      {expanded && entry.status === "completed" && (
+        <div className="border-t border-stone-100">
+          {/* Trade suggestions */}
+          {entry.suggestions && entry.suggestions.length > 0 && (
+            <div className="px-4 py-3 border-b border-stone-100">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">
+                Trade Suggestions ({entry.suggestions.length})
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {entry.suggestions.map((suggestion, idx) => {
+                  const isAccepted = entry.accepted.has(idx);
+                  const isDismissed = entry.dismissed.has(idx);
+                  return (
+                    <div
+                      key={idx}
+                      className={`rounded-xl border bg-white p-3 transition-opacity ${
+                        isDismissed ? "opacity-40 border-stone-100"
+                          : isAccepted ? "border-emerald-300 bg-emerald-50/30"
+                          : "border-stone-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-stone-900">{suggestion.symbol}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${strategyColor(suggestion.strategy)}`}>
+                            {strategyLabel(suggestion.strategy)}
+                          </span>
+                        </div>
+                        {suggestion.premium !== undefined && (
+                          <span className={`text-sm font-bold ${suggestion.premium >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                            {formatDollar(suggestion.premium)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-medium text-stone-800 bg-stone-50 rounded-lg px-3 py-2 mb-1.5">
+                        {suggestion.action}
+                      </p>
+                      <div className="flex gap-4 mb-1.5 text-xs text-stone-500">
+                        {suggestion.strike !== undefined && (
+                          <span>Strike: <span className="font-medium text-stone-700">${suggestion.strike}</span></span>
+                        )}
+                        {suggestion.expiry && (
+                          <span>Expiry: <span className="font-medium text-stone-700">{suggestion.expiry}</span></span>
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-600 leading-relaxed mb-2">{suggestion.reasoning}</p>
+                      {suggestion.strategy !== "AVOID" && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => onSuggestionAction(idx, "accept")}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              isAccepted ? "bg-emerald-600 text-white" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                          >
+                            {isAccepted ? "Accepted" : "Accept"}
+                          </button>
+                          <button
+                            onClick={() => onSuggestionAction(idx, "dismiss")}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              isDismissed ? "bg-stone-400 text-white" : "border border-stone-200 text-stone-500 hover:bg-stone-50"
+                            }`}
+                          >
+                            {isDismissed ? "Dismissed" : "Dismiss"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Full report */}
+          {entry.report && (
+            <div className="px-4 py-4">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-3">Full Report</p>
+              <MarkdownReport content={entry.report} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function ResearchPage() {
-  const [symbolsInput, setSymbolsInput] = useState(DEFAULT_SYMBOLS);
+  const [tickers, setTickers] = useState<string[]>([]);
   const [mode, setMode] = useState<"hybrid" | "deep">("hybrid");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [runs, setRuns] = useState<ResearchRun[]>([]);
-  const [expandedReport, setExpandedReport] = useState<string | null>(null);
-  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
-  const [pollingId, setPollingId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<ResearchEntry[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // Load recent/unopened reports on mount
+  // Load last 10 from history on mount
   useEffect(() => {
-    fetch("/api/research/status")
+    fetch("/api/research/history")
       .then((r) => r.json())
-      .then((d) => setRecentReports(d.reports || []))
-      .catch(() => {});
+      .then((d) => {
+        const reports = (d.reports || []).slice(0, 10);
+        const loaded: ResearchEntry[] = reports.map((r: {
+          id: string;
+          symbols: string[];
+          mode?: string;
+          report: string;
+          createdAt: string;
+          suggestions: TradeSuggestion[];
+        }) => ({
+          id: r.id,
+          status: "completed" as const,
+          symbols: r.symbols || [],
+          mode: r.mode || "hybrid",
+          report: r.report,
+          suggestions: r.suggestions || [],
+          timestamp: r.createdAt,
+          dismissed: new Set<number>(),
+          accepted: new Set<number>(),
+        }));
+        setEntries(loaded);
+        setLoadingHistory(false);
+      })
+      .catch(() => setLoadingHistory(false));
   }, []);
 
-  // Poll for running report completion
+  // Poll for any running entries
   useEffect(() => {
-    if (!pollingId) return;
+    const runningIds = entries
+      .filter((e) => e.status === "pending" || e.status === "running")
+      .map((e) => e.id);
+    if (runningIds.length === 0) return;
+
     const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/research/status?id=${pollingId}`);
-        const data = await res.json();
-        if (data.report?.status === "completed") {
-          clearInterval(interval);
-          setPollingId(null);
-          setLoading(false);
-          const newRun: ResearchRun = {
-            id: data.report.id,
-            report: data.report.report,
-            suggestions: (data.suggestions || []).map((s: TradeSuggestion) => s),
-            symbolsAnalyzed: data.report.symbols_analyzed,
-            timestamp: data.report.created_at,
-            dismissed: new Set(),
-            accepted: new Set(),
-          };
-          setRuns((prev) => [newRun, ...prev]);
-          setExpandedReport(newRun.id);
-          // Mark as opened
-          fetch("/api/research/status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reportId: data.report.id }),
-          });
-          // Remove from recent
-          setRecentReports((prev) => prev.filter((r) => r.id !== data.report.id));
-        } else if (data.report?.status === "failed") {
-          clearInterval(interval);
-          setPollingId(null);
-          setLoading(false);
-          setError(data.report.report || "Research failed");
+      for (const id of runningIds) {
+        try {
+          const res = await fetch(`/api/research/status?id=${id}`);
+          const data = await res.json();
+          if (data.report?.status === "completed") {
+            setEntries((prev) =>
+              prev.map((e) =>
+                e.id === id
+                  ? {
+                      ...e,
+                      status: "completed",
+                      report: data.report.report,
+                      suggestions: data.suggestions || [],
+                      timestamp: data.report.created_at,
+                    }
+                  : e
+              )
+            );
+            setExpandedId(id);
+            // Mark opened
+            fetch("/api/research/status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reportId: id }),
+            });
+          } else if (data.report?.status === "failed") {
+            setEntries((prev) =>
+              prev.map((e) =>
+                e.id === id
+                  ? { ...e, status: "failed", error: data.report.report || "Research failed" }
+                  : e
+              )
+            );
+          }
+        } catch {
+          // keep polling
         }
-      } catch {
-        // Keep polling
       }
     }, 3000);
+
     return () => clearInterval(interval);
-  }, [pollingId]);
+  }, [entries]);
 
-  const openRecentReport = useCallback(async (reportId: string) => {
-    try {
-      const res = await fetch(`/api/research/status?id=${reportId}`);
-      const data = await res.json();
-      if (data.report?.status === "completed") {
-        const newRun: ResearchRun = {
-          id: data.report.id,
-          report: data.report.report,
-          suggestions: (data.suggestions || []).map((s: TradeSuggestion) => s),
-          symbolsAnalyzed: data.report.symbols_analyzed,
-          timestamp: data.report.created_at,
-          dismissed: new Set(),
-          accepted: new Set(),
-        };
-        setRuns((prev) => [newRun, ...prev.filter((r) => r.id !== reportId)]);
-        setExpandedReport(newRun.id);
-        // Mark as opened
-        fetch("/api/research/status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reportId }),
-        });
-        setRecentReports((prev) => prev.filter((r) => r.id !== reportId));
-      } else if (data.report?.status === "running") {
-        setPollingId(reportId);
-        setLoading(true);
-      }
-    } catch {
-      setError("Failed to load report");
-    }
-  }, []);
+  const runResearch = useCallback(async (symbolsToRun?: string[]) => {
+    const symbols = symbolsToRun ?? tickers;
+    if (symbols.length === 0) return;
 
-  const runResearch = useCallback(async () => {
-    const symbols = symbolsInput
-      .split(/[,\s]+/)
-      .map((s) => s.trim().toUpperCase())
-      .filter((s) => s.length > 0);
-
-    if (symbols.length === 0) {
-      setError("Enter at least one symbol");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+    // Add a pending entry immediately at the top
+    const pendingId = `pending-${Date.now()}`;
+    const pendingEntry: ResearchEntry = {
+      id: pendingId,
+      status: "pending",
+      symbols,
+      mode,
+      timestamp: new Date().toISOString(),
+      dismissed: new Set(),
+      accepted: new Set(),
+    };
+    setEntries((prev) => [pendingEntry, ...prev]);
 
     try {
       const res = await fetch("/api/research", {
@@ -290,90 +532,100 @@ export default function ResearchPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || `Request failed with status ${res.status}`);
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === pendingId
+              ? { ...e, status: "failed", error: data.error || "Request failed" }
+              : e
+          )
+        );
+        return;
       }
 
       const data = await res.json();
 
       if (data.reportId && data.report) {
         // Completed inline
-        const newRun: ResearchRun = {
-          id: data.reportId,
-          report: data.report,
-          suggestions: data.suggestions,
-          symbolsAnalyzed: data.symbolsAnalyzed,
-          timestamp: data.timestamp,
-          dismissed: new Set(),
-          accepted: new Set(),
-        };
-        setRuns((prev) => [newRun, ...prev]);
-        setExpandedReport(newRun.id);
-        setLoading(false);
-        // Mark as opened
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === pendingId
+              ? {
+                  ...e,
+                  id: data.reportId,
+                  status: "completed",
+                  report: data.report,
+                  suggestions: data.suggestions || [],
+                  timestamp: data.timestamp,
+                }
+              : e
+          )
+        );
+        setExpandedId(data.reportId);
         fetch("/api/research/status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ reportId: data.reportId }),
         });
       } else if (data.reportId) {
-        // Still running — poll
-        setPollingId(data.reportId);
+        // Still running — update id, poll will pick it up
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === pendingId
+              ? { ...e, id: data.reportId, status: "running" }
+              : e
+          )
+        );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-      setLoading(false);
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === pendingId
+            ? { ...entry, status: "failed", error: e instanceof Error ? e.message : "Unknown error" }
+            : entry
+        )
+      );
     }
-  }, [symbolsInput, mode]);
+  }, [tickers, mode]);
 
-  const handleSuggestionAction = (
-    runId: string,
-    suggestionIndex: number,
+  const handleSuggestionAction = useCallback((
+    entryId: string,
+    idx: number,
     action: "accept" | "dismiss"
   ) => {
-    setRuns((prev) =>
-      prev.map((run) => {
-        if (run.id !== runId) return run;
-        const newAccepted = new Set(run.accepted);
-        const newDismissed = new Set(run.dismissed);
-        if (action === "accept") {
-          newAccepted.add(suggestionIndex);
-          newDismissed.delete(suggestionIndex);
-        } else {
-          newDismissed.add(suggestionIndex);
-          newAccepted.delete(suggestionIndex);
-        }
-        return { ...run, accepted: newAccepted, dismissed: newDismissed };
+    setEntries((prev) =>
+      prev.map((e) => {
+        if (e.id !== entryId) return e;
+        const newAccepted = new Set(e.accepted);
+        const newDismissed = new Set(e.dismissed);
+        if (action === "accept") { newAccepted.add(idx); newDismissed.delete(idx); }
+        else { newDismissed.add(idx); newAccepted.delete(idx); }
+        return { ...e, accepted: newAccepted, dismissed: newDismissed };
       })
     );
-  };
+  }, []);
+
+  const hasRunning = entries.some((e) => e.status === "pending" || e.status === "running");
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-extrabold text-stone-900">Deep Research</h2>
-          <p className="text-xs text-stone-500 mt-0.5">
-            AI-powered options analysis with specific trade suggestions
-          </p>
+          <h2 className="text-lg font-extrabold text-stone-900">Research</h2>
+          <p className="text-xs text-stone-500 mt-0.5">AI-powered options analysis</p>
         </div>
         <Link
           href="/research/history"
           className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors"
         >
-          History
+          All History
         </Link>
       </div>
 
       {/* Input */}
-      <div className="flex flex-col gap-3">
-        <textarea
-          value={symbolsInput}
-          onChange={(e) => setSymbolsInput(e.target.value)}
-          placeholder="Enter symbols separated by commas..."
-          rows={2}
-          className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-stone-400 resize-none"
-        />
-        {/* Mode toggle */}
+      <div className="flex flex-col gap-2.5">
+        <TickerInput value={tickers} onChange={setTickers} />
+
         <div className="flex items-center gap-1 p-1 rounded-lg bg-stone-100">
           <button
             onClick={() => setMode("hybrid")}
@@ -388,245 +640,54 @@ export default function ResearchPage() {
             Deep (thorough)
           </button>
         </div>
-        <p className="text-[10px] text-stone-400">
-          {mode === "hybrid"
-            ? "Code computes technicals first, AI focuses on trade reasoning — faster, cheaper"
-            : "AI analyzes everything from scratch — slower, more thorough"}
-        </p>
 
         <button
-          onClick={runResearch}
-          disabled={loading}
-          className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          onClick={() => runResearch()}
+          disabled={tickers.length === 0 || hasRunning}
+          className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? "Analyzing..." : "Run Research"}
+          {hasRunning ? "Analyzing…" : "Run Research"}
         </button>
       </div>
 
-      {/* Recent research runs */}
-      {recentReports.length > 0 && (
-        <div>
-          <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Recent Runs</h3>
-          <div className="flex flex-col gap-2">
-            {recentReports.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => openRecentReport(r.id)}
-                className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors text-left"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {r.status === "running" ? (
-                    <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  )}
-                  <span className="text-xs font-bold text-stone-900 truncate">
-                    {r.symbols_analyzed.slice(0, 4).join(", ")}
-                    {r.symbols_analyzed.length > 4 && ` +${r.symbols_analyzed.length - 4}`}
-                  </span>
-                  <span className="text-[10px] text-stone-400 shrink-0">
-                    {r.status === "running" ? "running..." : new Date(r.created_at).toLocaleString(undefined, { hour: "numeric", minute: "2-digit" })}
-                  </span>
-                </div>
-                <span className="text-[10px] font-medium text-sky-600 shrink-0">
-                  {r.status === "running" ? "In progress" : "View"}
-                </span>
-              </button>
-            ))}
-          </div>
+      {/* Entries */}
+      {loadingHistory ? (
+        <div className="flex items-center justify-center py-8 gap-2 text-xs text-stone-400">
+          <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
+          Loading history…
         </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div className="flex flex-col items-center py-8 gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-            <span className="text-sm text-stone-600 font-medium">AI is analyzing your stocks...</span>
-          </div>
-          <p className="text-xs text-stone-400 text-center max-w-xs">
-            Fetching live market data, analyzing technicals, and generating specific trade recommendations. This usually takes 15-30 seconds.
-          </p>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700 font-medium">Research failed</p>
-          <p className="text-xs text-red-600 mt-1">{error}</p>
-        </div>
-      )}
-
-      {/* Results */}
-      {runs.map((run) => (
-        <div key={run.id} className="flex flex-col gap-4">
-          {/* Run header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-                Research Run
-              </p>
-              <p className="text-xs text-stone-400 mt-0.5">
-                {new Date(run.timestamp).toLocaleString()} — {run.symbolsAnalyzed.join(", ")}
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setExpandedReport(expandedReport === run.id ? null : run.id)
-              }
-              className="text-xs font-medium text-sky-700 hover:text-sky-800"
-            >
-              {expandedReport === run.id ? "Hide Report" : "Show Report"}
-            </button>
-          </div>
-
-          {/* Report */}
-          {expandedReport === run.id && (
-            <div className="rounded-xl border border-stone-200 bg-white p-5 overflow-hidden">
-              <MarkdownReport content={run.report} />
-            </div>
-          )}
-
-          {/* Trade Suggestions */}
-          {run.suggestions.length > 0 && (
-            <div className="flex flex-col gap-2.5">
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-                Trade Suggestions ({run.suggestions.length})
-              </p>
-              {run.suggestions.map((suggestion, idx) => {
-                const isAccepted = run.accepted.has(idx);
-                const isDismissed = run.dismissed.has(idx);
-
-                return (
-                  <div
-                    key={idx}
-                    className={`rounded-xl border bg-white p-4 transition-opacity ${
-                      isDismissed
-                        ? "opacity-40 border-stone-100"
-                        : isAccepted
-                        ? "border-emerald-300 bg-emerald-50/30"
-                        : "border-stone-200"
-                    }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-stone-900">
-                          {suggestion.symbol}
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${strategyColor(
-                            suggestion.strategy
-                          )}`}
-                        >
-                          {strategyLabel(suggestion.strategy)}
-                        </span>
-                      </div>
-                      {suggestion.premium !== undefined && (
-                        <span
-                          className={`text-sm font-bold ${
-                            suggestion.premium >= 0
-                              ? "text-emerald-700"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {formatDollar(suggestion.premium)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Action */}
-                    <p className="text-xs font-medium text-stone-800 bg-stone-50 rounded-lg px-3 py-2 mb-2">
-                      {suggestion.action}
-                    </p>
-
-                    {/* Details row */}
-                    <div className="flex gap-4 mb-2 text-xs text-stone-500">
-                      {suggestion.strike !== undefined && (
-                        <span>
-                          Strike: <span className="font-medium text-stone-700">${suggestion.strike}</span>
-                        </span>
-                      )}
-                      {suggestion.expiry && (
-                        <span>
-                          Expiry: <span className="font-medium text-stone-700">{suggestion.expiry}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Reasoning */}
-                    <p className="text-xs text-stone-600 leading-relaxed mb-3">
-                      {suggestion.reasoning}
-                    </p>
-
-                    {/* Action buttons */}
-                    {suggestion.strategy !== "AVOID" && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleSuggestionAction(run.id, idx, "accept")
-                          }
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                            isAccepted
-                              ? "bg-emerald-600 text-white"
-                              : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                          }`}
-                        >
-                          {isAccepted ? "Accepted" : "Accept"}
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleSuggestionAction(run.id, idx, "dismiss")
-                          }
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                            isDismissed
-                              ? "bg-stone-400 text-white"
-                              : "border border-stone-200 text-stone-500 hover:bg-stone-50"
-                          }`}
-                        >
-                          {isDismissed ? "Dismissed" : "Dismiss"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Divider between runs */}
-          {runs.indexOf(run) < runs.length - 1 && (
-            <hr className="border-stone-100 my-2" />
-          )}
-        </div>
-      ))}
-
-      {/* Empty state */}
-      {!loading && runs.length === 0 && (
+      ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
           <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6 text-stone-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-              />
+            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900">
-            Ready to research
-          </h3>
+          <h3 className="text-sm font-bold text-stone-900">Ready to research</h3>
           <p className="text-xs text-stone-500 mt-1 max-w-xs">
-            Enter stock symbols and hit Run Research. AI will analyze live
-            market data and generate specific options trade suggestions.
+            Type tickers above and hit Run. AI will analyze live market data and generate specific trade suggestions.
           </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Recent</span>
+            {entries.length >= 10 && (
+              <Link href="/research/history" className="text-[10px] font-medium text-sky-600 hover:text-sky-800">
+                View all →
+              </Link>
+            )}
+          </div>
+          {entries.map((entry) => (
+            <EntryCard
+              key={entry.id}
+              entry={entry}
+              expanded={expandedId === entry.id}
+              onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+              onRedo={(symbols) => { setTickers(symbols); runResearch(symbols); }}
+              onSuggestionAction={(idx, action) => handleSuggestionAction(entry.id, idx, action)}
+            />
+          ))}
         </div>
       )}
     </div>
