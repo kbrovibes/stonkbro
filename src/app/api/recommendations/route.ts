@@ -6,6 +6,8 @@ import {
   createPendingBatch,
   getRecommendationHistory,
   getRunningBatches,
+  getCachedTheme,
+  RecommendationTheme,
 } from "@/lib/recommendations/generate";
 
 export const maxDuration = 120;
@@ -13,6 +15,7 @@ export const maxDuration = 120;
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const view = searchParams.get("view");
+  const theme = searchParams.get("theme") as RecommendationTheme | null;
 
   try {
     if (view === "history") {
@@ -23,6 +26,12 @@ export async function GET(request: Request) {
     if (view === "status") {
       const running = await getRunningBatches();
       return NextResponse.json({ running });
+    }
+
+    if (theme) {
+      const cached = await getCachedTheme(theme);
+      const running = await getRunningBatches();
+      return NextResponse.json({ recommendation: cached, running });
     }
 
     const cached = await getCachedRecommendations();

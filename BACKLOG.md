@@ -24,6 +24,7 @@
 ## ✅ Done
 <!-- Completed items land here with git SHA and date -->
 
+- [x] **51 — Top 10 CSP Picks** · AI-powered CSP scanner with dedicated Options tab, background cron, and on-demand refresh — (2026-04-27)
 - [x] **50 — Sparkline Caching** · Cache 5-day history in Supabase, background cron refresh, 2-hour TTL — (2026-04-27)
 - [x] **47 — Force Email Test Button** · Manual trigger button to send research email briefing for e2e testing (2026-04-26)
 

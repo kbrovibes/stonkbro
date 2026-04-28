@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import fs from "fs";
 import path from "path";
 
-export type RecommendationTheme = "moonshot" | "local_optimization" | "csp_premium";
+export type RecommendationTheme = "moonshot" | "local_optimization" | "csp_premium" | "top_csp_picks";
 
 export interface Pick {
   symbol: string;
@@ -19,6 +19,8 @@ export interface Pick {
   annualizedReturn?: string;
   price?: number;
   changePct?: number;
+  dte?: number;
+  marginOfSafety?: string;
 }
 
 export interface ThemeResult {
@@ -51,6 +53,7 @@ function loadPrompt(theme: RecommendationTheme): string {
     moonshot: "moonshot.md",
     local_optimization: "local-optimization.md",
     csp_premium: "csp-premium.md",
+    top_csp_picks: "csp-picks.md",
   };
   const promptPath = path.join(process.cwd(), "src", "lib", "prompts", filenames[theme]);
   return fs.readFileSync(promptPath, "utf-8");
@@ -66,6 +69,7 @@ async function generateForTheme(
   today: string,
 ): Promise<Pick[]> {
   const promptTemplate = loadPrompt(theme);
+  const count = theme === "top_csp_picks" ? 10 : 5;
 
   const result = await generateText({
     prompt: `${promptTemplate}
@@ -76,7 +80,7 @@ async function generateForTheme(
 
 ${condensedSignals}
 
-Now analyze these signals and pick your 5 best ${theme.replace("_", " ")} candidates. Return ONLY the JSON array, wrapped in a json code fence.`,
+Now analyze these signals and pick your best ${count} ${theme.replace("_", " ")} candidates. Return ONLY the JSON array, wrapped in a json code fence.`,
     maxTokens: 3000,
     feature: "recommendations",
   });
@@ -97,7 +101,7 @@ Now analyze these signals and pick your 5 best ${theme.replace("_", " ")} candid
 export async function createPendingBatch(userId?: string): Promise<string> {
   // Insert a placeholder for each theme
   const batchId = crypto.randomUUID();
-  const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium"];
+  const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium", "top_csp_picks"];
 
   for (const theme of themes) {
     await supabaseAdmin.from("daily_recommendations").insert({
@@ -120,7 +124,7 @@ export async function createPendingBatch(userId?: string): Promise<string> {
  */
 export async function generateAllRecommendations(batchId?: string, userId?: string): Promise<ThemeResult[]> {
   const actualBatchId = batchId || crypto.randomUUID();
-  const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium"];
+  const themes: RecommendationTheme[] = ["moonshot", "local_optimization", "csp_premium", "top_csp_picks"];
 
   // If no batch was pre-created, create running records now
   if (!batchId) {
@@ -186,6 +190,26 @@ export async function generateAllRecommendations(batchId?: string, userId?: stri
     }
     throw e;
   }
+}
+
+export async function getCachedTheme(theme: RecommendationTheme): Promise<ThemeResult | null> {
+  const { data } = await supabaseAdmin
+    .from("daily_recommendations")
+    .select("*")
+    .eq("theme", theme)
+    .eq("status", "completed")
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    theme: data.theme as RecommendationTheme,
+    picks: data.picks as Pick[],
+    generatedAt: data.generated_at,
+    expiresAt: data.expires_at,
+  };
 }
 
 export async function getCachedRecommendations(): Promise<ThemeResult[]> {

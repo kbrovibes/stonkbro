@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.19.0 — AI Options Research & CSP Picks
+
+- Options Tab — new dedicated bottom navigation tab for deep options research
+- Top 10 CSP Picks — AI-powered scanner identifying the best cash-secured put opportunities today
+- Research Table — unified view of Stock, DTE, Strike, Premium, and Annualized Return
+- Background Refresh — background cron at `/api/cron/options` to keep recommendations fresh
+- On-Demand Regeneration — trigger fresh AI analysis directly from the UI
+
 ## v0.18.1 — Sparkline Caching
 
 - Sparkline Caching — new `market_sparklines` table in Supabase to store 5-day price history
