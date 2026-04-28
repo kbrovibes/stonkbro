@@ -11,6 +11,7 @@
 
 ## 📋 P2 — Do Next
 
+- [ ] **52 — Plaid Broker Integration** · Connect Fidelity via Plaid to sync holdings, display in portfolio, and run hourly risk monitoring with notifications — `NEEDS_INPUT: requires Plaid API keys (client ID and secret) in .env`
 - [ ] **38 — Trade Journal & Analytics** · Win rate, avg premium captured, strategy breakdown (PMCC vs CSP vs CC), monthly income trend, lessons/notes per trade — `NEEDS_INPUT: requires new page and UI decisions — what should the journal page look like?`
 - [ ] **39 — Broker API Integration** · Connect Tradier/Alpaca for real-time account data, order staging, position sync — read-only first, then write — `NEEDS_INPUT: requires broker API credentials and scope decisions`
 - [ ] **40 — One-Click Order Staging** · From any AI suggestion → pre-filled order form in broker, confirm and send
