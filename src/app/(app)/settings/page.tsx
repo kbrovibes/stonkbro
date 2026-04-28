@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [testError, setTestError] = useState("");
+  const [pingStatus, setPingStatus] = useState<"idle" | "sending" | "done">("idle");
+  const [pingResult, setPingResult] = useState("");
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const [subscribing, setSubscribing] = useState(false);
 
@@ -97,6 +99,20 @@ export default function SettingsPage() {
       // silent
     } finally {
       setSubscribing(false);
+    }
+  }
+
+  async function handlePingEmail() {
+    setPingStatus("sending");
+    setPingResult("");
+    try {
+      const res = await fetch("/api/email/ping", { method: "POST" });
+      const data = await res.json();
+      setPingResult(JSON.stringify(data, null, 2));
+    } catch (e) {
+      setPingResult(`Network error: ${e}`);
+    } finally {
+      setPingStatus("done");
     }
   }
 
@@ -218,6 +234,20 @@ export default function SettingsPage() {
             {testStatus === "error" && (
               <p className="text-xs text-red-500">{testError}</p>
             )}
+
+            <div className="border-t border-stone-100 pt-3 mt-1">
+              <button
+                onClick={handlePingEmail}
+                disabled={pingStatus === "sending"}
+                className="self-start rounded-xl bg-stone-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-600 active:bg-stone-500 transition-colors disabled:opacity-50"
+              >
+                {pingStatus === "sending" ? "Sending..." : "Test Resend (Debug)"}
+              </button>
+              <p className="text-[10px] text-stone-400 mt-1">Sends a static test email and shows the raw API response.</p>
+              {pingResult && (
+                <pre className="mt-2 text-[11px] bg-stone-50 rounded-lg p-3 overflow-x-auto text-stone-700 whitespace-pre-wrap">{pingResult}</pre>
+              )}
+            </div>
           </div>
         </div>
 
