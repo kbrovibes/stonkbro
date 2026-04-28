@@ -20,15 +20,16 @@ const COLLAPSE_LIMIT = 8;
 // Common tickers for autocomplete
 const ALL_TICKERS = [
   "AAPL","ABNB","AEHR","AFRM","AI","AMD","AMZN","ANET","ARM","ARQQ","ASTS",
-  "AVGO","AXON","BA","BEAM","BILL","BLNK","BKNG","CAT","CCJ","CEG","CELH",
-  "CFLT","CHPT","COIN","COST","CRDO","CRSP","CRWD","DAL","DDOG","DIS","DNA",
-  "DNN","EXPE","F","GE","GKOS","GM","GOOGL","GS","HIMS","HOOD","IONQ",
-  "JPM","KTOS","LAZR","LCID","LEU","LHX","LIDR","LLY","LULU","LUNR",
-  "MA","MDB","MELI","META","MRNA","MRVL","MSFT","MSTR","MU","NET",
-  "NFLX","NNE","NU","NVDA","OKLO","PATH","PLTR","QBTS","QS","QUBT",
-  "RDDT","RDW","RGTI","RIVN","RKLB","RXRX","S","SDGR","SHOP","SMCI",
-  "SMR","SNOW","SOFI","SQ","TEM","TGT","TOST","TSLA","TSM","UBER",
-  "UEC","UNH","UPST","UUUU","V","VERV","VRT","VST","WMT",
+  "AVGO","AXON","BA","BABA","BEAM","BILL","BLNK","BKNG","CAT","CCJ","CEG",
+  "CELH","CFLT","CHPT","COIN","COST","CRDO","CRSP","CRWD","DAL","DDOG",
+  "DIS","DNA","DNN","EXPE","F","GE","GKOS","GM","GOOG","GOOGL","GS",
+  "HIMS","HOOD","INTC","IONQ","JPM","KTOS","LAZR","LCID","LEU","LHX",
+  "LIDR","LLY","LULU","LUNR","MA","MDB","MELI","META","MRNA","MRVL",
+  "MSFT","MSTR","MU","NET","NFLX","NIO","NNE","NU","NVDA","OKLO",
+  "ORCL","PATH","PLTR","PYPL","QBTS","QCOM","QS","QUBT","RDDT","RDW",
+  "RGTI","RIVN","RKLB","ROKU","RXRX","S","SDGR","SHOP","SMCI","SMR",
+  "SNAP","SNOW","SOFI","SPOT","SQ","TEM","TGT","TOST","TSLA","TSM",
+  "UBER","UEC","UNH","UPST","UUUU","V","VERV","VRT","VST","WMT","ZS",
 ];
 
 function groupReturn(tickers: Ticker[]): number | null {
@@ -67,7 +68,13 @@ function InlineAdd({
     }
     const q = query.toUpperCase();
     const matches = ALL_TICKERS
-      .filter((t) => t.startsWith(q) && !existingSymbols.has(t))
+      .filter((t) => t.includes(q) && !existingSymbols.has(t))
+      .sort((a, b) => {
+        // Prefer prefix matches
+        const aStart = a.startsWith(q) ? 0 : 1;
+        const bStart = b.startsWith(q) ? 0 : 1;
+        return aStart - bStart || a.localeCompare(b);
+      })
       .slice(0, 5);
     setSuggestions(matches);
   }, [query, existingSymbols]);
@@ -102,29 +109,22 @@ function InlineAdd({
   }
 
   return (
-    <div className="relative mt-1.5">
-      <div className="flex items-center gap-1.5">
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value.toUpperCase())}
-          onKeyDown={handleKeyDown}
-          placeholder="Ticker..."
-          disabled={saving}
-          className="w-20 px-2 py-1 rounded-md border border-stone-200 bg-white text-[11px] font-bold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-sky-400 disabled:opacity-50"
-        />
-        <button
-          onClick={onClose}
-          className="text-[10px] text-stone-400 hover:text-stone-600"
-        >
-          Done
-        </button>
-      </div>
+    <div className="relative inline-flex items-center gap-1">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value.toUpperCase())}
+        onKeyDown={handleKeyDown}
+        placeholder="TICKER"
+        disabled={saving}
+        className="w-16 px-1.5 py-0.5 rounded border border-sky-300 bg-white text-[10px] font-bold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-sky-500 disabled:opacity-50"
+      />
+      {saving && <span className="text-[9px] text-stone-400">...</span>}
 
       {/* Autocomplete dropdown */}
       {suggestions.length > 0 && (
-        <div className="absolute top-8 left-0 z-20 w-32 rounded-lg bg-white border border-stone-200 shadow-lg py-1">
+        <div className="absolute top-6 left-0 z-20 w-28 rounded-lg bg-white border border-stone-200 shadow-lg py-1">
           {suggestions.map((s) => (
             <button
               key={s}
@@ -184,12 +184,29 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setAddingTo(addingTo === wl.id ? null : wl.id)}
-                  className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
-                >
-                  {addingTo === wl.id ? "Cancel" : "+ Add"}
-                </button>
+                {addingTo === wl.id ? (
+                  <>
+                    <InlineAdd
+                      watchlistId={wl.id}
+                      existingSymbols={existingSymbols}
+                      onAdded={(ticker) => handleAdded(wl.id, ticker)}
+                      onClose={() => setAddingTo(null)}
+                    />
+                    <button
+                      onClick={() => setAddingTo(null)}
+                      className="text-[10px] text-stone-400 hover:text-stone-600"
+                    >
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setAddingTo(wl.id)}
+                    className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                  >
+                    + Add
+                  </button>
+                )}
                 <Link
                   href={`/watchlists/${wl.id}`}
                   className="text-[10px] font-medium text-stone-400 hover:text-stone-600 transition-colors"
@@ -243,15 +260,6 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
               </div>
             )}
 
-            {/* Inline add */}
-            {addingTo === wl.id && (
-              <InlineAdd
-                watchlistId={wl.id}
-                existingSymbols={existingSymbols}
-                onAdded={(ticker) => handleAdded(wl.id, ticker)}
-                onClose={() => setAddingTo(null)}
-              />
-            )}
           </div>
         );
       })}
