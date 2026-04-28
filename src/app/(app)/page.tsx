@@ -75,33 +75,30 @@ export default async function DiscoverPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      {/* Upcoming Earnings — condensed card */}
+      {/* Upcoming Earnings */}
       {upcomingEarnings.length > 0 && (
-        <div className="rounded-xl bg-white shadow-sm border border-stone-100 px-4 py-3">
-          <div className="flex items-center justify-between mb-2.5">
-            <h3 className="text-sm font-bold text-stone-900">Upcoming Earnings</h3>
-            <Link href="/earnings" className="text-[10px] font-semibold text-sky-600 hover:text-sky-700">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-stone-800">Upcoming Earnings</span>
+            <Link href="/earnings" className="text-[10px] font-medium text-sky-600 hover:text-sky-700">
               Full Calendar
             </Link>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {upcomingEarnings.map((e) => (
               <Link
                 key={e.symbol}
                 href={`/suggestions/${e.symbol}`}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors hover:bg-stone-50 ${
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:opacity-80 ${
                   e.category === "this_week"
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-amber-200 bg-amber-50 text-amber-700"
+                    ? "bg-red-50 text-red-700"
+                    : "bg-amber-50 text-amber-700"
                 }`}
               >
                 <span className="font-bold">{e.symbol}</span>
-                <span className="text-[10px] opacity-75">
+                <span className="opacity-70">
                   {e.daysUntil === 0 ? "today" : e.daysUntil === 1 ? "tmrw" : `${e.daysUntil}d`}
                 </span>
-                {e.timing !== "unknown" && (
-                  <span className="text-[9px] opacity-60 uppercase">{e.timing === "before_market" ? "BMO" : "AMC"}</span>
-                )}
               </Link>
             ))}
           </div>
