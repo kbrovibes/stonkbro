@@ -210,7 +210,7 @@ export default function SettingsPage() {
                 ? "Sending..."
                 : testStatus === "sent"
                 ? "Sent! Check your inbox"
-                : "Send Test Email"}
+                : "Send Daily Summary"}
             </button>
             {!alertEmail && (
               <p className="text-xs text-stone-400">Save an alert email above first.</p>
