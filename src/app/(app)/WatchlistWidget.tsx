@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 interface Ticker {
@@ -35,6 +35,37 @@ const ALL_TICKERS = [
 function groupReturn(tickers: Ticker[]): number | null {
   if (tickers.length === 0) return null;
   return tickers.reduce((sum, t) => sum + t.changePct, 0) / tickers.length;
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline SVG
+// ---------------------------------------------------------------------------
+
+function Sparkline({ data, up, width = 36, height = 16 }: { data: number[]; up: boolean; width?: number; height?: number }) {
+  if (data.length < 2) return null;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  }).join(" ");
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={up ? "#10b981" : "#ef4444"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +179,25 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
   const [watchlists, setWatchlists] = useState(initial);
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
+
+  // Fetch sparklines for all tickers on mount
+  const fetchSparklines = useCallback(async () => {
+    const allSymbols = [...new Set(initial.flatMap((wl) => wl.tickers.map((t) => t.symbol)))];
+    if (allSymbols.length === 0) return;
+    try {
+      const res = await fetch(`/api/sparklines?symbols=${allSymbols.join(",")}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSparklines(data.sparklines || {});
+    } catch {
+      // silent
+    }
+  }, [initial]);
+
+  useEffect(() => {
+    fetchSparklines();
+  }, [fetchSparklines]);
 
   function handleAdded(wlId: string, ticker: Ticker) {
     setWatchlists((prev) =>
@@ -230,9 +280,16 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                           up ? "bg-emerald-50 hover:bg-emerald-100/80" : "bg-red-50 hover:bg-red-100/80"
                         }`}
                       >
-                        <div className="text-[11px] font-extrabold text-stone-900 leading-none">{t.symbol}</div>
-                        <div className="text-[10px] text-stone-500 tabular-nums mt-0.5">
-                          ${t.price < 1000 ? t.price.toFixed(2) : t.price.toFixed(0)}
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-[11px] font-extrabold text-stone-900 leading-none">{t.symbol}</div>
+                            <div className="text-[10px] text-stone-500 tabular-nums mt-0.5">
+                              ${t.price < 1000 ? t.price.toFixed(2) : t.price.toFixed(0)}
+                            </div>
+                          </div>
+                          {sparklines[t.symbol]?.length > 1 && (
+                            <Sparkline data={sparklines[t.symbol]} up={up} />
+                          )}
                         </div>
                         <div className={`text-[10px] font-bold tabular-nums mt-0.5 ${
                           up ? "text-emerald-600" : "text-red-500"
