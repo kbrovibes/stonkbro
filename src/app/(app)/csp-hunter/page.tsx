@@ -34,6 +34,7 @@ type Candidate = {
   juiciness: number;
   priority: "high" | "medium" | "low";
   reasoning: string;
+  catalyst: string;
 };
 
 type DeltaChange = {
@@ -354,6 +355,11 @@ function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: num
           {c.juiciness}/100
         </span>
       </div>
+
+      {/* Catalyst one-liner */}
+      {c.catalyst && (
+        <p className="text-xs text-neutral-400 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
+      )}
 
       {/* Badges */}
       <div className="flex gap-1.5 mt-1.5 ml-7">

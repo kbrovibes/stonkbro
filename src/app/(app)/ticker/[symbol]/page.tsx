@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getQuote } from "@/lib/market/yahoo";
 import StockChart from "@/components/StockChart";
+import TickerCSPSection from "@/components/TickerCSPSection";
 
 type Params = Promise<{ symbol: string }>;
 
@@ -114,6 +115,9 @@ export default async function TickerPage({ params }: { params: Params }) {
           />
         </div>
       </div>
+
+      {/* CSP Recommendations */}
+      <TickerCSPSection symbol={quote.symbol} />
 
       {/* Options CTAs */}
       <div className="flex flex-col gap-2">

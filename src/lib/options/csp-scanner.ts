@@ -71,6 +71,7 @@ export type CSPHunterCandidate = {
   juiciness: number; // 0-100 composite score
   priority: "high" | "medium" | "low";
   reasoning: string;
+  catalyst: string; // one-liner on WHY this pick made the list today
 };
 
 export type CSPScanResult = {
@@ -312,6 +313,9 @@ function buildCandidate(
   if (rsi < 30) reasons.push(`RSI oversold (${rsi})`);
   if (rsi > 70) reasons.push(`RSI overbought (${rsi}) — caution`);
 
+  // Catalyst — a smart one-liner on WHY this pick is interesting today
+  const catalyst = generateCatalyst(quote, technicals, earnings, put, aroc, nearSupport, supportLevel, distPct);
+
   return {
     symbol: quote.symbol,
     name: quote.name,
@@ -347,7 +351,84 @@ function buildCandidate(
     juiciness,
     priority,
     reasoning: reasons.join(" · "),
+    catalyst,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Catalyst — smart one-liner on why this pick stands out today
+// ---------------------------------------------------------------------------
+
+function generateCatalyst(
+  quote: QuoteData,
+  technicals: TechnicalSignals | null,
+  earnings: EarningsEvent | null,
+  put: OptionContract,
+  aroc: number,
+  nearSupport: boolean,
+  supportLevel: number,
+  distPct: number
+): string {
+  // Priority-ordered: pick the most compelling single reason
+  const iv = put.iv ?? put.impliedVolatility;
+
+  // Earnings-driven IV pump
+  if (earnings && earnings.daysUntil >= 0 && earnings.daysUntil <= put.dte) {
+    return `Elevated IV from earnings in ${earnings.daysUntil}d — premium inflated, ${aroc.toFixed(0)}% AROC if it stays above $${put.strike}`;
+  }
+
+  // RSI oversold bounce play
+  if (technicals && technicals.rsi14 < 35) {
+    return `RSI oversold at ${technicals.rsi14} — selling into fear at ${distPct.toFixed(0)}% below price, likely bounce territory`;
+  }
+
+  // Bollinger squeeze — breakout imminent, IV expanding
+  if (technicals?.bbSqueeze) {
+    return `Bollinger squeeze active — IV expanding, premium rich at ${(iv * 100).toFixed(0)}% IV for a ${put.dte}d hold`;
+  }
+
+  // Strong trend + support strike
+  if (nearSupport && technicals?.goldenCross) {
+    return `Golden cross trend with strike at $${supportLevel.toFixed(0)} support — strong floor, ${aroc.toFixed(0)}% AROC`;
+  }
+
+  // Near support without golden cross
+  if (nearSupport) {
+    return `Strike sits on $${supportLevel.toFixed(0)} support level — technical floor adds safety to ${aroc.toFixed(0)}% yield`;
+  }
+
+  // High volume spike — something is happening
+  if (quote.volumeRatio >= 2.5) {
+    return `${quote.volumeRatio.toFixed(1)}x volume spike today — unusual activity driving up premium to ${aroc.toFixed(0)}% AROC`;
+  }
+
+  // Near 52-week low — contrarian premium play
+  if (quote.price < quote.fiftyTwoWeekLow * 1.15) {
+    return `Trading within 15% of 52w low — fear premium elevated, ${distPct.toFixed(0)}% OTM cushion at ${aroc.toFixed(0)}% yield`;
+  }
+
+  // MACD bullish crossover
+  if (technicals?.macdCross === "bullish") {
+    return `MACD just crossed bullish — momentum shifting up, selling puts into the trend at ${aroc.toFixed(0)}% AROC`;
+  }
+
+  // Above all MAs — stable uptrend
+  if (technicals?.above50sma && technicals?.above200sma) {
+    return `Stable uptrend above all major MAs — low risk of assignment, collecting ${aroc.toFixed(0)}% annualized`;
+  }
+
+  // High IV general
+  if (iv > 0.5) {
+    return `IV at ${(iv * 100).toFixed(0)}% pumping premium — ${aroc.toFixed(0)}% AROC with ${distPct.toFixed(0)}% downside cushion`;
+  }
+
+  // Good AROC fallback
+  if (aroc >= 30) {
+    return `${aroc.toFixed(0)}% AROC stands out — strong risk/reward at ${distPct.toFixed(0)}% OTM with ${put.dte}d to expiry`;
+  }
+
+  // Generic but specific
+  return `${distPct.toFixed(0)}% OTM safety buffer with ${aroc.toFixed(0)}% annualized return — solid income play on ${quote.name}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -400,6 +481,55 @@ function calcJuiciness(params: {
   if (params.rsi >= 40 && params.rsi <= 60) score += 5; // neutral RSI = stable
 
   return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// ---------------------------------------------------------------------------
+// Single-ticker scan (for ticker detail pages)
+// ---------------------------------------------------------------------------
+
+export async function scanTickerCSPs(
+  symbol: string,
+  capital: number = 100_000
+): Promise<CSPHunterCandidate[]> {
+  const quotes = await getQuotes([symbol]);
+  const quote = quotes[0];
+  if (!quote || quote.price <= 0) return [];
+
+  const now = new Date();
+  const expirations = await tradierGetExpirations(symbol);
+  const targetExps = expirations.filter((exp) => {
+    const dte = Math.ceil((new Date(exp).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return dte >= 7 && dte <= 45; // wider range for single-ticker view
+  });
+
+  if (targetExps.length === 0) return [];
+
+  let earnings: EarningsEvent | null = null;
+  try {
+    const cal = await getEarningsCalendar([symbol]);
+    earnings = cal[0] ?? null;
+  } catch { /* ignore */ }
+
+  const [technicals, ...chains] = await Promise.all([
+    analyzeTechnicals(symbol, quote).catch(() => null),
+    ...targetExps.map((exp) => tradierGetOptionsChain(symbol, exp).catch(() => null)),
+  ]);
+
+  const candidates: CSPHunterCandidate[] = [];
+  for (const chain of chains) {
+    if (!chain) continue;
+    const puts = chain.puts.filter((p) => {
+      if (p.inTheMoney || p.mid <= 0.05 || p.openInterest < 10) return false;
+      const absDelta = Math.abs(p.delta ?? estimateDelta(p, quote.price));
+      return absDelta >= 0.10 && absDelta <= 0.40; // wider delta range for detail view
+    });
+    for (const put of puts) {
+      const c = buildCandidate(put, quote, technicals, earnings, capital);
+      if (c.aroc >= 5) candidates.push(c); // lower threshold for detail view
+    }
+  }
+
+  return candidates.sort((a, b) => b.juiciness - a.juiciness).slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------
