@@ -13,6 +13,12 @@
 - **CSP Hunter Page**: Full UI at `/csp-hunter` with scan history, filters, expandable cards, and analysis panel
 - **Supabase Storage**: `csp_scans` table for persistent scan history and delta tracking
 
+## v0.19.1 — Email Delivery Fix
+
+- Fix: Resend sandbox rejects `+alias` emails — updated `user_settings.alert_email` to exact account owner address
+- Fix: Morning briefing cron (`/api/cron/morning-briefing`) was never scheduled — added to `vercel.json`
+- Verified: 6 emails delivered end-to-end (test templates + full app cron pipelines)
+
 ## v0.19.0 — AI Options Research & CSP Picks
 
 - Options Tab — new dedicated bottom navigation tab for deep options research
