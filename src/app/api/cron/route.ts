@@ -4,6 +4,7 @@ import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
 import { sendDailyBriefing, AlertItem } from "@/lib/notifications/email";
 import { supabaseAdmin } from "@/lib/supabase";
 import { scanForMovers } from "@/lib/analysis/movers";
+import { sendPushToAll } from "@/lib/notifications/push";
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -143,11 +144,26 @@ export async function GET(request: Request) {
       results.push({ userId, email, alertCount: combined.length });
     }
 
+    // Push notification for alerts
+    const totalAlerts = results.reduce((n, r) => n + r.alertCount, 0);
+    let push = { sent: 0, failed: 0 };
+    if (totalAlerts > 0) {
+      push = await sendPushToAll({
+        title: `stonkbro: ${totalAlerts} alert${totalAlerts > 1 ? "s" : ""}`,
+        body: moverAlerts.length > 0
+          ? `${moverAlerts.length} movers + ${totalAlerts - moverAlerts.length} position alerts`
+          : `${totalAlerts} position alert${totalAlerts > 1 ? "s" : ""}`,
+        url: "/today",
+        tag: "daily-alerts",
+      });
+    }
+
     return NextResponse.json({
       success: true,
       usersProcessed: results.length,
       moversFound: moverAlerts.length,
       moversScanned,
+      push,
       results,
     });
   } catch (e) {

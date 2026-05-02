@@ -13,6 +13,7 @@ import {
   type RecommendationDigest,
   type MorningBriefingData,
 } from "@/lib/notifications/morning-briefing";
+import { sendPushToAll } from "@/lib/notifications/push";
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -196,11 +197,28 @@ export async function GET(request: Request) {
       results.push({ userId: target.userId, email: target.email, sent: true });
     }
 
+    // Send push notification summary
+    const urgentCount = results.reduce((n, r) => n, 0);
+    const pushParts: string[] = [];
+    if (movers.length > 0) pushParts.push(`${movers.length} movers`);
+    if (todayEarnings.length > 0) pushParts.push(`${todayEarnings.length} earnings`);
+    const pushBody = pushParts.length > 0
+      ? pushParts.join(", ") + " — check your briefing"
+      : "Morning briefing ready";
+
+    const push = await sendPushToAll({
+      title: "stonkbro morning briefing",
+      body: pushBody,
+      url: "/today",
+      tag: "morning-briefing",
+    });
+
     return NextResponse.json({
       success: true,
       recipients: results.length,
       movers: movers.length,
       earnings: todayEarnings.length,
+      push,
       results,
     });
   } catch (e) {
