@@ -72,6 +72,12 @@ export default async function TickerPage({ params }: { params: Params }) {
             ({quote.change >= 0 ? "+" : ""}${quote.change.toFixed(2)})
           </span>
         </div>
+        {quote.lastTradeDate && (
+          <p className="text-[11px] text-stone-400 mt-1">
+            As of {new Date(quote.lastTradeDate).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET
+            {" · "}May be 15min delayed
+          </p>
+        )}
       </div>
 
       {/* Chart */}

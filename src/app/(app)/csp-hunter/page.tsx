@@ -125,28 +125,28 @@ export default function CSPHunterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-neutral-500 text-sm">Loading CSP Hunter...</div>
+      <div className="flex flex-col items-center justify-center flex-1 py-20">
+        <p className="text-stone-400 text-sm animate-pulse">Loading CSP Hunter...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-neutral-200">
+    <div className="flex flex-col flex-1">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/90 backdrop-blur border-b border-neutral-800">
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-stone-200">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-green-400">🎯 CSP Alpha Hunter</h1>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <h1 className="text-lg font-bold text-stone-900">CSP Alpha Hunter</h1>
+              <p className="text-[11px] text-stone-400 mt-0.5">
                 Cash Secured Puts · 7-21 DTE · δ 0.15-0.30 · $100K capital
               </p>
             </div>
             <button
               onClick={triggerScan}
               disabled={scanning}
-              className="px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:bg-neutral-700 text-white text-xs font-semibold rounded-lg transition"
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-300 text-white text-xs font-semibold rounded-lg transition"
             >
               {scanning ? "Scanning..." : "Run Scan"}
             </button>
@@ -161,8 +161,8 @@ export default function CSPHunterPage() {
                   onClick={() => setSelectedScan(s)}
                   className={`flex-shrink-0 px-2 py-1 rounded text-xs transition ${
                     selectedScan?.id === s.id
-                      ? "bg-green-900/50 text-green-400 border border-green-800"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : "bg-stone-50 text-stone-500 border border-stone-200"
                   }`}
                 >
                   {new Date(s.createdAt).toLocaleString("en-US", {
@@ -182,13 +182,13 @@ export default function CSPHunterPage() {
       {/* No scans */}
       {scans.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 px-4">
-          <p className="text-neutral-500 text-sm mb-4">No scans yet. Run your first scan to discover juicy CSPs.</p>
+          <p className="text-stone-400 text-sm mb-4">No scans yet. Run your first scan to discover juicy CSPs.</p>
           <button
             onClick={triggerScan}
             disabled={scanning}
-            className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg"
           >
-            {scanning ? "Scanning..." : "🎯 Run First Scan"}
+            {scanning ? "Scanning..." : "Run First Scan"}
           </button>
         </div>
       )}
@@ -196,38 +196,38 @@ export default function CSPHunterPage() {
       {selectedScan && (
         <>
           {/* Stats bar */}
-          <div className="grid grid-cols-4 gap-px bg-neutral-800 border-b border-neutral-800">
+          <div className="grid grid-cols-4 gap-px bg-stone-200 border-b border-stone-200">
             {[
-              { label: "Candidates", value: candidates.length, color: "text-white" },
-              { label: "High Priority", value: candidates.filter((c) => c.priority === "high").length, color: "text-green-400" },
-              { label: "Top AROC", value: `${candidates[0]?.aroc ?? 0}%`, color: "text-yellow-400" },
-              { label: "Delta Changes", value: totalDeltaChanges, color: "text-blue-400" },
+              { label: "Candidates", value: candidates.length, color: "text-stone-900" },
+              { label: "High Priority", value: candidates.filter((c) => c.priority === "high").length, color: "text-emerald-600" },
+              { label: "Top AROC", value: `${candidates[0]?.aroc ?? 0}%`, color: "text-amber-600" },
+              { label: "Delta Changes", value: totalDeltaChanges, color: "text-sky-600" },
             ].map((stat) => (
-              <div key={stat.label} className="bg-black px-3 py-2 text-center">
+              <div key={stat.label} className="bg-white px-3 py-2 text-center">
                 <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-                <div className="text-[10px] text-neutral-500 uppercase tracking-wider">{stat.label}</div>
+                <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}
           </div>
 
           {/* Delta section */}
           {delta && totalDeltaChanges > 0 && (
-            <div className="border-b border-neutral-800 bg-neutral-950 px-4 py-3">
-              <h2 className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">
+            <div className="border-b border-stone-200 bg-amber-50/50 px-4 py-3">
+              <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">
                 Changes Since Last Scan
               </h2>
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {delta.premium_increased?.slice(0, 3).map((d, i) => (
-                  <div key={`up-${i}`} className="text-xs text-green-400">📈 {d.message}</div>
+                  <div key={`up-${i}`} className="text-xs text-emerald-700">📈 {d.message}</div>
                 ))}
                 {delta.new?.slice(0, 3).map((d, i) => (
-                  <div key={`new-${i}`} className="text-xs text-blue-400">🆕 {d.message}</div>
+                  <div key={`new-${i}`} className="text-xs text-sky-700">🆕 {d.message}</div>
                 ))}
                 {delta.support_lost?.slice(0, 2).map((d, i) => (
-                  <div key={`sl-${i}`} className="text-xs text-red-400">⚠️ {d.message}</div>
+                  <div key={`sl-${i}`} className="text-xs text-red-600">⚠️ {d.message}</div>
                 ))}
                 {delta.dropped?.slice(0, 2).map((d, i) => (
-                  <div key={`dr-${i}`} className="text-xs text-neutral-500">❌ {d.message}</div>
+                  <div key={`dr-${i}`} className="text-xs text-stone-500">❌ {d.message}</div>
                 ))}
               </div>
             </div>
@@ -235,18 +235,18 @@ export default function CSPHunterPage() {
 
           {/* Claude Analysis toggle */}
           {selectedScan.claudeAnalysis && (
-            <div className="border-b border-neutral-800">
+            <div className="border-b border-stone-200">
               <button
                 onClick={() => setShowAnalysis(!showAnalysis)}
-                className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-neutral-950 transition"
+                className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition"
               >
-                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">
-                  🤖 Claude Risk Analysis
+                <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">
+                  Claude Risk Analysis
                 </span>
-                <span className="text-neutral-500 text-xs">{showAnalysis ? "▲" : "▼"}</span>
+                <span className="text-stone-400 text-xs">{showAnalysis ? "▲" : "▼"}</span>
               </button>
               {showAnalysis && (
-                <div className="px-4 pb-4 text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap bg-purple-950/10">
+                <div className="px-4 pb-4 text-sm text-stone-700 leading-relaxed whitespace-pre-wrap bg-violet-50/30">
                   {selectedScan.claudeAnalysis}
                 </div>
               )}
@@ -254,15 +254,15 @@ export default function CSPHunterPage() {
           )}
 
           {/* Filter tabs */}
-          <div className="flex gap-1 px-4 py-2 border-b border-neutral-800">
+          <div className="flex gap-1 px-4 py-2 border-b border-stone-200">
             {(["all", "high", "medium"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                   filter === f
-                    ? "bg-green-900/50 text-green-400"
-                    : "text-neutral-500 hover:text-neutral-300"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "text-stone-400 hover:text-stone-600"
                 }`}
               >
                 {f === "all" ? `All (${candidates.length})` : f === "high" ? `High (${candidates.filter((c) => c.priority === "high").length})` : `Medium (${candidates.filter((c) => c.priority === "medium").length})`}
@@ -271,37 +271,19 @@ export default function CSPHunterPage() {
           </div>
 
           {/* Candidate cards */}
-          <div className="divide-y divide-neutral-800/50">
+          <div className="divide-y divide-stone-100">
             {filtered.map((c, i) => (
               <CandidateCard key={`${c.symbol}-${c.strike}-${c.expiry}`} candidate={c} rank={i + 1} />
             ))}
           </div>
 
           {filtered.length === 0 && (
-            <div className="py-12 text-center text-neutral-500 text-sm">
+            <div className="py-12 text-center text-stone-400 text-sm">
               No {filter} priority candidates in this scan.
             </div>
           )}
         </>
       )}
-
-      {/* Bottom nav */}
-      <div className="sticky bottom-0 bg-black border-t border-neutral-800 px-4 py-2">
-        <div className="flex justify-around">
-          <Link href="/today" className="text-xs text-neutral-500 hover:text-white transition py-1">
-            Plays
-          </Link>
-          <Link href="/csp-hunter" className="text-xs text-green-400 font-semibold py-1">
-            CSP Hunter
-          </Link>
-          <Link href="/watchlists" className="text-xs text-neutral-500 hover:text-white transition py-1">
-            Watchlists
-          </Link>
-          <Link href="/research" className="text-xs text-neutral-500 hover:text-white transition py-1">
-            Research
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
@@ -313,68 +295,68 @@ export default function CSPHunterPage() {
 function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: number }) {
   const [expanded, setExpanded] = useState(false);
   const priorityColors = {
-    high: "bg-green-500",
-    medium: "bg-yellow-500",
-    low: "bg-neutral-600",
+    high: "bg-emerald-500",
+    medium: "bg-amber-500",
+    low: "bg-stone-400",
   };
 
   return (
     <div
-      className="px-4 py-3 hover:bg-neutral-950/50 transition cursor-pointer"
+      className="px-4 py-3 hover:bg-stone-50/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
       {/* Top row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-neutral-600 text-xs w-5">{rank}</span>
+          <span className="text-stone-300 text-xs w-5">{rank}</span>
           <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[c.priority]}`} />
           <Link
             href={`/ticker/${c.symbol}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-bold text-white hover:text-green-400 transition"
+            className="text-sm font-bold text-stone-900 hover:text-emerald-600 transition"
           >
             {c.symbol}
           </Link>
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs text-stone-400">
             ${c.strike} P · {c.expiry.slice(5)} · {c.dte}d
           </span>
         </div>
         <div className="text-right">
-          <div className="text-sm font-semibold text-green-400">{c.aroc}%</div>
-          <div className="text-[10px] text-neutral-500">AROC</div>
+          <div className="text-sm font-semibold text-emerald-600">{c.aroc}%</div>
+          <div className="text-[10px] text-stone-400">AROC</div>
         </div>
       </div>
 
       {/* Key metrics row */}
       <div className="flex items-center gap-3 mt-1.5 ml-7">
-        <span className="text-xs text-neutral-400">${c.mid.toFixed(2)} mid</span>
-        <span className="text-xs text-neutral-500">Δ{c.delta.toFixed(2)}</span>
-        <span className="text-xs text-neutral-500">{c.distanceFromPrice}% OTM</span>
-        <span className="text-xs text-neutral-500">IV {(c.iv * 100).toFixed(0)}%</span>
-        <span className={`text-xs ${c.juiciness >= 70 ? "text-green-400" : c.juiciness >= 50 ? "text-yellow-400" : "text-neutral-500"}`}>
+        <span className="text-xs text-stone-500">${c.mid.toFixed(2)} mid</span>
+        <span className="text-xs text-stone-400">Δ{c.delta.toFixed(2)}</span>
+        <span className="text-xs text-stone-400">{c.distanceFromPrice}% OTM</span>
+        <span className="text-xs text-stone-400">IV {(c.iv * 100).toFixed(0)}%</span>
+        <span className={`text-xs ${c.juiciness >= 70 ? "text-emerald-600" : c.juiciness >= 50 ? "text-amber-600" : "text-stone-400"}`}>
           {c.juiciness}/100
         </span>
       </div>
 
       {/* Catalyst one-liner */}
       {c.catalyst && (
-        <p className="text-xs text-neutral-400 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
+        <p className="text-xs text-stone-500 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
       )}
 
       {/* Badges */}
       <div className="flex gap-1.5 mt-1.5 ml-7">
         {c.earningsWithinDTE && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-400">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200">
             ⚠ Earnings {c.daysToEarnings}d
           </span>
         )}
         {c.nearSupport && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-900/30 text-green-400">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-200">
             ✓ Near support
           </span>
         )}
         {c.rsi < 35 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/30 text-blue-400">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 border border-sky-200">
             RSI oversold
           </span>
         )}
@@ -382,28 +364,28 @@ function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: num
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-3 ml-7 p-3 bg-neutral-900 rounded-lg text-xs space-y-2">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-neutral-400">
-            <div>Current Price: <span className="text-white">${c.currentPrice.toFixed(2)}</span></div>
-            <div>Strike: <span className="text-white">${c.strike.toFixed(2)}</span></div>
-            <div>Bid/Ask: <span className="text-white">${c.bid.toFixed(2)} / ${c.ask.toFixed(2)}</span></div>
-            <div>Premium: <span className="text-green-400">${c.premium.toFixed(0)}</span></div>
-            <div>Collateral: <span className="text-white">${c.collateralRequired.toLocaleString()}</span></div>
-            <div>Contracts @ $100K: <span className="text-white">{c.contractsAt100k}</span></div>
-            <div>Total Premium: <span className="text-green-400">${c.totalPremium.toLocaleString()}</span></div>
-            <div>Capital Used: <span className="text-white">{c.capitalUtilization}%</span></div>
-            <div>OI: <span className="text-white">{c.openInterest.toLocaleString()}</span></div>
-            <div>Volume: <span className="text-white">{c.volume.toLocaleString()}</span></div>
-            <div>RSI: <span className="text-white">{c.rsi}</span></div>
-            <div>Tech Score: <span className="text-white">{c.technicalScore}/100</span></div>
+        <div className="mt-3 ml-7 p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500">
+            <div>Current Price: <span className="text-stone-900">${c.currentPrice.toFixed(2)}</span></div>
+            <div>Strike: <span className="text-stone-900">${c.strike.toFixed(2)}</span></div>
+            <div>Bid/Ask: <span className="text-stone-900">${c.bid.toFixed(2)} / ${c.ask.toFixed(2)}</span></div>
+            <div>Premium: <span className="text-emerald-600">${c.premium.toFixed(0)}</span></div>
+            <div>Collateral: <span className="text-stone-900">${c.collateralRequired.toLocaleString()}</span></div>
+            <div>Contracts @ $100K: <span className="text-stone-900">{c.contractsAt100k}</span></div>
+            <div>Total Premium: <span className="text-emerald-600">${c.totalPremium.toLocaleString()}</span></div>
+            <div>Capital Used: <span className="text-stone-900">{c.capitalUtilization}%</span></div>
+            <div>OI: <span className="text-stone-900">{c.openInterest.toLocaleString()}</span></div>
+            <div>Volume: <span className="text-stone-900">{c.volume.toLocaleString()}</span></div>
+            <div>RSI: <span className="text-stone-900">{c.rsi}</span></div>
+            <div>Tech Score: <span className="text-stone-900">{c.technicalScore}/100</span></div>
             {c.supportLevel > 0 && (
-              <div>Support: <span className="text-white">${c.supportLevel.toFixed(2)}</span></div>
+              <div>Support: <span className="text-stone-900">${c.supportLevel.toFixed(2)}</span></div>
             )}
             {c.earningsDate && (
-              <div>Earnings: <span className="text-yellow-400">{c.earningsDate}</span></div>
+              <div>Earnings: <span className="text-amber-600">{c.earningsDate}</span></div>
             )}
           </div>
-          <div className="pt-2 border-t border-neutral-800 text-neutral-300">
+          <div className="pt-2 border-t border-stone-200 text-stone-600">
             {c.reasoning}
           </div>
         </div>

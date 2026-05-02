@@ -15,6 +15,7 @@ export type QuoteData = {
   fiftyTwoWeekHigh: number;
   fiftyTwoWeekLow: number;
   earningsDate: string | null;
+  lastTradeDate?: string; // ISO timestamp of last trade (from Tradier)
 };
 
 export type OptionContract = {

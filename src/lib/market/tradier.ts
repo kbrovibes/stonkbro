@@ -34,6 +34,7 @@ export async function tradierGetQuote(symbol: string): Promise<QuoteData | null>
       fiftyTwoWeekHigh: q.week_52_high ?? 0,
       fiftyTwoWeekLow: q.week_52_low ?? 0,
       earningsDate: null, // Tradier doesn't provide earnings date in quotes
+      lastTradeDate: q.trade_date || q.last_trade_ts || null,
     };
   } catch (e) {
     console.error(`Tradier quote error for ${symbol}:`, e);
@@ -81,6 +82,7 @@ export async function tradierGetQuotes(symbols: string[]): Promise<QuoteData[]> 
         fiftyTwoWeekHigh: q.week_52_high ?? 0,
         fiftyTwoWeekLow: q.week_52_low ?? 0,
         earningsDate: null,
+        lastTradeDate: q.trade_date || q.last_trade_ts || null,
       };
     });
   } catch (e) {
