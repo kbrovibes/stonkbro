@@ -32,6 +32,7 @@ const GROUPS = [
       { title: "Covered Calls", description: "Find optimal covered call opportunities.", href: "/covered-calls" },
       { title: "The Wheel", description: "Track your wheel strategy positions and income.", href: "/wheel" },
       { title: "Trade Signals", description: "Live roll/close alerts based on active positions.", href: "/signals" },
+      { title: "CSP Alpha Hunter", description: "Scan for juicy cash-secured puts with delta tracking and AI analysis.", href: "/csp-hunter" },
     ],
   },
   {

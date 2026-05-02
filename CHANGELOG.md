@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.20.0 — CSP Alpha Hunter
+
+- **CSP Scanner Engine**: Scans 40+ high-volume tickers for juicy cash-secured puts (7-21 DTE, delta 0.15-0.30)
+- **Capital Efficiency**: Calculates AROC, contracts per $100K, and capital utilization
+- **Technical Enrichment**: EMA support levels, RSI, and composite technical scores
+- **Earnings Awareness**: Flags candidates with earnings within the DTE window
+- **Delta Tracking**: Compares scans to highlight new entries, premium changes, dropped candidates, and lost support
+- **Claude Risk Analysis**: AI evaluates top 15 candidates as a risk manager with portfolio allocation advice
+- **Email Reports**: Delta-aware HTML emails via Resend with priority highlights and Claude analysis
+- **Cron Automation**: Runs 3x daily during market hours (10am, 2pm, 5pm ET)
+- **CSP Hunter Page**: Full UI at `/csp-hunter` with scan history, filters, expandable cards, and analysis panel
+- **Supabase Storage**: `csp_scans` table for persistent scan history and delta tracking
+
 ## v0.19.0 — AI Options Research & CSP Picks
 
 - Options Tab — new dedicated bottom navigation tab for deep options research
