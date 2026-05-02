@@ -75,18 +75,22 @@ export default function CSPHunterPage() {
   const fetchScans = useCallback(async () => {
     try {
       const res = await fetch("/api/csp-hunter");
-      if (!res.ok) return;
-      const data = await res.json();
-      setScans(data.scans || []);
-      if (data.scans?.length > 0 && !selectedScan) {
-        setSelectedScan(data.scans[0]);
+      if (!res.ok) {
+        console.error("[CSP Hunter] fetch failed:", res.status);
+        return;
       }
-    } catch {
-      // silent
+      const data = await res.json();
+      const fetched = data.scans || [];
+      setScans(fetched);
+      if (fetched.length > 0) {
+        setSelectedScan((prev) => prev ?? fetched[0]);
+      }
+    } catch (e) {
+      console.error("[CSP Hunter] fetch error:", e);
     } finally {
       setLoading(false);
     }
-  }, [selectedScan]);
+  }, []);
 
   useEffect(() => {
     fetchScans();
