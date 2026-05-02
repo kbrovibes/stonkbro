@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sendPushToAll } from "@/lib/notifications/push";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,18 @@ export async function POST() {
       html: "<h2>It works!</h2><p>This is a test email from stonkbro.</p>",
     });
 
+    const push = await sendPushToAll({
+      title: "stonkbro email test",
+      body: "Test notification — email + push working!",
+      url: "/settings",
+      tag: "test-ping",
+    });
+
     return NextResponse.json({
       ok: true,
       sentTo: email,
       resendResponse: result,
+      push,
     });
   } catch (e) {
     return NextResponse.json(

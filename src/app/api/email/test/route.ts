@@ -5,6 +5,7 @@ import { getQuotes } from "@/lib/market/yahoo";
 import { generateAlerts, TrackedPosition } from "@/lib/options/signals";
 import { sendDailyBriefing, AlertItem } from "@/lib/notifications/email";
 import { scanForMovers } from "@/lib/analysis/movers";
+import { sendPushToAll } from "@/lib/notifications/push";
 
 export const dynamic = "force-dynamic";
 
@@ -96,10 +97,22 @@ export async function POST() {
     const combined = [...alerts, ...moverAlerts];
     await sendDailyBriefing(email, combined);
 
+    const push = await sendPushToAll({
+      title: combined.length > 0
+        ? `stonkbro: ${combined.length} alert${combined.length > 1 ? "s" : ""}`
+        : "stonkbro: all clear today",
+      body: combined.length > 0
+        ? `${moverAlerts.length} movers + ${alerts.length} position alerts`
+        : "No action items — your positions look good",
+      url: "/today",
+      tag: "test-digest",
+    });
+
     return NextResponse.json({
       ok: true,
       email,
       alertCount: combined.length,
+      push,
     });
   } catch (e) {
     console.error("Test email error:", e);
