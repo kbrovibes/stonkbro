@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getRecentScans } from "@/lib/options/csp-delta";
-import { scanForCSPs, scanForCalls, CSPScanConfig } from "@/lib/options/csp-scanner";
+import { scanForCSPs, scanForCalls, scanForLeaps, CSPScanConfig } from "@/lib/options/csp-scanner";
 import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-delta";
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
 
@@ -24,6 +24,7 @@ export async function GET() {
       capital: s.capital,
       candidates: s.candidates,
       callCandidates: s.call_candidates ?? [],
+      leapsCandidates: s.leaps_candidates ?? [],
       delta: s.delta,
       claudeAnalysis: s.claude_analysis,
       status: s.status,
@@ -50,26 +51,26 @@ export async function POST(request: Request) {
     // Use defaults
   }
 
-  // Run CSP and Call scans in parallel
-  const [scan, callScan] = await Promise.all([
+  // Run all three scans in parallel
+  const [scan, callScan, leapsScan] = await Promise.all([
     scanForCSPs(config),
     scanForCalls(config),
+    scanForLeaps(config),
   ]);
 
-  // Deduplicate: 1 ticker per section, cap CSPs at 5
-  const seenCSP = new Set<string>();
-  const dedupedCSPs = scan.candidates.filter((c) => {
-    if (seenCSP.has(c.symbol)) return false;
-    seenCSP.add(c.symbol);
-    return true;
-  }).slice(0, 5);
+  // Deduplicate within each section (1 ticker per section), no cross-section dedup
+  const dedupSection = <T extends { symbol: string }>(items: T[], max: number): T[] => {
+    const seen = new Set<string>();
+    return items.filter((c) => {
+      if (seen.has(c.symbol)) return false;
+      seen.add(c.symbol);
+      return true;
+    }).slice(0, max);
+  };
 
-  const seenCalls = new Set<string>();
-  const dedupedCalls = callScan.candidates.filter((c) => {
-    if (seenCalls.has(c.symbol)) return false;
-    seenCalls.add(c.symbol);
-    return true;
-  }).slice(0, 5);
+  const dedupedCSPs = dedupSection(scan.candidates, 5);
+  const dedupedCalls = dedupSection(callScan.candidates, 5);
+  const dedupedLeaps = dedupSection(leapsScan.candidates, 5);
 
   let delta = null;
   const lastScan = await getLastScan();
@@ -92,17 +93,19 @@ export async function POST(request: Request) {
     analysis?.text ?? null,
     analysis?.provider ?? null,
     "manual",
-    dedupedCalls
+    dedupedCalls,
+    dedupedLeaps
   );
 
   return NextResponse.json({
     scanId,
     candidates: dedupedCSPs,
     callCandidates: dedupedCalls,
+    leapsCandidates: dedupedLeaps,
     delta,
     claudeAnalysis: analysis?.text ?? null,
     scannedAt: scan.scannedAt,
     capital: scan.capital,
-    errors: [...scan.errors, ...callScan.errors],
+    errors: [...scan.errors, ...callScan.errors, ...leapsScan.errors],
   });
 }

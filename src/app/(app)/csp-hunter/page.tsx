@@ -85,6 +85,7 @@ type ScanRecord = {
   capital: number;
   candidates: Candidate[];
   callCandidates: CallCandidate[];
+  leapsCandidates: CallCandidate[];
   delta: {
     new: DeltaChange[];
     premium_increased: DeltaChange[];
@@ -96,7 +97,7 @@ type ScanRecord = {
   status: string;
 };
 
-type Tab = "csp" | "calls";
+type Tab = "csp" | "calls" | "leaps";
 
 export default function OptionsScannerPage() {
   const [scans, setScans] = useState<ScanRecord[]>([]);
@@ -147,6 +148,7 @@ export default function OptionsScannerPage() {
 
   const candidates = selectedScan?.candidates ?? [];
   const callCandidates = selectedScan?.callCandidates ?? [];
+  const leapsCandidates = selectedScan?.leapsCandidates ?? [];
   const delta = selectedScan?.delta;
   const totalDeltaChanges =
     (delta?.new?.length ?? 0) +
@@ -235,7 +237,17 @@ export default function OptionsScannerPage() {
                   : "text-stone-400 hover:text-stone-600"
               }`}
             >
-              Buy Calls ({callCandidates.length})
+              Calls ({callCandidates.length})
+            </button>
+            <button
+              onClick={() => setTab("leaps")}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                tab === "leaps"
+                  ? "text-violet-600 border-b-2 border-violet-600"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              LEAPS ({leapsCandidates.length})
             </button>
             <button
               onClick={() => setTab("csp")}
@@ -245,7 +257,7 @@ export default function OptionsScannerPage() {
                   : "text-stone-400 hover:text-stone-600"
               }`}
             >
-              Sell CSPs ({candidates.length})
+              CSPs ({candidates.length})
             </button>
           </div>
 
@@ -357,6 +369,42 @@ export default function OptionsScannerPage() {
               {callCandidates.length === 0 && (
                 <div className="py-12 text-center text-stone-400 text-sm">
                   No call candidates in this scan. Run a new scan.
+                </div>
+              )}
+            </>
+          )}
+
+          {/* LEAPS tab */}
+          {tab === "leaps" && (
+            <>
+              <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
+                {[
+                  { label: "LEAPS Picks", value: leapsCandidates.length, color: "text-stone-900" },
+                  { label: "Best Score", value: `${leapsCandidates[0]?.score ?? 0}/100`, color: "text-violet-600" },
+                  { label: "Best Upside", value: leapsCandidates[0] ? `${leapsCandidates[0].outcomeHomeRun.returnPct > 0 ? "+" : ""}${leapsCandidates[0].outcomeHomeRun.returnPct}%` : "—", color: "text-emerald-600" },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
+                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
+                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-4 py-2 bg-violet-50/50 border-b border-stone-200">
+                <p className="text-[11px] text-violet-700">
+                  6-18 month LEAPS · slightly OTM · $100K capital · 1 pick per ticker
+                </p>
+              </div>
+
+              <div className="divide-y divide-stone-100">
+                {leapsCandidates.map((c, i) => (
+                  <CallCard key={`leaps-${c.symbol}-${c.strike}-${c.expiry}`} candidate={c} rank={i + 1} />
+                ))}
+              </div>
+
+              {leapsCandidates.length === 0 && (
+                <div className="py-12 text-center text-stone-400 text-sm">
+                  No LEAPS candidates in this scan. Run a new scan.
                 </div>
               )}
             </>

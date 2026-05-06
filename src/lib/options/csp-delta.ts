@@ -6,7 +6,7 @@
  * and support level changes.
  */
 
-import { CSPHunterCandidate, CSPScanResult, CallBuyCandidate } from "./csp-scanner";
+import { CSPHunterCandidate, CSPScanResult, CallBuyCandidate, LeapsCandidate } from "./csp-scanner";
 import { supabaseAdmin } from "@/lib/supabase";
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,8 @@ export async function saveScanResult(
   claudeAnalysis: string | null,
   claudeProvider: string | null,
   scanType: "scheduled" | "manual" = "scheduled",
-  callCandidates: CallBuyCandidate[] = []
+  callCandidates: CallBuyCandidate[] = [],
+  leapsCandidates: LeapsCandidate[] = []
 ): Promise<string | null> {
   const supabase = supabaseAdmin;
 
@@ -61,6 +62,7 @@ export async function saveScanResult(
       capital: scan.capital,
       candidates: scan.candidates,
       call_candidates: callCandidates,
+      leaps_candidates: leapsCandidates,
       delta: delta ? {
         new: delta.newEntries,
         premium_increased: delta.premiumIncreased,
@@ -115,6 +117,7 @@ export async function getRecentScans(limit = 10): Promise<Array<{
   capital: number;
   candidates: CSPHunterCandidate[];
   call_candidates?: CallBuyCandidate[];
+  leaps_candidates?: LeapsCandidate[];
   delta: ScanDelta | null;
   claude_analysis: string | null;
   status: string;

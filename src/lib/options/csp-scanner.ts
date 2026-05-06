@@ -799,6 +799,103 @@ function buildCallCandidate(
   };
 }
 
+// ---------------------------------------------------------------------------
+// LEAPS Scanner — long-dated calls 6-18 months out
+// ---------------------------------------------------------------------------
+
+export type LeapsCandidate = CallBuyCandidate; // Same shape, different DTE range
+
+export type LeapsScanResult = {
+  candidates: LeapsCandidate[];
+  scannedTickers: string[];
+  scannedAt: string;
+  capital: number;
+  errors: string[];
+};
+
+export async function scanForLeaps(
+  userConfig: CSPScanConfig = {}
+): Promise<LeapsScanResult> {
+  const capital = userConfig.capital ?? 100_000;
+  const tickers = userConfig.tickers ?? DEFAULT_UNIVERSE;
+  const errors: string[] = [];
+  const allCandidates: LeapsCandidate[] = [];
+
+  const quotes = await getQuotes(tickers);
+  const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+
+  let earningsMap = new Map<string, EarningsEvent>();
+  try {
+    const earnings = await getEarningsCalendar(tickers);
+    earningsMap = new Map(earnings.map((e) => [e.symbol, e]));
+  } catch (e) {
+    errors.push(`Earnings fetch failed: ${e}`);
+  }
+
+  const scanPromises = tickers.map(async (symbol) => {
+    try {
+      const quote = quoteMap.get(symbol);
+      if (!quote || quote.price <= 0) return [];
+
+      const expirations = await tradierGetExpirations(symbol);
+      const now = new Date();
+      const targetExps = expirations.filter((exp) => {
+        const dte = Math.ceil((new Date(exp).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return dte >= 180 && dte <= 540; // 6-18 months
+      });
+
+      if (targetExps.length === 0) return [];
+
+      const [technicals, ...chainResults] = await Promise.all([
+        analyzeTechnicals(symbol, quote).catch(() => null),
+        ...targetExps.map((exp) => tradierGetOptionsChain(symbol, exp).catch(() => null)),
+      ]);
+
+      const earnings = earningsMap.get(symbol);
+      const candidates: LeapsCandidate[] = [];
+
+      for (const chain of chainResults) {
+        if (!chain) continue;
+
+        const filteredCalls = chain.calls.filter((c) => {
+          if (c.inTheMoney) return false;
+          if (c.mid <= 0.20) return false;
+          if (c.openInterest < 20) return false;
+          const absDelta = Math.abs(c.delta ?? 0.3);
+          return absDelta >= 0.15 && absDelta <= 0.50;
+        });
+
+        for (const call of filteredCalls) {
+          const candidate = buildCallCandidate(call, quote, technicals, earnings ?? null, capital);
+          if (candidate.score >= 35) {
+            candidates.push(candidate);
+          }
+        }
+      }
+
+      return candidates.sort((a, b) => b.score - a.score).slice(0, 1);
+    } catch (e) {
+      errors.push(`${symbol}: ${e}`);
+      return [];
+    }
+  });
+
+  const results = await settledBatch(scanPromises, 5);
+  for (const result of results) {
+    allCandidates.push(...result);
+  }
+
+  allCandidates.sort((a, b) => b.score - a.score);
+
+  return {
+    candidates: allCandidates,
+    scannedTickers: tickers,
+    scannedAt: new Date().toISOString(),
+    capital,
+    errors,
+  };
+}
+
 /** Estimate delta when real Greeks aren't available */
 function estimateDelta(put: OptionContract, price: number): number {
   const moneyness = (price - put.strike) / price;
