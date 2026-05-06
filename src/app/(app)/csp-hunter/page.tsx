@@ -106,7 +106,7 @@ export default function OptionsScannerPage() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [tab, setTab] = useState<Tab>("calls");
 
-  const fetchScans = useCallback(async () => {
+  const fetchScans = useCallback(async (selectLatest = false) => {
     try {
       const res = await fetch("/api/csp-hunter");
       if (!res.ok) return;
@@ -114,7 +114,11 @@ export default function OptionsScannerPage() {
       const fetched = data.scans || [];
       setScans(fetched);
       if (fetched.length > 0) {
-        setSelectedScan((prev) => prev ?? fetched[0]);
+        if (selectLatest) {
+          setSelectedScan(fetched[0]);
+        } else {
+          setSelectedScan((prev) => prev ?? fetched[0]);
+        }
       }
     } catch (e) {
       console.error("[Options Scanner] fetch error:", e);
@@ -132,7 +136,7 @@ export default function OptionsScannerPage() {
     try {
       const res = await fetch("/api/csp-hunter", { method: "POST" });
       if (res.ok) {
-        await fetchScans();
+        await fetchScans(true);
       }
     } catch {
       // silent
