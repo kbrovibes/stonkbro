@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { scanForCSPs } from "@/lib/options/csp-scanner";
+import { scanForCSPs, scanForCalls } from "@/lib/options/csp-scanner";
 import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-delta";
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
 import { sendCSPHunterReport } from "@/lib/notifications/csp-report";
@@ -20,10 +20,26 @@ export async function GET(request: Request) {
   const startTime = Date.now();
 
   try {
-    // 1. Run the scan
-    console.log("[CSP Hunter] Starting scheduled scan...");
-    const scan = await scanForCSPs();
-    console.log(`[CSP Hunter] Scanned ${scan.scannedTickers.length} tickers, found ${scan.candidates.length} candidates`);
+    // 1. Run CSP + Call scans in parallel
+    console.log("[Options Scanner] Starting scheduled scan...");
+    const [scan, callScan] = await Promise.all([scanForCSPs(), scanForCalls()]);
+
+    // Deduplicate: 1 ticker per section, cap CSPs at 5
+    const seenCSP = new Set<string>();
+    scan.candidates = scan.candidates.filter((c) => {
+      if (seenCSP.has(c.symbol)) return false;
+      seenCSP.add(c.symbol);
+      return true;
+    }).slice(0, 5);
+
+    const seenCalls = new Set<string>();
+    const dedupedCalls = callScan.candidates.filter((c) => {
+      if (seenCalls.has(c.symbol)) return false;
+      seenCalls.add(c.symbol);
+      return true;
+    }).slice(0, 5);
+
+    console.log(`[Options Scanner] Found ${scan.candidates.length} CSPs + ${dedupedCalls.length} calls`);
 
     if (scan.errors.length > 0) {
       console.warn(`[CSP Hunter] ${scan.errors.length} errors:`, scan.errors.slice(0, 5));
@@ -54,7 +70,8 @@ export async function GET(request: Request) {
       delta,
       analysis?.text ?? null,
       analysis?.provider ?? null,
-      "scheduled"
+      "scheduled",
+      dedupedCalls
     );
 
     // 5. Send email report

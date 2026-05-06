@@ -37,6 +37,36 @@ type Candidate = {
   catalyst: string;
 };
 
+type CallCandidate = {
+  symbol: string;
+  name: string;
+  strike: number;
+  expiry: string;
+  dte: number;
+  bid: number;
+  ask: number;
+  mid: number;
+  costPerContract: number;
+  delta: number;
+  iv: number;
+  currentPrice: number;
+  distanceFromPrice: number;
+  openInterest: number;
+  volume: number;
+  contractsAt100k: number;
+  totalCost: number;
+  capitalUtilization: number;
+  breakeven: number;
+  outcome50pct: { price: number; profit: number; returnPct: number };
+  outcome100pct: { price: number; profit: number; returnPct: number };
+  outcomeHomeRun: { price: number; profit: number; returnPct: number };
+  maxLoss: number;
+  score: number;
+  priority: "high" | "medium" | "low";
+  catalyst: string;
+  reasoning: string;
+};
+
 type DeltaChange = {
   symbol: string;
   strike: number;
@@ -54,6 +84,7 @@ type ScanRecord = {
   candidateCount: number;
   capital: number;
   candidates: Candidate[];
+  callCandidates: CallCandidate[];
   delta: {
     new: DeltaChange[];
     premium_increased: DeltaChange[];
@@ -65,21 +96,20 @@ type ScanRecord = {
   status: string;
 };
 
-export default function CSPHunterPage() {
+type Tab = "csp" | "calls";
+
+export default function OptionsScannerPage() {
   const [scans, setScans] = useState<ScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [filter, setFilter] = useState<"all" | "high" | "medium">("all");
+  const [tab, setTab] = useState<Tab>("calls");
 
   const fetchScans = useCallback(async () => {
     try {
       const res = await fetch("/api/csp-hunter");
-      if (!res.ok) {
-        console.error("[CSP Hunter] fetch failed:", res.status);
-        return;
-      }
+      if (!res.ok) return;
       const data = await res.json();
       const fetched = data.scans || [];
       setScans(fetched);
@@ -87,7 +117,7 @@ export default function CSPHunterPage() {
         setSelectedScan((prev) => prev ?? fetched[0]);
       }
     } catch (e) {
-      console.error("[CSP Hunter] fetch error:", e);
+      console.error("[Options Scanner] fetch error:", e);
     } finally {
       setLoading(false);
     }
@@ -112,10 +142,7 @@ export default function CSPHunterPage() {
   };
 
   const candidates = selectedScan?.candidates ?? [];
-  const filtered =
-    filter === "all"
-      ? candidates
-      : candidates.filter((c) => c.priority === filter);
+  const callCandidates = selectedScan?.callCandidates ?? [];
   const delta = selectedScan?.delta;
   const totalDeltaChanges =
     (delta?.new?.length ?? 0) +
@@ -126,7 +153,7 @@ export default function CSPHunterPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 py-20">
-        <p className="text-stone-400 text-sm animate-pulse">Loading CSP Hunter...</p>
+        <p className="text-stone-400 text-sm animate-pulse">Loading Options Scanner...</p>
       </div>
     );
   }
@@ -138,9 +165,9 @@ export default function CSPHunterPage() {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-stone-900">CSP Alpha Hunter</h1>
+              <h1 className="text-lg font-bold text-stone-900">Options Scanner</h1>
               <p className="text-[11px] text-stone-400 mt-0.5">
-                Cash Secured Puts · 7-21 DTE · δ 0.15-0.30 · $100K capital
+                CSPs + Call buys · $100K capital · Top picks by profit potential
               </p>
             </div>
             <button
@@ -152,7 +179,6 @@ export default function CSPHunterPage() {
             </button>
           </div>
 
-          {/* Scan selector */}
           {scans.length > 1 && (
             <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
               {scans.slice(0, 5).map((s) => (
@@ -182,7 +208,7 @@ export default function CSPHunterPage() {
       {/* No scans */}
       {scans.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 px-4">
-          <p className="text-stone-400 text-sm mb-4">No scans yet. Run your first scan to discover juicy CSPs.</p>
+          <p className="text-stone-400 text-sm mb-4">No scans yet. Run your first scan to find options plays.</p>
           <button
             onClick={triggerScan}
             disabled={scanning}
@@ -195,92 +221,141 @@ export default function CSPHunterPage() {
 
       {selectedScan && (
         <>
-          {/* Stats bar */}
-          <div className="grid grid-cols-4 gap-px bg-stone-200 border-b border-stone-200">
-            {[
-              { label: "Candidates", value: candidates.length, color: "text-stone-900" },
-              { label: "High Priority", value: candidates.filter((c) => c.priority === "high").length, color: "text-emerald-600" },
-              { label: "Top AROC", value: `${candidates[0]?.aroc ?? 0}%`, color: "text-amber-600" },
-              { label: "Delta Changes", value: totalDeltaChanges, color: "text-sky-600" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-white px-3 py-2 text-center">
-                <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-                <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
-              </div>
-            ))}
+          {/* Tab switcher */}
+          <div className="flex border-b border-stone-200">
+            <button
+              onClick={() => setTab("calls")}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                tab === "calls"
+                  ? "text-sky-600 border-b-2 border-sky-600"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              Buy Calls ({callCandidates.length})
+            </button>
+            <button
+              onClick={() => setTab("csp")}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                tab === "csp"
+                  ? "text-emerald-600 border-b-2 border-emerald-600"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              Sell CSPs ({candidates.length})
+            </button>
           </div>
 
-          {/* Delta section */}
-          {delta && totalDeltaChanges > 0 && (
-            <div className="border-b border-stone-200 bg-amber-50/50 px-4 py-3">
-              <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">
-                Changes Since Last Scan
-              </h2>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {delta.premium_increased?.slice(0, 3).map((d, i) => (
-                  <div key={`up-${i}`} className="text-xs text-emerald-700">📈 {d.message}</div>
-                ))}
-                {delta.new?.slice(0, 3).map((d, i) => (
-                  <div key={`new-${i}`} className="text-xs text-sky-700">🆕 {d.message}</div>
-                ))}
-                {delta.support_lost?.slice(0, 2).map((d, i) => (
-                  <div key={`sl-${i}`} className="text-xs text-red-600">⚠️ {d.message}</div>
-                ))}
-                {delta.dropped?.slice(0, 2).map((d, i) => (
-                  <div key={`dr-${i}`} className="text-xs text-stone-500">❌ {d.message}</div>
+          {/* CSP tab */}
+          {tab === "csp" && (
+            <>
+              {/* Stats bar */}
+              <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
+                {[
+                  { label: "CSP Picks", value: candidates.length, color: "text-stone-900" },
+                  { label: "Top AROC", value: `${candidates[0]?.aroc ?? 0}%`, color: "text-emerald-600" },
+                  { label: "Delta Changes", value: totalDeltaChanges, color: "text-sky-600" },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
+                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
+                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Claude Analysis toggle */}
-          {selectedScan.claudeAnalysis && (
-            <div className="border-b border-stone-200">
-              <button
-                onClick={() => setShowAnalysis(!showAnalysis)}
-                className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition"
-              >
-                <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">
-                  Claude Risk Analysis
-                </span>
-                <span className="text-stone-400 text-xs">{showAnalysis ? "▲" : "▼"}</span>
-              </button>
-              {showAnalysis && (
-                <div className="px-4 pb-4 text-sm text-stone-700 leading-relaxed whitespace-pre-wrap bg-violet-50/30">
-                  {selectedScan.claudeAnalysis}
+              {/* Delta section */}
+              {delta && totalDeltaChanges > 0 && (
+                <div className="border-b border-stone-200 bg-amber-50/50 px-4 py-3">
+                  <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">
+                    Changes Since Last Scan
+                  </h2>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {delta.premium_increased?.slice(0, 3).map((d, i) => (
+                      <div key={`up-${i}`} className="text-xs text-emerald-700">{d.message}</div>
+                    ))}
+                    {delta.new?.slice(0, 3).map((d, i) => (
+                      <div key={`new-${i}`} className="text-xs text-sky-700">{d.message}</div>
+                    ))}
+                    {delta.support_lost?.slice(0, 2).map((d, i) => (
+                      <div key={`sl-${i}`} className="text-xs text-red-600">{d.message}</div>
+                    ))}
+                    {delta.dropped?.slice(0, 2).map((d, i) => (
+                      <div key={`dr-${i}`} className="text-xs text-stone-500">{d.message}</div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
+
+              {/* Claude Analysis */}
+              {selectedScan.claudeAnalysis && (
+                <div className="border-b border-stone-200">
+                  <button
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                    className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition"
+                  >
+                    <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">
+                      Claude Risk Analysis
+                    </span>
+                    <span className="text-stone-400 text-xs">{showAnalysis ? "hide" : "show"}</span>
+                  </button>
+                  {showAnalysis && (
+                    <div className="px-4 pb-4 text-sm text-stone-700 leading-relaxed whitespace-pre-wrap bg-violet-50/30">
+                      {selectedScan.claudeAnalysis}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CSP cards */}
+              <div className="divide-y divide-stone-100">
+                {candidates.map((c, i) => (
+                  <CSPCard key={`${c.symbol}-${c.strike}-${c.expiry}`} candidate={c} rank={i + 1} />
+                ))}
+              </div>
+
+              {candidates.length === 0 && (
+                <div className="py-12 text-center text-stone-400 text-sm">
+                  No CSP candidates in this scan.
+                </div>
+              )}
+            </>
           )}
 
-          {/* Filter tabs */}
-          <div className="flex gap-1 px-4 py-2 border-b border-stone-200">
-            {(["all", "high", "medium"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                  filter === f
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "text-stone-400 hover:text-stone-600"
-                }`}
-              >
-                {f === "all" ? `All (${candidates.length})` : f === "high" ? `High (${candidates.filter((c) => c.priority === "high").length})` : `Medium (${candidates.filter((c) => c.priority === "medium").length})`}
-              </button>
-            ))}
-          </div>
+          {/* Calls tab */}
+          {tab === "calls" && (
+            <>
+              {/* Stats bar */}
+              <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
+                {[
+                  { label: "Call Picks", value: callCandidates.length, color: "text-stone-900" },
+                  { label: "Best Score", value: `${callCandidates[0]?.score ?? 0}/100`, color: "text-sky-600" },
+                  { label: "Best Upside", value: callCandidates[0] ? `${callCandidates[0].outcomeHomeRun.returnPct > 0 ? "+" : ""}${callCandidates[0].outcomeHomeRun.returnPct}%` : "—", color: "text-emerald-600" },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
+                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
+                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
 
-          {/* Candidate cards */}
-          <div className="divide-y divide-stone-100">
-            {filtered.map((c, i) => (
-              <CandidateCard key={`${c.symbol}-${c.strike}-${c.expiry}`} candidate={c} rank={i + 1} />
-            ))}
-          </div>
+              <div className="px-4 py-2 bg-sky-50/50 border-b border-stone-200">
+                <p className="text-[11px] text-sky-700">
+                  60-120 DTE calls · slightly OTM · $100K capital · 1 pick per ticker
+                </p>
+              </div>
 
-          {filtered.length === 0 && (
-            <div className="py-12 text-center text-stone-400 text-sm">
-              No {filter} priority candidates in this scan.
-            </div>
+              {/* Call cards */}
+              <div className="divide-y divide-stone-100">
+                {callCandidates.map((c, i) => (
+                  <CallCard key={`${c.symbol}-${c.strike}-${c.expiry}`} candidate={c} rank={i + 1} />
+                ))}
+              </div>
+
+              {callCandidates.length === 0 && (
+                <div className="py-12 text-center text-stone-400 text-sm">
+                  No call candidates in this scan. Run a new scan.
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -289,10 +364,10 @@ export default function CSPHunterPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Candidate Card
+// CSP Card (same as before, capped at 5)
 // ---------------------------------------------------------------------------
 
-function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: number }) {
+function CSPCard({ candidate: c, rank }: { candidate: Candidate; rank: number }) {
   const [expanded, setExpanded] = useState(false);
   const priorityColors = {
     high: "bg-emerald-500",
@@ -305,7 +380,6 @@ function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: num
       className="px-4 py-3 hover:bg-stone-50/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Top row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-stone-300 text-xs w-5">{rank}</span>
@@ -327,42 +401,16 @@ function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: num
         </div>
       </div>
 
-      {/* Key metrics row */}
       <div className="flex items-center gap-3 mt-1.5 ml-7">
         <span className="text-xs text-stone-500">${c.mid.toFixed(2)} mid</span>
-        <span className="text-xs text-stone-400">Δ{c.delta.toFixed(2)}</span>
-        <span className="text-xs text-stone-400">{c.distanceFromPrice}% OTM</span>
-        <span className="text-xs text-stone-400">IV {(c.iv * 100).toFixed(0)}%</span>
-        <span className={`text-xs ${c.juiciness >= 70 ? "text-emerald-600" : c.juiciness >= 50 ? "text-amber-600" : "text-stone-400"}`}>
-          {c.juiciness}/100
-        </span>
+        <span className="text-xs text-stone-400">{c.contractsAt100k} contracts</span>
+        <span className="text-xs text-emerald-600">${c.totalPremium.toLocaleString()} income</span>
       </div>
 
-      {/* Catalyst one-liner */}
       {c.catalyst && (
         <p className="text-xs text-stone-500 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
       )}
 
-      {/* Badges */}
-      <div className="flex gap-1.5 mt-1.5 ml-7">
-        {c.earningsWithinDTE && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200">
-            ⚠ Earnings {c.daysToEarnings}d
-          </span>
-        )}
-        {c.nearSupport && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-200">
-            ✓ Near support
-          </span>
-        )}
-        {c.rsi < 35 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 border border-sky-200">
-            RSI oversold
-          </span>
-        )}
-      </div>
-
-      {/* Expanded details */}
       {expanded && (
         <div className="mt-3 ml-7 p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500">
@@ -376,14 +424,110 @@ function CandidateCard({ candidate: c, rank }: { candidate: Candidate; rank: num
             <div>Capital Used: <span className="text-stone-900">{c.capitalUtilization}%</span></div>
             <div>OI: <span className="text-stone-900">{c.openInterest.toLocaleString()}</span></div>
             <div>Volume: <span className="text-stone-900">{c.volume.toLocaleString()}</span></div>
-            <div>RSI: <span className="text-stone-900">{c.rsi}</span></div>
-            <div>Tech Score: <span className="text-stone-900">{c.technicalScore}/100</span></div>
-            {c.supportLevel > 0 && (
-              <div>Support: <span className="text-stone-900">${c.supportLevel.toFixed(2)}</span></div>
-            )}
-            {c.earningsDate && (
-              <div>Earnings: <span className="text-amber-600">{c.earningsDate}</span></div>
-            )}
+            <div>Delta: <span className="text-stone-900">{c.delta.toFixed(2)}</span></div>
+            <div>IV: <span className="text-stone-900">{(c.iv * 100).toFixed(0)}%</span></div>
+          </div>
+          <div className="pt-2 border-t border-stone-200 text-stone-600">
+            {c.reasoning}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Call Card — shows outcome scenarios prominently
+// ---------------------------------------------------------------------------
+
+function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const priorityColors = {
+    high: "bg-sky-500",
+    medium: "bg-amber-500",
+    low: "bg-stone-400",
+  };
+
+  return (
+    <div
+      className="px-4 py-3 hover:bg-stone-50/50 transition cursor-pointer"
+      onClick={() => setExpanded(!expanded)}
+    >
+      {/* Top row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-stone-300 text-xs w-5">{rank}</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[c.priority]}`} />
+          <Link
+            href={`/ticker/${c.symbol}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm font-bold text-stone-900 hover:text-sky-600 transition"
+          >
+            {c.symbol}
+          </Link>
+          <span className="text-xs text-stone-400">
+            ${c.strike} C · {c.expiry.slice(5)} · {c.dte}d
+          </span>
+        </div>
+        <div className="text-right">
+          <div className="text-sm font-semibold text-sky-600">{c.score}/100</div>
+          <div className="text-[10px] text-stone-400">Score</div>
+        </div>
+      </div>
+
+      {/* Key metrics */}
+      <div className="flex items-center gap-3 mt-1.5 ml-7">
+        <span className="text-xs text-stone-500">${c.mid.toFixed(2)} mid</span>
+        <span className="text-xs text-stone-400">{c.contractsAt100k} contracts</span>
+        <span className="text-xs text-stone-500">${c.totalCost.toLocaleString()} cost</span>
+      </div>
+
+      {/* Catalyst */}
+      {c.catalyst && (
+        <p className="text-xs text-stone-500 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
+      )}
+
+      {/* Outcome scenarios — always visible */}
+      <div className="mt-2 ml-7 grid grid-cols-3 gap-2">
+        <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-100">
+          <div className="text-[10px] text-emerald-600 font-medium uppercase">Stock +10%</div>
+          <div className={`text-sm font-bold ${c.outcomeHomeRun.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {c.outcomeHomeRun.profit >= 0 ? "+" : ""}${Math.abs(c.outcomeHomeRun.profit).toLocaleString()}
+          </div>
+          <div className={`text-[10px] ${c.outcomeHomeRun.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+            {c.outcomeHomeRun.returnPct >= 0 ? "+" : ""}{c.outcomeHomeRun.returnPct}%
+          </div>
+        </div>
+        <div className="bg-stone-50 rounded-lg p-2 text-center border border-stone-200">
+          <div className="text-[10px] text-stone-500 font-medium uppercase">Breakeven</div>
+          <div className="text-sm font-bold text-stone-700">${c.breakeven.toFixed(0)}</div>
+          <div className="text-[10px] text-stone-400">
+            +{((c.breakeven / c.currentPrice - 1) * 100).toFixed(1)}%
+          </div>
+        </div>
+        <div className="bg-red-50 rounded-lg p-2 text-center border border-red-100">
+          <div className="text-[10px] text-red-600 font-medium uppercase">Max Loss</div>
+          <div className="text-sm font-bold text-red-600">-${c.maxLoss.toLocaleString()}</div>
+          <div className="text-[10px] text-red-400">-100%</div>
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="mt-3 ml-7 p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500">
+            <div>Current Price: <span className="text-stone-900">${c.currentPrice.toFixed(2)}</span></div>
+            <div>Strike: <span className="text-stone-900">${c.strike.toFixed(2)}</span></div>
+            <div>Bid/Ask: <span className="text-stone-900">${c.bid.toFixed(2)} / ${c.ask.toFixed(2)}</span></div>
+            <div>Cost/Contract: <span className="text-stone-900">${c.costPerContract.toLocaleString()}</span></div>
+            <div>Contracts @ $100K: <span className="text-stone-900 font-semibold">{c.contractsAt100k}</span></div>
+            <div>Total Cost: <span className="text-stone-900">${c.totalCost.toLocaleString()}</span></div>
+            <div>Capital Used: <span className="text-stone-900">{c.capitalUtilization.toFixed(1)}%</span></div>
+            <div>Delta: <span className="text-stone-900">{c.delta.toFixed(2)}</span></div>
+            <div>IV: <span className="text-stone-900">{(c.iv * 100).toFixed(0)}%</span></div>
+            <div>OTM: <span className="text-stone-900">{c.distanceFromPrice}%</span></div>
+            <div>OI: <span className="text-stone-900">{c.openInterest.toLocaleString()}</span></div>
+            <div>Volume: <span className="text-stone-900">{c.volume.toLocaleString()}</span></div>
           </div>
           <div className="pt-2 border-t border-stone-200 text-stone-600">
             {c.reasoning}

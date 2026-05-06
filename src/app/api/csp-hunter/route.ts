@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getRecentScans } from "@/lib/options/csp-delta";
-import { scanForCSPs, CSPScanConfig } from "@/lib/options/csp-scanner";
+import { scanForCSPs, scanForCalls, CSPScanConfig } from "@/lib/options/csp-scanner";
 import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-delta";
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
 
@@ -23,6 +23,7 @@ export async function GET() {
       candidateCount: s.candidate_count,
       capital: s.capital,
       candidates: s.candidates,
+      callCandidates: s.call_candidates ?? [],
       delta: s.delta,
       claudeAnalysis: s.claude_analysis,
       status: s.status,
@@ -49,38 +50,59 @@ export async function POST(request: Request) {
     // Use defaults
   }
 
-  const scan = await scanForCSPs(config);
+  // Run CSP and Call scans in parallel
+  const [scan, callScan] = await Promise.all([
+    scanForCSPs(config),
+    scanForCalls(config),
+  ]);
+
+  // Deduplicate: 1 ticker per section, cap CSPs at 5
+  const seenCSP = new Set<string>();
+  const dedupedCSPs = scan.candidates.filter((c) => {
+    if (seenCSP.has(c.symbol)) return false;
+    seenCSP.add(c.symbol);
+    return true;
+  }).slice(0, 5);
+
+  const seenCalls = new Set<string>();
+  const dedupedCalls = callScan.candidates.filter((c) => {
+    if (seenCalls.has(c.symbol)) return false;
+    seenCalls.add(c.symbol);
+    return true;
+  }).slice(0, 5);
 
   let delta = null;
   const lastScan = await getLastScan();
   if (lastScan) {
-    delta = computeDelta(scan.candidates, lastScan.candidates, lastScan.scannedAt);
+    delta = computeDelta(dedupedCSPs, lastScan.candidates, lastScan.scannedAt);
   }
 
   let analysis = null;
-  if (scan.candidates.length > 0) {
+  if (dedupedCSPs.length > 0) {
     try {
-      analysis = await analyzeCSPCandidates(scan.candidates, delta, scan.capital);
+      analysis = await analyzeCSPCandidates(dedupedCSPs, delta, scan.capital);
     } catch (e) {
-      console.error("[CSP Hunter] Manual scan Claude analysis failed:", e);
+      console.error("[Options Scanner] Claude analysis failed:", e);
     }
   }
 
   const scanId = await saveScanResult(
-    scan,
+    { ...scan, candidates: dedupedCSPs },
     delta,
     analysis?.text ?? null,
     analysis?.provider ?? null,
-    "manual"
+    "manual",
+    dedupedCalls
   );
 
   return NextResponse.json({
     scanId,
-    candidates: scan.candidates,
+    candidates: dedupedCSPs,
+    callCandidates: dedupedCalls,
     delta,
     claudeAnalysis: analysis?.text ?? null,
     scannedAt: scan.scannedAt,
     capital: scan.capital,
-    errors: scan.errors,
+    errors: [...scan.errors, ...callScan.errors],
   });
 }

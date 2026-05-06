@@ -23,7 +23,7 @@ const tabs = [
     ),
   },
   {
-    name: "CSP Hunter",
+    name: "Options",
     href: "/csp-hunter",
     icon: (active: boolean) => (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5} stroke="currentColor">

@@ -536,6 +536,269 @@ export async function scanTickerCSPs(
 // Helpers
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Call Buy Scanner — find high-conviction calls 60-120 DTE
+// ---------------------------------------------------------------------------
+
+export type CallBuyCandidate = {
+  symbol: string;
+  name: string;
+  strike: number;
+  expiry: string;
+  dte: number;
+  bid: number;
+  ask: number;
+  mid: number;
+  costPerContract: number; // mid * 100
+  delta: number;
+  iv: number;
+  currentPrice: number;
+  distanceFromPrice: number; // % OTM (positive = OTM)
+  openInterest: number;
+  volume: number;
+  // Capital sizing
+  contractsAt100k: number;
+  totalCost: number;
+  capitalUtilization: number;
+  // Outcome scenarios
+  breakeven: number; // strike + mid
+  outcome50pct: { price: number; profit: number; returnPct: number }; // if stock +50% of OTM distance
+  outcome100pct: { price: number; profit: number; returnPct: number }; // if stock reaches strike
+  outcomeHomeRun: { price: number; profit: number; returnPct: number }; // if stock +10% from current
+  maxLoss: number; // total cost (100% loss)
+  // Scoring
+  score: number; // 0-100
+  priority: "high" | "medium" | "low";
+  catalyst: string;
+  reasoning: string;
+};
+
+export type CallScanResult = {
+  candidates: CallBuyCandidate[];
+  scannedTickers: string[];
+  scannedAt: string;
+  capital: number;
+  errors: string[];
+};
+
+export async function scanForCalls(
+  userConfig: CSPScanConfig = {}
+): Promise<CallScanResult> {
+  const capital = userConfig.capital ?? 100_000;
+  const tickers = userConfig.tickers ?? DEFAULT_UNIVERSE;
+  const errors: string[] = [];
+  const allCandidates: CallBuyCandidate[] = [];
+
+  const quotes = await getQuotes(tickers);
+  const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+
+  let earningsMap = new Map<string, EarningsEvent>();
+  try {
+    const earnings = await getEarningsCalendar(tickers);
+    earningsMap = new Map(earnings.map((e) => [e.symbol, e]));
+  } catch (e) {
+    errors.push(`Earnings fetch failed: ${e}`);
+  }
+
+  const scanPromises = tickers.map(async (symbol) => {
+    try {
+      const quote = quoteMap.get(symbol);
+      if (!quote || quote.price <= 0) return [];
+
+      const expirations = await tradierGetExpirations(symbol);
+      const now = new Date();
+      const targetExps = expirations.filter((exp) => {
+        const dte = Math.ceil((new Date(exp).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return dte >= 60 && dte <= 120;
+      });
+
+      if (targetExps.length === 0) return [];
+
+      const [technicals, ...chainResults] = await Promise.all([
+        analyzeTechnicals(symbol, quote).catch(() => null),
+        ...targetExps.map((exp) => tradierGetOptionsChain(symbol, exp).catch(() => null)),
+      ]);
+
+      const earnings = earningsMap.get(symbol);
+      const candidates: CallBuyCandidate[] = [];
+
+      for (const chain of chainResults) {
+        if (!chain) continue;
+
+        const filteredCalls = chain.calls.filter((c) => {
+          if (c.inTheMoney) return false;
+          if (c.mid <= 0.10) return false;
+          if (c.openInterest < 50) return false;
+          const absDelta = Math.abs(c.delta ?? 0.3);
+          return absDelta >= 0.20 && absDelta <= 0.50; // slightly OTM to ATM
+        });
+
+        for (const call of filteredCalls) {
+          const candidate = buildCallCandidate(call, quote, technicals, earnings ?? null, capital);
+          if (candidate.score >= 40) {
+            candidates.push(candidate);
+          }
+        }
+      }
+
+      // Best 1 per ticker
+      return candidates.sort((a, b) => b.score - a.score).slice(0, 1);
+    } catch (e) {
+      errors.push(`${symbol}: ${e}`);
+      return [];
+    }
+  });
+
+  const results = await settledBatch(scanPromises, 5);
+  for (const result of results) {
+    allCandidates.push(...result);
+  }
+
+  allCandidates.sort((a, b) => b.score - a.score);
+
+  return {
+    candidates: allCandidates,
+    scannedTickers: tickers,
+    scannedAt: new Date().toISOString(),
+    capital,
+    errors,
+  };
+}
+
+function buildCallCandidate(
+  call: OptionContract,
+  quote: QuoteData,
+  technicals: TechnicalSignals | null,
+  earnings: EarningsEvent | null,
+  capital: number
+): CallBuyCandidate {
+  const costPerContract = call.mid * 100;
+  const contracts = Math.floor(capital / costPerContract);
+  const totalCost = costPerContract * contracts;
+  const capitalUtilization = (totalCost / capital) * 100;
+  const distPct = ((call.strike - quote.price) / quote.price) * 100;
+  const absDelta = Math.abs(call.delta ?? 0.3);
+  const breakeven = call.strike + call.mid;
+  const iv = call.iv ?? call.impliedVolatility;
+
+  // Outcome: stock reaches breakeven + 50% of OTM distance
+  const halfwayPrice = quote.price + (call.strike - quote.price) * 0.5;
+  const halfwayIntrinsic = Math.max(0, halfwayPrice - call.strike);
+  const outcome50 = {
+    price: Math.round(halfwayPrice * 100) / 100,
+    profit: Math.round((halfwayIntrinsic - call.mid) * 100 * contracts),
+    returnPct: Math.round(((halfwayIntrinsic - call.mid) / call.mid) * 100),
+  };
+
+  // Outcome: stock reaches strike (ATM at expiry)
+  const atStrikeIntrinsic = 0; // worthless at exactly strike
+  const outcome100 = {
+    price: call.strike,
+    profit: Math.round(-totalCost), // total loss at exactly strike
+    returnPct: -100,
+  };
+
+  // Outcome: stock +10% from current price
+  const homeRunPrice = quote.price * 1.10;
+  const homeRunIntrinsic = Math.max(0, homeRunPrice - call.strike);
+  const outcomeHR = {
+    price: Math.round(homeRunPrice * 100) / 100,
+    profit: Math.round((homeRunIntrinsic - call.mid) * 100 * contracts),
+    returnPct: Math.round(((homeRunIntrinsic - call.mid) / call.mid) * 100),
+  };
+
+  const maxLoss = totalCost;
+
+  // Scoring
+  let score = 0;
+  // Delta (0-20) — prefer 0.35-0.45 (slightly ITM lean)
+  const deltaOpt = 1 - Math.abs(absDelta - 0.40) / 0.20;
+  score += Math.max(0, deltaOpt * 20);
+  // IV (0-15) — lower IV = cheaper options = better leverage
+  score += Math.max(0, 15 - (iv * 100) * 0.2);
+  // Technicals (0-20)
+  score += ((technicals?.score ?? 50) / 100) * 20;
+  // Momentum — bullish signals
+  if (technicals?.macdCross === "bullish") score += 10;
+  if (technicals?.above50sma && technicals?.above200sma) score += 5;
+  if (technicals?.goldenCross) score += 5;
+  // RSI — not overbought
+  const rsi = technicals?.rsi14 ?? 50;
+  if (rsi > 70) score -= 10;
+  if (rsi >= 40 && rsi <= 60) score += 5;
+  // Liquidity
+  if (call.openInterest >= 1000) score += 5;
+  if (call.openInterest >= 5000) score += 3;
+  // Volume ratio
+  if (quote.volumeRatio >= 2) score += 5;
+  // Earnings catalyst
+  if (earnings && earnings.daysUntil >= 0 && earnings.daysUntil <= call.dte) score += 5;
+  // Penalize very high IV (overpaying)
+  if (iv > 0.8) score -= 10;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const priority = score >= 70 ? "high" : score >= 50 ? "medium" : "low";
+
+  // Catalyst
+  let catalyst = "";
+  if (technicals?.macdCross === "bullish") {
+    catalyst = `MACD bullish crossover — momentum building, ${call.dte}d runway to ride the trend`;
+  } else if (technicals?.goldenCross) {
+    catalyst = `Golden cross in play — strong uptrend signal, ${distPct.toFixed(0)}% OTM with ${call.dte}d to run`;
+  } else if (rsi < 35) {
+    catalyst = `RSI oversold bounce setup — buying the dip with defined risk at $${call.strike}`;
+  } else if (earnings && earnings.daysUntil >= 0 && earnings.daysUntil <= call.dte) {
+    catalyst = `Earnings in ${earnings.daysUntil}d could be the catalyst — positioned for upside surprise`;
+  } else if (quote.volumeRatio >= 2.5) {
+    catalyst = `${quote.volumeRatio.toFixed(1)}x volume spike — unusual buying activity, something brewing`;
+  } else if (technicals?.above50sma && technicals?.above200sma) {
+    catalyst = `Above all MAs in sustained uptrend — riding momentum with leveraged upside`;
+  } else if (iv < 0.3) {
+    catalyst = `Low IV at ${(iv * 100).toFixed(0)}% — cheap options, high leverage if ${quote.symbol} moves`;
+  } else {
+    catalyst = `${distPct.toFixed(0)}% OTM with ${call.dte}d — leveraged bet on ${quote.name} upside`;
+  }
+
+  const reasons: string[] = [];
+  reasons.push(`${quote.name} $${call.strike} call @ $${call.mid.toFixed(2)} (${call.dte}d)`);
+  reasons.push(`Δ${absDelta.toFixed(2)}, ${distPct.toFixed(1)}% OTM, IV ${(iv * 100).toFixed(0)}%`);
+  if (contracts > 0) {
+    reasons.push(`${contracts} contracts = $${totalCost.toLocaleString()} total cost`);
+    reasons.push(`If ${quote.symbol} +10%: ${outcomeHR.returnPct > 0 ? "+" : ""}${outcomeHR.returnPct}% ($${outcomeHR.profit.toLocaleString()})`);
+  }
+  reasons.push(`Max loss: $${maxLoss.toLocaleString()} (100% of premium)`);
+
+  return {
+    symbol: quote.symbol,
+    name: quote.name,
+    strike: call.strike,
+    expiry: call.expiry,
+    dte: call.dte,
+    bid: call.bid,
+    ask: call.ask,
+    mid: call.mid,
+    costPerContract,
+    delta: absDelta,
+    iv,
+    currentPrice: quote.price,
+    distanceFromPrice: Math.round(distPct * 10) / 10,
+    openInterest: call.openInterest,
+    volume: call.volume,
+    contractsAt100k: contracts,
+    totalCost: Math.round(totalCost),
+    capitalUtilization: Math.round(capitalUtilization * 10) / 10,
+    breakeven: Math.round(breakeven * 100) / 100,
+    outcome50pct: outcome50,
+    outcome100pct: outcome100,
+    outcomeHomeRun: outcomeHR,
+    maxLoss: Math.round(maxLoss),
+    score,
+    priority,
+    catalyst,
+    reasoning: reasons.join(" · "),
+  };
+}
+
 /** Estimate delta when real Greeks aren't available */
 function estimateDelta(put: OptionContract, price: number): number {
   const moneyness = (price - put.strike) / price;
