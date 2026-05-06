@@ -344,7 +344,7 @@ export default function OptionsScannerPage() {
                 {[
                   { label: "Call Picks", value: callCandidates.length, color: "text-stone-900" },
                   { label: "Best Score", value: `${callCandidates[0]?.score ?? 0}/100`, color: "text-sky-600" },
-                  { label: "Best Upside", value: callCandidates[0] ? `${callCandidates[0].outcomeHomeRun.returnPct > 0 ? "+" : ""}${callCandidates[0].outcomeHomeRun.returnPct}%` : "—", color: "text-emerald-600" },
+                  { label: "Best +10%", value: callCandidates[0] ? `${callCandidates[0].outcome100pct.returnPct > 0 ? "+" : ""}${callCandidates[0].outcome100pct.returnPct}%` : "—", color: "text-emerald-600" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white px-3 py-2 text-center">
                     <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
@@ -381,7 +381,7 @@ export default function OptionsScannerPage() {
                 {[
                   { label: "LEAPS Picks", value: leapsCandidates.length, color: "text-stone-900" },
                   { label: "Best Score", value: `${leapsCandidates[0]?.score ?? 0}/100`, color: "text-violet-600" },
-                  { label: "Best Upside", value: leapsCandidates[0] ? `${leapsCandidates[0].outcomeHomeRun.returnPct > 0 ? "+" : ""}${leapsCandidates[0].outcomeHomeRun.returnPct}%` : "—", color: "text-emerald-600" },
+                  { label: "Best +10%", value: leapsCandidates[0] ? `${leapsCandidates[0].outcome100pct.returnPct > 0 ? "+" : ""}${leapsCandidates[0].outcome100pct.returnPct}%` : "—", color: "text-emerald-600" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white px-3 py-2 text-center">
                     <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
@@ -542,25 +542,31 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
       {/* Outcome scenarios — always visible */}
       <div className="mt-2 ml-7 grid grid-cols-3 gap-2">
         <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-100">
-          <div className="text-[10px] text-emerald-600 font-medium uppercase">Stock +10%</div>
-          <div className={`text-sm font-bold ${c.outcomeHomeRun.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {c.outcomeHomeRun.profit >= 0 ? "+" : ""}${Math.abs(c.outcomeHomeRun.profit).toLocaleString()}
+          <div className="text-[10px] text-emerald-600 font-medium uppercase">Stock +5%</div>
+          <div className={`text-sm font-bold ${c.outcome50pct.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {c.outcome50pct.profit >= 0 ? "+" : ""}${Math.abs(c.outcome50pct.profit).toLocaleString()}
           </div>
-          <div className={`text-[10px] ${c.outcomeHomeRun.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
-            {c.outcomeHomeRun.returnPct >= 0 ? "+" : ""}{c.outcomeHomeRun.returnPct}%
-          </div>
-        </div>
-        <div className="bg-stone-50 rounded-lg p-2 text-center border border-stone-200">
-          <div className="text-[10px] text-stone-500 font-medium uppercase">Breakeven</div>
-          <div className="text-sm font-bold text-stone-700">${c.breakeven.toFixed(0)}</div>
-          <div className="text-[10px] text-stone-400">
-            +{((c.breakeven / c.currentPrice - 1) * 100).toFixed(1)}%
+          <div className={`text-[10px] ${c.outcome50pct.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+            {c.outcome50pct.returnPct >= 0 ? "+" : ""}{c.outcome50pct.returnPct}%
           </div>
         </div>
-        <div className="bg-red-50 rounded-lg p-2 text-center border border-red-100">
-          <div className="text-[10px] text-red-600 font-medium uppercase">Max Loss</div>
-          <div className="text-sm font-bold text-red-600">-${c.maxLoss.toLocaleString()}</div>
-          <div className="text-[10px] text-red-400">-100%</div>
+        <div className="bg-sky-50 rounded-lg p-2 text-center border border-sky-100">
+          <div className="text-[10px] text-sky-600 font-medium uppercase">Stock +10%</div>
+          <div className={`text-sm font-bold ${c.outcome100pct.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            {c.outcome100pct.profit >= 0 ? "+" : ""}${Math.abs(c.outcome100pct.profit).toLocaleString()}
+          </div>
+          <div className={`text-[10px] ${c.outcome100pct.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+            {c.outcome100pct.returnPct >= 0 ? "+" : ""}{c.outcome100pct.returnPct}%
+          </div>
+        </div>
+        <div className="bg-violet-50 rounded-lg p-2 text-center border border-violet-100">
+          <div className="text-[10px] text-violet-600 font-medium uppercase">Stock +20%</div>
+          <div className="text-sm font-bold text-emerald-700">
+            +${c.outcomeHomeRun.profit.toLocaleString()}
+          </div>
+          <div className="text-[10px] text-emerald-500">
+            +{c.outcomeHomeRun.returnPct}%
+          </div>
         </div>
       </div>
 

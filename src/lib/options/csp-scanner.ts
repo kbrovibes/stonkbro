@@ -629,13 +629,17 @@ export async function scanForCalls(
           if (c.inTheMoney) return false;
           if (c.mid <= 0.10) return false;
           if (c.openInterest < 50) return false;
+          // Max 7% OTM so a 10% stock move is solidly profitable
+          const otmPct = ((c.strike - quote.price) / quote.price) * 100;
+          if (otmPct > 7) return false;
           const absDelta = Math.abs(c.delta ?? 0.3);
-          return absDelta >= 0.20 && absDelta <= 0.50; // slightly OTM to ATM
+          return absDelta >= 0.30 && absDelta <= 0.55; // near ATM
         });
 
         for (const call of filteredCalls) {
           const candidate = buildCallCandidate(call, quote, technicals, earnings ?? null, capital);
-          if (candidate.score >= 40) {
+          // Only keep picks where +10% stock move is profitable
+          if (candidate.score >= 40 && candidate.outcome100pct.returnPct > 0) {
             candidates.push(candidate);
           }
         }
@@ -681,43 +685,50 @@ function buildCallCandidate(
   const breakeven = call.strike + call.mid;
   const iv = call.iv ?? call.impliedVolatility;
 
-  // Outcome: stock reaches breakeven + 50% of OTM distance
-  const halfwayPrice = quote.price + (call.strike - quote.price) * 0.5;
-  const halfwayIntrinsic = Math.max(0, halfwayPrice - call.strike);
+  // Outcome: stock +5% from current price
+  const modestPrice = quote.price * 1.05;
+  const modestIntrinsic = Math.max(0, modestPrice - call.strike);
   const outcome50 = {
-    price: Math.round(halfwayPrice * 100) / 100,
-    profit: Math.round((halfwayIntrinsic - call.mid) * 100 * contracts),
-    returnPct: Math.round(((halfwayIntrinsic - call.mid) / call.mid) * 100),
-  };
-
-  // Outcome: stock reaches strike (ATM at expiry)
-  const atStrikeIntrinsic = 0; // worthless at exactly strike
-  const outcome100 = {
-    price: call.strike,
-    profit: Math.round(-totalCost), // total loss at exactly strike
-    returnPct: -100,
+    price: Math.round(modestPrice * 100) / 100,
+    profit: Math.round((modestIntrinsic - call.mid) * 100 * contracts),
+    returnPct: Math.round(((modestIntrinsic - call.mid) / call.mid) * 100),
   };
 
   // Outcome: stock +10% from current price
   const homeRunPrice = quote.price * 1.10;
   const homeRunIntrinsic = Math.max(0, homeRunPrice - call.strike);
-  const outcomeHR = {
+  const outcome100 = {
     price: Math.round(homeRunPrice * 100) / 100,
     profit: Math.round((homeRunIntrinsic - call.mid) * 100 * contracts),
     returnPct: Math.round(((homeRunIntrinsic - call.mid) / call.mid) * 100),
+  };
+
+  // Outcome: stock +20% from current price
+  const bigMovePrice = quote.price * 1.20;
+  const bigMoveIntrinsic = Math.max(0, bigMovePrice - call.strike);
+  const outcomeHR = {
+    price: Math.round(bigMovePrice * 100) / 100,
+    profit: Math.round((bigMoveIntrinsic - call.mid) * 100 * contracts),
+    returnPct: Math.round(((bigMoveIntrinsic - call.mid) / call.mid) * 100),
   };
 
   const maxLoss = totalCost;
 
   // Scoring
   let score = 0;
-  // Delta (0-20) — prefer 0.35-0.45 (slightly ITM lean)
-  const deltaOpt = 1 - Math.abs(absDelta - 0.40) / 0.20;
-  score += Math.max(0, deltaOpt * 20);
-  // IV (0-15) — lower IV = cheaper options = better leverage
-  score += Math.max(0, 15 - (iv * 100) * 0.2);
-  // Technicals (0-20)
-  score += ((technicals?.score ?? 50) / 100) * 20;
+  // Profitability on +10% move (0-25) — the most important factor
+  if (outcome100.returnPct > 0) {
+    score += Math.min(25, outcome100.returnPct / 4);
+  } else {
+    score -= 20; // heavily penalize if +10% move still loses
+  }
+  // Delta (0-15) — prefer 0.40-0.50 (near ATM)
+  const deltaOpt = 1 - Math.abs(absDelta - 0.45) / 0.15;
+  score += Math.max(0, deltaOpt * 15);
+  // IV (0-10) — lower IV = cheaper options = better leverage
+  score += Math.max(0, 10 - (iv * 100) * 0.15);
+  // Technicals (0-15)
+  score += ((technicals?.score ?? 50) / 100) * 15;
   // Momentum — bullish signals
   if (technicals?.macdCross === "bullish") score += 10;
   if (technicals?.above50sma && technicals?.above200sma) score += 5;
@@ -764,7 +775,8 @@ function buildCallCandidate(
   reasons.push(`Δ${absDelta.toFixed(2)}, ${distPct.toFixed(1)}% OTM, IV ${(iv * 100).toFixed(0)}%`);
   if (contracts > 0) {
     reasons.push(`${contracts} contracts = $${totalCost.toLocaleString()} total cost`);
-    reasons.push(`If ${quote.symbol} +10%: ${outcomeHR.returnPct > 0 ? "+" : ""}${outcomeHR.returnPct}% ($${outcomeHR.profit.toLocaleString()})`);
+    reasons.push(`If ${quote.symbol} +10%: ${outcome100.returnPct > 0 ? "+" : ""}${outcome100.returnPct}% ($${outcome100.profit.toLocaleString()})`);
+    reasons.push(`If ${quote.symbol} +20%: +${outcomeHR.returnPct}% ($${outcomeHR.profit.toLocaleString()})`);
   }
   reasons.push(`Max loss: $${maxLoss.toLocaleString()} (100% of premium)`);
 
@@ -861,13 +873,17 @@ export async function scanForLeaps(
           if (c.inTheMoney) return false;
           if (c.mid <= 0.20) return false;
           if (c.openInterest < 20) return false;
+          // Max 10% OTM for LEAPS (wider than calls since more time)
+          const otmPct = ((c.strike - quote.price) / quote.price) * 100;
+          if (otmPct > 10) return false;
           const absDelta = Math.abs(c.delta ?? 0.3);
-          return absDelta >= 0.15 && absDelta <= 0.50;
+          return absDelta >= 0.25 && absDelta <= 0.55;
         });
 
         for (const call of filteredCalls) {
           const candidate = buildCallCandidate(call, quote, technicals, earnings ?? null, capital);
-          if (candidate.score >= 35) {
+          // Only keep picks where +10% stock move is profitable
+          if (candidate.score >= 35 && candidate.outcomeHomeRun.returnPct > 0) {
             candidates.push(candidate);
           }
         }
