@@ -154,6 +154,7 @@ export default function SettingsPage() {
     const initial: Record<string, "checking"> = {};
     allModels.forEach(m => initial[m.id] = "checking");
     setHealthStatus(initial);
+    setHealthErrors({});
 
     // Check all in parallel
     await Promise.all(allModels.map(async (model) => {
@@ -168,8 +169,12 @@ export default function SettingsPage() {
           ...prev,
           [model.id]: data.ok ? "healthy" : "error"
         }));
-      } catch {
+        if (!data.ok) {
+          setHealthErrors(prev => ({ ...prev, [model.id]: data.error || "Unknown error" }));
+        }
+      } catch (err) {
         setHealthStatus(prev => ({ ...prev, [model.id]: "error" }));
+        setHealthErrors(prev => ({ ...prev, [model.id]: err instanceof Error ? err.message : "Network error" }));
       }
     }));
   }
@@ -373,11 +378,18 @@ export default function SettingsPage() {
                         </svg>
                       </div>
                     ) : status === "error" ? (
-                      <div className="flex items-center gap-1.5 text-red-500">
-                        <span className="text-[10px] font-bold">Failed</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
-                        </svg>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex items-center gap-1.5 text-red-500">
+                          <span className="text-[10px] font-bold">Failed</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        {healthErrors[model.id] && (
+                          <span className="text-[9px] text-red-400 max-w-[200px] text-right leading-tight">
+                            {healthErrors[model.id]}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[10px] font-bold text-stone-300">Not checked</span>

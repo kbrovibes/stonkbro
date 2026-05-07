@@ -5,15 +5,23 @@ import { AIProvider } from "@/lib/ai/provider";
 
 interface AIModelBadgeProps {
   feature?: string;
+  provider?: AIProvider;
+  model?: string;
+  timestamp?: string;
 }
 
-export function AIModelBadge({ feature }: AIModelBadgeProps) {
+export function AIModelBadge({ feature, provider, model, timestamp }: AIModelBadgeProps) {
   const [settings, setSettings] = useState<{
     provider: AIProvider;
     model: string;
   } | null>(null);
 
   useEffect(() => {
+    if (provider && model) {
+      setSettings({ provider, model });
+      return;
+    }
+
     fetch("/api/settings")
       .then((r) => r.json())
       .then((d) => {
@@ -25,7 +33,7 @@ export function AIModelBadge({ feature }: AIModelBadgeProps) {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [provider, model]);
 
   if (!settings) return null;
 
@@ -34,10 +42,22 @@ export function AIModelBadge({ feature }: AIModelBadgeProps) {
     : settings.model.includes("sonnet") ? "Sonnet" 
     : settings.model.includes("pro") ? "Pro" 
     : settings.model.includes("haiku") ? "Haiku" 
-    : "Opus";
+    : settings.model.includes("opus") ? "Opus"
+    : settings.model;
+
+  // Format timestamp (e.g., "2h ago")
+  const getTimeAgo = (ts: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(ts).getTime()) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return new Date(ts).toLocaleDateString();
+  };
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-stone-100 bg-stone-50/50 backdrop-blur-sm transition-all hover:bg-white">
+    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-stone-100 bg-stone-50/50 backdrop-blur-sm transition-all hover:bg-white group">
       <div className={`w-1.5 h-1.5 rounded-full ${isGemini ? "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" : "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"}`} />
       <span className="text-[10px] font-medium text-stone-500">
         <span className="opacity-60 font-normal mr-1">AI</span>
@@ -46,6 +66,14 @@ export function AIModelBadge({ feature }: AIModelBadgeProps) {
         </span>
         <span className="mx-1 opacity-30">|</span>
         <span className="text-stone-400 font-normal">{modelShortName}</span>
+        {timestamp && (
+          <>
+            <span className="mx-1 opacity-30 group-hover:opacity-60 transition-opacity">·</span>
+            <span className="text-stone-300 font-normal italic group-hover:text-stone-500 transition-colors">
+              {getTimeAgo(timestamp)}
+            </span>
+          </>
+        )}
       </span>
     </div>
   );

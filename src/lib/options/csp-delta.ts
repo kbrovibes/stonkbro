@@ -49,7 +49,9 @@ export async function saveScanResult(
   claudeProvider: string | null,
   scanType: "scheduled" | "manual" = "scheduled",
   callCandidates: CallBuyCandidate[] = [],
-  leapsCandidates: LeapsCandidate[] = []
+  leapsCandidates: LeapsCandidate[] = [],
+  claudeModel: string | null = null,
+  errorMessage: string | null = null
 ): Promise<string | null> {
   const supabase = supabaseAdmin;
 
@@ -72,7 +74,9 @@ export async function saveScanResult(
       } : null,
       claude_analysis: claudeAnalysis,
       claude_provider: claudeProvider,
-      status: "completed",
+      claude_model: claudeModel,
+      status: errorMessage ? "failed" : "completed",
+      error_message: errorMessage,
     })
     .select("id")
     .single();

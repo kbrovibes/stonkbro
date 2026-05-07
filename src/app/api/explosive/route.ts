@@ -114,6 +114,7 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
       prompt,
       maxTokens: 4096,
       feature: "explosive",
+      userId: user?.id,
     });
 
     const responseText = aiResult.text;

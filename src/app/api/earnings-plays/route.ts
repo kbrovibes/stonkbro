@@ -50,6 +50,9 @@ export async function GET() {
     const playsWithChains = plays.filter((p) => p.chainAvailable);
     let suggestions: unknown[] = [];
 
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (playsWithChains.length > 0) {
       try {
         const prompt = buildEarningsPlayPrompt(playsWithChains);
@@ -57,6 +60,7 @@ export async function GET() {
           prompt,
           maxTokens: 2000,
           feature: "earnings-plays",
+          userId: user?.id,
         });
 
         // Parse JSON from response

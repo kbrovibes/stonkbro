@@ -557,6 +557,8 @@ export default function ResearchPage() {
                   report: data.report,
                   suggestions: data.suggestions || [],
                   timestamp: data.timestamp,
+                  aiProvider: data.aiProvider,
+                  aiModel: data.aiModel,
                 }
               : e
           )
@@ -605,7 +607,7 @@ export default function ResearchPage() {
     );
   }, []);
 
-  const hasRunning = entries.some((e) => e.status === "pending" || e.status === "running");
+  const lastCompleted = [...entries].reverse().find(e => e.status === "completed");
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
@@ -614,7 +616,11 @@ export default function ResearchPage() {
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-extrabold text-stone-900">Research</h2>
-            <AIModelBadge />
+            <AIModelBadge 
+              provider={lastCompleted?.aiProvider as any} 
+              model={lastCompleted?.aiModel} 
+              timestamp={lastCompleted?.timestamp}
+            />
           </div>
           <p className="text-xs text-stone-500 mt-0.5">AI-powered options analysis</p>
         </div>

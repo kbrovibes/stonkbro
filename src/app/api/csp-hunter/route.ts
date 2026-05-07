@@ -27,6 +27,8 @@ export async function GET() {
       leapsCandidates: s.leaps_candidates ?? [],
       delta: s.delta,
       claudeAnalysis: s.claude_analysis,
+      claudeProvider: s.claude_provider,
+      claudeModel: s.claude_model,
       status: s.status,
     })),
   });
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let config: CSPScanConfig = {};
+  const config: CSPScanConfig = {};
   try {
     const body = await request.json();
     if (body.capital) config.capital = body.capital;
@@ -81,9 +83,9 @@ export async function POST(request: Request) {
   let analysis = null;
   if (dedupedCSPs.length > 0) {
     try {
-      analysis = await analyzeCSPCandidates(dedupedCSPs, delta, scan.capital);
+      analysis = await analyzeCSPCandidates(dedupedCSPs, delta, scan.capital, user.id);
     } catch (e) {
-      console.error("[Options Scanner] Claude analysis failed:", e);
+      console.error("[Options Scanner] AI analysis failed:", e);
     }
   }
 
@@ -94,7 +96,8 @@ export async function POST(request: Request) {
     analysis?.provider ?? null,
     "manual",
     dedupedCalls,
-    dedupedLeaps
+    dedupedLeaps,
+    analysis?.model ?? null
   );
 
   return NextResponse.json({

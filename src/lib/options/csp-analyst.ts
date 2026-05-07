@@ -12,6 +12,7 @@ import { ScanDelta } from "./csp-delta";
 export type CSPAnalysis = {
   text: string;
   provider: string;
+  model: string;
   fallback: boolean;
 };
 
@@ -22,7 +23,8 @@ export type CSPAnalysis = {
 export async function analyzeCSPCandidates(
   candidates: CSPHunterCandidate[],
   delta: ScanDelta | null,
-  capital: number
+  capital: number,
+  userId?: string
 ): Promise<CSPAnalysis> {
   // Take top 15 candidates for analysis (avoid token waste)
   const top = candidates.slice(0, 15);
@@ -104,11 +106,13 @@ Analyze these and give me your top 3-5 picks with full reasoning.`;
     systemPrompt,
     maxTokens: 2000,
     feature: "csp-hunter",
+    userId,
   });
 
   return {
     text: result.text,
     provider: result.provider,
+    model: result.model,
     fallback: result.fallback,
   };
 }

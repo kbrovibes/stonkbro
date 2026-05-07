@@ -95,6 +95,8 @@ type ScanRecord = {
     support_lost: DeltaChange[];
   } | null;
   claudeAnalysis: string | null;
+  claudeProvider: string | null;
+  claudeModel: string | null;
   status: string;
 };
 

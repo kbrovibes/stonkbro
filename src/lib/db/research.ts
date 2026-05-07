@@ -25,11 +25,16 @@ export async function createPendingReport(
   return data;
 }
 
-export async function completeReport(reportId: string, report: string) {
+export async function completeReport(reportId: string, report: string, provider?: string, model?: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("research_reports")
-    .update({ report, status: "completed" })
+    .update({ 
+      report, 
+      status: "completed",
+      ai_provider: provider,
+      ai_model: model 
+    })
     .eq("id", reportId)
     .select()
     .single();
@@ -42,7 +47,11 @@ export async function failReport(reportId: string, errorMsg: string) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("research_reports")
-    .update({ report: `Error: ${errorMsg}`, status: "failed" })
+    .update({ 
+      report: `Error: ${errorMsg}`, 
+      status: "failed",
+      error_message: errorMsg
+    })
     .eq("id", reportId);
 
   if (error) throw error;
@@ -63,7 +72,9 @@ export async function saveResearchReport(
   userId: string,
   trigger: "cron" | "manual" | "on_demand",
   symbols: string[],
-  report: string
+  report: string,
+  provider?: string,
+  model?: string
 ) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -75,6 +86,8 @@ export async function saveResearchReport(
       report,
       status: "completed",
       opened: false,
+      ai_provider: provider,
+      ai_model: model
     })
     .select()
     .single();

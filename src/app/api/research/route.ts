@@ -52,16 +52,21 @@ export async function POST(request: Request) {
     // Step 3: Run research
     let report: string;
     let suggestions: { symbol: string; strategy: string; action: string; strike?: number; expiry?: string; premium?: number; reasoning: string }[];
+    let aiProvider: string | undefined;
+    let aiModel: string | undefined;
 
     try {
       if (mode === "hybrid") {
-        const result = await runHybridResearch(normalizedSymbols, quotes);
+        const result = await runHybridResearch(normalizedSymbols, quotes, undefined, user.id);
         report = result.report;
         suggestions = result.suggestions;
+        // hybrid analyzer doesn't return provider/model in the result type yet, need to fix that or handle it
       } else {
-        const result = await runDeepResearch(normalizedSymbols, quotes);
+        const result = await runDeepResearch(normalizedSymbols, quotes, undefined, user.id);
         report = result.report;
         suggestions = result.suggestions;
+        aiProvider = result.provider;
+        aiModel = result.model;
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Research failed";
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
     }
 
     // Step 4: Complete the report
-    await completeReport(reportId, report);
+    await completeReport(reportId, report, aiProvider, aiModel);
 
     // Step 5: Save suggestions
     for (const suggestion of suggestions) {
@@ -98,6 +103,8 @@ export async function POST(request: Request) {
       symbolsAnalyzed: quotes.map((q) => q.symbol),
       timestamp: new Date().toISOString(),
       mode,
+      aiProvider,
+      aiModel,
     });
   } catch (e) {
     console.error("Research API error:", e);

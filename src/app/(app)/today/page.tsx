@@ -257,7 +257,7 @@ export default function TodayPage() {
 
   const anyLoading = moversLoading || recsLoading || flowLoading;
 
-  // ---- Render ----
+  const firstRec = recs[0];
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 pb-24">
@@ -265,7 +265,10 @@ export default function TodayPage() {
       <div className="flex items-center justify-between mb-0.5">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold text-stone-900">Today&apos;s Plays</h2>
-          <AIModelBadge />
+          <AIModelBadge 
+            model={firstRec?.model} 
+            timestamp={firstRec?.generatedAt}
+          />
         </div>
         <button
           onClick={fetchAll}

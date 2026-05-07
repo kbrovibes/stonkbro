@@ -67,6 +67,7 @@ async function generateForTheme(
   theme: RecommendationTheme,
   condensedSignals: string,
   today: string,
+  userId?: string,
 ): Promise<Pick[]> {
   const promptTemplate = loadPrompt(theme);
   const count = theme === "top_csp_picks" ? 10 : 5;
@@ -83,6 +84,7 @@ ${condensedSignals}
 Now analyze these signals and pick your best ${count} ${theme.replace("_", " ")} candidates. Return ONLY the JSON array, wrapped in a json code fence.`,
     maxTokens: 3000,
     feature: "recommendations",
+    userId,
   });
 
   const jsonMatch = result.text.match(/```json\s*([\s\S]*?)```/);
@@ -153,7 +155,7 @@ export async function generateAllRecommendations(batchId?: string, userId?: stri
     const results = await Promise.allSettled(
       themes.map(async (theme) => {
         try {
-          const picks = await generateForTheme(theme, condensed, today);
+          const { picks, model } = await generateForTheme(theme, condensed, today, userId);
           const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
           const enriched = picks.map((p) => {
             const q = quoteMap.get(p.symbol);
@@ -163,7 +165,7 @@ export async function generateAllRecommendations(batchId?: string, userId?: stri
           // Update record as completed
           await supabaseAdmin
             .from("daily_recommendations")
-            .update({ status: "completed", picks: enriched, expires_at: expiresAt })
+            .update({ status: "completed", picks: enriched, expires_at: expiresAt, model: model })
             .eq("id", `${actualBatchId}-${theme}`);
 
           return { theme, picks: enriched, generatedAt: new Date().toISOString(), expiresAt };
@@ -209,6 +211,7 @@ export async function getCachedTheme(theme: RecommendationTheme): Promise<ThemeR
     picks: data.picks as Pick[],
     generatedAt: data.generated_at,
     expiresAt: data.expires_at,
+    model: data.model,
   };
 }
 
@@ -232,6 +235,7 @@ export async function getCachedRecommendations(): Promise<ThemeResult[]> {
         picks: data.picks as Pick[],
         generatedAt: data.generated_at,
         expiresAt: data.expires_at,
+        model: data.model,
       });
     }
   }

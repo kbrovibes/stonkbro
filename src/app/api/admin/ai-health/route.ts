@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (result.fallback) {
       return NextResponse.json({ 
         ok: false, 
-        error: `Requested model failed, fell back to ${result.provider}`,
+        error: `Model ${model} failed, fell back to ${result.provider}. This usually means the requested model is rate-limited or unavailable.`,
         details: result.text
       });
     }
@@ -41,9 +41,13 @@ export async function POST(request: Request) {
       provider: result.provider
     });
   } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : "Unknown error";
+    console.error(`[AI Health Check] ${provider}/${model} failed:`, errorMsg);
+    
     return NextResponse.json({ 
       ok: false, 
-      error: e instanceof Error ? e.message : "Unknown error" 
+      error: errorMsg,
+      details: "Check your API keys and project quotas."
     }, { status: 200 }); // Return 200 so the frontend can handle the error per-model
   }
 }
