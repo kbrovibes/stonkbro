@@ -48,10 +48,10 @@ export default function LessonPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const saveProgress = useDebouncedSave(3000);
 
-  // Mark as started on mount
+  // Record lesson start
   useEffect(() => {
     if (!moduleId || !lessonId) return;
-    saveProgress({ moduleId, lessonId, status: "in_progress" });
+    saveProgress({ moduleId, lessonId });
   }, [moduleId, lessonId, saveProgress]);
 
   // Auto-save scroll position
@@ -75,7 +75,7 @@ export default function LessonPage() {
       ([entry]) => {
         if (entry.isIntersecting && !completed) {
           setCompleted(true);
-          saveProgress({ moduleId, lessonId, status: "completed" });
+          saveProgress({ moduleId, lessonId, completed: true });
         }
       },
       { threshold: 0.5 }
