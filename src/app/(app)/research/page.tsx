@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
+import { AIModelBadge } from "@/components/AIModelBadge";
 
 const ALL_TICKERS = [
   "AAPL","ABNB","AEHR","AFRM","AI","AMD","AMZN","ANET","ARM","ARQQ","ASTS",
@@ -610,8 +611,11 @@ export default function ResearchPage() {
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-extrabold text-stone-900">Research</h2>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-extrabold text-stone-900">Research</h2>
+            <AIModelBadge />
+          </div>
           <p className="text-xs text-stone-500 mt-0.5">AI-powered options analysis</p>
         </div>
         <Link

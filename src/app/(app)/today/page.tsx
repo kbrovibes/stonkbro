@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { AIModelBadge } from "@/components/AIModelBadge";
 
 // --- Earnings types ---
 
@@ -262,7 +263,10 @@ export default function TodayPage() {
     <div className="flex flex-col flex-1 px-4 py-5 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-0.5">
-        <h2 className="text-lg font-bold text-stone-900">Today&apos;s Plays</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-stone-900">Today&apos;s Plays</h2>
+          <AIModelBadge />
+        </div>
         <button
           onClick={fetchAll}
           disabled={anyLoading}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { AIModelBadge } from "@/components/AIModelBadge";
 
 type Candidate = {
   symbol: string;
@@ -170,8 +171,11 @@ export default function OptionsScannerPage() {
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-stone-200">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold text-stone-900">Options Scanner</h1>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <h1 className="text-lg font-bold text-stone-900">Options Scanner</h1>
+                <AIModelBadge />
+              </div>
               <p className="text-[11px] text-stone-400 mt-0.5">
                 CSPs + Call buys · $100K capital · Top picks by profit potential
               </p>
