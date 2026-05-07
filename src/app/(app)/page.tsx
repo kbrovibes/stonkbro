@@ -4,6 +4,7 @@ import { getWatchlistsWithItems } from "@/lib/db/watchlists";
 import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
+import { getUpcomingIPOs, PLATFORM_COLORS, type IPOPlatform } from "@/lib/market/ipos";
 import WatchlistWidget from "./WatchlistWidget";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +64,8 @@ export default async function DiscoverPage() {
     // ignore
   }
 
+  const upcomingIPOs = getUpcomingIPOs();
+
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,
     name: wl.name,
@@ -100,6 +103,87 @@ export default async function DiscoverPage() {
                   {e.daysUntil === 0 ? "today" : e.daysUntil === 1 ? "tmrw" : `${e.daysUntil}d`}
                 </span>
               </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming Tech IPOs */}
+      {upcomingIPOs.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-stone-800">Upcoming Tech IPOs</span>
+            <a
+              href="https://www.nasdaq.com/market-activity/ipos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-medium text-sky-600 hover:text-sky-700"
+            >
+              IPO Calendar ↗
+            </a>
+          </div>
+          <div className="flex flex-col gap-2">
+            {upcomingIPOs.map((ipo) => (
+              <div
+                key={ipo.name}
+                className="bg-white border border-stone-100 rounded-xl px-3 py-2.5 flex flex-col gap-1.5"
+              >
+                {/* Row 1: name + hype + expected date */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs font-bold text-stone-900 truncate">{ipo.name}</span>
+                    {ipo.ticker && (
+                      <span className="text-[10px] font-mono text-stone-400">{ipo.ticker}</span>
+                    )}
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                      ipo.status === "filed"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : ipo.status === "roadshow"
+                        ? "bg-red-50 text-red-700"
+                        : "bg-stone-100 text-stone-500"
+                    }`}>
+                      {ipo.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Hype dots */}
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            i < ipo.hype ? "bg-amber-400" : "bg-stone-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-stone-400">{ipo.expectedDate}</span>
+                  </div>
+                </div>
+
+                {/* Row 2: description + valuation */}
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[10px] text-stone-500 leading-relaxed flex-1">{ipo.description}</p>
+                  {ipo.valuation && (
+                    <span className="text-[10px] font-semibold text-stone-600 shrink-0">{ipo.valuation}</span>
+                  )}
+                </div>
+
+                {/* Row 3: sector + platform badges */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[9px] font-medium bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">
+                    {ipo.sector}
+                  </span>
+                  {ipo.platforms.map((p) => (
+                    <span
+                      key={p}
+                      className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${PLATFORM_COLORS[p as IPOPlatform]}`}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
