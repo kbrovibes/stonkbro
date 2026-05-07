@@ -31,7 +31,20 @@ export async function setAppConfig(key: string, value: string): Promise<void> {
 // Cached default AI provider (60s TTL)
 let cachedProvider: { value: "claude" | "gemini"; ts: number } | null = null;
 
-export async function getDefaultAIProvider(): Promise<"claude" | "gemini"> {
+export async function getDefaultAIProvider(userId?: string): Promise<"claude" | "gemini"> {
+  // Try user setting first
+  if (userId) {
+    const { data } = await supabaseAdmin
+      .from("user_settings")
+      .select("preferred_ai_provider")
+      .eq("user_id", userId)
+      .single();
+    if (data?.preferred_ai_provider) {
+      return data.preferred_ai_provider as "claude" | "gemini";
+    }
+  }
+
+  // Fallback to global config
   if (cachedProvider && Date.now() - cachedProvider.ts < 60_000) {
     return cachedProvider.value;
   }
@@ -39,6 +52,20 @@ export async function getDefaultAIProvider(): Promise<"claude" | "gemini"> {
   const provider = val === "gemini" ? "gemini" : "claude";
   cachedProvider = { value: provider, ts: Date.now() };
   return provider;
+}
+
+export async function getPreferredAIModel(userId?: string): Promise<string> {
+  if (userId) {
+    const { data } = await supabaseAdmin
+      .from("user_settings")
+      .select("preferred_ai_model")
+      .eq("user_id", userId)
+      .single();
+    if (data?.preferred_ai_model) {
+      return data.preferred_ai_model;
+    }
+  }
+  return "gemini-2.0-flash";
 }
 
 // --- User stats ---

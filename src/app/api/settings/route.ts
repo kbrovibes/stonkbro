@@ -18,7 +18,8 @@ export async function GET() {
     settings: data || {
       starting_cash: 20000,
       alert_email: "",
-      ai_provider: "claude",
+      preferred_ai_provider: "gemini",
+      preferred_ai_model: "gemini-2.0-flash",
       alert_position_signals: true,
       alert_explosive_movers: true,
       alert_earnings: true,

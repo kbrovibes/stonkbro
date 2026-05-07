@@ -3,9 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { CLAUDE_MODELS, GEMINI_MODELS } from "@/lib/ai/constants";
+
 export default function SettingsPage() {
   const [startingCash, setStartingCash] = useState("20000");
   const [alertEmail, setAlertEmail] = useState("");
+  const [preferredProvider, setPreferredProvider] = useState<"claude" | "gemini">("gemini");
+  const [preferredModel, setPreferredModel] = useState("gemini-2.0-flash");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -28,6 +32,8 @@ export default function SettingsPage() {
         if (d.settings) {
           setStartingCash(String(d.settings.starting_cash || "20000"));
           setAlertEmail(d.settings.alert_email || "");
+          setPreferredProvider(d.settings.preferred_ai_provider || "gemini");
+          setPreferredModel(d.settings.preferred_ai_model || "gemini-2.0-flash");
         }
       })
       .catch(() => {});
@@ -42,6 +48,8 @@ export default function SettingsPage() {
         body: JSON.stringify({
           starting_cash: Number(startingCash) || 20000,
           alert_email: alertEmail || null,
+          preferred_ai_provider: preferredProvider,
+          preferred_ai_model: preferredModel,
         }),
       });
       setSaved(true);
@@ -205,6 +213,87 @@ export default function SettingsPage() {
               className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-50"
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Save Settings"}
+            </button>
+          </div>
+        </div>
+
+        {/* AI Configuration */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900">AI Configuration</h3>
+          <p className="mt-1 text-sm text-stone-500">
+            Choose which AI engine powers your research, scans, and risk analysis.
+          </p>
+
+          <div className="mt-4 flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-stone-700 mb-2">
+                Primary AI Provider
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setPreferredProvider("gemini");
+                    setPreferredModel(GEMINI_MODELS[0].id);
+                  }}
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors \${
+                    preferredProvider === "gemini"
+                      ? "border-sky-600 bg-sky-50 text-sky-700"
+                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                  Gemini (Default)
+                </button>
+                <button
+                  onClick={() => {
+                    setPreferredProvider("claude");
+                    setPreferredModel(CLAUDE_MODELS[0].id);
+                  }}
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors \${
+                    preferredProvider === "claude"
+                      ? "border-purple-600 bg-purple-50 text-purple-700"
+                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Claude
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="ai-model" className="block text-xs font-medium text-stone-700 mb-1">
+                Model Selection
+              </label>
+              <select
+                id="ai-model"
+                value={preferredModel}
+                onChange={(e) => setPreferredModel(e.target.value)}
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                {preferredProvider === "gemini"
+                  ? GEMINI_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))
+                  : CLAUDE_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+              </select>
+              <p className="mt-2 text-[10px] text-stone-400 italic">
+                * If your preferred provider reaches its rate limit, the system will automatically failover to the other provider and notify you.
+              </p>
+            </div>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-50"
+            >
+              {saved ? "Saved!" : saving ? "Saving..." : "Update AI Preferences"}
             </button>
           </div>
         </div>

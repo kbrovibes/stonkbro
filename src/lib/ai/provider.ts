@@ -6,7 +6,9 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getDefaultAIProvider, trackTokenUsage } from "@/lib/db/admin";
+import { getDefaultAIProvider, getPreferredAIModel, trackTokenUsage } from "@/lib/db/admin";
+import { sendPushToAll } from "@/lib/notifications/push";
+import { CLAUDE_MODELS, GEMINI_MODELS } from "./constants";
 
 export type AIProvider = "claude" | "gemini";
 
@@ -15,6 +17,7 @@ export type GenerateOptions = {
   systemPrompt?: string;
   maxTokens?: number;
   provider?: AIProvider;
+  model?: string;
   feature?: string;
   userId?: string;
 };
@@ -22,6 +25,7 @@ export type GenerateOptions = {
 export type GenerateResult = {
   text: string;
   provider: AIProvider;
+  model: string;
   fallback: boolean;
   inputTokens: number;
   outputTokens: number;
@@ -29,10 +33,10 @@ export type GenerateResult = {
 
 type RawResult = { text: string; inputTokens: number; outputTokens: number; model: string };
 
-async function callClaude(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
+async function callClaude(prompt: string, modelId: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
   const client = new Anthropic();
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: modelId,
     max_tokens: maxTokens,
     ...(systemPrompt ? { system: systemPrompt } : {}),
     messages: [{ role: "user", content: prompt }],
@@ -41,17 +45,17 @@ async function callClaude(prompt: string, systemPrompt?: string, maxTokens = 400
     text: response.content[0].type === "text" ? response.content[0].text : "",
     inputTokens: response.usage?.input_tokens ?? 0,
     outputTokens: response.usage?.output_tokens ?? 0,
-    model: "claude-sonnet-4-20250514",
+    model: modelId,
   };
 }
 
-async function callGemini(prompt: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
+async function callGemini(prompt: string, modelId: string, systemPrompt?: string, maxTokens = 4000): Promise<RawResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: modelId,
     ...(systemPrompt ? { systemInstruction: systemPrompt } : {}),
     generationConfig: { maxOutputTokens: maxTokens },
   });
@@ -62,7 +66,7 @@ async function callGemini(prompt: string, systemPrompt?: string, maxTokens = 400
     text: result.response.text(),
     inputTokens: meta?.promptTokenCount ?? 0,
     outputTokens: meta?.candidatesTokenCount ?? 0,
-    model: "gemini-2.5-flash",
+    model: modelId,
   };
 }
 
@@ -84,25 +88,44 @@ function isRateLimitError(e: unknown): boolean {
 export async function generateText(options: GenerateOptions): Promise<GenerateResult> {
   const { prompt, systemPrompt, maxTokens, feature, userId } = options;
 
-  // Resolve provider: explicit override > DB config > env var > claude
+  // Resolve provider: explicit override > DB config > env var > gemini
   let preferred: AIProvider;
   if (options.provider) {
     preferred = options.provider;
   } else {
     try {
-      preferred = await getDefaultAIProvider();
+      preferred = await getDefaultAIProvider(userId);
     } catch {
-      preferred = (process.env.DEFAULT_AI_PROVIDER as AIProvider) || "claude";
+      preferred = (process.env.DEFAULT_AI_PROVIDER as AIProvider) || "gemini";
+    }
+  }
+
+  // Resolve model: explicit override > DB config > default for provider
+  let preferredModel: string;
+  if (options.model) {
+    preferredModel = options.model;
+  } else {
+    try {
+      preferredModel = await getPreferredAIModel(userId);
+      // Ensure the model matches the provider
+      const isClaudeModel = CLAUDE_MODELS.some(m => m.id === preferredModel);
+      const isGeminiModel = GEMINI_MODELS.some(m => m.id === preferredModel);
+      
+      if (preferred === "claude" && !isClaudeModel) preferredModel = CLAUDE_MODELS[0].id;
+      if (preferred === "gemini" && !isGeminiModel) preferredModel = GEMINI_MODELS[0].id;
+    } catch {
+      preferredModel = preferred === "claude" ? CLAUDE_MODELS[0].id : GEMINI_MODELS[0].id;
     }
   }
 
   const fallbackProvider: AIProvider = preferred === "claude" ? "gemini" : "claude";
+  const fallbackModel = fallbackProvider === "claude" ? CLAUDE_MODELS[0].id : GEMINI_MODELS[0].id;
 
   // Try preferred provider
   try {
     const raw = preferred === "claude"
-      ? await callClaude(prompt, systemPrompt, maxTokens)
-      : await callGemini(prompt, systemPrompt, maxTokens);
+      ? await callClaude(prompt, preferredModel, systemPrompt, maxTokens)
+      : await callGemini(prompt, preferredModel, systemPrompt, maxTokens);
 
     // Fire-and-forget token tracking
     if (feature) {
@@ -117,16 +140,24 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
       });
     }
 
-    return { text: raw.text, provider: preferred, fallback: false, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
+    return { text: raw.text, provider: preferred, model: raw.model, fallback: false, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
   } catch (e) {
     console.error(`${preferred} error:`, e);
 
     if (isRateLimitError(e)) {
       console.log(`${preferred} rate limited, falling back to ${fallbackProvider}`);
+      
+      // Notify user of failover via push
+      sendPushToAll({
+        title: "AI Failover Warning",
+        body: `${preferred} rate limit reached. Automatically switching to ${fallbackProvider} to maintain service.`,
+        tag: "ai-failover",
+      }).catch(err => console.error("Failover notification failed:", err));
+
       try {
         const raw = fallbackProvider === "claude"
-          ? await callClaude(prompt, systemPrompt, maxTokens)
-          : await callGemini(prompt, systemPrompt, maxTokens);
+          ? await callClaude(prompt, fallbackModel, systemPrompt, maxTokens)
+          : await callGemini(prompt, fallbackModel, systemPrompt, maxTokens);
 
         if (feature) {
           trackTokenUsage({
@@ -140,7 +171,7 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
           });
         }
 
-        return { text: raw.text, provider: fallbackProvider, fallback: true, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
+        return { text: raw.text, provider: fallbackProvider, model: raw.model, fallback: true, inputTokens: raw.inputTokens, outputTokens: raw.outputTokens };
       } catch (fallbackError) {
         console.error(`${fallbackProvider} fallback also failed:`, fallbackError);
         throw e;
