@@ -64,7 +64,7 @@ export default async function DiscoverPage() {
     // ignore
   }
 
-  const upcomingIPOs = getUpcomingIPOs();
+  const upcomingIPOs = await getUpcomingIPOs();
 
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,
@@ -157,16 +157,19 @@ export default async function DiscoverPage() {
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] text-stone-400">{ipo.expectedDate}</span>
+                    <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
+                      {ipo.isLive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" title="Live date" />}
+                      {ipo.expectedDate}
+                    </span>
                   </div>
                 </div>
 
-                {/* Row 2: description + valuation */}
+                {/* Row 2: description + valuation/price range */}
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[10px] text-stone-500 leading-relaxed flex-1">{ipo.description}</p>
-                  {ipo.valuation && (
-                    <span className="text-[10px] font-semibold text-stone-600 shrink-0">{ipo.valuation}</span>
-                  )}
+                  <span className="text-[10px] font-semibold text-stone-600 shrink-0">
+                    {ipo.priceRange ?? ipo.valuation ?? ""}
+                  </span>
                 </div>
 
                 {/* Row 3: sector + platform badges */}
