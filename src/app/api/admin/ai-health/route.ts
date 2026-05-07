@@ -1,53 +1,45 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
-import { generateText, AIProvider } from "@/lib/ai/provider";
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const dynamic = "force-dynamic";
 
-  const body = await request.json();
-  const { provider, model } = body as { provider: AIProvider; model: string };
-
-  if (!provider || !model) {
-    return NextResponse.json({ error: "Provider and model are required" }, { status: 400 });
-  }
-
+export async function POST(req: Request) {
   try {
-    const result = await generateText({
-      prompt: "Respond with the single word 'healthy'.",
-      systemPrompt: "You are a health check service.",
-      maxTokens: 10,
-      provider,
-      model,
-      feature: "health-check",
-      userId: user.id,
-    });
+    const { provider, model } = await req.json();
 
-    // If result.fallback is true, it means the specific requested model failed and it fell back.
-    // That means the requested model is NOT healthy.
-    if (result.fallback) {
-      return NextResponse.json({ 
-        ok: false, 
-        error: `Model ${model} failed, fell back to ${result.provider}. This usually means the requested model is rate-limited or unavailable.`,
-        details: result.text
-      });
+    if (!provider || !model) {
+      return NextResponse.json({ ok: false, error: "Missing provider or model" }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      ok: true, 
-      model: result.model,
-      provider: result.provider
-    });
+    if (provider === "claude") {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return NextResponse.json({ ok: false, error: "ANTHROPIC_API_KEY not configured" });
+
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model,
+        max_tokens: 8,
+        messages: [{ role: "user", content: "Hi" }],
+      });
+      const ok = response.content?.[0]?.type === "text";
+      return NextResponse.json({ ok });
+    }
+
+    if (provider === "gemini") {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return NextResponse.json({ ok: false, error: "GEMINI_API_KEY not configured" });
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const genModel = genAI.getGenerativeModel({ model });
+      const result = await genModel.generateContent("Hi");
+      const text = result.response.text();
+      return NextResponse.json({ ok: !!text });
+    }
+
+    return NextResponse.json({ ok: false, error: `Unknown provider: ${provider}` });
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : "Unknown error";
-    console.error(`[AI Health Check] ${provider}/${model} failed:`, errorMsg);
-    
-    return NextResponse.json({ 
-      ok: false, 
-      error: errorMsg,
-      details: "Check your API keys and project quotas."
-    }, { status: 200 }); // Return 200 so the frontend can handle the error per-model
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ ok: false, error: msg });
   }
 }
