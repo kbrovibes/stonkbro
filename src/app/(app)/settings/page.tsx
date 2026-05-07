@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [pingResult, setPingResult] = useState("");
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const [subscribing, setSubscribing] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -143,6 +144,36 @@ export default function SettingsPage() {
     }
   }
 
+  async function checkAIHealth() {
+    const allModels = [
+      ...GEMINI_MODELS.map(m => ({ ...m, provider: "gemini" as const })),
+      ...CLAUDE_MODELS.map(m => ({ ...m, provider: "claude" as const }))
+    ];
+
+    // Reset status
+    const initial: Record<string, "checking"> = {};
+    allModels.forEach(m => initial[m.id] = "checking");
+    setHealthStatus(initial);
+
+    // Check all in parallel
+    await Promise.all(allModels.map(async (model) => {
+      try {
+        const res = await fetch("/api/admin/ai-health", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: model.provider, model: model.id }),
+        });
+        const data = await res.json();
+        setHealthStatus(prev => ({
+          ...prev,
+          [model.id]: data.ok ? "healthy" : "error"
+        }));
+      } catch {
+        setHealthStatus(prev => ({ ...prev, [model.id]: "error" }));
+      }
+    }));
+  }
+
   return (
     <div className="flex flex-col flex-1 px-4 py-6">
       <div className="max-w-2xl mx-auto w-full flex flex-col gap-5">
@@ -235,7 +266,7 @@ export default function SettingsPage() {
                     setPreferredProvider("gemini");
                     setPreferredModel(GEMINI_MODELS[0].id);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors \${
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
                     preferredProvider === "gemini"
                       ? "border-sky-600 bg-sky-50 text-sky-700"
                       : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
@@ -249,7 +280,7 @@ export default function SettingsPage() {
                     setPreferredProvider("claude");
                     setPreferredModel(CLAUDE_MODELS[0].id);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors \${
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
                     preferredProvider === "claude"
                       ? "border-purple-600 bg-purple-50 text-purple-700"
                       : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
@@ -295,6 +326,66 @@ export default function SettingsPage() {
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Update AI Preferences"}
             </button>
+          </div>
+        </div>
+
+        {/* AI Model Health Check */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold text-stone-900">AI Model Health</h3>
+            <button
+              onClick={checkAIHealth}
+              disabled={Object.values(healthStatus).some(s => s === "checking")}
+              className="text-xs font-bold text-sky-600 hover:text-sky-700 disabled:text-stone-300 transition-colors"
+            >
+              {Object.values(healthStatus).some(s => s === "checking") ? "Checking..." : "Check All Models"}
+            </button>
+          </div>
+          <p className="text-sm text-stone-500 mb-4">
+            Verify that your API keys are valid and models are responding.
+          </p>
+
+          <div className="grid grid-cols-1 gap-2">
+            {[...GEMINI_MODELS, ...CLAUDE_MODELS].map((model) => {
+              const status = healthStatus[model.id] || "idle";
+              const isGemini = GEMINI_MODELS.some(m => m.id === model.id);
+              
+              return (
+                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 bg-stone-50/30">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2 h-2 rounded-full ${isGemini ? "bg-sky-500" : "bg-purple-500"}`} />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-stone-800">{model.name}</span>
+                      <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">
+                        {isGemini ? "Google Gemini" : "Anthropic Claude"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    {status === "checking" ? (
+                      <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
+                    ) : status === "healthy" ? (
+                      <div className="flex items-center gap-1.5 text-emerald-600">
+                        <span className="text-[10px] font-bold">Healthy</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4.13-5.689Z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    ) : status === "error" ? (
+                      <div className="flex items-center gap-1.5 text-red-500">
+                        <span className="text-[10px] font-bold">Failed</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-bold text-stone-300">Not checked</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
