@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [preferredModel, setPreferredModel] = useState("gemini-2.0-flash");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [testError, setTestError] = useState("");
   const [pingStatus, setPingStatus] = useState<"idle" | "sending" | "done">("idle");
@@ -43,8 +44,9 @@ export default function SettingsPage() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveError("");
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -54,10 +56,15 @@ export default function SettingsPage() {
           preferred_ai_model: preferredModel,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || `Save failed (${res.status})`);
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // silent
+      setSaveError("Network error — check your connection");
     } finally {
       setSaving(false);
     }
@@ -251,6 +258,7 @@ export default function SettingsPage() {
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Save Settings"}
             </button>
+            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
           </div>
         </div>
 
@@ -332,6 +340,7 @@ export default function SettingsPage() {
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Update AI Preferences"}
             </button>
+            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
           </div>
         </div>
 

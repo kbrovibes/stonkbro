@@ -17,11 +17,14 @@ export function AIModelBadge({ feature, provider, model, timestamp }: AIModelBad
   } | null>(null);
 
   useEffect(() => {
-    if (provider && model) {
-      setSettings({ provider, model });
+    // If model is provided, infer provider from model name — no network fetch needed
+    if (model) {
+      const inferredProvider: AIProvider = model.includes("claude") ? "claude" : "gemini";
+      setSettings({ provider: provider ?? inferredProvider, model });
       return;
     }
 
+    // No model passed — load from user settings
     fetch("/api/settings")
       .then((r) => r.json())
       .then((d) => {
