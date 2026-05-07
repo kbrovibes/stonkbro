@@ -23,39 +23,97 @@ const ThetaDecay = lazy(() => import("./ThetaDecay"));
 const VegaImpact = lazy(() => import("./VegaImpact"));
 const PnLDiagram = lazy(() => import("./PnLDiagram"));
 const GreekTable = lazy(() => import("./GreekTable"));
+const SupportResistanceChart = lazy(() => import("./SupportResistanceChart"));
+const RSIChart = lazy(() => import("./RSIChart"));
+const CandlestickChart = lazy(() => import("./CandlestickChart"));
+const TAGreeksChart = lazy(() => import("./TAGreeksChart"));
 
-const componentMap: Record<string, React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>> = {
-  DeltaCurve: DeltaCurve as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
-  GammaCurve: GammaCurve as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
-  ThetaDecay: ThetaDecay as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
-  VegaImpact: VegaImpact as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
-  PnLDiagram: PnLDiagram as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
-  GreekTable: GreekTable as React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>,
+type LazyComp = React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>;
+
+const componentMap: Record<string, LazyComp> = {
+  // kebab-case keys matching curriculum component names
+  "delta-curve": DeltaCurve as LazyComp,
+  "gamma-curve": GammaCurve as LazyComp,
+  "theta-decay": ThetaDecay as LazyComp,
+  "vega-impact": VegaImpact as LazyComp,
+  "pnl-diagram": PnLDiagram as LazyComp,
+  "greek-table": GreekTable as LazyComp,
+  "option-chain-sim": GreekTable as LazyComp, // reuse greek table for option chain sim
+  "support-resistance-chart": SupportResistanceChart as LazyComp,
+  "rsi-chart": RSIChart as LazyComp,
+  "candlestick-chart": CandlestickChart as LazyComp,
+  "ta-greeks-chart": TAGreeksChart as LazyComp,
+  // interactive components — map to existing widgets
+  "strike-slider": DeltaCurve as LazyComp,
+  "dte-slider": GammaCurve as LazyComp,
+  "vol-slider": VegaImpact as LazyComp,
+  "position-builder": PnLDiagram as LazyComp,
+  "greek-calculator": GreekTable as LazyComp,
 };
+
+function renderInline(text: string): React.ReactNode {
+  // Process bold markers **text**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, partIdx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={partIdx} className="font-semibold text-gray-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
 
 function renderTextContent(content: string): React.ReactNode {
   // Split by line breaks first
   const lines = content.split("\n");
-  return lines.map((line, lineIdx) => {
-    // Process bold markers **text**
-    const parts = line.split(/(\*\*[^*]+\*\*)/g);
-    const rendered = parts.map((part, partIdx) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return (
-          <strong key={partIdx} className="font-semibold text-gray-900">
-            {part.slice(2, -2)}
-          </strong>
-        );
-      }
-      return part;
-    });
-    return (
-      <span key={lineIdx}>
-        {rendered}
-        {lineIdx < lines.length - 1 && <br />}
-      </span>
-    );
+
+  // Group consecutive bullet lines together
+  const elements: React.ReactNode[] = [];
+  let bulletGroup: string[] = [];
+
+  const flushBullets = () => {
+    if (bulletGroup.length > 0) {
+      elements.push(
+        <ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 pl-1 my-1">
+          {bulletGroup.map((b, bi) => (
+            <li key={bi} className="text-sm text-gray-700 leading-relaxed">
+              {renderInline(b)}
+            </li>
+          ))}
+        </ul>
+      );
+      bulletGroup = [];
+    }
+  };
+
+  lines.forEach((line, lineIdx) => {
+    const trimmed = line.trimStart();
+    const isBullet = /^[•\-\*]\s/.test(trimmed);
+    const isNumbered = /^\d+\.\s/.test(trimmed);
+
+    if (isBullet) {
+      bulletGroup.push(trimmed.replace(/^[•\-\*]\s/, ""));
+    } else if (isNumbered) {
+      flushBullets();
+      // Numbered items rendered as a list item
+      bulletGroup.push(trimmed);
+      flushBullets();
+    } else {
+      flushBullets();
+      elements.push(
+        <span key={lineIdx}>
+          {renderInline(line)}
+          {lineIdx < lines.length - 1 && <br />}
+        </span>
+      );
+    }
   });
+  flushBullets();
+
+  return <>{elements}</>;
 }
 
 const calloutStyles = {
@@ -92,7 +150,7 @@ function LoadingPlaceholder() {
 
 export default function LessonRenderer({ sections, onQuizComplete }: LessonRendererProps) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 px-4 py-5">
       {sections.map((section, idx) => {
         switch (section.type) {
           case "text":

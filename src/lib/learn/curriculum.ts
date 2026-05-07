@@ -1313,6 +1313,39 @@ export const CURRICULUM: Module[] = [
             content:
               "**How support and resistance form:**\n\n1. **Previous highs and lows** — A stock that peaked at $150 three times creates strong resistance at $150.\n2. **Consolidation zones** — Areas where price traded sideways for an extended period become both support and resistance.\n3. **Gap levels** — Price gaps often act as future support or resistance.\n4. **Moving averages** — The 50-day and 200-day moving averages frequently act as dynamic support/resistance.",
           },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "sr-basics-q1",
+                question:
+                  "Why does a previous high tend to act as resistance the next time price approaches it?",
+                options: [
+                  "Because price always reverts to round numbers",
+                  "Because traders who bought near the previous high but didn't sell are looking to exit at breakeven",
+                  "Because the SEC enforces resistance levels",
+                  "Because moving averages always cluster there",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Market memory. Traders who got caught buying near a prior peak are mentally anchored to that price as breakeven. When price returns, they sell — adding supply right at that level. Combined with new traders who recognize the level and short it, you get a wall of selling exactly where price stalled before.",
+              },
+              {
+                id: "sr-basics-q2",
+                question:
+                  "Which of these would create the strongest support level?",
+                options: [
+                  "A single touch at $100 last week on average volume",
+                  "Three bounces at $100 across the last six months on heavy volume",
+                  "A round number that price has never visited",
+                  "The 5-day moving average",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Multiple touches + heavy volume + recency all stack to make support stronger. One touch establishes a possible level; three touches confirm it as a real zone where buyers consistently show up. The volume tells you those bounces had real institutional participation.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1352,6 +1385,45 @@ export const CURRICULUM: Module[] = [
             content:
               "**Volume confirmation:**\n\nAlways check volume at your levels. A support bounce on high volume is far more reliable than one on low volume. Look for:\n\n• **Volume spikes at bounces** — Confirms real buying/selling interest\n• **Volume profile (if available)** — Shows where the most shares changed hands\n• **Declining volume on approach** — Suggests the move toward the level is losing steam",
           },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "**Worked example — drawing a zone:**\n\nMSFT bounces happen at $401.20, $399.85, and $400.40 across three different weeks. Don't draw a line at $400.15 (the average) — draw a **zone from $399.50 to $401.50**. When MSFT trades back into that band, that's your support test. Treat hits anywhere in the zone as the same level.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "sr-drawing-q1",
+                question:
+                  "A stock has touched the $50 level four times: twice at $49.80, once at $50.30, once at $49.95. How should you draw this support?",
+                options: [
+                  "A single horizontal line at $49.80 (the lowest touch)",
+                  "A zone from roughly $49.50 to $50.50 capturing all four touches",
+                  "Skip it — the touches aren't at exactly the same price",
+                  "A line at $50.00 only",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Real support is a zone, not a line. The four touches cluster around $50 within ~50 cents — that's a high-conviction zone. Drawing a single line at the lowest touch makes you miss two of the four reactions and fixates you on a precision the market doesn't honor.",
+              },
+              {
+                id: "sr-drawing-q2",
+                question:
+                  "Which level would you give the most weight when planning a CSP entry?",
+                options: [
+                  "A 4-hour-chart level from yesterday with one touch",
+                  "A weekly-chart level with three touches across the last 12 months",
+                  "A 1-minute-chart level from this morning",
+                  "A level from 5 years ago with one touch",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Higher timeframe + multiple touches + recency. A weekly level with three confirmed bounces in the last year is exactly what institutional traders watch. The 5-year-old level is too stale; the intraday levels are too noisy for swing-style options selling.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1390,6 +1462,39 @@ export const CURRICULUM: Module[] = [
             type: "text",
             content:
               "**Volume on breakout confirmation:**\n\n• **Valid breakout** — Volume surges 50%+ above average as price breaks the level. The move has conviction.\n• **False breakout** — Volume is average or below average. The move lacks participation and is likely to fail.\n• **Re-test on low volume** — If price pulls back to the broken level on declining volume, the breakout is healthy. Buyers aren't panicking.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "sr-breakouts-q1",
+                question:
+                  "Stock breaks above $100 resistance, rallies to $103, then pulls back to $100.20 on light volume and bounces. What does this tell you?",
+                options: [
+                  "The breakout failed — sell immediately",
+                  "Classic role reversal: old resistance ($100) is now acting as support; the breakout is healthy",
+                  "Random noise, ignore it",
+                  "The stock is forming a new resistance at $103",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "This is the textbook breakout-retest. Price broke through, pulled back to test the old level, and found buyers. The light pullback volume is the giveaway — sellers aren't panicking, they're just digesting. The retest entry here is often a higher-probability setup than chasing the initial breakout.",
+              },
+              {
+                id: "sr-breakouts-q2",
+                question:
+                  "How would you distinguish a real breakout from a bull trap?",
+                options: [
+                  "Real breakouts always happen on Mondays",
+                  "Real breakouts come with a clear close above the level on volume 50%+ above average",
+                  "Bull traps only happen on small-cap stocks",
+                  "Wait for an analyst upgrade",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Volume is the truth-teller. A breakout on average or weak volume is suspicious — it's just price probing the level without real participation. A close (not just an intraday wick) above the level with surge volume tells you institutions are actually moving size through it.",
+              },
+            ],
           },
         ],
       },
@@ -1505,6 +1610,45 @@ export const CURRICULUM: Module[] = [
             content:
               "**RSI settings:**\n\n• **14-period** is the standard default. Works well for swing trading (days to weeks).\n• **7-period** is more sensitive — generates more signals but also more false signals. Better for short-term trading.\n• **21-period** is smoother — fewer signals but more reliable. Better for position trading.\n\nMost traders start with the 14-period default and only adjust if they have a specific reason to.",
           },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "**Worked example — RSI calculation intuition:**\n\nOver 14 days, a stock has 9 up days averaging +$1.20 and 5 down days averaging -$0.40.\n\n• Avg gain = $1.20, avg loss = $0.40\n• RS = 1.20 / 0.40 = 3.0\n• RSI = 100 - (100 / (1 + 3.0)) = 100 - 25 = **75**\n\nRSI of 75 means up moves have been roughly 3× larger than down moves on average over the lookback. The stock is overbought — but in a strong uptrend, that's normal, not a sell signal.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "rsi-basics-q1",
+                question:
+                  "RSI = 78 on a stock that has been ripping higher for three weeks. What's the right read?",
+                options: [
+                  "Sell short — overbought always means reversal",
+                  "Strong momentum; in an uptrend, RSI can stay overbought for weeks",
+                  "RSI is broken on this ticker",
+                  "Buy puts immediately",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Overbought ≠ sell signal. Strong uptrends consistently print RSI above 70 — that's what strength looks like in oscillator form. The classic mistake is shorting strong trends just because RSI says 'overbought'. Wait for divergence or a real break, not just a number.",
+              },
+              {
+                id: "rsi-basics-q2",
+                question:
+                  "Why might you switch from a 14-period RSI to a 21-period RSI?",
+                options: [
+                  "To get more frequent buy/sell signals",
+                  "To get smoother readings with fewer false signals — better for longer-term position trading",
+                  "Because 14-period RSI doesn't work on tech stocks",
+                  "To detect intraday scalps",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Longer lookback = more averaging = smoother indicator with fewer whipsaws. You get fewer signals but each carries more weight. Position traders holding for weeks/months prefer 21-period; scalpers might use 7-period for sensitivity.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1544,6 +1688,53 @@ export const CURRICULUM: Module[] = [
             content:
               "Divergence is a warning signal, not a timing signal. It tells you the trend is weakening, but it doesn't tell you exactly when the reversal will happen. Always wait for price confirmation (a break of a trendline, a key candle pattern, or a support/resistance break) before acting on divergence.",
           },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "rsi-divergence-q1",
+                question:
+                  "A stock prints a higher high at $120 (vs. previous $115), but RSI peaks at 65 (vs. previous 78). What is happening?",
+                options: [
+                  "Bullish divergence — buy more",
+                  "Bearish divergence — momentum is weakening despite the new high",
+                  "Hidden bullish divergence — uptrend continues",
+                  "RSI is just lagging",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Classic bearish divergence: price made a new high but momentum (RSI) couldn't match its previous peak. Fewer buyers are participating in this leg up — the trend is running on fumes. That's a heads-up to tighten stops or take profits, not a reason to add longs.",
+              },
+              {
+                id: "rsi-divergence-q2",
+                question:
+                  "Hidden bullish divergence shows up. What does it tell you about the trend?",
+                options: [
+                  "The trend is reversing",
+                  "The uptrend is intact — pullbacks are buying opportunities, not warnings",
+                  "RSI is broken",
+                  "Sell immediately",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Hidden divergence signals trend continuation, not reversal. In hidden bullish, price makes a higher low while RSI makes a lower low — translation: the pullback ran momentum down, but buyers stepped in earlier than last time. The trend is still healthy and dips are dippable.",
+              },
+              {
+                id: "rsi-divergence-q3",
+                question:
+                  "You spot textbook bearish divergence on the daily. The pattern formed three days ago. Should you short now?",
+                options: [
+                  "Yes — divergence is a precise timing signal",
+                  "No — wait for price confirmation (broken trendline, breakdown candle, support break) before acting",
+                  "Yes, but only after the next earnings report",
+                  "No — divergence is fake",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Divergence is a heads-up that momentum is fading, not a timing trigger. Trends can grind on for weeks after divergence appears. Wait for price to actually do something — break a trendline, lose a support level, print a reversal candle. Combine the divergence warning with a real price trigger.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1577,6 +1768,39 @@ export const CURRICULUM: Module[] = [
             style: "key-concept",
             content:
               "stonkbro's scoring engine incorporates momentum signals similar to RSI. When you see high explosive potential scores, the scoring engine has already detected the kind of momentum setups RSI would highlight — think of them as complementary tools.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "rsi-strategies-q1",
+                question:
+                  "You want to sell a CSP on a stock you'd be happy to own. RSI sits at 28. Strike below current price aligns with a known support zone. What should you do?",
+                options: [
+                  "Wait — never sell puts on oversold stocks",
+                  "Sell the put — oversold + support = rich premium and high probability the stock bounces",
+                  "Buy the stock outright instead",
+                  "Sell a covered call",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "This is the textbook CSP entry. Oversold RSI inflates put premiums (fear pricing in), and the alignment with support gives you a level where buyers historically appear. You either keep a fat premium when it bounces or get assigned at a price you wanted anyway.",
+              },
+              {
+                id: "rsi-strategies-q2",
+                question:
+                  "In a strong, trending bull market, what RSI range is typical for healthy pullbacks?",
+                options: [
+                  "RSI drops to 10-20",
+                  "RSI bottoms around 40-50, not below",
+                  "RSI must hit 0",
+                  "RSI doesn't apply in trends",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Trends shift the RSI range. In a strong uptrend, RSI tends to bounce between 40-90 — pullbacks rarely take it below 40. So 40-50 in a bull market is functionally what 'oversold' means in that regime. Waiting for RSI 30 in a strong uptrend means you'll never enter.",
+              },
+            ],
           },
         ],
       },
@@ -1678,6 +1902,45 @@ export const CURRICULUM: Module[] = [
             content:
               "Reading candles is about understanding the narrative. Each candle tells a micro-story of the buyer/seller battle. String several together and you get a plot — trend, reversal, or continuation.",
           },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "**Worked example:** A daily candle opens at $100, hits a high of $108 intraday, drops to a low of $99, and closes at $101.\n\n• Body = $100 → $101 (small green body, $1 tall)\n• Upper wick = $101 → $108 (long, $7)\n• Lower wick = $99 → $100 (short, $1)\n\nThe story: buyers tried to push higher, got slammed back down by sellers, and barely held the open. A long upper wick like this near resistance is a bearish warning even though the candle technically closed green.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "candle-basics-q1",
+                question:
+                  "A daily candle opens at $50, closes at $48, with a high of $50.20 and a low of $46. What does the long lower wick tell you?",
+                options: [
+                  "Sellers were in complete control all day",
+                  "Buyers stepped in at the low and pushed price back up before close",
+                  "There was no trading activity in the middle of the day",
+                  "Price gapped down from the previous day",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "The candle reached $46 intraday but closed at $48 — that $2 lower wick shows buyers rejected the lower prices. The body is still red (close < open), so sellers won the day overall, but buyers showed up at $46. That rejection is the early signal worth watching.",
+              },
+              {
+                id: "candle-basics-q2",
+                question:
+                  "Which candle shows the strongest bullish conviction?",
+                options: [
+                  "Small green body, long upper wick, long lower wick",
+                  "Large green body, no wicks (close = high)",
+                  "Doji with long wicks on both sides",
+                  "Small red body with a long upper wick",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "A large green body with no upper wick means buyers controlled the entire period and the close was the high. Sellers couldn't push price down at all. This is the textbook strong-conviction bullish candle — sometimes called a Marubozu.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1722,6 +1985,53 @@ export const CURRICULUM: Module[] = [
             content:
               "Context matters more than the pattern itself. A hammer at a major support level after a 20% decline is a completely different signal than a hammer in the middle of nowhere on no volume.",
           },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "candle-single-q1",
+                question:
+                  "A stock has been trending up for two weeks. Today it prints a hammer-shaped candle. Should you call it a hammer?",
+                options: [
+                  "Yes — the shape is what defines the pattern",
+                  "No — the same shape after an uptrend is a hanging man, a bearish warning",
+                  "Yes, but only on the daily timeframe",
+                  "It depends on the volume",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Same shape, opposite meaning depending on context. A hammer needs a preceding downtrend (rejection of lower prices = reversal). The same long-lower-wick candle after an uptrend is a hanging man — sellers are starting to test the rally. Pattern + location is what gives the candle meaning.",
+              },
+              {
+                id: "candle-single-q2",
+                question:
+                  "Yesterday: large red candle from $100 → $95. Today: green candle that opens at $94 and closes at $101. Is this a bullish engulfing?",
+                options: [
+                  "No — today opened below yesterday's close, so it doesn't qualify",
+                  "Yes — today's body ($94 → $101) completely engulfs yesterday's body ($100 → $95)",
+                  "No — engulfing requires identical opens and closes",
+                  "Yes, but only if volume doubled",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Bullish engulfing requires today's body to completely cover yesterday's body. Today's body spans $94 → $101, which fully wraps yesterday's $95 → $100 body. The opening below the prior close is normal and doesn't disqualify it — what matters is the body coverage.",
+              },
+              {
+                id: "candle-single-q3",
+                question:
+                  "You see a textbook doji on a 1-minute chart of a thinly traded stock. How much weight should you give it?",
+                options: [
+                  "A lot — a doji always signals indecision",
+                  "Very little — 1-minute candles on low volume are mostly noise",
+                  "It's a strong reversal signal",
+                  "Wait for two more dojis to confirm",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Pattern reliability scales with timeframe and volume. A daily doji on a heavily traded stock is meaningful. A 1-minute doji on thin volume is statistically indistinguishable from random noise. Stick to daily and weekly charts for pattern-based decisions.",
+              },
+            ],
+          },
         ],
       },
       {
@@ -1759,6 +2069,59 @@ export const CURRICULUM: Module[] = [
             type: "text",
             content:
               "**Tweezer Tops and Bottoms:**\n\n• **Tweezer bottom** — Two candles with nearly identical lows. The first is bearish, the second is bullish. Both tested the same low and rejected it. Strong support confirmation.\n• **Tweezer top** — Two candles with nearly identical highs. The first is bullish, the second is bearish. Both tested the same high and got rejected. Strong resistance confirmation.\n\nTweezers work because they show the market testing a level twice and failing to break through both times.",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "**Worked example — Morning Star on AAPL:**\n\n• Day 1: AAPL $180 → $172 large red candle (sellers in control, -4.4%)\n• Day 2: Opens at $171, closes at $171.50, tiny body (the indecision pivot)\n• Day 3: Opens at $172, closes at $178 large green candle (buyers seize control, +3.5%)\n\nDay 3's close at $178 is well into Day 1's body ($180 → $172). Three candles, three acts — exhaustion, indecision, reversal. If this happens at a known support level with rising volume on Day 3, that's an A+ setup for selling a put or buying calls.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "candle-multi-q1",
+                question:
+                  "A morning star pattern requires the third candle to close where, relative to the first candle?",
+                options: [
+                  "Above the first candle's high",
+                  "Well into the first candle's body (recovering most of the loss)",
+                  "Exactly at the first candle's open",
+                  "Anywhere green will do",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "The third candle's strength is what makes it a morning star. Closing well into the first candle's body shows buyers reclaimed most of the territory sellers took. A weak third candle that barely closes above the second's open isn't a true morning star — it's just three candles in a row.",
+              },
+              {
+                id: "candle-multi-q2",
+                question:
+                  "Three Black Crows is the bearish mirror of which pattern?",
+                options: [
+                  "Morning Star",
+                  "Three White Soldiers",
+                  "Bearish Engulfing",
+                  "Hanging Man",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Three Black Crows = three consecutive red candles with minimal lower wicks, showing sustained selling pressure. It's the direct mirror of Three White Soldiers (three consecutive green candles with minimal upper wicks) — same shape, opposite direction.",
+              },
+              {
+                id: "candle-multi-q3",
+                question:
+                  "A bullish harami forms — small green candle inside the prior red candle's body. What follow-through would confirm the reversal?",
+                options: [
+                  "A green candle the next day that breaks above the harami's high",
+                  "Another doji",
+                  "A gap down at next open",
+                  "Volume dropping by half",
+                ],
+                correctIndex: 0,
+                explanation:
+                  "Harami patterns are early warnings, not confirmations. A green follow-through candle that breaks above the harami's high is what tells you buyers are actually taking control. Without follow-through, the harami can fade — that's why it's considered weaker than engulfing or morning star.",
+              },
+            ],
           },
         ],
       },
@@ -1798,6 +2161,53 @@ export const CURRICULUM: Module[] = [
             style: "warning",
             content:
               "Never trade a candle pattern in isolation. The pattern is one piece of evidence — combine it with support/resistance, volume, and RSI for a complete picture. The best trades have three or more factors lining up in the same direction.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "candle-context-q1",
+                question:
+                  "A bullish engulfing candle prints in the middle of a sideways range, no support nearby, RSI at 50, on average volume. How would you rate this signal?",
+                options: [
+                  "A+ setup — engulfing is always reliable",
+                  "Mediocre — the pattern is there but the context is missing",
+                  "Bearish — engulfing in a range means breakdown",
+                  "Strong, because RSI at 50 is neutral",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Engulfing in the middle of a range with no confluence is just noise. The signal needs a meaningful level (support/resistance), supportive momentum (oversold RSI for bullish), and volume confirmation. Without those, you're trading the shape — and shapes alone are coin flips.",
+              },
+              {
+                id: "candle-context-q2",
+                question:
+                  "Why do candle patterns work better on daily charts than on 5-minute charts for swing trading?",
+                options: [
+                  "Daily candles have more pixels in chart software",
+                  "Higher timeframes filter noise and reflect more institutional participation",
+                  "5-minute candles can't form patterns",
+                  "Daily candles are required by the SEC",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Each daily candle aggregates 6.5 hours of price action — including institutional decisions, news reactions, and end-of-day positioning. Lower timeframes are dominated by algorithmic noise and small retail orders, so patterns there have much lower signal-to-noise.",
+              },
+              {
+                id: "candle-context-q3",
+                question:
+                  "Triple confluence for a bullish reversal would include which three signals?",
+                options: [
+                  "MACD cross, golden cross, P/E ratio",
+                  "Bullish candle pattern, key support level, oversold RSI",
+                  "Volume spike, IV rank, earnings date",
+                  "Delta, gamma, theta",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Triple confluence stacks three independent signals: a candle pattern showing real-time rejection, a horizontal support level showing historical demand, and oversold RSI showing momentum stretched to one extreme. When all three line up in the same direction, the win rate jumps materially.",
+              },
+            ],
           },
         ],
       },
@@ -1922,6 +2332,45 @@ export const CURRICULUM: Module[] = [
             style: "tip",
             content:
               "The best options entries have three things: a key support/resistance level, an RSI extreme, and a confirmation candle. You won't always get all three — but the more confluence you have, the better your edge.",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "**Worked example — A+ CSP setup:**\n\nNVDA pulls back to $480, which is the 200-day EMA and a 3-touch horizontal support. RSI dips to 32. Today prints a hammer candle with a long lower wick that closes above the $480 level on heavy volume.\n\n• Level: ✓ ($480 support, multiple touches)\n• Momentum: ✓ (RSI 32 — oversold)\n• Confirmation candle: ✓ (hammer with rejection wick)\n\nSell a 30-DTE 0.30-delta put with strike at or just below $480. You're collecting fat premium (oversold IV expansion), at a level where buyers historically appear, with a candle telling you they're appearing right now. This is the setup TA + Greeks is built for.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ta-entry-q1",
+                question:
+                  "You want to sell a covered call. The stock is up 20% in 3 weeks, RSI is 78, and price has stalled at a known resistance level. What strike makes sense?",
+                options: [
+                  "ATM strike with high premium and high assignment risk",
+                  "Strike at or just above the resistance level — paid for the cap, with TA-supported odds",
+                  "Strike 50% above current price",
+                  "Don't sell — wait for RSI to drop",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Resistance + overbought RSI = stock is likely to stall or pull back. A strike at the resistance level gives you a cushion (the level should hold), rich premium (overbought = high IV), and clear thinking about when you'd be assigned (only if it breaks the resistance, which is a real signal).",
+              },
+              {
+                id: "ta-entry-q2",
+                question:
+                  "Stock hits support, but the only candles printing are red with no rejection wicks. What does that tell you about selling a put here?",
+                options: [
+                  "Sell the put immediately — support always holds",
+                  "Wait — without a confirmation candle (hammer, engulfing, etc.), support might break",
+                  "Buy the stock instead",
+                  "Switch to a different ticker",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "The candles are telling you in real-time that buyers haven't actually shown up yet. Support is a historical level, but the current candles say sellers are still in control. Wait for a rejection candle that proves buyers are stepping in — otherwise you're trusting a level that's about to fail.",
+              },
+            ],
           },
         ],
       },
