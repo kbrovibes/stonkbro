@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [subscribing, setSubscribing] = useState(false);
   const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
+  const [activeErrorTooltip, setActiveErrorTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -388,17 +389,19 @@ export default function SettingsPage() {
                         </svg>
                       </div>
                     ) : status === "error" ? (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <div className="flex items-center gap-1.5 text-red-500">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setActiveErrorTooltip(activeErrorTooltip === model.id ? null : model.id)}
+                          className="flex items-center gap-1 text-red-500 active:opacity-70"
+                        >
                           <span className="text-[10px] font-bold">Failed</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        {healthErrors[model.id] && (
-                          <span className="text-[9px] text-red-400 max-w-[200px] text-right leading-tight">
-                            {healthErrors[model.id]}
-                          </span>
+                          <span className="text-sm leading-none">✕</span>
+                        </button>
+                        {activeErrorTooltip === model.id && healthErrors[model.id] && (
+                          <div className="absolute right-0 top-6 z-50 w-56 rounded-lg border border-red-100 bg-white shadow-lg px-3 py-2">
+                            <p className="text-[10px] text-red-500 leading-snug">{healthErrors[model.id]}</p>
+                          </div>
                         )}
                       </div>
                     ) : (
