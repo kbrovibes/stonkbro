@@ -9,6 +9,8 @@
 - [ ] **33 — News & Sentiment Pipeline** · Integrate financial news API (Benzinga/Finnhub) for discovery context, earnings reactions, and thesis validation — `NEEDS_INPUT: requires choosing a news API provider and setting up API key env var`
 - [ ] **49 — Top CSP Picks Page** · Standalone page showing best CSP options today grouped by premium, return, with strike/DTE suggestions and rationale; auto-refresh every 4 hours
 
+- [ ] **53 — Gemini Health Check Failure** · Both Gemini models fail the AI health check in Settings even though `GEMINI_API_KEY` is set in Vercel Production. Claude models pass. Likely cause: `gemini-1.5-pro` was deprecated (replaced with `gemini-2.0-flash-lite` in constants.ts) but `gemini-2.0-flash` also fails — needs log inspection. Steps: deploy, tap "Failed ✕" on Gemini 2.0 Flash in Settings → AI Health, read the tooltip error, diagnose (quota / API version / SDK bug).
+
 ## 📋 P2 — Do Next
 
 - [ ] **52 — Plaid Broker Integration** · Connect Fidelity via Plaid to sync holdings, display in portfolio, and run hourly risk monitoring with notifications — `NEEDS_INPUT: requires Plaid API keys (client ID and secret) in .env`
