@@ -14,7 +14,13 @@ export type LessonSection =
         | "support-resistance-chart"
         | "rsi-chart"
         | "candlestick-chart"
-        | "ta-greeks-chart";
+        | "ta-greeks-chart"
+        | "long-short-diagram"
+        | "sma-chart"
+        | "macd-chart"
+        | "bollinger-bands-chart"
+        | "iv-rank-gauge"
+        | "decision-tree-widget";
       props?: Record<string, unknown>;
     }
   | {
@@ -24,7 +30,13 @@ export type LessonSection =
         | "dte-slider"
         | "vol-slider"
         | "position-builder"
-        | "greek-calculator";
+        | "greek-calculator"
+        | "long-short-diagram"
+        | "sma-chart"
+        | "macd-chart"
+        | "bollinger-bands-chart"
+        | "iv-rank-gauge"
+        | "decision-tree-widget";
       props?: Record<string, unknown>;
     }
   | { type: "quiz"; questions: QuizQuestion[] };
@@ -51,6 +63,7 @@ export type Module = {
   subtitle: string;
   icon: string;
   color: string;
+  level: 1 | 2;
   lessons: Lesson[];
 };
 
@@ -62,6 +75,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Quick recap of the fundamentals before we dive into Greeks",
     icon: "🔄",
     color: "stone-500",
+    level: 1,
     lessons: [
       {
         id: "refresher-basics",
@@ -179,6 +193,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Price sensitivity and directional exposure",
     icon: "📐",
     color: "blue-500",
+    level: 1,
     lessons: [
       {
         id: "delta-basics",
@@ -357,6 +372,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "The rate of change of delta — acceleration, not speed",
     icon: "⚡",
     color: "amber-500",
+    level: 1,
     lessons: [
       {
         id: "gamma-basics",
@@ -502,6 +518,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Time decay — the silent premium eroder",
     icon: "⏳",
     color: "emerald-500",
+    level: 1,
     lessons: [
       {
         id: "theta-basics",
@@ -661,6 +678,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Volatility sensitivity — the most misunderstood Greek",
     icon: "🌊",
     color: "purple-500",
+    level: 1,
     lessons: [
       {
         id: "vega-basics",
@@ -801,6 +819,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Interest rates, charm, vanna, and volga",
     icon: "🔬",
     color: "rose-500",
+    level: 1,
     lessons: [
       {
         id: "rho",
@@ -893,6 +912,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Real positions have all Greeks at once — learn to read the full picture",
     icon: "🎼",
     color: "cyan-500",
+    level: 1,
     lessons: [
       {
         id: "greek-interactions",
@@ -1056,6 +1076,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Put it all together with real positions and a final exam",
     icon: "🏆",
     color: "yellow-500",
+    level: 1,
     lessons: [
       {
         id: "pmcc-greeks",
@@ -1280,6 +1301,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Learn to read the price levels where buyers and sellers clash",
     icon: "📊",
     color: "indigo-500",
+    level: 1,
     lessons: [
       {
         id: "sr-basics",
@@ -1577,6 +1599,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Measure the speed and strength of price moves with RSI",
     icon: "📈",
     color: "teal-500",
+    level: 1,
     lessons: [
       {
         id: "rsi-basics",
@@ -1869,6 +1892,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Read the story that each candle tells about buyer/seller battles",
     icon: "🕯️",
     color: "orange-500",
+    level: 1,
     lessons: [
       {
         id: "candle-basics",
@@ -2290,6 +2314,7 @@ export const CURRICULUM: Module[] = [
     subtitle: "Combine technical analysis with Greeks for precision options trading",
     icon: "🎯",
     color: "lime-500",
+    level: 1,
     lessons: [
       {
         id: "ta-entry",
@@ -2415,6 +2440,53 @@ export const CURRICULUM: Module[] = [
             style: "warning",
             content:
               "When your short strike aligns with a major support/resistance level in the final week before expiration, gamma risk is extreme. This is the single most dangerous configuration for options sellers. Either close the position or roll it out in time.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ta-synergy-q1",
+                question:
+                  "You have high confidence that a support level will hold. How does that affect your delta choice for a CSP?",
+                options: [
+                  "Sell a lower-delta (further OTM) put for safety",
+                  "Sell a higher-delta (closer to ATM) put — your TA conviction justifies the larger premium",
+                  "Delta doesn't matter when TA is involved",
+                  "Always sell 0.16 delta regardless",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "TA conviction translates directly into delta selection. If you genuinely believe the support level is strong (multiple touches, heavy volume, recent), you can sell a higher-delta put and collect more premium. Your TA analysis is the edge — delta is just how you size into it.",
+              },
+              {
+                id: "ta-synergy-q2",
+                question:
+                  "A stock has been consolidating tightly for two weeks (low IV). You expect a breakout. What's the better play: sell options or buy options?",
+                options: [
+                  "Sell options — time decay works for you",
+                  "Buy options — low IV means cheap premiums, and vega will expand on the breakout",
+                  "Do nothing until after the breakout",
+                  "Sell puts and calls both",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Consolidation compresses IV. Buying options before a breakout means you're long vega at cheap prices — if the breakout happens, IV expands and your options gain value from both the directional move AND the vega expansion. Selling options before a breakout is the wrong side: you're short vega right before it's about to increase.",
+              },
+              {
+                id: "ta-synergy-q3",
+                question:
+                  "Your short put strike is at $100 — the same as a major support level — with 5 days to expiry. The stock is trading at $101. What should you be thinking?",
+                options: [
+                  "Perfect setup — support will hold and you'll keep premium",
+                  "Maximum danger zone: gamma is extreme, one down day could put you deep ITM rapidly. Consider closing or rolling out.",
+                  "Do nothing — theta will save you",
+                  "Sell more puts to average in",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "ATM + 5 DTE = maximum gamma. A single $2 move on $101 stock puts you $1 ITM. At major support levels, the stock can knife through on a fake-out before bouncing, and with 5 DTE your option has almost no time value left to absorb that move. This is when you manage risk — close or roll — not when you sit and hope.",
+              },
+            ],
           },
         ],
       },
@@ -2543,6 +2615,680 @@ export const CURRICULUM: Module[] = [
                 correctIndex: 1,
                 explanation:
                   "A breakout on 3x volume is a valid, high-conviction breakout — the stock is likely to continue higher. RSI at 68 is elevated but not extreme, confirming room to run. Your short call is only $10 above the breakout level with 20 DTE, which means the stock could reach it. Rolling up and out gives the position room to breathe while collecting additional premium from the time extension. Doing nothing is risky with a valid breakout. Closing the entire position forfeits your long LEAPS position unnecessarily.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  // ─── LEVEL 2: STRATEGY & SELECTION ────────────────────────────────────
+
+  // ─── MODULE 13: LONG VS SHORT ──────────────────────────────────────────
+  {
+    id: "long-short",
+    title: "Long vs Short — Trading Direction",
+    subtitle: "Understand bullish and bearish bets before you size your first options trade",
+    icon: "↕️",
+    color: "sky-500",
+    level: 2,
+    lessons: [
+      {
+        id: "long-short-basics",
+        title: "Long & Short Explained",
+        subtitle: "What 'long' and 'short' really mean — and why it's not just about stocks",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The two sides of every trade**\n\nEvery trade in the market has two sides. When someone buys a stock expecting it to rise, they are **long**. When someone profits if the stock falls, they are **short**. These terms apply to stocks, options, futures — everything.\n\n• **Long** = you own something and benefit if the price goes UP\n• **Short** = you've sold something you don't own and benefit if the price goes DOWN",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "Long and short describe your DIRECTIONAL BIAS — not the size of your position. You can be 'long' with just 1 share or 1 option contract.",
+          },
+          {
+            type: "visual",
+            component: "long-short-diagram",
+            props: {},
+          },
+          {
+            type: "text",
+            content:
+              "**Real Example: AAPL at $175**\n\nIn November 2023, AAPL was trading around $175. If you believed Apple would rally into the holiday quarter:\n\n• **Long stock**: Buy 100 shares at $175 = $17,500 invested. If AAPL hits $185, you make $1,000.\n• **Long call**: Buy 1 AAPL $175 call for $3.50 = $350 invested. If AAPL hits $185, the call might be worth $10+ = $650+ profit on $350 invested (185% return).\n• **Short stock**: Borrow and sell 100 shares at $175. If AAPL falls to $165, you buy back for $16,500 = $1,000 profit. But if AAPL goes to $185, you LOSE $1,000.\n\nThe option gave you more leverage — but also more risk. The stock investor has unlimited upside. The short seller has unlimited downside.",
+          },
+          {
+            type: "callout",
+            style: "warning",
+            content:
+              "Short selling stocks has UNLIMITED loss potential. If you short a $10 stock and it goes to $100, you lose $90/share. Options limit your loss to the premium paid — which is why many traders prefer buying puts instead of shorting stock.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ls-basics-q1",
+                question: "You buy 1 TSLA $200 call option. What is your directional bias?",
+                options: [
+                  "Bearish — you profit if TSLA falls",
+                  "Bullish — you profit if TSLA rises above $200 + premium",
+                  "Neutral — calls don't have directional bias",
+                  "It depends on the expiration date",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Buying a call option is a bullish trade. You profit if the stock rises above your strike price plus the premium paid. If you paid $5 for the $200 call, your breakeven is $205. Below that at expiration, you lose some or all of the $500 paid.",
+              },
+              {
+                id: "ls-basics-q2",
+                question: "A friend says 'I shorted SPY.' What happened when SPY went up 2% that day?",
+                options: [
+                  "They made 2% profit",
+                  "They lost approximately 2% on their position",
+                  "Nothing — short positions aren't affected by price changes",
+                  "They made 4% because short positions are leveraged",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Short positions profit when the price FALLS. If SPY went UP 2%, the short seller lost approximately 2% on their position — they would need to buy back SPY at a higher price than they sold it.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "long-short-options",
+        title: "Long & Short in Options",
+        subtitle: "Four core positions — long call, short call, long put, short put",
+        estimatedMinutes: 6,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The four option positions**\n\nWith options, you can be long OR short on calls OR puts. This creates four combinations, each with a different directional view:\n\n• **Long Call** — Bullish. You buy the right to purchase stock at the strike. You profit if stock rises.\n• **Short Call** — Bearish (or neutral). You sell someone the right to buy. You profit if stock stays flat or falls.\n• **Long Put** — Bearish. You buy the right to sell stock at the strike. You profit if stock falls.\n• **Short Put** — Bullish (or neutral). You sell someone the right to sell. You profit if stock stays flat or rises.",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "Memory trick: Buying (long) = limited loss, unlimited-ish gain. Selling (short) = limited gain (the premium), potentially large loss. This is why sellers collect premium upfront — they take on the risk.",
+          },
+          {
+            type: "text",
+            content:
+              "**Real Example: NVDA earnings (Feb 2024)**\n\nBefore NVDA's February 2024 earnings, IV was extremely high (IV rank ~90). The stock was at ~$625.\n\n• A **long call** buyer paid $40/contract for a $650 call. After earnings smashed expectations and NVDA jumped to $700+, the call was worth $80+. 100% gain.\n• A **short put** seller collected $30/contract for a $580 put. Since NVDA moved UP, the put expired worthless. The seller kept the $3,000 premium.\n• A **long put** buyer who paid $25 for a $600 put lost everything when the stock rallied hard.\n\nSame event, three very different outcomes based on direction AND whether you were buying or selling.",
+          },
+          {
+            type: "visual",
+            component: "pnl-diagram",
+            props: { strategy: "long-call", showBreakeven: true },
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ls-options-q1",
+                question: "You sell a $150 AAPL put for $3.00. What is your maximum possible gain?",
+                options: [
+                  "Unlimited — the stock could fall to zero",
+                  "$300 per contract — the premium you collected",
+                  "$14,700 — the stock price minus the premium",
+                  "It depends on delta",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "When you sell a put, your maximum gain is the premium collected — in this case $300 per contract ($3.00 × 100 shares). The put can only expire worthless (your best case) or have intrinsic value (your loss). You can't make more than what you collected upfront.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "long-short-when",
+        title: "When to Go Long vs Short",
+        subtitle: "Practical signals for choosing your directional bias",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**Picking your side**\n\nDeciding to go long or short is your most important decision. Get the direction wrong and no amount of smart options selection will save you. Here is a simple framework:\n\n**Go LONG (bullish) when:**\n• Stock is at or near support with evidence of buying\n• RSI is oversold (under 30) and reversing\n• Moving averages are trending upward (SMA50 > SMA200)\n• Positive news catalyst coming (earnings beat, product launch)\n• Sector is in favor (e.g., tech during AI boom)\n\n**Go SHORT (bearish) when:**\n• Stock is at resistance with evidence of selling\n• RSI is overbought (above 70) and reversing\n• Moving averages are trending downward (SMA50 < SMA200)\n• Negative catalyst (earnings miss, regulatory risk)\n• Sector rotation out of the industry",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "The trend is your friend. Most profitable options trades align with the larger trend. Short-term mean reversion trades work too, but they are harder to time. When in doubt, trade WITH the trend.",
+          },
+          {
+            type: "text",
+            content:
+              "**Real Example: META in 2022 vs 2023**\n\n**2022 — Bear case:**\nMETA fell from $340 to $88. The signs were clear: SMA50 crossed below SMA200 (death cross) in January 2022. RSI stayed in oversold territory repeatedly. Anyone buying long calls was crushed. The right trade: buy puts, sell covered calls, or sell calls against existing positions.\n\n**2023 — Bull case:**\nMETA recovered from $88 to $380. The reversal signal: stock bounced off multi-year lows, SMA50 crossed BACK above SMA200 (golden cross) in mid-2023. RSI recovered above 50. Long calls and bull call spreads were highly profitable.",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "You don't need to be right about exact prices. You just need to be right about DIRECTION and TIMING. Options amplify correct directional bets. They also amplify mistakes — which is why risk management matters.",
+          },
+        ],
+      },
+    ],
+  },
+
+  // ─── MODULE 14: MOVING AVERAGES ──────────────────────────────────────
+  {
+    id: "moving-averages",
+    title: "Moving Averages (SMA & EMA)",
+    subtitle: "Trend-following indicators that help you stay on the right side of the market",
+    icon: "📈",
+    color: "violet-500",
+    level: 2,
+    lessons: [
+      {
+        id: "sma-basics",
+        title: "What is a Moving Average?",
+        subtitle: "Smoothing out price noise to see the underlying trend",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The noise problem**\n\nStock prices are noisy. On any given day, a stock might swing 2-3% for no fundamental reason — algorithmic rebalancing, options expiration, index reweighting. This noise makes it hard to see what's actually happening with the underlying trend.\n\n**Moving averages solve this.** They take the average price over a rolling window — the last 20 days, or 50 days, or 200 days — and smooth out the noise. The result is a cleaner line that shows the direction of the trend.",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "SMA (Simple Moving Average): the average closing price over the last N days, updated each day. When price > SMA, the stock is in an uptrend. When price < SMA, it's in a downtrend.",
+          },
+          {
+            type: "visual",
+            component: "sma-chart",
+            props: {},
+          },
+          {
+            type: "text",
+            content:
+              "**The three key SMAs traders watch:**\n\n• **SMA20** — 20-day average. Shows short-term trend. Fast-moving. Used for day trading and swing trades.\n• **SMA50** — 50-day average. Medium-term trend. The most commonly watched institutional level. Bounce off SMA50 = high-probability support.\n• **SMA200** — 200-day average. Long-term trend. The master trend indicator. Stocks above SMA200 = bull territory. Below = bear territory.\n\n**Real example: SPY (S&P 500 ETF)**\n\nSPY's SMA200 at ~$440 in late 2023 was the key dividing line between bull and bear markets. Every dip to the SMA200 in the 2023 rally was a buying opportunity. The SMA200 held as support four separate times before the market broke higher.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "sma-basics-q1",
+                question: "AAPL has been above its SMA200 for 3 months. What does this suggest?",
+                options: [
+                  "AAPL is in a long-term uptrend",
+                  "AAPL is in a long-term downtrend",
+                  "AAPL is exactly at fair value",
+                  "Moving averages don't work on individual stocks",
+                ],
+                correctIndex: 0,
+                explanation:
+                  "When a stock stays above its SMA200 for an extended period, it signals a long-term uptrend. The SMA200 acts as dynamic support — institutional buyers often step in when price dips toward this level. Being above SMA200 is a prerequisite for many institutional buy programs.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "sma-signals",
+        title: "The Golden Cross & Death Cross",
+        subtitle: "The two most powerful SMA crossover signals in trading",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**SMA crossovers as trend change signals**\n\nWhen two moving averages cross, it signals a potential trend change. The most famous crossovers involve the SMA50 and SMA200:\n\n**Golden Cross:** SMA50 crosses ABOVE SMA200\n→ Signals a shift from bear to bull trend\n→ Historically, a strong buy signal for long-term bullish bets\n\n**Death Cross:** SMA50 crosses BELOW SMA200\n→ Signals a shift from bull to bear trend\n→ Warning sign: consider defensive positions or puts",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "Real-world Golden Cross example: SPY's Golden Cross in February 2023, after the 2022 bear market. SMA50 crossed back above SMA200. SPY went from ~$400 to $480+ over the next 12 months. Long calls on SPY after the golden cross were very profitable.",
+          },
+          {
+            type: "text",
+            content:
+              "**EMA vs SMA — what's the difference?**\n\n**EMA (Exponential Moving Average)** gives more weight to recent prices. It reacts faster to price changes than SMA.\n\n• **SMA20**: treats every day in the last 20 equally\n• **EMA20**: recent days count more than older days\n\nFor **options trading**, both work. Most professional options traders use EMA for shorter-term (20-day) signals and SMA for longer-term (50/200-day) trend identification.\n\n**When to use each:**\n• Day/swing trading: EMA12, EMA26 (these are also what power MACD)\n• Position sizing decisions: SMA50, SMA200\n• Identifying overall market regime: SMA200",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "sma-signals-q1",
+                question: "TSLA's SMA50 just crossed below its SMA200. What signal does this send?",
+                options: [
+                  "Golden cross — buy calls aggressively",
+                  "Death cross — be cautious on long positions, consider puts",
+                  "No meaningful signal — crossovers are random",
+                  "A signal to buy puts immediately with max leverage",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "SMA50 crossing below SMA200 is a death cross — a bearish signal suggesting the medium-term trend has turned down relative to the long-term trend. This doesn't mean crash immediately, but it suggests being cautious with bullish positions and potentially favoring put protection or lower delta calls. Note: death crosses sometimes produce whipsaws, so always combine with other signals.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "sma-options",
+        title: "Using SMAs to Time Options Trades",
+        subtitle: "Specific entry rules: when SMA levels create high-probability options setups",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**SMAs as options entry triggers**\n\nMoving averages are not just academic — they generate specific, actionable options trade signals:\n\n**Setup 1: Bounce off SMA50 (high probability)**\nWhen a stock in an uptrend pulls back to its SMA50 and shows signs of bouncing (reversal candle, volume confirmation):\n→ BUY calls 30-45 DTE, delta 0.40-0.60\n→ Example: AAPL at SMA50 in July 2023, bounced from $178 to $195 in 3 weeks\n\n**Setup 2: Bounce off SMA200 (highest conviction)**\nWhen the broader market or a key stock touches SMA200 and holds:\n→ BUY call spreads for defined risk\n→ Example: SPY touching SMA200 in October 2023, then rallying 12% in 6 weeks\n\n**Setup 3: Selling premium near SMA resistance**\nWhen a stock in a downtrend rallies up to its SMA50 (now acting as resistance):\n→ SELL covered calls at or slightly above SMA50\n→ Or SELL call credit spreads at the SMA50 level",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "SMA levels create self-fulfilling prophecies. Millions of traders watch the same levels. Institutional algorithms are programmed to buy at SMA50/SMA200. This shared attention makes these levels more reliable than random price points.",
+          },
+          {
+            type: "callout",
+            style: "warning",
+            content:
+              "SMAs lag price. They are based on past data. During fast breakdowns (like March 2020), the SMA200 doesn't protect you. Always combine SMA signals with RSI, volume, and broader market context.",
+          },
+        ],
+      },
+    ],
+  },
+
+  // ─── MODULE 15: MACD ─────────────────────────────────────────────────
+  {
+    id: "macd",
+    title: "MACD — Momentum Decoded",
+    subtitle: "Catch trend changes before they're obvious using the most popular momentum indicator",
+    icon: "⚡",
+    color: "fuchsia-500",
+    level: 2,
+    lessons: [
+      {
+        id: "macd-basics",
+        title: "What MACD Measures",
+        subtitle: "The gap between two moving averages — and why that gap matters",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**MACD = Moving Average Convergence Divergence**\n\nMACD is built from three components:\n\n• **MACD Line** = EMA12 minus EMA26 (the difference between fast and slow averages)\n• **Signal Line** = 9-period EMA of the MACD line (a smoothed version of MACD)\n• **Histogram** = MACD minus Signal (shows momentum strength visually)\n\nWhen the fast EMA (12-day) is above the slow EMA (26-day), MACD is positive — momentum is bullish. When MACD is negative — momentum is bearish.\n\nThe MAGIC is in the crossover: when MACD crosses above the Signal line, a bullish momentum shift is happening. When MACD crosses below Signal, bearish momentum is building.",
+          },
+          {
+            type: "visual",
+            component: "macd-chart",
+            props: {},
+          },
+          {
+            type: "text",
+            content:
+              "**Real Example: AAPL earnings setup (Q1 2024)**\n\nBefore Apple's February 2024 earnings, MACD was showing bearish divergence — price made a new high but MACD didn't confirm it. This was a warning sign. AAPL dropped 5% after earnings. Traders watching MACD had early warning to reduce call exposure or buy put protection before the event.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "macd-basics-q1",
+                question: "The MACD line just crossed ABOVE the signal line from below. What does this typically indicate?",
+                options: [
+                  "Bearish momentum building — consider puts",
+                  "Bullish momentum shift — consider calls",
+                  "Volatility is about to spike — buy straddles",
+                  "The stock is at fair value",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "When the MACD line crosses above the signal line, it means the short-term average (EMA12) is accelerating faster than the longer-term signal. This is a bullish momentum signal — upward price momentum is building. Many traders use this as a trigger to enter bullish positions or buy calls.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "macd-options",
+        title: "MACD for Options Entry & Exit",
+        subtitle: "Translate MACD signals into specific options trade decisions",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**MACD → Options trades**\n\n**Bullish MACD cross (MACD > Signal, turning positive):**\n→ Buy calls 30-45 DTE, delta 0.45-0.60\n→ Example: SPY MACD bullish cross in January 2023 → rally from $380 to $420\n\n**Bearish MACD cross (MACD < Signal, turning negative):**\n→ Buy puts OR sell covered calls against existing positions\n→ Example: QQQ MACD bearish cross in July 2023 signaled a 7% pullback\n\n**MACD Divergence (most powerful signal):**\n→ Price makes new high, MACD does NOT → bearish divergence → fade the move\n→ Price makes new low, MACD does NOT → bullish divergence → look for reversal\n\n**Histogram expanding:**\n→ Momentum strengthening → trend continuation likely → let winning trades run\n\n**Histogram shrinking/flipping:**\n→ Momentum fading → consider taking profits or reducing position size",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "MACD works best on daily charts for options trading. Using MACD on 5-minute charts produces too many false signals. For longer-dated options (45-90 DTE), weekly MACD can confirm the bigger trend direction.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "macd-options-q1",
+                question: "TSLA's price just hit a 3-month high, but MACD is making a lower high than its previous peak. What's this called, and what should you consider?",
+                options: [
+                  "A golden cross — time to buy more calls",
+                  "Bearish MACD divergence — the rally may be running out of steam, consider reducing call exposure",
+                  "A death cross — close all positions immediately",
+                  "A bullish signal — MACD always lags price",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "This is classic bearish MACD divergence — price is making new highs but momentum (MACD) is not confirming the move. This often precedes a reversal or at minimum a slowdown. It doesn't mean sell everything immediately, but it's a warning to reduce risk: tighten stops, take partial profits on calls, or add some put protection.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ─── MODULE 16: BOLLINGER BANDS ───────────────────────────────────────
+  {
+    id: "bollinger-bands",
+    title: "Bollinger Bands",
+    subtitle: "Volatility-based bands that reveal when options are cheap or expensive",
+    icon: "〰️",
+    color: "pink-500",
+    level: 2,
+    lessons: [
+      {
+        id: "bb-basics",
+        title: "Reading Bollinger Bands",
+        subtitle: "Price channels built from standard deviation — a visual IV gauge",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**What are Bollinger Bands?**\n\nBollinger Bands are three lines plotted on a price chart:\n\n• **Middle Band** = SMA20 (20-day simple moving average)\n• **Upper Band** = SMA20 + (2 × standard deviation)\n• **Lower Band** = SMA20 − (2 × standard deviation)\n\nThe bands expand when volatility is high (price swings are large) and contract when volatility is low (price is range-bound). Statistically, price stays within the bands about 95% of the time.\n\n**The key insight for options traders:** Band width = implied volatility proxy. Wide bands = expensive options. Narrow bands (squeeze) = cheap options.",
+          },
+          {
+            type: "visual",
+            component: "bollinger-bands-chart",
+            props: {},
+          },
+          {
+            type: "text",
+            content:
+              "**Real Example: AAPL Bollinger Squeeze before iPhone launches**\n\nBefore major Apple events (iPhone announcements, WWDC), AAPL often enters a Bollinger Squeeze — the bands tighten as price consolidates. This has historically preceded a significant move in either direction. Options traders who recognize the squeeze can buy straddles or strangles (bets on a big move) before the bands expand.\n\n**Example:** August 2023, AAPL Bollinger Bands squeezed for 3 weeks before the iPhone 15 event. After the announcement, AAPL moved 4-6%. A straddle purchased during the squeeze (when IV was low) profited from the expansion.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "bb-basics-q1",
+                question: "Bollinger Bands on NVDA have been very wide for 2 weeks (2x their normal width). What does this tell you about options pricing?",
+                options: [
+                  "Options are cheap — good time to buy calls or puts",
+                  "Options are expensive — IV is elevated, better to sell premium",
+                  "Band width doesn't correlate with options pricing",
+                  "NVDA stock is overvalued and will crash",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "Wide Bollinger Bands indicate high realized volatility, which typically means implied volatility (and therefore options prices) are also elevated. When options are expensive, selling premium (covered calls, cash-secured puts, iron condors) is more attractive than buying. You collect more premium and benefit from IV mean reversion.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "bb-options",
+        title: "Bollinger Bands + Options Strategy",
+        subtitle: "Squeeze = buy options. Wide bands = sell options. Here's how.",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**Connecting Bollinger Bands to options strategy**\n\n**Bollinger Squeeze → BUY options (straddle, strangle, or directional):**\n• Bands narrow to historically low width\n• Low IV = cheap options\n• A big move is coming (you don't know which direction)\n• Strategy: Buy a straddle (ATM call + ATM put) or wait for a directional signal then buy calls/puts\n• Example: SPY squeeze in October 2023 before the Fed meeting → straddle captured a 3% move\n\n**Wide Bands → SELL options:**\n• Bands at historically high width\n• High IV = expensive options (you collect more premium)\n• Stock is likely to mean-revert (slow down its moves)\n• Strategy: Sell covered calls, cash-secured puts, or iron condors\n• Example: After TSLA earnings 2023, IV spiked, bands expanded. IV crush the next day killed option buyers but rewarded sellers.\n\n**Band Touches:**\n• Price touches upper band repeatedly without closing above = resistance forming → consider bearish positions\n• Price touches lower band repeatedly without closing below = support forming → consider bullish positions",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "Bollinger Bands are the visual equivalent of IV rank. Squeeze = low IV rank (buy options). Wide bands = high IV rank (sell options). When you understand this connection, you're thinking like a professional options trader.",
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "The Bollinger Squeeze Signal: When the bands are at their narrowest in 6 months AND you see a directional breakout (confirmed by RSI or MACD), that's a high-conviction entry. Buy options in the direction of the breakout.",
+          },
+        ],
+      },
+    ],
+  },
+
+  // ─── MODULE 17: IV RANK ───────────────────────────────────────────────
+  {
+    id: "iv-rank",
+    title: "IV Rank — When to Buy vs Sell",
+    subtitle: "The single most important number for deciding your options strategy",
+    icon: "🎯",
+    color: "green-500",
+    level: 2,
+    lessons: [
+      {
+        id: "iv-rank-basics",
+        title: "Understanding IV Rank",
+        subtitle: "Are options cheap or expensive right now? IV rank tells you in one number.",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**Implied Volatility vs IV Rank**\n\nImplied Volatility (IV) tells you the market's expected move. But a 40% IV on TSLA might be low for TSLA while the same 40% IV on AAPL might be very high for AAPL.\n\nThis is why **IV Rank** exists. IV Rank compares today's IV to its own history over the past 52 weeks:\n\n**IV Rank = (Current IV − 52-week low IV) / (52-week high IV − 52-week low IV) × 100**\n\nResult: 0-100 scale.\n• **IV Rank 0-25**: Options are historically CHEAP → Buy options\n• **IV Rank 25-75**: Options are fairly priced → Depends on direction\n• **IV Rank 75-100**: Options are historically EXPENSIVE → Sell options",
+          },
+          {
+            type: "interactive",
+            component: "iv-rank-gauge",
+            props: {},
+          },
+          {
+            type: "text",
+            content:
+              "**Real Examples:**\n\n• **TSLA, August 2023 (IV Rank ~82):** TSLA had a big earnings miss and the stock crashed. IV spiked to multi-month highs. IV rank hit 82. Selling puts (premium selling) was the right play as the stock stabilized and IV crushed back to normal. A $250 put sold at $12/contract was worth $3 a week later (75% profit in 7 days).\n\n• **AAPL, October 2023 (IV Rank ~18):** Before a product announcement, AAPL's IV was historically low. IV rank was just 18. Buying calls was the right play since options were cheap. A $175 call for $2.50 went to $8 in 10 days (220% return) as both the stock moved and IV expanded.\n\n• **SPY, Flat market October 2024 (IV Rank ~45):** SPY's IV rank at 45 is neutral territory. No strong edge for buyers or sellers. Focus on directional conviction rather than IV edge.",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "IV Rank is the most important number you look at before placing an options trade. Low IV rank → buy options (premium is cheap). High IV rank → sell options (premium is rich, and IV tends to mean-revert).",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ivr-basics-q1",
+                question: "NVDA has an IV Rank of 88 today after a big earnings move. Which strategy makes more sense?",
+                options: [
+                  "Buy calls — the stock just moved big, more upside coming",
+                  "Sell a cash-secured put — IV is historically high, premium is rich",
+                  "Buy a straddle — high IV means more movement ahead",
+                  "Avoid options entirely when IV rank is high",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "With IV Rank at 88, options are historically expensive. Implied volatility tends to mean-revert (fall back to average levels) after spikes, causing IV crush. Selling premium (like a cash-secured put) takes advantage of this: you collect inflated premium and profit as IV drops back to normal. Buying options when IV rank is high is usually a losing strategy because even if the stock moves right, the IV crush can offset your gains.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "iv-rank-strategy",
+        title: "Building Strategy Around IV Rank",
+        subtitle: "The complete buy-vs-sell decision tree using IV rank as your anchor",
+        estimatedMinutes: 5,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The IV-Strategy Matrix**\n\nCombine IV Rank with your directional view to pick the right strategy:\n\n**Bullish + Low IV Rank (<30):**\n→ Buy calls or bull call spreads\n→ Options are cheap, limited risk on defined cost\n→ Best case: stock rises AND IV expands (double profit)\n\n**Bullish + High IV Rank (>70):**\n→ Sell cash-secured puts OR sell put spreads\n→ Collect rich premium, benefit from IV crush\n→ You want the stock to stay flat or go higher\n\n**Bearish + Low IV Rank (<30):**\n→ Buy puts\n→ Options are cheap, limited cost to bet on decline\n\n**Bearish + High IV Rank (>70):**\n→ Sell covered calls OR sell call spreads\n→ Collect rich premium from elevated IV\n\n**Neutral + High IV Rank (>70):**\n→ Iron condor or strangle\n→ Profit from IV crush + range-bound stock movement",
+          },
+          {
+            type: "callout",
+            style: "warning",
+            content:
+              "IV Rank doesn't tell you direction. A stock can have IV Rank 90 and still move 30% in one direction. Always combine IV rank with directional analysis (SMA, RSI, support/resistance) before placing a trade.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ivr-strategy-q1",
+                question: "You're bullish on META and IV Rank is 15 (historically cheap). Which trade structure is most appropriate?",
+                options: [
+                  "Sell a covered call — collect premium while bullish",
+                  "Buy a call or bull call spread — options are cheap, limited risk with defined upside",
+                  "Sell a put spread — high premium collection opportunity",
+                  "Buy an iron condor — capture the range",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "With low IV Rank (15), options are historically cheap. When you're bullish AND options are cheap, buying calls or bull call spreads is the right play. You're getting levered upside exposure for a low price. Selling premium (covered calls, put spreads) makes sense when IV is HIGH — not when it's low, because you'd be collecting minimal premium for the risk taken.",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ─── MODULE 18: OPTIONS ENTRY FRAMEWORK ──────────────────────────────
+  {
+    id: "entry-framework",
+    title: "The Options Entry Framework",
+    subtitle: "Combine RSI, moving averages, IV rank, and P&L structure into one decision system",
+    icon: "🗺️",
+    color: "red-500",
+    level: 2,
+    lessons: [
+      {
+        id: "ef-signals",
+        title: "Signal Stacking — When Stars Align",
+        subtitle: "The best trades have multiple indicators pointing the same direction",
+        estimatedMinutes: 6,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The signal stacking approach**\n\nNo single indicator is reliable in isolation. RSI can stay overbought for weeks. SMA50 bounces can fail. MACD crossovers produce false signals. The edge comes from **stacking multiple signals in the same direction**.\n\n**A high-conviction bullish setup requires 3+ signals:**\n1. Stock above SMA200 (in bull territory) ✓\n2. RSI recovering from below 40, now rising ✓\n3. MACD turning bullish (crossover or positive histogram) ✓\n4. Price at or near support (SMA50, prior resistance turned support) ✓\n5. IV Rank low (<30) — options are cheap ✓\n\nWhen 4-5 of these align, you have a high-probability trade setup.\n\n**Real Example: SPY October 2023**\nSPY touched SMA200 → RSI was at 38 (recovering from oversold) → MACD histogram went from negative to positive → IV rank at 28 (options cheap). All four signals aligned. SPY rallied 12% over the next 6 weeks.",
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "Signal stacking is not about waiting for perfection. 3 of 5 signals is usually enough. 4 of 5 is exceptional. 5 of 5 is rare and you should size up when it happens.",
+          },
+          {
+            type: "text",
+            content:
+              "**A high-conviction bearish setup requires 3+ signals:**\n1. Stock below SMA200 (in bear territory) ✓\n2. RSI above 65 and rolling over (overbought and fading) ✓\n3. MACD bearish crossover or negative histogram expanding ✓\n4. Price at or near resistance (SMA50, prior support turned resistance) ✓\n5. IV Rank low (<30) — puts are cheap ✓\n\n**Real Example: TSLA early 2022**\nTSLA broke below SMA200 → RSI bounced to 65 at the SMA200 (resistance) and rolled → MACD crossed below signal → IV rank at 22 (puts cheap). The signal stack said: buy puts. TSLA fell from $800 to $300 over the next 12 months.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ef-signals-q1",
+                question: "A stock is above SMA200, RSI is at 32 (recovering), MACD just crossed bullish, and IV rank is 20. What's the quality of this setup?",
+                options: [
+                  "Poor — RSI at 32 means the stock is collapsing",
+                  "Moderate — only one signal is bullish",
+                  "High-conviction bullish — 4 signals are stacked in the same direction",
+                  "Cannot determine quality without knowing the stock name",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "This is a high-conviction bullish setup with 4 signals aligned: (1) above SMA200 = bull territory, (2) RSI at 32 recovering from oversold = mean reversion buy signal, (3) MACD bullish crossover = momentum confirmation, (4) low IV rank = cheap options. This is exactly the type of setup to size up on with long calls or bull call spreads.",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "ef-decision-tree",
+        title: "The Decision Tree",
+        subtitle: "A step-by-step system for choosing the right trade every time",
+        estimatedMinutes: 7,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**The 5-question trade decision framework**\n\nBefore placing any options trade, answer these five questions in order:\n\n**Q1: What is the trend? (SMA200)**\n→ Stock above SMA200 = bull bias\n→ Stock below SMA200 = bear bias\n→ Stock at SMA200 = wait for resolution\n\n**Q2: What is momentum doing? (MACD)**\n→ MACD positive and rising = bull momentum\n→ MACD negative and falling = bear momentum\n→ MACD flat/crossover zone = be cautious\n\n**Q3: What is the near-term entry quality? (RSI)**\n→ RSI < 35 in a bull trend = high-quality long entry (oversold dip)\n→ RSI > 65 in a bear trend = high-quality short entry (overbought bounce)\n→ RSI 40-60 = mid-range, momentum direction matters more\n\n**Q4: Are we at a key level? (Support/Resistance)**\n→ At support in bull trend = buy signal\n→ At resistance in bear trend = sell signal\n→ No nearby level = wait\n\n**Q5: Are options cheap or expensive? (IV Rank)**\n→ IV Rank < 30 = buy options (calls or puts)\n→ IV Rank > 70 = sell options (covered calls, puts, condors)\n→ IV Rank 30-70 = use defined-risk spreads",
+          },
+          {
+            type: "interactive",
+            component: "decision-tree-widget",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "Write down your answers to these 5 questions before every trade. If you can't answer at least 4 of them clearly, you don't have enough conviction. Wait for a better setup.",
+          },
+        ],
+      },
+      {
+        id: "ef-real-trades",
+        title: "Real Trade Walkthroughs",
+        subtitle: "Three complete trade examples using the full framework — SPY, NVDA, TSLA",
+        estimatedMinutes: 8,
+        sections: [
+          {
+            type: "text",
+            content:
+              "**Trade 1: SPY Bull Call Spread (October 2023)**\n\nQ1 Trend: SPY touched SMA200 and held → bullish signal ✓\nQ2 Momentum: MACD histogram turned green after being negative for 3 weeks ✓\nQ3 Entry quality: RSI at 36, recovering from oversold → strong dip buy ✓\nQ4 Level: SMA200 = strong multi-year support ✓\nQ5 IV Rank: 28 (cheap options) → buy options, not sell ✓\n\n**Trade:** Buy SPY $430/$440 bull call spread (30 DTE) for $2.80\n**Result:** SPY rallied from $418 to $455 in 6 weeks. Spread expired worth $10. Return: 257%.\n\n---\n\n**Trade 2: NVDA Covered Call (February 2024)**\n\nQ1 Trend: NVDA above SMA200, strong uptrend ✓\nQ2 Momentum: MACD positive but histogram shrinking → momentum slowing\nQ3 Entry quality: RSI at 78 (overbought) → stock due for pause\nQ4 Level: NVDA at prior resistance at $650\nQ5 IV Rank: 75 (expensive options) → sell options ✓\n\n**Trade:** Sell NVDA $700 covered call (21 DTE) for $18/contract\n**Result:** NVDA stayed below $700 for 3 weeks. Call expired worthless. $1,800 premium collected per 100 shares.\n\n---\n\n**Trade 3: TSLA Long Put (January 2024)**\n\nQ1 Trend: TSLA below SMA200 after failing to reclaim it → bearish ✓\nQ2 Momentum: MACD negative and accelerating downward ✓\nQ3 Entry quality: RSI at 62 (bounced to resistance zone, rolling over) ✓\nQ4 Level: TSLA at SMA50 which is below SMA200 → resistance, not support ✓\nQ5 IV Rank: 22 (cheap options) → buy puts ✓\n\n**Trade:** Buy TSLA $220 put (45 DTE) for $8.50\n**Result:** TSLA fell from $250 to $180 over 5 weeks. Put went from $8.50 to $42. Return: 394%.",
+          },
+          {
+            type: "callout",
+            style: "warning",
+            content:
+              "These are historical examples. Past performance doesn't guarantee future results. The framework improves your odds, but no system wins 100% of the time. Use defined risk trades (spreads, long options) to limit downside on trades that don't work out.",
+          },
+          {
+            type: "quiz",
+            questions: [
+              {
+                id: "ef-trades-q1",
+                question: "You're analyzing QQQ: above SMA200, RSI at 45, MACD neutral, no nearby support/resistance, IV rank at 55. What should you do?",
+                options: [
+                  "Buy calls immediately — QQQ is in a bull trend",
+                  "Sell puts — IV rank above 50 is high enough",
+                  "Wait — only 1-2 signals are present, not enough conviction for a trade",
+                  "Buy an iron condor — neutral RSI means range-bound",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "This setup has only one clear signal (above SMA200). RSI is neutral (45), MACD is neutral, there's no key level, and IV rank at 55 doesn't clearly favor buyers or sellers. The best trade is no trade — waiting for more signals to align. Forcing a trade in a low-signal environment is how traders lose money to commissions and bad timing. Patience is a skill.",
+              },
+              {
+                id: "ef-trades-q2",
+                question: "AAPL reports earnings next week. IV rank is currently 82. You're mildly bullish. What's the best strategy?",
+                options: [
+                  "Buy calls — you're bullish so calls make sense",
+                  "Sell a put spread (bull put spread) — collect rich premium, profit if AAPL stays flat or rises",
+                  "Buy a straddle — earnings = big move",
+                  "Do nothing — never trade during earnings",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "With IV rank at 82, options are very expensive — premium sellers have the edge. You're mildly bullish, so a bull put spread (selling a put, buying a lower-strike put for protection) lets you: (1) collect rich premium from the high IV, (2) profit if AAPL goes up OR stays flat, and (3) benefit from IV crush after earnings. Buying calls at IV rank 82 is dangerous — even if you're right about direction, IV crush after earnings can wipe out your gains.",
               },
             ],
           },
