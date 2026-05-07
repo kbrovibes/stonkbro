@@ -124,6 +124,8 @@ export async function getRecentScans(limit = 10): Promise<Array<{
   leaps_candidates?: LeapsCandidate[];
   delta: ScanDelta | null;
   claude_analysis: string | null;
+  claude_provider: string | null;
+  claude_model: string | null;
   status: string;
 }>> {
   const supabase = supabaseAdmin;

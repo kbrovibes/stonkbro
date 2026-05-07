@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const [subscribing, setSubscribing] = useState(false);
   const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
+  const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {

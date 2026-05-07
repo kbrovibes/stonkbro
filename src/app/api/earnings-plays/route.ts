@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase-server";
 import { getQuotes, getAllOptionsChains } from "@/lib/market/yahoo";
 import { getEarningsCalendar } from "@/lib/market/earnings";
 import { analyzeEarningsIV, buildEarningsPlayPrompt } from "@/lib/options/earnings-plays";

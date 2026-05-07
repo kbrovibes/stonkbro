@@ -40,6 +40,8 @@ type ResearchEntry = {
   error?: string;
   dismissed: Set<number>;
   accepted: Set<number>;
+  aiProvider?: string;
+  aiModel?: string;
 };
 
 function strategyColor(strategy: string) {
@@ -608,6 +610,7 @@ export default function ResearchPage() {
   }, []);
 
   const lastCompleted = [...entries].reverse().find(e => e.status === "completed");
+  const hasRunning = entries.some((e) => e.status === "pending" || e.status === "running");
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">

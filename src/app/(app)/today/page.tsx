@@ -39,6 +39,7 @@ interface ThemeResult {
   picks: Pick[];
   generatedAt: string;
   expiresAt: string;
+  model?: string;
 }
 
 
@@ -257,7 +258,7 @@ export default function TodayPage() {
 
   const anyLoading = moversLoading || recsLoading || flowLoading;
 
-  const firstRec = recs[0];
+  const firstRec = recommendations[0];
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 pb-24">

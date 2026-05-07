@@ -67,6 +67,9 @@ export async function POST(request: Request) {
 
     const quoteContext = formatQuoteContext(quotes);
 
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const prompt = `You are an elite growth investor and options strategist hunting for stocks with 10x potential. Analyze these stocks and find the most explosive opportunities.
 
 SECTOR: ${sectorName}
@@ -155,8 +158,6 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
 
     // Save to Supabase
     let reportId: string | null = null;
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       try {
         const saved = await saveResearchReport(

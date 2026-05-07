@@ -14,6 +14,7 @@ export type TradeSuggestion = {
 export type ResearchResult = {
   report: string;
   provider?: string;
+  model?: string;
   fallback?: boolean;
   suggestions: TradeSuggestion[];
 };

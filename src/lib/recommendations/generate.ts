@@ -28,6 +28,7 @@ export interface ThemeResult {
   picks: Pick[];
   generatedAt: string;
   expiresAt: string;
+  model?: string;
 }
 
 export interface RecommendationBatch {
@@ -68,7 +69,7 @@ async function generateForTheme(
   condensedSignals: string,
   today: string,
   userId?: string,
-): Promise<Pick[]> {
+): Promise<{ picks: Pick[]; provider: string; model: string }> {
   const promptTemplate = loadPrompt(theme);
   const count = theme === "top_csp_picks" ? 10 : 5;
 
@@ -88,12 +89,12 @@ Now analyze these signals and pick your best ${count} ${theme.replace("_", " ")}
   });
 
   const jsonMatch = result.text.match(/```json\s*([\s\S]*?)```/);
-  if (!jsonMatch) return [];
+  if (!jsonMatch) return { picks: [], provider: result.provider, model: result.model };
 
   try {
-    return JSON.parse(jsonMatch[1]);
+    return { picks: JSON.parse(jsonMatch[1]), provider: result.provider, model: result.model };
   } catch {
-    return [];
+    return { picks: [], provider: result.provider, model: result.model };
   }
 }
 
