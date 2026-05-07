@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+
+type Tab = "long-stock" | "short-stock" | "long-call" | "long-put";
+
+interface ScenarioData {
+  upLabel: string;
+  upPct: string;
+  upColor: "green" | "red";
+  downLabel: string;
+  downPct: string;
+  downColor: "green" | "red";
+  note?: string;
+}
+
+const SCENARIOS: Record<Tab, ScenarioData> = {
+  "long-stock": {
+    upLabel: "+$17.50/share",
+    upPct: "+10%",
+    upColor: "green",
+    downLabel: "-$17.50/share",
+    downPct: "-10%",
+    downColor: "red",
+  },
+  "short-stock": {
+    upLabel: "-$17.50/share",
+    upPct: "-10% (loss)",
+    upColor: "red",
+    downLabel: "+$17.50/share",
+    downPct: "+10% (gain)",
+    downColor: "green",
+  },
+  "long-call": {
+    upLabel: "$10 - $3.50 = +$6.50",
+    upPct: "+186% on premium",
+    upColor: "green",
+    downLabel: "-$3.50 (max loss)",
+    downPct: "-100% on premium",
+    downColor: "red",
+    note: "$175 strike call, $3.50 premium",
+  },
+  "long-put": {
+    upLabel: "-$3.00 (max loss)",
+    upPct: "-100% on premium",
+    upColor: "red",
+    downLabel: "$10 - $3.00 = +$7.00",
+    downPct: "+233% on premium",
+    downColor: "green",
+    note: "$175 strike put, $3.00 premium",
+  },
+};
+
+const TAB_LABELS: { id: Tab; label: string }[] = [
+  { id: "long-stock", label: "Long Stock" },
+  { id: "short-stock", label: "Short Stock" },
+  { id: "long-call", label: "Long Call" },
+  { id: "long-put", label: "Long Put" },
+];
+
+const colorClasses = {
+  green: {
+    text: "text-emerald-600",
+    pct: "text-emerald-500",
+    bg: "bg-emerald-50 border-emerald-200",
+    badge: "bg-emerald-100 text-emerald-700",
+  },
+  red: {
+    text: "text-red-600",
+    pct: "text-red-500",
+    bg: "bg-red-50 border-red-200",
+    badge: "bg-red-100 text-red-700",
+  },
+};
+
+// Simple arrow SVG showing price movement direction
+function PriceArrow({ direction }: { direction: "up" | "down" }) {
+  const isUp = direction === "up";
+  return (
+    <svg viewBox="0 0 80 56" className="w-full h-14" preserveAspectRatio="xMidYMid meet">
+      {/* Starting price dot */}
+      <circle cx="12" cy="28" r="4" fill="#6b7280" />
+      <text x="12" y="48" textAnchor="middle" fontSize="9" fill="#9ca3af">$175</text>
+
+      {/* Arrow line */}
+      <line
+        x1="16" y1="28"
+        x2={isUp ? "60" : "60"}
+        y2={isUp ? "10" : "46"}
+        stroke={isUp ? "#10b981" : "#ef4444"}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+
+      {/* Arrowhead */}
+      {isUp ? (
+        <polygon points="60,4 55,14 65,14" fill="#10b981" />
+      ) : (
+        <polygon points="60,52 55,42 65,42" fill="#ef4444" />
+      )}
+
+      {/* End price */}
+      <circle cx="60" cy={isUp ? "10" : "46"} r="4" fill={isUp ? "#10b981" : "#ef4444"} />
+      <text x="60" y={isUp ? "28" : "36"} textAnchor="middle" fontSize="9" fill={isUp ? "#059669" : "#dc2626"}>
+        {isUp ? "$192.50" : "$157.50"}
+      </text>
+    </svg>
+  );
+}
+
+export default function LongShortDiagram(_props: Record<string, unknown>) {
+  const [activeTab, setActiveTab] = useState<Tab>("long-stock");
+  const scenario = SCENARIOS[activeTab];
+  const upColors = colorClasses[scenario.upColor];
+  const downColors = colorClasses[scenario.downColor];
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      {/* Header */}
+      <div className="mb-3">
+        <h3 className="text-sm font-bold text-gray-900">Long vs Short — AAPL Example</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Starting price: $175.00 &nbsp;|&nbsp; Move: ±10%</p>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 mb-4 p-1 bg-gray-100 rounded-lg">
+        {TAB_LABELS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              activeTab === id
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Note for options tabs */}
+      {scenario.note && (
+        <p className="text-xs text-gray-400 text-center mb-3 italic">{scenario.note}</p>
+      )}
+
+      {/* Scenario panels */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Up scenario */}
+        <div className={`rounded-lg border p-3 ${upColors.bg}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-gray-600">AAPL goes UP</span>
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${upColors.badge}`}>+10%</span>
+          </div>
+          <PriceArrow direction="up" />
+          <div className="mt-2 text-center">
+            <p className={`text-sm font-bold ${upColors.text}`}>{scenario.upLabel}</p>
+            <p className={`text-xs font-semibold mt-0.5 ${upColors.pct}`}>{scenario.upPct}</p>
+          </div>
+        </div>
+
+        {/* Down scenario */}
+        <div className={`rounded-lg border p-3 ${downColors.bg}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-gray-600">AAPL goes DOWN</span>
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${downColors.badge}`}>-10%</span>
+          </div>
+          <PriceArrow direction="down" />
+          <div className="mt-2 text-center">
+            <p className={`text-sm font-bold ${downColors.text}`}>{scenario.downLabel}</p>
+            <p className={`text-xs font-semibold mt-0.5 ${downColors.pct}`}>{scenario.downPct}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick reference row */}
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-center">
+        <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5">
+          <span className="font-semibold text-gray-700">You profit when</span>
+          <br />
+          <span className={activeTab.startsWith("long") ? "text-emerald-600 font-bold" : "text-red-600 font-bold"}>
+            {activeTab === "long-stock" && "price rises"}
+            {activeTab === "short-stock" && "price falls"}
+            {activeTab === "long-call" && "price rises past $178.50"}
+            {activeTab === "long-put" && "price falls past $172.00"}
+          </span>
+        </div>
+        <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5">
+          <span className="font-semibold text-gray-700">Max loss</span>
+          <br />
+          <span className="text-red-600 font-bold">
+            {activeTab === "long-stock" && "100% (to $0)"}
+            {activeTab === "short-stock" && "Unlimited"}
+            {activeTab === "long-call" && "$3.50/contract"}
+            {activeTab === "long-put" && "$3.00/contract"}
+          </span>
+        </div>
+      </div>
+
+      {/* Key insight callout */}
+      <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+        <p className="text-xs text-blue-700 font-medium text-center">
+          Key insight: Long = you want it to go up. Short = you want it to go down.
+        </p>
+      </div>
+    </div>
+  );
+}

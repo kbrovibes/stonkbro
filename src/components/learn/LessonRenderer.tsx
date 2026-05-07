@@ -27,6 +27,12 @@ const SupportResistanceChart = lazy(() => import("./SupportResistanceChart"));
 const RSIChart = lazy(() => import("./RSIChart"));
 const CandlestickChart = lazy(() => import("./CandlestickChart"));
 const TAGreeksChart = lazy(() => import("./TAGreeksChart"));
+const LongShortDiagram = lazy(() => import("./LongShortDiagram"));
+const SMAChart = lazy(() => import("./SMAChart"));
+const MACDChart = lazy(() => import("./MACDChart"));
+const BollingerBandsChart = lazy(() => import("./BollingerBandsChart"));
+const IVRankGauge = lazy(() => import("./IVRankGauge"));
+const DecisionTreeWidget = lazy(() => import("./DecisionTreeWidget"));
 
 type LazyComp = React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>;
 
@@ -43,6 +49,12 @@ const componentMap: Record<string, LazyComp> = {
   "rsi-chart": RSIChart as LazyComp,
   "candlestick-chart": CandlestickChart as LazyComp,
   "ta-greeks-chart": TAGreeksChart as LazyComp,
+  "long-short-diagram": LongShortDiagram as LazyComp,
+  "sma-chart": SMAChart as LazyComp,
+  "macd-chart": MACDChart as LazyComp,
+  "bollinger-bands-chart": BollingerBandsChart as LazyComp,
+  "iv-rank-gauge": IVRankGauge as LazyComp,
+  "decision-tree-widget": DecisionTreeWidget as LazyComp,
   // interactive components — map to existing widgets
   "strike-slider": DeltaCurve as LazyComp,
   "dte-slider": GammaCurve as LazyComp,
