@@ -15,72 +15,51 @@ export type EarningsEvent = {
 };
 
 // ---------------------------------------------------------------------------
-// Tradier beta endpoint
+// Alpha Vantage EARNINGS_CALENDAR (free, no key required for demo tier)
+// Returns upcoming earnings for the broad market as CSV
 // ---------------------------------------------------------------------------
 
-import { getTradierBase, tradierFetch } from "./tradier-client";
-
-async function fetchFromTradier(
+async function fetchFromAlphaVantage(
   symbols: string[]
 ): Promise<EarningsEvent[] | null> {
   try {
-    // Earnings uses the beta endpoint (not v1), so construct full URL
-    const res = await tradierFetch(
-      `${getTradierBase()}/beta/markets/fundamentals/calendars?symbols=${symbols.join(",")}`,
-      { revalidate: 3600 }
+    const apiKey = process.env.ALPHA_VANTAGE_KEY ?? "demo";
+    const res = await fetch(
+      `https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=${apiKey}`,
+      { next: { revalidate: 3600 } }
     );
-    if (!res) return null;
+    if (!res.ok) return null;
 
-    const data = await res.json();
-    if (!data || !Array.isArray(data)) return null;
+    const text = await res.text();
+    const lines = text.trim().split("\n");
+    // header: symbol,name,reportDate,fiscalDateEnding,estimate,currency
+    if (lines.length < 2) return null;
 
+    const symbolSet = new Set(symbols.map((s) => s.toUpperCase()));
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const events: EarningsEvent[] = [];
 
-    for (const item of data) {
-      const tables = item?.results;
-      if (!tables) continue;
+    for (const line of lines.slice(1)) {
+      const [symbol, name, reportDate] = line.split(",");
+      const sym = symbol?.trim().toUpperCase();
+      if (!sym || !reportDate?.trim()) continue;
+      if (!symbolSet.has(sym)) continue;
 
-      // Tradier wraps calendar events in an array
-      const calendarEntries = Array.isArray(tables) ? tables : [tables];
-      for (const entry of calendarEntries) {
-        const calendars = entry?.tables?.corporate_calendars;
-        if (!calendars) continue;
+      const d = new Date(reportDate.trim());
+      if (isNaN(d.getTime())) continue;
 
-        const cals = Array.isArray(calendars) ? calendars : [calendars];
-        for (const cal of cals) {
-          if (cal.event !== "earnings") continue;
+      const daysUntil = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntil < 0 || daysUntil > 60) continue;
 
-          const earningsDate = cal.begin_date_time?.split("T")[0];
-          if (!earningsDate) continue;
-
-          const d = new Date(earningsDate);
-          const daysUntil = Math.ceil(
-            (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-          );
-
-          // Only future earnings (within 60 days)
-          if (daysUntil < 0 || daysUntil > 60) continue;
-
-          const timing = cal.time_zone
-            ? cal.time_zone.includes("BMO")
-              ? "before_market"
-              : cal.time_zone.includes("AMC")
-                ? "after_market"
-                : "unknown"
-            : "unknown";
-
-          events.push({
-            symbol: item.request?.split(",")[0] ?? "",
-            name: "",
-            earningsDate,
-            daysUntil,
-            timing,
-            category: categorize(daysUntil, now),
-          });
-        }
-      }
+      events.push({
+        symbol: sym,
+        name: name?.trim() || TICKER_NAMES[sym] || sym,
+        earningsDate: reportDate.trim(),
+        daysUntil,
+        timing: "unknown", // Alpha Vantage doesn't provide BMO/AMC
+        category: categorize(daysUntil, now),
+      });
     }
 
     return events.length > 0 ? events : null;
@@ -325,13 +304,12 @@ function categorize(
 export async function getEarningsCalendar(
   symbols: string[]
 ): Promise<EarningsEvent[]> {
-  // Try Tradier first
-  const tradierResult = await fetchFromTradier(symbols);
-  if (tradierResult && tradierResult.length > 0) {
-    // Fill in names
-    return tradierResult.map((e) => ({
+  // Try Alpha Vantage live data first
+  const liveResult = await fetchFromAlphaVantage(symbols);
+  if (liveResult && liveResult.length > 0) {
+    return liveResult.map((e) => ({
       ...e,
-      name: TICKER_NAMES[e.symbol] || e.symbol,
+      name: TICKER_NAMES[e.symbol] || e.name || e.symbol,
     }));
   }
 
