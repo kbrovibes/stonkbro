@@ -176,7 +176,7 @@ export async function sendMorningBriefing(to: string, data: MorningBriefingData)
     : "☀️ stonkbro morning briefing";
 
   await getResend().emails.send({
-    from: "stonkbro <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM ?? "stonkbro <onboarding@resend.dev>",
     to,
     subject,
     html,

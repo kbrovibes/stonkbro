@@ -40,7 +40,7 @@ export async function POST() {
   try {
     const resend = new Resend(apiKey);
     const result = await resend.emails.send({
-      from: "stonkbro <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM ?? "stonkbro <onboarding@resend.dev>",
       to: email,
       subject: "stonkbro email test",
       html: "<h2>It works!</h2><p>This is a test email from stonkbro.</p>",

@@ -75,7 +75,7 @@ export async function sendCSPHunterReport(
     : "🎯 CSP Hunter: no qualifying candidates this scan";
 
   await getResend().emails.send({
-    from: "stonkbro <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM ?? "stonkbro <onboarding@resend.dev>",
     to,
     subject,
     html,

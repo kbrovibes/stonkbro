@@ -96,7 +96,7 @@ export async function sendDailyBriefing(to: string, alerts: AlertItem[]) {
     : "stonkbro: all clear today";
 
   await getResend().emails.send({
-    from: "stonkbro <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM ?? "stonkbro <onboarding@resend.dev>",
     to,
     subject,
     html,
