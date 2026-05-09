@@ -40,6 +40,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: `Unknown provider: ${provider}` });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ ok: false, error: msg });
+    // Detect quota/rate-limit errors and surface a short actionable message
+    if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("quota")) {
+      return NextResponse.json({ ok: false, error: "Quota exceeded — enable billing at ai.google.dev or wait for daily reset" });
+    }
+    if (msg.includes("401") || msg.includes("API key")) {
+      return NextResponse.json({ ok: false, error: "Invalid API key" });
+    }
+    // Truncate long raw errors to something readable
+    const short = msg.split("\n")[0].slice(0, 120);
+    return NextResponse.json({ ok: false, error: short });
   }
 }
