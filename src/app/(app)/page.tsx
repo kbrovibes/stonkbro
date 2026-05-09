@@ -119,7 +119,7 @@ export default async function DiscoverPage() {
 
       {/* Upcoming Tech IPOs */}
       {upcomingIPOs.length > 0 && (
-        <IPOWidget ipos={upcomingIPOs} defaultExpanded={ipoShouldExpand} />
+        <IPOWidget ipos={upcomingIPOs} defaultExpanded={false} />
       )}
 
       {/* Watchlists */}

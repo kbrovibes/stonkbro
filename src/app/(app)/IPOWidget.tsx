@@ -6,12 +6,28 @@ import { PLATFORM_COLORS } from "@/lib/market/ipos";
 
 const HYPE_LABEL = ["", "Low", "Mild", "Notable", "High", "🔥 Max"];
 
-const STATUS_STYLES: Record<string, string> = {
-  filed: "bg-emerald-50 text-emerald-700",
-  roadshow: "bg-red-50 text-red-700",
-  priced: "bg-purple-50 text-purple-700",
-  upcoming: "bg-sky-50 text-sky-700",
-  rumored: "bg-stone-100 text-stone-500",
+const STATUS_DOT: Record<string, string> = {
+  filed: "bg-emerald-400",
+  roadshow: "bg-red-400",
+  priced: "bg-purple-400",
+  upcoming: "bg-sky-400",
+  rumored: "bg-stone-300",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  filed: "Filed",
+  roadshow: "Roadshow",
+  priced: "Priced",
+  upcoming: "Upcoming",
+  rumored: "Rumored",
+};
+
+const STATUS_TEXT: Record<string, string> = {
+  filed: "text-emerald-600",
+  roadshow: "text-red-600",
+  priced: "text-purple-600",
+  upcoming: "text-sky-600",
+  rumored: "text-stone-400",
 };
 
 interface IPOWidgetProps {
@@ -56,35 +72,24 @@ export default function IPOWidget({ ipos, defaultExpanded }: IPOWidgetProps) {
 
       {expanded && (
         <>
-          {/* Compact chips */}
-          <div className="flex flex-wrap gap-1.5">
+          {/* Compact list */}
+          <div className="divide-y divide-stone-100 border border-stone-100 rounded-xl overflow-hidden">
             {ipos.map((ipo) => {
               const isSelected = selected === ipo.name;
               return (
                 <button
                   key={ipo.name}
                   onClick={() => setSelected(isSelected ? null : ipo.name)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:opacity-80 ${
-                    ipo.status === "filed" || ipo.status === "roadshow" || ipo.status === "priced"
-                      ? "bg-emerald-50 text-emerald-700"
-                      : ipo.status === "upcoming"
-                      ? "bg-sky-50 text-sky-700"
-                      : "bg-stone-100 text-stone-600"
-                  } ${isSelected ? "ring-1 ring-offset-1 ring-current" : ""}`}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                    isSelected ? "bg-stone-50" : "hover:bg-stone-50 bg-white"
+                  }`}
                 >
-                  <span className="font-bold">{ipo.ticker ?? ipo.name}</span>
-                  {ipo.ticker && ipo.ticker !== ipo.name && (
-                    <span className="opacity-60">{ipo.name.split(" ")[0]}</span>
-                  )}
-                  {/* Hype dots */}
-                  <span className="flex gap-0.5 ml-0.5">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <span
-                        key={i}
-                        className={`w-1 h-1 rounded-full ${i < ipo.hype ? "bg-amber-400" : "bg-current opacity-20"}`}
-                      />
-                    ))}
+                  <span className={`w-1.5 h-1.5 rounded-full flex-none ${STATUS_DOT[ipo.status] ?? STATUS_DOT.rumored}`} />
+                  <span className="font-mono font-bold text-xs text-stone-900 w-14 flex-none">{ipo.ticker ?? ipo.name}</span>
+                  <span className={`text-[10px] font-medium w-20 flex-none ${STATUS_TEXT[ipo.status] ?? STATUS_TEXT.rumored}`}>
+                    {STATUS_LABEL[ipo.status] ?? ipo.status}
                   </span>
+                  <span className="text-[10px] text-stone-400 flex-1 text-right">{ipo.expectedDate}</span>
                 </button>
               );
             })}
@@ -94,14 +99,14 @@ export default function IPOWidget({ ipos, defaultExpanded }: IPOWidgetProps) {
           {selectedIPO && (
             <div className="mt-2 bg-white border border-stone-200 rounded-xl p-3 text-xs space-y-2">
               {/* Name row */}
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-stone-900 text-sm">{selectedIPO.name}</span>
                     {selectedIPO.ticker && (
                       <span className="font-mono text-stone-400 text-[10px]">{selectedIPO.ticker}</span>
                     )}
-                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${STATUS_STYLES[selectedIPO.status] ?? STATUS_STYLES.rumored}`}>
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${STATUS_TEXT[selectedIPO.status] ?? ""} bg-stone-100`}>
                       {selectedIPO.status}
                     </span>
                     {selectedIPO.isLive && (

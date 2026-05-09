@@ -108,7 +108,7 @@ export default function OptionsScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [tab, setTab] = useState<Tab>("calls");
+  const [tab, setTab] = useState<Tab>("csp");
 
   const fetchScans = useCallback(async (selectLatest = false) => {
     try {
@@ -236,6 +236,16 @@ export default function OptionsScannerPage() {
           {/* Tab switcher */}
           <div className="flex border-b border-stone-200">
             <button
+              onClick={() => setTab("csp")}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                tab === "csp"
+                  ? "text-emerald-600 border-b-2 border-emerald-600"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              CSPs ({candidates.length})
+            </button>
+            <button
               onClick={() => setTab("calls")}
               className={`flex-1 py-2.5 text-sm font-semibold transition ${
                 tab === "calls"
@@ -254,16 +264,6 @@ export default function OptionsScannerPage() {
               }`}
             >
               LEAPS ({leapsCandidates.length})
-            </button>
-            <button
-              onClick={() => setTab("csp")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${
-                tab === "csp"
-                  ? "text-emerald-600 border-b-2 border-emerald-600"
-                  : "text-stone-400 hover:text-stone-600"
-              }`}
-            >
-              CSPs ({candidates.length})
             </button>
           </div>
 
