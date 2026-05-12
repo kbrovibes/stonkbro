@@ -100,7 +100,29 @@ type ScanRecord = {
   status: string;
 };
 
-type Tab = "csp" | "calls" | "leaps";
+type Tab = "csp" | "calls" | "leaps" | "weekly";
+
+type WeeklyPick = {
+  symbol: string;
+  type: "csp" | "call" | "leaps";
+  strike: number;
+  expiry: string;
+  dte: number;
+  pickPrice: number;
+  pickDate: string;
+  appearances: number;
+  aroc?: number;
+  score?: number;
+  currentPrice: number | null;
+  pricePct: number | null;
+  strikeBreached: boolean | null;
+};
+
+type WeeklyRecap = {
+  picks: WeeklyPick[];
+  scanCount: number;
+  weekStart: string | null;
+};
 
 export default function OptionsScannerPage() {
   const [scans, setScans] = useState<ScanRecord[]>([]);
@@ -109,6 +131,8 @@ export default function OptionsScannerPage() {
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [tab, setTab] = useState<Tab>("csp");
+  const [weekly, setWeekly] = useState<WeeklyRecap | null>(null);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
 
   const fetchScans = useCallback(async (selectLatest = false) => {
     try {
@@ -148,6 +172,26 @@ export default function OptionsScannerPage() {
       setScanning(false);
     }
   };
+
+  const fetchWeekly = useCallback(async () => {
+    setWeeklyLoading(true);
+    try {
+      const res = await fetch("/api/csp-hunter/weekly-recap");
+      if (!res.ok) return;
+      const data = await res.json();
+      setWeekly(data);
+    } catch {
+      // silent
+    } finally {
+      setWeeklyLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "weekly" && weekly === null) {
+      fetchWeekly();
+    }
+  }, [tab, weekly, fetchWeekly]);
 
   const candidates = selectedScan?.candidates ?? [];
   const callCandidates = selectedScan?.callCandidates ?? [];
@@ -264,6 +308,16 @@ export default function OptionsScannerPage() {
               }`}
             >
               LEAPS ({leapsCandidates.length})
+            </button>
+            <button
+              onClick={() => setTab("weekly")}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                tab === "weekly"
+                  ? "text-amber-600 border-b-2 border-amber-600"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              Weekly
             </button>
           </div>
 
@@ -415,8 +469,202 @@ export default function OptionsScannerPage() {
               )}
             </>
           )}
+
+          {/* Weekly Recap tab */}
+          {tab === "weekly" && (
+            <WeeklyRecapTab weekly={weekly} loading={weeklyLoading} onRefresh={fetchWeekly} />
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Weekly Recap Tab
+// ---------------------------------------------------------------------------
+
+function WeeklyRecapTab({
+  weekly,
+  loading,
+  onRefresh,
+}: {
+  weekly: WeeklyRecap | null;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="py-16 text-center text-stone-400 text-sm animate-pulse">
+        Loading weekly recap...
+      </div>
+    );
+  }
+
+  if (!weekly || weekly.picks.length === 0) {
+    return (
+      <div className="py-16 text-center px-4">
+        <p className="text-stone-400 text-sm mb-3">No picks this week yet.</p>
+        <p className="text-stone-300 text-xs">Run a scan to start building this week&apos;s history.</p>
+      </div>
+    );
+  }
+
+  const { picks, scanCount, weekStart } = weekly;
+  const cspPicks = picks.filter((p) => p.type === "csp");
+  const callPicks = picks.filter((p) => p.type === "call");
+  const leapsPicks = picks.filter((p) => p.type === "leaps");
+
+  const weekStartLabel = weekStart
+    ? new Date(weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    : "";
+
+  return (
+    <>
+      {/* Header stats */}
+      <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
+        {[
+          { label: "Scans This Week", value: scanCount, color: "text-stone-900" },
+          { label: "Unique Tickers", value: new Set(picks.map((p) => p.symbol)).size, color: "text-amber-600" },
+          { label: "Since", value: weekStartLabel, color: "text-stone-500" },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white px-3 py-2 text-center">
+            <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
+            <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-4 py-2 bg-amber-50/50 border-b border-stone-200 flex items-center justify-between">
+        <p className="text-[11px] text-amber-700">
+          All picks since Monday · price move is stock price, not P&amp;L
+        </p>
+        <button onClick={onRefresh} className="text-[11px] text-stone-400 hover:text-stone-600 transition">
+          Refresh
+        </button>
+      </div>
+
+      {/* CSPs */}
+      {cspPicks.length > 0 && (
+        <>
+          <div className="px-4 py-2 bg-emerald-50/60 border-b border-stone-100">
+            <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">
+              Cash-Secured Puts ({cspPicks.length})
+            </span>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {cspPicks.map((p) => (
+              <WeeklyPickRow key={`csp-${p.symbol}-${p.strike}-${p.expiry}`} pick={p} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Calls */}
+      {callPicks.length > 0 && (
+        <>
+          <div className="px-4 py-2 bg-sky-50/60 border-b border-stone-100">
+            <span className="text-[11px] font-semibold text-sky-700 uppercase tracking-wider">
+              Call Buys ({callPicks.length})
+            </span>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {callPicks.map((p) => (
+              <WeeklyPickRow key={`call-${p.symbol}-${p.strike}-${p.expiry}`} pick={p} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* LEAPS */}
+      {leapsPicks.length > 0 && (
+        <>
+          <div className="px-4 py-2 bg-violet-50/60 border-b border-stone-100">
+            <span className="text-[11px] font-semibold text-violet-700 uppercase tracking-wider">
+              LEAPS ({leapsPicks.length})
+            </span>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {leapsPicks.map((p) => (
+              <WeeklyPickRow key={`leaps-${p.symbol}-${p.strike}-${p.expiry}`} pick={p} />
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function WeeklyPickRow({ pick: p }: { pick: WeeklyPick }) {
+  const typeColors = { csp: "text-emerald-600", call: "text-sky-600", leaps: "text-violet-600" };
+  const typeLabel = { csp: "P", call: "C", leaps: "C" };
+
+  const moveColor =
+    p.pricePct === null
+      ? "text-stone-400"
+      : p.type === "csp"
+      ? p.pricePct >= 0
+        ? "text-emerald-600"
+        : "text-red-500"
+      : p.pricePct >= 0
+      ? "text-emerald-600"
+      : "text-red-500";
+
+  const pickDateLabel = new Date(p.pickDate).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <div className="px-4 py-3 flex items-center justify-between">
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/ticker/${p.symbol}`}
+            className={`text-sm font-bold text-stone-900 hover:${typeColors[p.type]} transition`}
+          >
+            {p.symbol}
+          </Link>
+          <span className={`text-xs ${typeColors[p.type]}`}>
+            ${p.strike} {typeLabel[p.type]} · {p.expiry.slice(5)}
+          </span>
+          {p.strikeBreached && (
+            <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-semibold">
+              BREACHED
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-stone-400">
+          <span>First picked {pickDateLabel}</span>
+          <span>·</span>
+          <span>
+            {p.appearances}× scan{p.appearances !== 1 ? "s" : ""}
+          </span>
+          {p.type === "csp" && p.aroc != null && (
+            <>
+              <span>·</span>
+              <span>{p.aroc}% AROC</span>
+            </>
+          )}
+          {(p.type === "call" || p.type === "leaps") && p.score != null && (
+            <>
+              <span>·</span>
+              <span>{p.score}/100</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="text-right flex-shrink-0 ml-4">
+        <div className={`text-sm font-semibold ${moveColor}`}>
+          {p.pricePct === null
+            ? "—"
+            : `${p.pricePct >= 0 ? "+" : ""}${p.pricePct}%`}
+        </div>
+        <div className="text-[10px] text-stone-400">
+          {p.currentPrice != null ? `$${p.currentPrice.toFixed(2)}` : "—"}
+        </div>
+      </div>
     </div>
   );
 }
