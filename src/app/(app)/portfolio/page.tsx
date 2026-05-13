@@ -152,9 +152,9 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Period total */}
-      <div className="bg-stone-900 text-white rounded-xl px-4 py-3 flex items-center justify-between">
+      <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
         <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">90-Day Total</span>
-        <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+        <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
           {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
         </span>
       </div>
@@ -261,10 +261,10 @@ export default function PortfolioPage() {
     <div className="flex flex-col">
       {/* Summary */}
       <div className="px-4 pt-4 pb-2">
-        <div className="bg-stone-900 text-white rounded-2xl px-5 py-4 flex items-center justify-between">
+        <div className="bg-white border border-stone-100 rounded-2xl px-5 py-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">90-Day Realized</div>
-            <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+            <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
               {closedPnl >= 0 ? "+" : ""}{fmtCurrency(closedPnl)}
             </div>
           </div>
