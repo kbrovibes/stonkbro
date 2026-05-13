@@ -33,12 +33,16 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/api/push/send");
 
-  // Routes accessible without authentication (landing + explore tabs)
+  // Routes accessible without authentication (landing + explore tabs + their API routes)
   const isGuestRoute =
     pathname === "/" ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/csp-hunter") ||
-    pathname.startsWith("/research");
+    pathname.startsWith("/research") ||
+    pathname.startsWith("/api/movers") ||
+    pathname.startsWith("/api/recommendations") ||
+    pathname.startsWith("/api/flow") ||
+    pathname.startsWith("/api/csp-hunter");
 
   // Redirect unauthenticated users to login
   if (

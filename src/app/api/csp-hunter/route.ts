@@ -5,14 +5,8 @@ import { scanForCSPs, scanForCalls, scanForLeaps, CSPScanConfig } from "@/lib/op
 import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-delta";
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
 
-/** GET — fetch recent scan results */
+/** GET — fetch recent scan results (public, no user context needed) */
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const scans = await getRecentScans(10);
 
   return NextResponse.json({
