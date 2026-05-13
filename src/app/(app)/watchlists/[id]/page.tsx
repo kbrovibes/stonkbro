@@ -1,8 +1,35 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getWatchlistWithItems } from "@/lib/db/watchlists";
 import { deleteWatchlistAction, removeTickerAction } from "../actions";
 import TickerSearch from "@/components/TickerSearch";
+import type { EarningsEvent } from "@/lib/market/earnings";
+
+async function getEarningsBadges(symbols: string[]): Promise<Map<string, number>> {
+  const badges = new Map<string, number>();
+  if (!symbols.length) return badges;
+  try {
+    const { data } = await supabaseAdmin
+      .from("market_cache")
+      .select("data, updated_at")
+      .eq("key", "earnings")
+      .single();
+    if (!data) return badges;
+    const age = Date.now() - new Date(data.updated_at).getTime();
+    if (age > 26 * 60 * 60 * 1000) return badges;
+    const all = data.data as EarningsEvent[];
+    const symSet = new Set(symbols.map((s) => s.toUpperCase()));
+    for (const e of all) {
+      if (symSet.has(e.symbol) && e.daysUntil >= 0 && e.daysUntil <= 7) {
+        badges.set(e.symbol, e.daysUntil);
+      }
+    }
+  } catch {
+    // cache unavailable — no badges
+  }
+  return badges;
+}
 
 export default async function WatchlistDetailPage({
   params,
@@ -33,6 +60,9 @@ export default async function WatchlistDetailPage({
       </div>
     );
   }
+
+  const items: { id: string; symbol: string }[] = watchlist.watchlist_items || [];
+  const earningsBadges = await getEarningsBadges(items.map((i) => i.symbol));
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5">
@@ -70,15 +100,15 @@ export default async function WatchlistDetailPage({
       </div>
 
       <p className="text-xs text-stone-400 mb-5 ml-11">
-        {(watchlist.watchlist_items || []).length}{" "}
-        {(watchlist.watchlist_items || []).length === 1 ? "ticker" : "tickers"}
+        {items.length}{" "}
+        {items.length === 1 ? "ticker" : "tickers"}
       </p>
 
       <div className="mb-5">
         <TickerSearch watchlistId={id} />
       </div>
 
-      {(watchlist.watchlist_items || []).length === 0 ? (
+      {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-sm text-stone-400">
             No tickers yet. Add one above.
@@ -86,44 +116,50 @@ export default async function WatchlistDetailPage({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          {(watchlist.watchlist_items || []).map((item: { id: string; symbol: string }) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white"
-            >
-              <Link
-                href={`/ticker/${item.symbol}`}
-                className="flex items-center gap-2 flex-1 min-w-0"
+          {items.map((item) => {
+            const daysUntil = earningsBadges.get(item.symbol);
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white"
               >
-                <span className="text-sm font-bold text-stone-900">
-                  {item.symbol}
-                </span>
-              </Link>
-              <form
-                action={removeTickerAction.bind(null, id, item.symbol)}
-              >
-                <button
-                  type="submit"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  title="Remove ticker"
+                <Link
+                  href={`/ticker/${item.symbol}`}
+                  className="flex items-center gap-2 flex-1 min-w-0"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
+                  <span className="text-sm font-bold text-stone-900">
+                    {item.symbol}
+                  </span>
+                  {daysUntil !== undefined && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                      {daysUntil === 0 ? "Earnings today" : daysUntil === 1 ? "Earnings tomorrow" : `Earnings in ${daysUntil}d`}
+                    </span>
+                  )}
+                </Link>
+                <form action={removeTickerAction.bind(null, id, item.symbol)}>
+                  <button
+                    type="submit"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Remove ticker"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18 18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </form>
-            </div>
-          ))}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18 18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            );
+          })}
         </div>
       )}
 

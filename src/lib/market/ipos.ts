@@ -1,3 +1,5 @@
+import { supabaseAdmin } from "@/lib/supabase";
+
 /**
  * Upcoming Tech IPO Pipeline
  *
@@ -207,7 +209,26 @@ function formatDateLabel(isoDate: string): string {
   }
 }
 
-export async function getUpcomingIPOs(): Promise<IPOEntry[]> {
+export async function getUpcomingIPOs(opts?: { bypassCache?: boolean }): Promise<IPOEntry[]> {
+  // Read from DB cache unless bypassed (cron sets bypassCache: true)
+  if (!opts?.bypassCache) {
+    try {
+      const { data } = await supabaseAdmin
+        .from("market_cache")
+        .select("data, updated_at")
+        .eq("key", "ipos")
+        .single();
+      if (data) {
+        const age = Date.now() - new Date(data.updated_at).getTime();
+        if (age < 24 * 60 * 60 * 1000) {
+          return data.data as IPOEntry[];
+        }
+      }
+    } catch {
+      // Cache miss — fall through to live fetch
+    }
+  }
+
   const live = await fetchLiveIPOs();
 
   // Index curated by normalized name and ticker
@@ -261,13 +282,17 @@ export async function getUpcomingIPOs(): Promise<IPOEntry[]> {
     }
   }
 
-  // Sort by hype desc, then live-data first within same hype
-  return merged.sort((a, b) => {
-    if (b.hype !== a.hype) return b.hype - a.hype;
-    if (a.isLive && !b.isLive) return -1;
-    if (!a.isLive && b.isLive) return 1;
-    return 0;
-  });
+  // Sort by proximity: priced > roadshow > filed > upcoming > rumored, then isLive, then hype
+  const STATUS_PRIORITY: Record<string, number> = { priced: 0, roadshow: 1, filed: 2, upcoming: 3, rumored: 4 };
+  return merged
+    .sort((a, b) => {
+      const pa = STATUS_PRIORITY[a.status] ?? 5;
+      const pb = STATUS_PRIORITY[b.status] ?? 5;
+      if (pa !== pb) return pa - pb;
+      if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
+      return b.hype - a.hype;
+    })
+    .slice(0, 6);
 }
 
 export const PLATFORM_COLORS: Record<IPOPlatform, string> = {
