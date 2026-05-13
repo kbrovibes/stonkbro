@@ -16,6 +16,7 @@ const GROUPS = [
       { title: "Explosive Finder", description: "AI-powered search for 10x stocks.", href: "/explosive" },
       { title: "Earnings Calendar", description: "See who reports this week and find earnings plays.", href: "/earnings" },
       { title: "Watchlists", description: "Organize tickers into custom watchlists.", href: "/watchlists" },
+      { title: "Learn", description: "Structured lessons on options, strategy, and risk.", href: "/learn" },
     ],
   },
   {
