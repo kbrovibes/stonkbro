@@ -72,24 +72,33 @@ export default function IPOWidget({ ipos, defaultExpanded }: IPOWidgetProps) {
 
       {expanded && (
         <>
-          {/* Compact list */}
-          <div className="divide-y divide-stone-100 border border-stone-100 rounded-xl overflow-hidden">
+          {/* Card grid */}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {ipos.map((ipo) => {
               const isSelected = selected === ipo.name;
               return (
                 <button
                   key={ipo.name}
                   onClick={() => setSelected(isSelected ? null : ipo.name)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
-                    isSelected ? "bg-stone-50" : "hover:bg-stone-50 bg-white"
+                  className={`flex flex-col gap-1 p-2.5 rounded-xl border text-left transition-colors ${
+                    isSelected
+                      ? "bg-stone-50 border-stone-200"
+                      : "bg-white border-stone-100 hover:bg-stone-50 hover:border-stone-200"
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-none ${STATUS_DOT[ipo.status] ?? STATUS_DOT.rumored}`} />
-                  <span className="font-mono font-bold text-xs text-stone-900 w-14 flex-none">{ipo.ticker ?? ipo.name}</span>
-                  <span className={`text-[10px] font-medium w-20 flex-none ${STATUS_TEXT[ipo.status] ?? STATUS_TEXT.rumored}`}>
-                    {STATUS_LABEL[ipo.status] ?? ipo.status}
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-none ${STATUS_DOT[ipo.status] ?? STATUS_DOT.rumored}`} />
+                    <span className={`text-[9px] font-medium ${STATUS_TEXT[ipo.status] ?? STATUS_TEXT.rumored}`}>
+                      {STATUS_LABEL[ipo.status] ?? ipo.status}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-stone-900 leading-tight truncate">
+                    {ipo.ticker ?? ipo.name}
                   </span>
-                  <span className="text-[10px] text-stone-400 flex-1 text-right">{ipo.expectedDate}</span>
+                  <span className="text-[9px] text-stone-400 leading-tight truncate">{ipo.expectedDate}</span>
+                  {ipo.hype >= 4 && (
+                    <span className="text-[9px] text-amber-500 font-medium">{HYPE_LABEL[ipo.hype]}</span>
+                  )}
                 </button>
               );
             })}
