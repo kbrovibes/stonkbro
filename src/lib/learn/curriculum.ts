@@ -145,6 +145,11 @@ export const CURRICULUM: Module[] = [
               "The Greeks aren't abstract math — they're your dashboard gauges. Each one tells you a specific risk you're taking (or selling) with every position.",
           },
           {
+            type: "text",
+            content:
+              "**Quick recap before the quiz:**\n\nAn option's premium has two components:\n• **Intrinsic value** — the real, exercise-now value. For a $100 call with stock at $105, intrinsic = $5.\n• **Extrinsic value** — everything else: time value + volatility premium. An OTM option's entire premium is extrinsic.\n\nThe Greeks primarily describe how the extrinsic portion responds to each pricing factor.",
+          },
+          {
             type: "quiz",
             questions: [
               {
@@ -169,15 +174,6 @@ export const CURRICULUM: Module[] = [
                 correctIndex: 1,
                 explanation:
                   "The Greeks measure how extrinsic value changes with each pricing factor. Intrinsic value is simply the difference between stock and strike.",
-              },
-              {
-                id: "refresher-q3",
-                question:
-                  "Which Greek measures sensitivity to implied volatility?",
-                options: ["Delta", "Gamma", "Theta", "Vega"],
-                correctIndex: 3,
-                explanation:
-                  "Vega measures how much an option's price changes for a 1% change in implied volatility.",
               },
             ],
           },
