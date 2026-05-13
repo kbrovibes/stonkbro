@@ -17,7 +17,7 @@ export default function PortfolioPage() {
   const [data, setData] = useState<PortfolioData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"positions" | "balances">("positions");
+  const [tab, setTab] = useState<"positions" | "options" | "balances">("positions");
 
   useEffect(() => {
     fetch("/api/portfolio")
@@ -91,6 +91,10 @@ export default function PortfolioPage() {
               <div className="text-xs text-stone-500">Positions</div>
               <div className="text-sm font-semibold">{summary.total_positions}</div>
             </div>
+            <div>
+              <div className="text-xs text-stone-500">Options</div>
+              <div className="text-sm font-semibold">{summary.total_options ?? 0}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,7 +112,7 @@ export default function PortfolioPage() {
 
       {/* Tab switcher */}
       <div className="px-4 pt-3 pb-1 flex gap-1">
-        {(["positions", "balances"] as const).map((t) => (
+        {(["positions", "options", "balances"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -145,6 +149,40 @@ export default function PortfolioPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Options */}
+      {tab === "options" && (
+        <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
+          {(data.options ?? []).length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-8">No open options positions</p>
+          ) : (data.options ?? []).map((o, i) => {
+            const isShort = o.units < 0;
+            const expDate = new Date(o.expiration);
+            const daysToExp = Math.ceil((expDate.getTime() - Date.now()) / 86400000);
+            return (
+              <div key={i} className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-sm text-stone-900">{o.underlying}</span>
+                    <span className={`text-xs rounded px-1.5 py-0.5 font-medium ${o.option_type === "CALL" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                      {isShort ? "SHORT" : "LONG"} {o.option_type}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-400 mt-0.5">
+                    ${o.strike} · {o.expiration} · {daysToExp > 0 ? `${daysToExp}d` : "expired"}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-semibold text-sm text-stone-900">{Math.abs(o.units)} × {fmtSmall(o.price)}</div>
+                  <div className={`text-xs font-medium ${o.market_value >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {fmtSmall(o.market_value)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
