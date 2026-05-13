@@ -21,9 +21,12 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     fetch("/api/portfolio")
-      .then((r) => {
+      .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
-        if (!r.ok) throw new Error("Failed to load portfolio");
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ? `${r.status}: ${body.detail}` : `Failed to load portfolio (${r.status})`);
+        }
         return r.json();
       })
       .then(setData)

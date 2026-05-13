@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { getPortfolio, getTransactions } from "@/lib/snaptrade/client";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 const ALLOWED_EMAIL = "k4rthikr@gmail.com";
 
@@ -25,8 +26,10 @@ export async function GET(req: Request) {
 
     const portfolio = await getPortfolio();
     return NextResponse.json(portfolio);
-  } catch (err) {
-    console.error("SnapTrade error:", err);
-    return NextResponse.json({ error: "Failed to fetch portfolio data" }, { status: 500 });
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const detail = err?.response?.data ?? err?.message ?? String(err);
+    console.error("SnapTrade error:", status, JSON.stringify(detail));
+    return NextResponse.json({ error: "Failed to fetch portfolio data", detail: String(detail).slice(0, 200) }, { status: 500 });
   }
 }
