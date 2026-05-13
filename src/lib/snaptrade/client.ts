@@ -218,24 +218,25 @@ export async function getTransactions(days = 90) {
 
 export interface OptionLeg {
   date: string;
-  type: string;        // "BUY" | "SELL" | "OPTIONEXPIRATION" | "OPTIONASSIGNMENT"
+  type: string;   // "BUY" | "SELL" | "OPTIONEXPIRATION" | "OPTIONASSIGNMENT"
   strike: number;
   expiry: string;
-  units: number;       // signed
+  units: number;  // signed: negative = short, positive = long
   price: number;
-  amount: number;      // positive = received
+  amount: number; // positive = received, negative = paid
 }
 
 export interface OptionChain {
   underlying: string;
-  option_type: string;     // "CALL" | "PUT"
+  option_type: string;  // "CALL" | "PUT"
   legs: OptionLeg[];
   net_pnl: number;
   status: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED";
   start_date: string;
   end_date: string | null;
-  open_units: number;      // current net position (0 if closed)
+  open_units: number;
   roll_count: number;
+  close_month: string | null; // "YYYY-MM" of end_date, for monthly grouping
 }
 
 export async function getOptionChains(days = 90): Promise<OptionChain[]> {
@@ -246,175 +247,142 @@ export async function getOptionChains(days = 90): Promise<OptionChain[]> {
   const allRaw = await Promise.all(
     accounts.map(async (acct) => {
       const res = await accountApi.getAccountActivities({
-        userId: UID,
-        userSecret: USEC,
-        accountId: acct.id,
-        startDate: start,
-        endDate: end,
+        userId: UID, userSecret: USEC, accountId: acct.id, startDate: start, endDate: end,
       });
       return ((res.data as any)?.data ?? res.data ?? []) as any[];
     })
   );
-  const rawTxns = allRaw.flat();
 
-  // Filter to option transactions only
-  const optionTxns = rawTxns
+  type ParsedTx = {
+    date: string; type: string; underlying: string; option_type: string;
+    strike: number; expiry: string; units: number; price: number; amount: number;
+  };
+
+  const optionTxns: ParsedTx[] = allRaw.flat()
     .filter((t: any) => t.option_symbol != null)
-    .map((t: any): OptionLeg & { underlying: string; option_type: string; groupKey: string } => {
+    .map((t: any): ParsedTx => {
       const sym = t.option_symbol;
-      const underlying: string = sym?.underlying_symbol?.symbol ?? "UNKNOWN";
-      const option_type: string = sym?.option_type ?? "UNKNOWN";
       return {
         date: t.trade_date ?? t.settlement_date ?? "",
-        type: t.type ?? t.action ?? "",
-        underlying,
-        option_type,
+        type: t.type ?? "",
+        underlying: sym?.underlying_symbol?.symbol ?? "UNKNOWN",
+        option_type: sym?.option_type ?? "UNKNOWN",
         strike: Number(sym?.strike_price ?? 0),
         expiry: sym?.expiration_date ?? "",
         units: Number(t.units ?? 0),
         price: Number(t.price ?? 0),
         amount: Number(t.amount ?? 0),
-        groupKey: `${underlying}_${option_type}`,
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Group by underlying + option_type
-  const groups = new Map<string, typeof optionTxns>();
-  for (const txn of optionTxns) {
-    const key = txn.groupKey;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(txn);
+  // ── Step 1: per-contract chains (grouped by strike+expiry) ───────────────
+  // Prevents mixing of simultaneous positions at different strikes/expiries.
+  type ContractChain = {
+    underlying: string; option_type: string; strike: number; expiry: string;
+    legs: OptionLeg[]; net_pnl: number;
+    status: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED";
+    start_date: string; end_date: string | null; open_units: number;
+    first_action: string; // "BUY" or "SELL"
+  };
+
+  const contractMap = new Map<string, ParsedTx[]>();
+  for (const tx of optionTxns) {
+    const key = `${tx.underlying}|${tx.option_type}|${tx.strike}|${tx.expiry}`;
+    if (!contractMap.has(key)) contractMap.set(key, []);
+    contractMap.get(key)!.push(tx);
   }
 
-  const chains: OptionChain[] = [];
+  const contractChains: ContractChain[] = [];
 
-  for (const [, txns] of groups) {
+  for (const txns of contractMap.values()) {
+    const { underlying, option_type, strike, expiry } = txns[0];
     let runningUnits = 0;
     let currentLegs: OptionLeg[] = [];
-    let chainStatus: OptionChain["status"] = "OPEN";
-    let rollCount = 0;
-    const underlying = txns[0].underlying;
-    const option_type = txns[0].option_type;
 
-    for (const txn of txns) {
-      const leg: OptionLeg = {
-        date: txn.date,
-        type: txn.type,
-        strike: txn.strike,
-        expiry: txn.expiry,
-        units: txn.units,
-        price: txn.price,
-        amount: txn.amount,
-      };
-
-      const wasNonZero = runningUnits !== 0;
-
-      // Start a new chain if we're at zero and this opens a position
-      if (runningUnits === 0 && txn.units !== 0) {
-        if (currentLegs.length > 0) {
-          // Push previous closed chain
-          chains.push({
-            underlying,
-            option_type,
-            legs: currentLegs,
-            net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
-            status: chainStatus,
-            start_date: currentLegs[0].date,
-            end_date: currentLegs[currentLegs.length - 1].date,
-            open_units: 0,
-            roll_count: rollCount,
-          });
-          rollCount = 0;
-        }
-        currentLegs = [leg];
-        runningUnits = txn.units;
-        chainStatus = "OPEN";
-        continue;
-      }
-
-      currentLegs.push(leg);
-
-      if (txn.type === "OPTIONEXPIRATION") {
-        runningUnits = 0;
-        chainStatus = "EXPIRED";
-        chains.push({
-          underlying,
-          option_type,
-          legs: currentLegs,
-          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
-          status: chainStatus,
-          start_date: currentLegs[0].date,
-          end_date: leg.date,
-          open_units: 0,
-          roll_count: rollCount,
-        });
-        currentLegs = [];
-        rollCount = 0;
-        continue;
-      }
-
-      if (txn.type === "OPTIONASSIGNMENT") {
-        runningUnits = 0;
-        chainStatus = "ASSIGNED";
-        chains.push({
-          underlying,
-          option_type,
-          legs: currentLegs,
-          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
-          status: chainStatus,
-          start_date: currentLegs[0].date,
-          end_date: leg.date,
-          open_units: 0,
-          roll_count: rollCount,
-        });
-        currentLegs = [];
-        rollCount = 0;
-        continue;
-      }
-
-      const prevUnits = runningUnits;
-      runningUnits += txn.units;
-
-      // Detect roll: direction changed (position flipped sign or crossed zero)
-      if (wasNonZero && prevUnits !== 0 && runningUnits !== 0 && Math.sign(runningUnits) !== Math.sign(prevUnits)) {
-        rollCount++;
-      }
-
-      if (wasNonZero && runningUnits === 0) {
-        chainStatus = "CLOSED";
-        chains.push({
-          underlying,
-          option_type,
-          legs: currentLegs,
-          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
-          status: chainStatus,
-          start_date: currentLegs[0].date,
-          end_date: leg.date,
-          open_units: 0,
-          roll_count: rollCount,
-        });
-        currentLegs = [];
-        rollCount = 0;
-      }
-    }
-
-    // Remaining open chain
-    if (currentLegs.length > 0) {
-      chains.push({
-        underlying,
-        option_type,
-        legs: currentLegs,
+    const flush = (status: ContractChain["status"]) => {
+      if (!currentLegs.length) return;
+      const firstAction = currentLegs.find(l => l.type === "BUY" || l.type === "SELL")?.type ?? "SELL";
+      contractChains.push({
+        underlying, option_type, strike, expiry,
+        legs: [...currentLegs],
         net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
-        status: "OPEN",
+        status,
         start_date: currentLegs[0].date,
-        end_date: null,
+        end_date: status === "OPEN" ? null : currentLegs[currentLegs.length - 1].date,
         open_units: runningUnits,
-        roll_count: rollCount,
+        first_action: firstAction,
       });
+      currentLegs = [];
+    };
+
+    for (const tx of txns) {
+      const leg: OptionLeg = {
+        date: tx.date, type: tx.type, strike: tx.strike, expiry: tx.expiry,
+        units: tx.units, price: tx.price, amount: tx.amount,
+      };
+      currentLegs.push(leg);
+      if (tx.type === "OPTIONEXPIRATION") { runningUnits = 0; flush("EXPIRED"); continue; }
+      if (tx.type === "OPTIONASSIGNMENT") { runningUnits = 0; flush("ASSIGNED"); continue; }
+      runningUnits += tx.units;
+      if (runningUnits === 0) flush("CLOSED");
     }
+    if (currentLegs.length > 0) flush("OPEN");
   }
 
-  // Sort by start_date descending
-  return chains.sort((a, b) => b.start_date.localeCompare(a.start_date));
+  // ── Step 2: group by underlying+type, roll-chain SHORT contracts ─────────
+  // Only SELL-first (income/short) contracts are roll-chained together.
+  // BUY-first (long/directional) contracts remain standalone.
+  const displayGroups = new Map<string, ContractChain[]>();
+  for (const c of contractChains) {
+    const key = `${c.underlying}|${c.option_type}`;
+    if (!displayGroups.has(key)) displayGroups.set(key, []);
+    displayGroups.get(key)!.push(c);
+  }
+
+  const result: OptionChain[] = [];
+
+  const buildChain = (seq: ContractChain[]): OptionChain => {
+    const allLegs = seq.flatMap(c => c.legs).sort((a, b) => a.date.localeCompare(b.date));
+    const last = seq[seq.length - 1];
+    const net_pnl = seq.reduce((s, c) => s + c.net_pnl, 0);
+    const end_date = last.end_date;
+    return {
+      underlying: seq[0].underlying,
+      option_type: seq[0].option_type,
+      legs: allLegs,
+      net_pnl,
+      status: last.status,
+      start_date: seq[0].start_date,
+      end_date,
+      open_units: last.open_units,
+      roll_count: seq.length - 1,
+      close_month: end_date ? end_date.substring(0, 7) : null,
+    };
+  };
+
+  for (const contracts of displayGroups.values()) {
+    contracts.sort((a, b) => a.start_date.localeCompare(b.start_date));
+    const shorts = contracts.filter(c => c.first_action === "SELL");
+    const longs  = contracts.filter(c => c.first_action !== "SELL");
+
+    if (shorts.length > 0) {
+      let seq: ContractChain[] = [shorts[0]];
+      for (let i = 1; i < shorts.length; i++) {
+        const prev = seq[seq.length - 1];
+        const curr = shorts[i];
+        if (prev.end_date && prev.status !== "OPEN") {
+          const daysDiff = (new Date(curr.start_date).getTime() - new Date(prev.end_date).getTime()) / 86400000;
+          if (daysDiff <= 3) { seq.push(curr); continue; }
+        }
+        result.push(buildChain(seq));
+        seq = [curr];
+      }
+      result.push(buildChain(seq));
+    }
+
+    for (const c of longs) result.push(buildChain([c]));
+  }
+
+  return result.sort((a, b) => b.start_date.localeCompare(a.start_date));
 }
