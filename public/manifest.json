@@ -2,7 +2,7 @@
   "name": "stonkBRO",
   "short_name": "stonkBRO",
   "description": "Explosive stock discovery + options strategy automation",
-  "start_url": "/",
+  "start_url": "/home",
   "display": "standalone",
   "background_color": "#FAFAF9",
   "theme_color": "#0284c7",
