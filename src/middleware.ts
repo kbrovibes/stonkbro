@@ -26,27 +26,44 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { pathname } = request.nextUrl;
+
   // Allow API routes that use their own auth (CRON_SECRET / bearer token)
   const isPublicApi =
-    request.nextUrl.pathname.startsWith("/api/cron") ||
-    request.nextUrl.pathname.startsWith("/api/push/send");
+    pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/api/push/send");
+
+  // Routes accessible without authentication (landing + explore tabs)
+  const isGuestRoute =
+    pathname === "/" ||
+    pathname.startsWith("/today") ||
+    pathname.startsWith("/csp-hunter") ||
+    pathname.startsWith("/research");
 
   // Redirect unauthenticated users to login
   if (
     !user &&
     !isPublicApi &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !isGuestRoute &&
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/auth")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login
-  if (user && request.nextUrl.pathname.startsWith("/login")) {
+  // Redirect authenticated users from landing page to app home
+  if (user && pathname === "/") {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/home";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from login
+  if (user && pathname.startsWith("/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 

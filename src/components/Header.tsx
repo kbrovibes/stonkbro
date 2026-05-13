@@ -25,11 +25,18 @@ export default async function Header() {
           <span className="text-3xl font-extrabold tracking-tight text-stone-900">stonk</span>
           <span className="text-4xl font-display text-sky-600 -tracking-wide leading-none">BRO</span>
         </Link>
-        {user && (
-          <div className="absolute right-4">
+        <div className="absolute right-4">
+          {user ? (
             <ProfileMenu initials={initials} email={user.email || ""} isAdmin={adminFlag} />
-          </div>
-        )}
+          ) : (
+            <a
+              href="/login"
+              className="px-3.5 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 transition-colors"
+            >
+              Sign in
+            </a>
+          )}
+        </div>
       </div>
     </header>
   );

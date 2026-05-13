@@ -5,8 +5,8 @@ import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
 import { getUpcomingIPOs } from "@/lib/market/ipos";
-import WatchlistWidget from "./WatchlistWidget";
-import IPOWidget from "./IPOWidget";
+import WatchlistWidget from "../WatchlistWidget";
+import IPOWidget from "../IPOWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +46,6 @@ export default async function DiscoverPage() {
     }
   }
 
-  // Fetch earnings �� watchlist stocks + broad market universe
   const EARNINGS_UNIVERSE = [
     "NVDA", "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NFLX",
     "AMD", "AVGO", "PLTR", "CRWD", "COIN", "SHOP", "SNOW", "DDOG",
@@ -67,7 +66,6 @@ export default async function DiscoverPage() {
 
   const upcomingIPOs = await getUpcomingIPOs();
 
-  // Auto-expand IPO widget only if something is filed/roadshow/priced or has a live date soon
   const ipoShouldExpand = upcomingIPOs.some(
     (ipo) =>
       ipo.status === "roadshow" ||
@@ -87,7 +85,6 @@ export default async function DiscoverPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      {/* Upcoming Earnings */}
       {upcomingEarnings.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -117,12 +114,10 @@ export default async function DiscoverPage() {
         </div>
       )}
 
-      {/* Upcoming Tech IPOs */}
       {upcomingIPOs.length > 0 && (
-        <IPOWidget ipos={upcomingIPOs} defaultExpanded={false} />
+        <IPOWidget ipos={upcomingIPOs} defaultExpanded={ipoShouldExpand} />
       )}
 
-      {/* Watchlists */}
       {watchlistWidgetData.length > 0 ? (
         <>
           <div className="flex items-center justify-between">
