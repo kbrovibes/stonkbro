@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { getPortfolio, getTransactions } from "@/lib/snaptrade/client";
+import { getPortfolio, getTransactions, getOptionChains } from "@/lib/snaptrade/client";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -22,6 +22,12 @@ export async function GET(req: Request) {
       const days = Number(searchParams.get("days") ?? 90);
       const transactions = await getTransactions(days);
       return NextResponse.json({ transactions });
+    }
+
+    if (include === "option-chains") {
+      const days = Number(searchParams.get("days") ?? 90);
+      const chains = await getOptionChains(days);
+      return NextResponse.json({ chains });
     }
 
     const portfolio = await getPortfolio();

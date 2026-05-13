@@ -215,3 +215,206 @@ export async function getTransactions(days = 90) {
   );
   return all.flat();
 }
+
+export interface OptionLeg {
+  date: string;
+  type: string;        // "BUY" | "SELL" | "OPTIONEXPIRATION" | "OPTIONASSIGNMENT"
+  strike: number;
+  expiry: string;
+  units: number;       // signed
+  price: number;
+  amount: number;      // positive = received
+}
+
+export interface OptionChain {
+  underlying: string;
+  option_type: string;     // "CALL" | "PUT"
+  legs: OptionLeg[];
+  net_pnl: number;
+  status: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED";
+  start_date: string;
+  end_date: string | null;
+  open_units: number;      // current net position (0 if closed)
+  roll_count: number;
+}
+
+export async function getOptionChains(days = 90): Promise<OptionChain[]> {
+  const end = new Date().toISOString().split("T")[0];
+  const start = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+  const accounts = await getAccounts();
+
+  const allRaw = await Promise.all(
+    accounts.map(async (acct) => {
+      const res = await accountApi.getAccountActivities({
+        userId: UID,
+        userSecret: USEC,
+        accountId: acct.id,
+        startDate: start,
+        endDate: end,
+      });
+      return ((res.data as any)?.data ?? res.data ?? []) as any[];
+    })
+  );
+  const rawTxns = allRaw.flat();
+
+  // Filter to option transactions only
+  const optionTxns = rawTxns
+    .filter((t: any) => t.option_symbol != null)
+    .map((t: any): OptionLeg & { underlying: string; option_type: string; groupKey: string } => {
+      const sym = t.option_symbol;
+      const underlying: string = sym?.underlying_symbol?.symbol ?? "UNKNOWN";
+      const option_type: string = sym?.option_type ?? "UNKNOWN";
+      return {
+        date: t.trade_date ?? t.settlement_date ?? "",
+        type: t.type ?? t.action ?? "",
+        underlying,
+        option_type,
+        strike: Number(sym?.strike_price ?? 0),
+        expiry: sym?.expiration_date ?? "",
+        units: Number(t.units ?? 0),
+        price: Number(t.price ?? 0),
+        amount: Number(t.amount ?? 0),
+        groupKey: `${underlying}_${option_type}`,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Group by underlying + option_type
+  const groups = new Map<string, typeof optionTxns>();
+  for (const txn of optionTxns) {
+    const key = txn.groupKey;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(txn);
+  }
+
+  const chains: OptionChain[] = [];
+
+  for (const [, txns] of groups) {
+    let runningUnits = 0;
+    let currentLegs: OptionLeg[] = [];
+    let chainStatus: OptionChain["status"] = "OPEN";
+    let rollCount = 0;
+    const underlying = txns[0].underlying;
+    const option_type = txns[0].option_type;
+
+    for (const txn of txns) {
+      const leg: OptionLeg = {
+        date: txn.date,
+        type: txn.type,
+        strike: txn.strike,
+        expiry: txn.expiry,
+        units: txn.units,
+        price: txn.price,
+        amount: txn.amount,
+      };
+
+      const wasNonZero = runningUnits !== 0;
+
+      // Start a new chain if we're at zero and this opens a position
+      if (runningUnits === 0 && txn.units !== 0) {
+        if (currentLegs.length > 0) {
+          // Push previous closed chain
+          chains.push({
+            underlying,
+            option_type,
+            legs: currentLegs,
+            net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+            status: chainStatus,
+            start_date: currentLegs[0].date,
+            end_date: currentLegs[currentLegs.length - 1].date,
+            open_units: 0,
+            roll_count: rollCount,
+          });
+          rollCount = 0;
+        }
+        currentLegs = [leg];
+        runningUnits = txn.units;
+        chainStatus = "OPEN";
+        continue;
+      }
+
+      currentLegs.push(leg);
+
+      if (txn.type === "OPTIONEXPIRATION") {
+        runningUnits = 0;
+        chainStatus = "EXPIRED";
+        chains.push({
+          underlying,
+          option_type,
+          legs: currentLegs,
+          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+          status: chainStatus,
+          start_date: currentLegs[0].date,
+          end_date: leg.date,
+          open_units: 0,
+          roll_count: rollCount,
+        });
+        currentLegs = [];
+        rollCount = 0;
+        continue;
+      }
+
+      if (txn.type === "OPTIONASSIGNMENT") {
+        runningUnits = 0;
+        chainStatus = "ASSIGNED";
+        chains.push({
+          underlying,
+          option_type,
+          legs: currentLegs,
+          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+          status: chainStatus,
+          start_date: currentLegs[0].date,
+          end_date: leg.date,
+          open_units: 0,
+          roll_count: rollCount,
+        });
+        currentLegs = [];
+        rollCount = 0;
+        continue;
+      }
+
+      const prevUnits = runningUnits;
+      runningUnits += txn.units;
+
+      // Detect roll: direction changed (position flipped sign or crossed zero)
+      if (wasNonZero && prevUnits !== 0 && runningUnits !== 0 && Math.sign(runningUnits) !== Math.sign(prevUnits)) {
+        rollCount++;
+      }
+
+      if (wasNonZero && runningUnits === 0) {
+        chainStatus = "CLOSED";
+        chains.push({
+          underlying,
+          option_type,
+          legs: currentLegs,
+          net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+          status: chainStatus,
+          start_date: currentLegs[0].date,
+          end_date: leg.date,
+          open_units: 0,
+          roll_count: rollCount,
+        });
+        currentLegs = [];
+        rollCount = 0;
+      }
+    }
+
+    // Remaining open chain
+    if (currentLegs.length > 0) {
+      chains.push({
+        underlying,
+        option_type,
+        legs: currentLegs,
+        net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+        status: "OPEN",
+        start_date: currentLegs[0].date,
+        end_date: null,
+        open_units: runningUnits,
+        roll_count: rollCount,
+      });
+    }
+  }
+
+  // Sort by start_date descending
+  return chains.sort((a, b) => b.start_date.localeCompare(a.start_date));
+}

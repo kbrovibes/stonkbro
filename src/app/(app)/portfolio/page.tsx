@@ -1,35 +1,162 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { PortfolioData } from "@/lib/snaptrade/client";
+import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+function fmtCurrency(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
-function fmtPct(n: number) {
-  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
 }
-function fmtSmall(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+type FilterTab = "All" | "Open" | "Closed" | "Expired";
+
+const STATUS_BADGE: Record<string, string> = {
+  OPEN: "bg-sky-100 text-sky-700",
+  CLOSED: "bg-stone-100 text-stone-600",
+  EXPIRED: "bg-emerald-100 text-emerald-700",
+  ASSIGNED: "bg-violet-100 text-violet-700",
+};
+
+function isRollLeg(legs: OptionLeg[], idx: number): boolean {
+  if (idx === 0) return false;
+  const prev = legs[idx - 1];
+  const curr = legs[idx];
+  // BUY preceded by SELL (or vice versa) on same or next calendar day
+  if (curr.type === "BUY" || curr.type === "SELL") {
+    const prevDate = new Date(prev.date).getTime();
+    const currDate = new Date(curr.date).getTime();
+    const diffDays = (currDate - prevDate) / 86400000;
+    if (diffDays <= 1 && ((prev.type === "SELL" && curr.type === "BUY") || (prev.type === "BUY" && curr.type === "SELL"))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function legTypeColor(type: string): string {
+  if (type === "SELL") return "text-emerald-600";
+  if (type === "BUY") return "text-rose-600";
+  return "text-stone-400";
+}
+
+function ChainCard({ chain }: { chain: OptionChain }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const dateRange =
+    chain.end_date
+      ? `${fmtDate(chain.start_date)} → ${fmtDate(chain.end_date)}`
+      : `${fmtDate(chain.start_date)} → now`;
+
+  return (
+    <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left px-4 py-3 flex items-start justify-between gap-2"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-stone-900 text-sm">
+              {chain.underlying} {chain.option_type}
+            </span>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[chain.status] ?? "bg-stone-100 text-stone-500"}`}>
+              {chain.status}
+            </span>
+          </div>
+          <div className="text-xs text-stone-400 mt-0.5 flex items-center gap-2">
+            <span>{dateRange}</span>
+            {chain.roll_count > 0 && (
+              <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-medium">
+                {chain.roll_count} roll{chain.roll_count !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className={`font-bold text-base ${chain.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {chain.net_pnl >= 0 ? "+" : ""}{fmtCurrency(chain.net_pnl)}
+          </div>
+          <div className="text-xs text-stone-300 mt-0.5">{expanded ? "▲" : "▼"}</div>
+        </div>
+      </button>
+
+      {/* Legs table */}
+      {expanded && (
+        <div className="border-t border-stone-50 px-4 pb-3">
+          <table className="w-full text-xs mt-2">
+            <thead>
+              <tr className="text-stone-400 border-b border-stone-50">
+                <th className="text-left pb-1 font-medium">Date</th>
+                <th className="text-left pb-1 font-medium">Type</th>
+                <th className="text-right pb-1 font-medium">Strike</th>
+                <th className="text-right pb-1 font-medium">Expiry</th>
+                <th className="text-right pb-1 font-medium">Units</th>
+                <th className="text-right pb-1 font-medium">Price</th>
+                <th className="text-right pb-1 font-medium">P&L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {chain.legs.map((leg, i) => {
+                const roll = isRollLeg(chain.legs, i);
+                return (
+                  <tr key={i} className="border-b border-stone-50 last:border-0">
+                    <td className="py-1.5 text-stone-500">{fmtDate(leg.date)}</td>
+                    <td className={`py-1.5 font-semibold ${legTypeColor(leg.type)}`}>
+                      <span>{leg.type}</span>
+                      {roll && (
+                        <span className="ml-1 bg-amber-100 text-amber-600 px-1 py-0.5 rounded text-[10px] font-bold">ROLL</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 text-right text-stone-700">${leg.strike}</td>
+                    <td className="py-1.5 text-right text-stone-500">{fmtDate(leg.expiry)}</td>
+                    <td className="py-1.5 text-right text-stone-700">{leg.units > 0 ? "+" : ""}{leg.units}</td>
+                    <td className="py-1.5 text-right text-stone-500">{fmtCurrency(leg.price)}</td>
+                    <td className={`py-1.5 text-right font-semibold ${leg.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {leg.amount >= 0 ? "+" : ""}{fmtCurrency(leg.amount)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex justify-between items-center mt-3 pt-2 border-t border-stone-100">
+            <span className="text-xs text-stone-400">{chain.legs.length} leg{chain.legs.length !== 1 ? "s" : ""}</span>
+            <span className={`text-base font-bold ${chain.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              Net {chain.net_pnl >= 0 ? "+" : ""}{fmtCurrency(chain.net_pnl)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PortfolioPage() {
-  const [data, setData] = useState<PortfolioData | null>(null);
+  const [chains, setChains] = useState<OptionChain[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"positions" | "options" | "balances">("positions");
+  const [filter, setFilter] = useState<FilterTab>("All");
 
   useEffect(() => {
-    fetch("/api/portfolio")
+    fetch("/api/portfolio?include=option-chains&days=90")
       .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
-          throw new Error(body.detail ? `${r.status}: ${body.detail}` : `Failed to load portfolio (${r.status})`);
+          throw new Error(body.detail ? `${r.status}: ${body.detail}` : `Failed to load chains (${r.status})`);
         }
         return r.json();
       })
-      .then(setData)
+      .then((d) => setChains(d.chains ?? []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -38,9 +165,9 @@ export default function PortfolioPage() {
     return (
       <div className="flex flex-col gap-4 p-4">
         <div className="h-28 bg-stone-100 rounded-2xl animate-pulse" />
-        <div className="h-8 bg-stone-100 rounded-lg animate-pulse w-40" />
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-14 bg-stone-100 rounded-xl animate-pulse" />
+        <div className="h-8 bg-stone-100 rounded-lg animate-pulse w-48" />
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-16 bg-stone-100 rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -58,66 +185,61 @@ export default function PortfolioPage() {
     );
   }
 
-  if (!data) return null;
+  if (!chains) return null;
 
-  const { summary, positions, balances } = data;
+  // Summary stats
+  const closedChains = chains.filter((c) => c.status !== "OPEN");
+  const openChains = chains.filter((c) => c.status === "OPEN");
+  const expiredChains = chains.filter((c) => c.status === "EXPIRED");
+  const assignedChains = chains.filter((c) => c.status === "ASSIGNED");
+  const totalPnl = closedChains.reduce((s, c) => s + c.net_pnl, 0);
+
+  const filterMap: Record<FilterTab, OptionChain[]> = {
+    All: chains,
+    Open: openChains,
+    Closed: chains.filter((c) => c.status === "CLOSED"),
+    Expired: chains.filter((c) => c.status === "EXPIRED" || c.status === "ASSIGNED"),
+  };
+  const visible = filterMap[filter];
 
   return (
     <div className="flex flex-col">
-      {/* Summary card */}
+      {/* Summary bar */}
       <div className="px-4 pt-4 pb-2">
         <div className="bg-stone-900 text-white rounded-2xl p-5">
-          <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">Portfolio Value</div>
-          <div className="text-3xl font-bold tracking-tight mb-1">
-            {fmt(summary.total_market_value + summary.cash)}
-          </div>
-          <div className={`inline-flex items-center gap-1.5 text-sm font-medium px-2.5 py-1 rounded-full ${
-            summary.unrealized_pnl >= 0 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
-          }`}>
-            <span>{summary.unrealized_pnl >= 0 ? "▲" : "▼"}</span>
-            <span>{fmtSmall(Math.abs(summary.unrealized_pnl))}</span>
-            <span>({fmtPct(summary.unrealized_pnl_pct)})</span>
+          <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">Options P&L (90d)</div>
+          <div className={`text-3xl font-bold tracking-tight mb-1 ${totalPnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
           </div>
           <div className="flex gap-4 mt-4 pt-4 border-t border-stone-700">
             <div>
-              <div className="text-xs text-stone-500">Invested</div>
-              <div className="text-sm font-semibold">{fmt(summary.total_cost_basis)}</div>
+              <div className="text-xs text-stone-500">Open</div>
+              <div className="text-sm font-semibold text-sky-400">{openChains.length}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Cash</div>
-              <div className="text-sm font-semibold">{fmt(summary.cash)}</div>
+              <div className="text-xs text-stone-500">Closed</div>
+              <div className="text-sm font-semibold text-stone-300">{closedChains.length - expiredChains.length - assignedChains.length}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Positions</div>
-              <div className="text-sm font-semibold">{summary.total_positions}</div>
+              <div className="text-xs text-stone-500">Expired</div>
+              <div className="text-sm font-semibold text-emerald-400">{expiredChains.length}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Options</div>
-              <div className="text-sm font-semibold">{summary.total_options ?? 0}</div>
+              <div className="text-xs text-stone-500">Assigned</div>
+              <div className="text-sm font-semibold text-violet-400">{assignedChains.length}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Accounts */}
-      {data.accounts.length > 0 && (
-        <div className="px-4 pt-2 pb-1 flex gap-2 flex-wrap">
-          {data.accounts.map((a) => (
-            <span key={a.id} className="text-xs bg-stone-100 text-stone-600 rounded-full px-2.5 py-1 font-medium">
-              {a.institution} · {a.number}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Tab switcher */}
+      {/* Filter tabs */}
       <div className="px-4 pt-3 pb-1 flex gap-1">
-        {(["positions", "options", "balances"] as const).map((t) => (
+        {(["All", "Open", "Closed", "Expired"] as FilterTab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
-            className={`text-sm font-medium px-3 py-1.5 rounded-lg capitalize transition-colors ${
-              tab === t ? "bg-sky-100 text-sky-700" : "text-stone-500 hover:text-stone-700"
+            onClick={() => setFilter(t)}
+            className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
+              filter === t ? "bg-sky-100 text-sky-700" : "text-stone-500 hover:text-stone-700"
             }`}
           >
             {t}
@@ -125,94 +247,15 @@ export default function PortfolioPage() {
         ))}
       </div>
 
-      {/* Positions */}
-      {tab === "positions" && (
-        <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
-          {positions.map((p, i) => (
-            <div key={`${p.symbol}-${i}`} className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm text-stone-900">{p.symbol}</span>
-                  {p.is_option && (
-                    <span className="text-xs bg-violet-100 text-violet-700 rounded px-1.5 py-0.5 font-medium">OPT</span>
-                  )}
-                </div>
-                <div className="text-xs text-stone-400 truncate mt-0.5">
-                  {Number.isInteger(p.units) ? p.units : p.units.toFixed(4)} sh · {fmtSmall(p.price)}
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="font-semibold text-sm text-stone-900">{fmt(p.market_value)}</div>
-                <div className={`text-xs font-medium ${p.unrealized_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {p.unrealized_pnl >= 0 ? "+" : ""}{fmtSmall(p.unrealized_pnl)} ({fmtPct(p.unrealized_pnl_pct)})
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Options */}
-      {tab === "options" && (
-        <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
-          {(data.options ?? []).length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8">No open options positions</p>
-          ) : (data.options ?? []).map((o, i) => {
-            const isShort = o.units < 0;
-            const expDate = new Date(o.expiration);
-            const daysToExp = Math.ceil((expDate.getTime() - Date.now()) / 86400000);
-            return (
-              <div key={i} className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-semibold text-sm text-stone-900">{o.underlying}</span>
-                    <span className={`text-xs rounded px-1.5 py-0.5 font-medium ${o.option_type === "CALL" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                      {isShort ? "SHORT" : "LONG"} {o.option_type}
-                    </span>
-                  </div>
-                  <div className="text-xs text-stone-400 mt-0.5">
-                    ${o.strike} · {o.expiration} · {daysToExp > 0 ? `${daysToExp}d` : "expired"}
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="font-semibold text-sm text-stone-900">{Math.abs(o.units)} × {fmtSmall(o.price)}</div>
-                  <div className={`text-xs font-medium ${o.market_value >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {fmtSmall(o.market_value)}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Balances */}
-      {tab === "balances" && (
-        <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
-          {balances.length === 0 ? (
-            <p className="text-sm text-stone-400 text-center py-8">No balance data available</p>
-          ) : balances.map((b, i) => (
-            <div key={i} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
-              <div className="text-xs text-stone-400 mb-2">{b.account_name} · {b.currency}</div>
-              <div className="flex gap-6">
-                <div>
-                  <div className="text-xs text-stone-500">Cash</div>
-                  <div className="font-semibold text-sm">{fmtSmall(b.cash)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-stone-500">Buying Power</div>
-                  <div className="font-semibold text-sm">{fmtSmall(b.buying_power)}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="px-4 pb-2 text-center">
-        <p className="text-xs text-stone-300">
-          Live via SnapTrade · {new Date(data.fetched_at).toLocaleTimeString()}
-        </p>
+      {/* Chain cards */}
+      <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
+        {visible.length === 0 ? (
+          <p className="text-sm text-stone-400 text-center py-8">No chains for this filter</p>
+        ) : (
+          visible.map((chain, i) => (
+            <ChainCard key={`${chain.underlying}-${chain.option_type}-${chain.start_date}-${i}`} chain={chain} />
+          ))
+        )}
       </div>
     </div>
   );
