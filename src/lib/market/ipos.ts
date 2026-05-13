@@ -149,7 +149,7 @@ async function fetchLiveIPOs(): Promise<LiveIPO[]> {
   try {
     const res = await fetch(
       `https://www.alphavantage.co/query?function=IPO_CALENDAR&apikey=${apiKey}`,
-      { next: { revalidate: 3600 } } // cache for 1 hour
+      { cache: 'no-store' }
     );
     if (!res.ok) return [];
     const text = await res.text();
