@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.21.0 — Portfolio Page (SnapTrade Live Data)
+
+- **Portfolio Page**: New `/portfolio` page showing live brokerage data via SnapTrade API
+- **Access Control**: Visible only to `k4rthikr@gmail.com` — hidden for all other users
+- **Bottom Nav**: Portfolio tab added conditionally based on logged-in user
+- **SnapTrade Client**: Server-side `src/lib/snaptrade/client.ts` — accounts, positions, balances, transactions
+- **Portfolio API Route**: `GET /api/portfolio` with email-gated access (403 for unauthorized users)
+- **HTTP MCP Endpoint**: `POST /api/mcp` — JSON-RPC 2.0 endpoint for Claude Desktop remote access
+- **Summary Card**: Total portfolio value, unrealized P&L with color coding, invested/cash/positions breakdown
+- **Positions List**: All holdings with shares, price, market value, P&L — options tagged with OPT badge
+- **Balances Tab**: Cash and buying power per account
+- **Vercel Env Vars**: All 4 `SNAPTRADE_*` vars deployed to production
+
+
 ## v0.20.0 — CSP Alpha Hunter
 
 - **CSP Scanner Engine**: Scans 40+ high-volume tickers for juicy cash-secured puts (7-21 DTE, delta 0.15-0.30)
