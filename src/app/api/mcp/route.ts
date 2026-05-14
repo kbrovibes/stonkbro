@@ -22,7 +22,7 @@ const TOOLS = [
   { name: "get_portfolio_summary", description: "High-level portfolio summary: total value, cost basis, unrealized P&L, and top 10 holdings by weight.", inputSchema: { type: "object", properties: {}, required: [] } },
   { name: "get_holdings", description: "All positions with price, market value, cost basis, and unrealized P&L.", inputSchema: { type: "object", properties: {}, required: [] } },
   { name: "get_balances", description: "Cash balances and buying power per account.", inputSchema: { type: "object", properties: {}, required: [] } },
-  { name: "get_transactions", description: "Transaction history (buys, sells, dividends).", inputSchema: { type: "object", properties: { days: { type: "number", description: "Lookback days (default 90)" } }, required: [] } },
+  { name: "get_transactions", description: "Transaction history (buys, sells, dividends).", inputSchema: { type: "object", properties: { startDate: { type: "string", description: "Start date YYYY-MM-DD (default 2026-01-01)" } }, required: [] } },
 ];
 
 async function callTool(name: string, args: Record<string, unknown>): Promise<string> {
@@ -55,9 +55,9 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<st
       return JSON.stringify({ balances: p.balances }, null, 2);
     }
     case "get_transactions": {
-      const days = Number(args.days ?? 90);
-      const transactions = await getTransactions(days);
-      return JSON.stringify({ transactions, days }, null, 2);
+      const startDate = String(args.startDate ?? "2026-01-01");
+      const transactions = await getTransactions(startDate);
+      return JSON.stringify({ transactions, startDate }, null, 2);
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
