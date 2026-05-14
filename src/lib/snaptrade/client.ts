@@ -196,9 +196,9 @@ export async function getPortfolio(): Promise<PortfolioData> {
   };
 }
 
-export async function getTransactions(days = 90) {
+export async function getTransactions(startDate = "2026-01-01") {
   const end = new Date().toISOString().split("T")[0];
-  const start = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+  const start = startDate;
   const accounts = await getAccounts();
   const all = await Promise.all(
     accounts.map(async (acct) => {
@@ -239,9 +239,9 @@ export interface OptionChain {
   close_month: string | null; // "YYYY-MM" of end_date, for monthly grouping
 }
 
-export async function getOptionChains(days = 90): Promise<OptionChain[]> {
+export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionChain[]> {
   const end = new Date().toISOString().split("T")[0];
-  const start = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+  const start = startDate;
   const accounts = await getAccounts();
 
   const allRaw = await Promise.all(

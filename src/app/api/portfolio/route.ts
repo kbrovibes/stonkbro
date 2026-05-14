@@ -19,14 +19,14 @@ export async function GET(req: Request) {
 
   try {
     if (include === "transactions") {
-      const days = Number(searchParams.get("days") ?? 90);
-      const transactions = await getTransactions(days);
+      const startDate = searchParams.get("startDate") ?? "2026-01-01";
+      const transactions = await getTransactions(startDate);
       return NextResponse.json({ transactions });
     }
 
     if (include === "option-chains") {
-      const days = Number(searchParams.get("days") ?? 90);
-      const chains = await getOptionChains(days);
+      const startDate = searchParams.get("startDate") ?? "2026-01-01";
+      const chains = await getOptionChains(startDate);
       return NextResponse.json({ chains });
     }
 

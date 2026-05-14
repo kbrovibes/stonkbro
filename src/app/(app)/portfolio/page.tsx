@@ -205,7 +205,7 @@ export default function PortfolioPage() {
   const [filter, setFilter] = useState<FilterTab>("Closed");
 
   useEffect(() => {
-    fetch("/api/portfolio?include=option-chains&days=90")
+    fetch("/api/portfolio?include=option-chains")
       .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
         if (!r.ok) {
