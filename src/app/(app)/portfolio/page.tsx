@@ -3,6 +3,23 @@
 import { useState, useEffect } from "react";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
+function findOpenLeg(chain: OptionChain): { strike: number; expiry: string } | null {
+  if (chain.status !== "OPEN" || chain.open_units === 0) return null;
+  const posMap = new Map<string, number>();
+  for (const leg of chain.legs) {
+    if (leg.type !== "SELL" && leg.type !== "BUY") continue;
+    const key = `${leg.strike}|${leg.expiry}`;
+    posMap.set(key, (posMap.get(key) ?? 0) + leg.units);
+  }
+  for (const [key, units] of posMap.entries()) {
+    if (Math.abs(units) > 0.01) {
+      const [s, e] = key.split("|");
+      return { strike: Number(s), expiry: e };
+    }
+  }
+  return null;
+}
+
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency", currency: "USD",
@@ -48,10 +65,50 @@ function isRoll(legs: OptionLeg[], i: number): boolean {
 
 function ChainCard({ chain }: { chain: OptionChain }) {
   const [expanded, setExpanded] = useState(false);
+  const [liveQuote, setLiveQuote] = useState<{ bid: number; mid: number; ask: number } | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const dateRange = chain.end_date
     ? `${fmtDate(chain.start_date)} → ${fmtDate(chain.end_date)}`
     : `${fmtDate(chain.start_date)} → now`;
+
+  const isOpenWithUnits = chain.status === "OPEN" && chain.open_units !== 0;
+  const breakevenClose = isOpenWithUnits
+    ? chain.net_pnl / Math.abs(chain.open_units) / 100
+    : null;
+
+  const openLeg = findOpenLeg(chain);
+
+  async function fetchLiveQuote() {
+    if (!openLeg) return;
+    setQuoteLoading(true);
+    setQuoteError(null);
+    setLiveQuote(null);
+    try {
+      const params = new URLSearchParams({
+        underlying: chain.underlying,
+        option_type: chain.option_type,
+        strike: String(openLeg.strike),
+        expiry: openLeg.expiry,
+      });
+      const res = await fetch(`/api/portfolio/close-price?${params}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setLiveQuote({ bid: data.bid, mid: data.mid, ask: data.ask });
+    } catch (e: unknown) {
+      setQuoteError(e instanceof Error ? e.message : "Failed to fetch quote");
+    } finally {
+      setQuoteLoading(false);
+    }
+  }
+
+  const netAfterClose = liveQuote != null
+    ? chain.net_pnl - liveQuote.mid * Math.abs(chain.open_units) * 100
+    : null;
 
   return (
     <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
@@ -74,6 +131,13 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             )}
           </div>
           <div className="text-xs text-stone-400 mt-0.5">{dateRange}</div>
+          {breakevenClose != null && (
+            <div className={`text-[11px] mt-0.5 text-right ${chain.net_pnl > 0 ? "text-emerald-600" : "text-rose-500"}`}>
+              {chain.net_pnl > 0
+                ? `Close ≤ ${fmtCurrency(breakevenClose)} → chain profit`
+                : `In the hole — close adds ${fmtCurrency(Math.abs(breakevenClose))} more loss`}
+            </div>
+          )}
         </div>
         <div className="text-right flex-shrink-0">
           <div className={`font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
@@ -124,6 +188,48 @@ function ChainCard({ chain }: { chain: OptionChain }) {
               Net {chain.net_pnl >= 0 ? "+" : ""}{fmtCurrency(chain.net_pnl)}
             </span>
           </div>
+
+          {isOpenWithUnits && openLeg && (
+            <div className="mt-3 pt-3 border-t border-stone-100">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-stone-400">
+                  Open: ${openLeg.strike} {fmtDate(openLeg.expiry)}
+                </span>
+                <button
+                  onClick={fetchLiveQuote}
+                  disabled={quoteLoading}
+                  className="text-xs font-medium px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 disabled:opacity-50 transition-colors"
+                >
+                  {quoteLoading ? "Loading..." : "Get Live Quote"}
+                </button>
+              </div>
+
+              {quoteError && (
+                <p className="text-[11px] text-rose-500 mt-1.5">{quoteError}</p>
+              )}
+
+              {liveQuote && (
+                <div className="mt-2 bg-stone-50 rounded-lg px-3 py-2 flex flex-col gap-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-400">Bid / Mid / Ask</span>
+                    <span className="text-stone-700 font-medium">
+                      {fmtCurrency(liveQuote.bid)} / {fmtCurrency(liveQuote.mid)} / {fmtCurrency(liveQuote.ask)}
+                    </span>
+                  </div>
+                  {netAfterClose != null && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-stone-400">If closed now</span>
+                      <span className={`font-semibold ${netAfterClose >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {netAfterClose >= 0
+                          ? `Chain profit of +${fmtCurrency(netAfterClose)}`
+                          : `Still ${fmtCurrency(Math.abs(netAfterClose))} in the hole`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

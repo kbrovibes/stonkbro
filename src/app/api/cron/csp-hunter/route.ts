@@ -30,21 +30,21 @@ export async function GET(request: Request) {
       if (seenCSP.has(c.symbol)) return false;
       seenCSP.add(c.symbol);
       return true;
-    }).slice(0, 5);
+    }).slice(0, 10);
 
     const seenCalls = new Set<string>();
     const dedupedCalls = callScan.candidates.filter((c) => {
       if (seenCalls.has(c.symbol)) return false;
       seenCalls.add(c.symbol);
       return true;
-    }).slice(0, 5);
+    }).slice(0, 10);
 
     const seenLeaps = new Set<string>();
     const dedupedLeaps = leapsScan.candidates.filter((c) => {
       if (seenLeaps.has(c.symbol)) return false;
       seenLeaps.add(c.symbol);
       return true;
-    }).slice(0, 5);
+    }).slice(0, 10);
 
     console.log(`[Options Scanner] Found ${scan.candidates.length} CSPs + ${dedupedCalls.length} calls + ${dedupedLeaps.length} LEAPS`);
 

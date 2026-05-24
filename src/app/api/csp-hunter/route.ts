@@ -64,9 +64,9 @@ export async function POST(request: Request) {
     }).slice(0, max);
   };
 
-  const dedupedCSPs = dedupSection(scan.candidates, 5);
-  const dedupedCalls = dedupSection(callScan.candidates, 5);
-  const dedupedLeaps = dedupSection(leapsScan.candidates, 5);
+  const dedupedCSPs = dedupSection(scan.candidates, 10);
+  const dedupedCalls = dedupSection(callScan.candidates, 10);
+  const dedupedLeaps = dedupSection(leapsScan.candidates, 10);
 
   let delta = null;
   const lastScan = await getLastScan();

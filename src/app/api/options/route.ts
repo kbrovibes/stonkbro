@@ -81,7 +81,7 @@ function findCSPCandidates(price: number, puts: OptionContract[]): CSPCandidate[
     })
     .sort((a, b) => b.annualizedReturn - a.annualizedReturn);
 
-  return candidates.slice(0, 5);
+  return candidates.slice(0, 10);
 }
 
 function findCCCandidates(price: number, calls: OptionContract[]): CCCandidate[] {
@@ -123,7 +123,7 @@ function findCCCandidates(price: number, calls: OptionContract[]): CCCandidate[]
     })
     .sort((a, b) => b.annualizedReturn - a.annualizedReturn);
 
-  return candidates.slice(0, 5);
+  return candidates.slice(0, 10);
 }
 
 export async function GET(request: Request) {
