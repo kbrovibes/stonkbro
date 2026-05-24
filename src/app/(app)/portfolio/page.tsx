@@ -80,6 +80,9 @@ function ChainCard({ chain }: { chain: OptionChain }) {
     : null;
 
   const openLeg = findOpenLeg(chain);
+  const capitalLocked = isOpenWithUnits && openLeg
+    ? openLeg.strike * 100 * Math.abs(chain.open_units)
+    : null;
 
   async function fetchLiveQuote() {
     if (!openLeg) return;
@@ -132,8 +135,13 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             )}
           </div>
           <div className="text-xs text-stone-400 mt-0.5">{dateRange}</div>
+          {capitalLocked != null && (
+            <div className="text-[11px] text-amber-600 mt-0.5">
+              {fmtCurrency(capitalLocked)} collateral · {Math.abs(chain.open_units)} contract{Math.abs(chain.open_units) !== 1 ? "s" : ""}
+            </div>
+          )}
           {breakevenClose != null && (
-            <div className={`text-[11px] mt-0.5 text-right ${chain.net_pnl > 0 ? "text-emerald-600" : "text-rose-500"}`}>
+            <div className={`text-[11px] mt-0.5 ${chain.net_pnl > 0 ? "text-emerald-600" : "text-rose-500"}`}>
               {chain.net_pnl > 0
                 ? `Close ≤ ${fmtCurrency(breakevenClose)} → chain profit`
                 : `In the hole — close adds ${fmtCurrency(Math.abs(breakevenClose))} more loss`}

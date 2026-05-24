@@ -129,19 +129,23 @@ export default function OptionsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchLatest().then(() => {
-      // Auto-scan if data is stale and we haven't already triggered one this session
-      setScan(prev => {
-        if (prev && isStale(prev.createdAt) && !autoScannedRef.current) {
-          autoScannedRef.current = true;
-          fetch("/api/csp-hunter", { method: "POST" })
-            .then(r => r.ok ? fetchLatest() : Promise.resolve())
-            .catch(() => {});
-        }
-        return prev;
-      });
+    fetchLatest().then((result) => {
+      // Check staleness from the fetched scan value directly
+      // We'll read it from a ref to avoid stale closure
     }).finally(() => setLoading(false));
   }, [fetchLatest]);
+
+  // Auto-scan when data is loaded and found to be stale
+  useEffect(() => {
+    if (scan && isStale(scan.createdAt) && !autoScannedRef.current) {
+      autoScannedRef.current = true;
+      setScanning(true);
+      fetch("/api/csp-hunter", { method: "POST" })
+        .then(r => { if (r.ok) return fetchLatest(); })
+        .catch(() => {})
+        .finally(() => setScanning(false));
+    }
+  }, [scan, fetchLatest]);
 
   // Re-fetch when pull-to-refresh fires
   useRefreshEvent(fetchLatest);
