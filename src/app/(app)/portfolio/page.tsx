@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRefreshEvent } from "@/hooks/useRefreshEvent";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
 function findOpenLeg(chain: OptionChain): { strike: number; expiry: string } | null {
@@ -310,7 +311,8 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>("Closed");
 
-  useEffect(() => {
+  const fetchChains = useCallback(() => {
+    setLoading(true);
     fetch("/api/portfolio?include=option-chains")
       .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
@@ -324,6 +326,9 @@ export default function PortfolioPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchChains(); }, [fetchChains]);
+  useRefreshEvent(fetchChains);
 
   if (loading) {
     return (
@@ -356,6 +361,14 @@ export default function PortfolioPage() {
   const assigned = chains.filter(c => c.status === "ASSIGNED");
   const closedPnl = closed.reduce((s, c) => s + c.net_pnl, 0);
 
+  // Total collateral locked in open short positions (strike × 100 × contracts)
+  const capitalLocked = open.reduce((sum, c) => {
+    if (c.open_units === 0) return sum;
+    const leg = findOpenLeg(c);
+    if (!leg) return sum;
+    return sum + leg.strike * 100 * Math.abs(c.open_units);
+  }, 0);
+
   const TABS: FilterTab[] = ["Closed", "Open", "Assigned", "Monthly"];
 
   const filtered =
@@ -366,7 +379,7 @@ export default function PortfolioPage() {
   return (
     <div className="flex flex-col">
       {/* Summary */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-2 flex flex-col gap-2">
         <div className="bg-white border border-stone-100 rounded-2xl px-5 py-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">90-Day Realized</div>
@@ -389,6 +402,15 @@ export default function PortfolioPage() {
             </div>
           </div>
         </div>
+        {capitalLocked > 0 && (
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-5 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs text-amber-600 font-medium uppercase tracking-wider mb-0.5">Capital Locked</div>
+              <div className="text-xs text-amber-500">{open.length} open contract{open.length !== 1 ? "s" : ""} · collateral</div>
+            </div>
+            <div className="text-xl font-bold text-amber-700">{fmtCurrency(capitalLocked)}</div>
+          </div>
+        )}
       </div>
 
       {/* Filter tabs */}

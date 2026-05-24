@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRefreshEvent } from "@/hooks/useRefreshEvent";
 import Link from "next/link";
 
 type Candidate = {
@@ -124,10 +125,26 @@ export default function OptionsPage() {
     }
   }, []);
 
+  const autoScannedRef = useRef(false);
+
   useEffect(() => {
     setLoading(true);
-    fetchLatest().finally(() => setLoading(false));
+    fetchLatest().then(() => {
+      // Auto-scan if data is stale and we haven't already triggered one this session
+      setScan(prev => {
+        if (prev && isStale(prev.createdAt) && !autoScannedRef.current) {
+          autoScannedRef.current = true;
+          fetch("/api/csp-hunter", { method: "POST" })
+            .then(r => r.ok ? fetchLatest() : Promise.resolve())
+            .catch(() => {});
+        }
+        return prev;
+      });
+    }).finally(() => setLoading(false));
   }, [fetchLatest]);
+
+  // Re-fetch when pull-to-refresh fires
+  useRefreshEvent(fetchLatest);
 
   const handleScanNow = async () => {
     setLoginRequired(false);

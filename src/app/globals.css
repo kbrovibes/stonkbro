@@ -16,4 +16,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  overscroll-behavior: none; /* disable browser pull-to-refresh so PWA handles it */
 }
