@@ -21,8 +21,13 @@ function findOpenLeg(chain: OptionChain): { strike: number; expiry: string } | n
   return null;
 }
 
-// Track peak PUT collateral locked per calendar month
-function computePutCapitalPeaks(chains: OptionChain[]): Map<string, number> {
+interface PutCapitalMonthData {
+  peak: number;
+  peakDate: string;
+}
+
+// Track peak PUT collateral locked per calendar month, including the exact date of the peak
+function computePutCapitalPeaks(chains: OptionChain[]): Map<string, PutCapitalMonthData> {
   type Ev = { dateStr: string; delta: number };
   const events: Ev[] = [];
   for (const chain of chains) {
@@ -46,14 +51,44 @@ function computePutCapitalPeaks(chains: OptionChain[]): Map<string, number> {
     }
   }
   events.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-  const peaks = new Map<string, number>();
+  const peaks = new Map<string, PutCapitalMonthData>();
   let running = 0;
   for (const ev of events) {
     running = Math.max(0, running + ev.delta);
     const m = ev.dateStr.substring(0, 7);
-    peaks.set(m, Math.max(peaks.get(m) ?? 0, running));
+    const cur = peaks.get(m);
+    if (!cur || running > cur.peak) {
+      peaks.set(m, { peak: running, peakDate: ev.dateStr });
+    }
   }
   return peaks;
+}
+
+// Returns active PUT positions on a given date (for collateral breakdown)
+function getPutPositionsOnDate(
+  chains: OptionChain[],
+  date: string
+): Array<{ underlying: string; strike: number; units: number; collateral: number }> {
+  const result: Array<{ underlying: string; strike: number; units: number; collateral: number }> = [];
+  for (const chain of chains) {
+    if (chain.option_type.toUpperCase() !== "PUT") continue;
+    let units = 0;
+    let lastStrike = 0;
+    for (const leg of chain.legs) {
+      if (leg.date > date) break;
+      if (leg.type === "SELL" || leg.type === "BUY") {
+        units += leg.units;
+        lastStrike = leg.strike;
+      } else if (leg.type === "OPTIONEXPIRATION" || leg.type === "OPTIONASSIGNMENT") {
+        units = 0;
+      }
+    }
+    const absUnits = Math.abs(units);
+    if (absUnits > 0 && lastStrike > 0) {
+      result.push({ underlying: chain.underlying, strike: lastStrike, units: absUnits, collateral: lastStrike * 100 * absUnits });
+    }
+  }
+  return result.filter(p => p.collateral > 0);
 }
 
 function fmtCurrency(n: number) {
@@ -109,48 +144,62 @@ function isRoll(legs: OptionLeg[], i: number): boolean {
   return diff <= 1 && curr.strike !== prev.strike && curr.type !== prev.type;
 }
 
-function MonthlyChart({ chains }: { chains: OptionChain[] }) {
+function MonthlyChart({
+  chains,
+  putCapitalData,
+}: {
+  chains: OptionChain[];
+  putCapitalData: Map<string, PutCapitalMonthData>;
+}) {
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+
   const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
   const byMonth = new Map<string, number>();
   for (const c of realized) {
     const m = c.close_month!;
     byMonth.set(m, (byMonth.get(m) ?? 0) + c.net_pnl);
   }
-  const putPeaks = computePutCapitalPeaks(chains);
 
-  // Union of all months present in either dataset
-  const allMonths = Array.from(new Set([...byMonth.keys(), ...putPeaks.keys()])).sort();
+  const allMonths = Array.from(new Set([...byMonth.keys(), ...putCapitalData.keys()])).sort();
   if (allMonths.length === 0) return null;
 
   const pnlValues = allMonths.map(m => byMonth.get(m) ?? 0);
-  const peakValues = allMonths.map(m => putPeaks.get(m) ?? 0);
+  const peakValues = allMonths.map(m => putCapitalData.get(m)?.peak ?? 0);
 
   const maxAbsPnl = Math.max(...pnlValues.map(Math.abs), 1);
   const maxPeak = Math.max(...peakValues, 1);
 
+  const totalYearPnl = pnlValues.reduce((s, v) => s + v, 0);
+  const maxEverCollateral = Math.max(...peakValues, 0);
+  const ytdReturnPct = maxEverCollateral > 0 ? (totalYearPnl / maxEverCollateral) * 100 : null;
+
   const W = 400;
-  const H = 160;
-  const PAD_L = 48;
-  const PAD_R = 52;
-  const PAD_T = 12;
+  const H = 180;
+  const PAD_L = 52;
+  const PAD_R = 56;
+  const PAD_T = 16;
   const PAD_B = 28;
   const chartW = W - PAD_L - PAD_R;
   const chartH = H - PAD_T - PAD_B;
   const midY = PAD_T + chartH / 2;
 
   const n = allMonths.length;
-  const barW = Math.max(4, Math.floor(chartW / n) - 3);
   const step = chartW / n;
+  const halfBarW = Math.max(2, Math.floor(step * 0.3));
 
-  function barX(i: number) { return PAD_L + i * step + step / 2; }
+  function cx(i: number) { return PAD_L + i * step + step / 2; }
+  // Both axes share the same zero at midY
   function pnlY(v: number) { return midY - (v / maxAbsPnl) * (chartH / 2); }
-  function peakY(v: number) { return PAD_T + chartH - (v / maxPeak) * chartH; }
+  // Collateral: 0 at midY, maxPeak at top (occupies upper half only)
+  function collY(v: number) { return midY - (v / maxPeak) * (chartH / 2); }
 
-  const linePoints = allMonths
-    .map((_, i) => `${barX(i)},${peakY(peakValues[i])}`)
-    .join(" ");
-
-  const yTicks = [-maxAbsPnl, -maxAbsPnl / 2, 0, maxAbsPnl / 2, maxAbsPnl];
+  const tooltip = activeIdx !== null ? {
+    month: allMonths[activeIdx],
+    pnl: pnlValues[activeIdx],
+    collateral: peakValues[activeIdx],
+    peakDate: putCapitalData.get(allMonths[activeIdx])?.peakDate ?? null,
+    returnPct: peakValues[activeIdx] > 0 ? (pnlValues[activeIdx] / peakValues[activeIdx]) * 100 : null,
+  } : null;
 
   return (
     <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
@@ -158,78 +207,134 @@ function MonthlyChart({ chains }: { chains: OptionChain[] }) {
         <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Monthly P&amp;L</span>
         <div className="flex items-center gap-3 text-[10px] text-stone-400">
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-emerald-400" /> P&amp;L</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-3 border-t-2 border-amber-400 border-dashed" /> PUT Collateral</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-amber-300" /> Collateral</span>
         </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 160 }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        style={{ height: 180 }}
+        onMouseLeave={() => setActiveIdx(null)}
+      >
         {/* Zero line */}
         <line x1={PAD_L} y1={midY} x2={W - PAD_R} y2={midY} stroke="#e7e5e4" strokeWidth={1} />
 
-        {/* Left Y-axis ticks */}
-        {yTicks.map((v, i) => (
-          <g key={i}>
-            <line x1={PAD_L - 3} y1={pnlY(v)} x2={PAD_L} y2={pnlY(v)} stroke="#d6d3d1" strokeWidth={1} />
-            <text x={PAD_L - 5} y={pnlY(v) + 3.5} textAnchor="end" fontSize={8} fill="#a8a29e">
-              {fmtK(v)}
-            </text>
-          </g>
-        ))}
-
-        {/* Right Y-axis ticks */}
-        {[0, 0.5, 1].map((frac, i) => {
-          const val = frac * maxPeak;
-          const y = peakY(val);
+        {/* Left Y-axis ticks (P&L) */}
+        {[-1, -0.5, 0, 0.5, 1].map((f, i) => {
+          const v = f * maxAbsPnl;
           return (
             <g key={i}>
-              <line x1={W - PAD_R} y1={y} x2={W - PAD_R + 3} y2={y} stroke="#fcd34d" strokeWidth={1} />
-              <text x={W - PAD_R + 5} y={y + 3.5} textAnchor="start" fontSize={8} fill="#d97706">
-                {fmtK(val)}
-              </text>
+              <line x1={PAD_L - 3} y1={pnlY(v)} x2={PAD_L} y2={pnlY(v)} stroke="#d6d3d1" strokeWidth={1} />
+              <text x={PAD_L - 5} y={pnlY(v) + 3.5} textAnchor="end" fontSize={8} fill="#a8a29e">{fmtK(v)}</text>
             </g>
           );
         })}
 
-        {/* Bars */}
-        {allMonths.map((_, i) => {
-          const v = pnlValues[i];
-          const x = barX(i) - barW / 2;
-          const h = Math.abs(v / maxAbsPnl) * (chartH / 2);
-          const y = v >= 0 ? midY - h : midY;
+        {/* Right Y-axis ticks (collateral — 0 at midY, max at top) */}
+        {[0, 0.5, 1].map((f, i) => {
+          const v = f * maxPeak;
+          const y = collY(v);
           return (
-            <rect
-              key={i}
-              x={x} y={y} width={barW} height={Math.max(1, h)}
-              fill={v >= 0 ? "#34d399" : "#f87171"}
-              rx={1}
-            />
+            <g key={i}>
+              <line x1={W - PAD_R} y1={y} x2={W - PAD_R + 3} y2={y} stroke="#fcd34d" strokeWidth={1} />
+              <text x={W - PAD_R + 5} y={y + 3.5} textAnchor="start" fontSize={8} fill="#d97706">{fmtK(v)}</text>
+            </g>
           );
         })}
 
-        {/* PUT collateral peak line */}
-        {allMonths.length > 1 && (
-          <polyline
-            points={linePoints}
-            fill="none"
-            stroke="#f59e0b"
-            strokeWidth={1.5}
-            strokeDasharray="4 2"
-          />
-        )}
-        {allMonths.map((_, i) => (
-          <circle key={i} cx={barX(i)} cy={peakY(peakValues[i])} r={2} fill="#f59e0b" />
-        ))}
+        {/* Bars per month */}
+        {allMonths.map((_, i) => {
+          const pnl = pnlValues[i];
+          const coll = peakValues[i];
+          const x = cx(i);
+          const isActive = activeIdx === i;
+
+          const pnlH = Math.abs((pnl / maxAbsPnl) * (chartH / 2));
+          const pnlBarY = pnl >= 0 ? pnlY(pnl) : midY;
+          const collH = (coll / maxPeak) * (chartH / 2);
+          const collBarY = collY(coll);
+
+          return (
+            <g key={i}>
+              {/* Invisible hit area */}
+              <rect
+                x={x - step / 2} y={PAD_T} width={step} height={chartH}
+                fill={isActive ? "rgba(0,0,0,0.04)" : "transparent"}
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => setActiveIdx(i)}
+                onClick={() => setActiveIdx(i === activeIdx ? null : i)}
+              />
+              {/* P&L bar — left of center */}
+              <rect
+                x={x - halfBarW - 1} y={pnlBarY}
+                width={halfBarW} height={Math.max(1, pnlH)}
+                fill={pnl >= 0 ? "#34d399" : "#f87171"} rx={1}
+                pointerEvents="none"
+              />
+              {/* Collateral bar — right of center, above zero line only */}
+              {coll > 0 && (
+                <rect
+                  x={x + 1} y={collBarY}
+                  width={halfBarW} height={Math.max(1, collH)}
+                  fill={isActive ? "#f59e0b" : "#fcd34d"} rx={1}
+                  pointerEvents="none"
+                />
+              )}
+            </g>
+          );
+        })}
 
         {/* Month labels */}
         {allMonths.map((m, i) => (
           <text
-            key={i}
-            x={barX(i)} y={H - 6}
-            textAnchor="middle" fontSize={8} fill="#a8a29e"
+            key={i} x={cx(i)} y={H - 6}
+            textAnchor="middle" fontSize={8}
+            fill={activeIdx === i ? "#57534e" : "#a8a29e"}
           >
             {fmtMonthShort(m)}
           </text>
         ))}
+
+        {/* Tooltip */}
+        {tooltip && activeIdx !== null && (() => {
+          const x = cx(activeIdx);
+          const flipLeft = x > W * 0.6;
+          const lines = [
+            fmtMonth(tooltip.month),
+            `P&L: ${tooltip.pnl >= 0 ? "+" : ""}${fmtCurrency(tooltip.pnl)}`,
+            tooltip.collateral > 0 ? `Collateral: ${fmtCurrency(tooltip.collateral)}` : null,
+            tooltip.peakDate ? `Peak: ${fmtDate(tooltip.peakDate)}` : null,
+            tooltip.returnPct !== null ? `Return: ${tooltip.returnPct.toFixed(1)}%` : null,
+          ].filter(Boolean) as string[];
+          const bW = 148;
+          const bH = lines.length * 13 + 8;
+          const bX = flipLeft ? x - bW - 4 : x + 4;
+          const bY = PAD_T + 2;
+          return (
+            <g pointerEvents="none">
+              <rect x={bX} y={bY} width={bW} height={bH} rx={4} fill="white" stroke="#e7e5e4" strokeWidth={1} />
+              {lines.map((line, j) => (
+                <text
+                  key={j} x={bX + 7} y={bY + 14 + j * 13}
+                  fontSize={9} fill={j === 0 ? "#1c1917" : "#57534e"}
+                  fontWeight={j === 0 ? "bold" : "normal"}
+                >
+                  {line}
+                </text>
+              ))}
+            </g>
+          );
+        })()}
       </svg>
+
+      {ytdReturnPct !== null && (
+        <div className="px-4 pb-3 pt-2 border-t border-stone-50 flex items-center justify-between">
+          <span className="text-xs text-stone-400">YTD return on peak PUT collateral</span>
+          <span className={`text-sm font-bold ${ytdReturnPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {ytdReturnPct >= 0 ? "+" : ""}{ytdReturnPct.toFixed(1)}%
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -419,6 +524,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
 
 function MonthlyView({ chains }: { chains: OptionChain[] }) {
   const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
+  const putCapitalData = computePutCapitalPeaks(chains);
 
   const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
   for (const c of realized) {
@@ -433,7 +539,7 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <MonthlyChart chains={chains} />
+      <MonthlyChart chains={chains} putCapitalData={putCapitalData} />
 
       {months.length > 0 && (
         <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -456,6 +562,10 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
             return acc;
           }, {});
 
+          const capData = putCapitalData.get(month);
+          const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
+          const monthReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
+
           return (
             <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
               <div className="flex items-center justify-between mb-2">
@@ -463,10 +573,19 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
                   <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
                   <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
                 </div>
-                <span className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
-                </span>
+                <div className="text-right">
+                  <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
+                  </div>
+                  {monthReturnPct !== null && (
+                    <div className="text-[11px] text-stone-400">
+                      {monthReturnPct >= 0 ? "+" : ""}{monthReturnPct.toFixed(1)}% on collateral
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* P&L by underlying */}
               <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
                 {Object.entries(byUnderlying)
                   .sort((a, b) => b[1] - a[1])
@@ -479,6 +598,35 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
                     </div>
                   ))}
               </div>
+
+              {/* Peak collateral breakdown */}
+              {capData && capData.peak > 0 && (
+                <div className="mt-2 pt-2 border-t border-stone-50">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-medium text-amber-600">
+                      Peak PUT collateral · {fmtDate(capData.peakDate)}
+                    </span>
+                    <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+                  </div>
+                  {peakPositions.map((pos, j) => (
+                    <div key={j} className="flex justify-between text-[10px] pl-2">
+                      <span className="text-stone-400">
+                        {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
+                        <span className="text-stone-300 ml-1">= ${pos.strike} × 100 × {pos.units}</span>
+                      </span>
+                      <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
+                    </div>
+                  ))}
+                  {peakPositions.length > 1 && (
+                    <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 mt-0.5">
+                      <span className="text-stone-400">Total</span>
+                      <span className="text-amber-700 font-semibold">
+                        {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })
