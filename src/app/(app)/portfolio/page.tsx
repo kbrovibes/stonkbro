@@ -492,6 +492,8 @@ export default function PortfolioPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>("Open");
+  type OpenSort = "expiry" | "collateral" | "pnl" | "type" | "ticker";
+  const [openSort, setOpenSort] = useState<OpenSort>("expiry");
 
   const fetchChains = useCallback(() => {
     setLoading(true);
@@ -554,8 +556,33 @@ export default function PortfolioPage() {
 
   const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
 
+  const sortedOpen = [...open].sort((a, b) => {
+    switch (openSort) {
+      case "expiry": {
+        const ea = findOpenLeg(a)?.expiry ?? "9999";
+        const eb = findOpenLeg(b)?.expiry ?? "9999";
+        return ea.localeCompare(eb);
+      }
+      case "collateral": {
+        const legA = findOpenLeg(a);
+        const legB = findOpenLeg(b);
+        const ca = a.option_type.toUpperCase() === "PUT" && legA ? legA.strike * 100 * Math.abs(a.open_units) : 0;
+        const cb = b.option_type.toUpperCase() === "PUT" && legB ? legB.strike * 100 * Math.abs(b.open_units) : 0;
+        return cb - ca;
+      }
+      case "pnl":
+        return b.net_pnl - a.net_pnl;
+      case "type":
+        return a.option_type.localeCompare(b.option_type);
+      case "ticker":
+        return a.underlying.localeCompare(b.underlying);
+      default:
+        return 0;
+    }
+  });
+
   const filtered =
-    filter === "Open"     ? open :
+    filter === "Open"     ? sortedOpen :
     filter === "Closed"   ? closed :
     filter === "Assigned" ? assigned : [];
 
@@ -612,6 +639,31 @@ export default function PortfolioPage() {
           </button>
         ))}
       </div>
+
+      {/* Sort bar — Open tab only */}
+      {filter === "Open" && open.length > 0 && (
+        <div className="px-4 pb-1 flex gap-1.5 overflow-x-auto scrollbar-hide">
+          {([
+            ["expiry",     "Expiry"],
+            ["collateral", "Collateral"],
+            ["pnl",        "P&L"],
+            ["type",       "Type"],
+            ["ticker",     "Ticker"],
+          ] as [typeof openSort, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setOpenSort(key)}
+              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+                openSort === key
+                  ? "bg-stone-800 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div className="px-4 pb-4 flex flex-col gap-2 mt-1">

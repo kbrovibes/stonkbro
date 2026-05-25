@@ -330,6 +330,16 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
     if (currentLegs.length > 0) flush("OPEN");
   }
 
+  // Auto-expire contracts that SnapTrade never sent an OPTIONEXPIRATION for
+  const today = new Date().toISOString().split("T")[0];
+  for (const c of contractChains) {
+    if (c.status === "OPEN" && c.expiry < today) {
+      c.status = "EXPIRED";
+      c.end_date = c.expiry;
+      c.open_units = 0;
+    }
+  }
+
   // ── Step 2: group by underlying+type, roll-chain SHORT contracts ─────────
   // Only SELL-first (income/short) contracts are roll-chained together.
   // BUY-first (long/directional) contracts remain standalone.
