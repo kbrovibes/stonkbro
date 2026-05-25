@@ -21,11 +21,52 @@ function findOpenLeg(chain: OptionChain): { strike: number; expiry: string } | n
   return null;
 }
 
+// Track peak PUT collateral locked per calendar month
+function computePutCapitalPeaks(chains: OptionChain[]): Map<string, number> {
+  type Ev = { dateStr: string; delta: number };
+  const events: Ev[] = [];
+  for (const chain of chains) {
+    if (chain.option_type.toUpperCase() !== "PUT") continue;
+    let chainRunning = 0;
+    for (const leg of chain.legs) {
+      if (leg.type === "SELL") {
+        const amt = Math.abs(leg.units) * leg.strike * 100;
+        chainRunning += amt;
+        events.push({ dateStr: leg.date, delta: amt });
+      } else if (leg.type === "BUY") {
+        const amt = Math.abs(leg.units) * leg.strike * 100;
+        chainRunning = Math.max(0, chainRunning - amt);
+        events.push({ dateStr: leg.date, delta: -amt });
+      } else if (leg.type === "OPTIONEXPIRATION" || leg.type === "OPTIONASSIGNMENT") {
+        if (chainRunning > 0) {
+          events.push({ dateStr: leg.date, delta: -chainRunning });
+          chainRunning = 0;
+        }
+      }
+    }
+  }
+  events.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  const peaks = new Map<string, number>();
+  let running = 0;
+  for (const ev of events) {
+    running = Math.max(0, running + ev.delta);
+    const m = ev.dateStr.substring(0, 7);
+    peaks.set(m, Math.max(peaks.get(m) ?? 0, running));
+  }
+  return peaks;
+}
+
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency", currency: "USD",
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n);
+}
+
+function fmtK(n: number): string {
+  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toFixed(0)}`;
 }
 
 function fmtDate(d: string | null) {
@@ -38,7 +79,12 @@ function fmtMonth(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-type FilterTab = "Closed" | "Open" | "Assigned" | "Monthly";
+function fmtMonthShort(m: string) {
+  const [year, month] = m.split("-");
+  return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
+}
+
+type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly";
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN:     "bg-sky-100 text-sky-700",
@@ -54,7 +100,6 @@ function legColor(leg: OptionLeg): string {
   return "text-rose-600";
 }
 
-// Detect roll: leg at index i opens after a close on same or adjacent day
 function isRoll(legs: OptionLeg[], i: number): boolean {
   if (i === 0) return false;
   const prev = legs[i - 1];
@@ -62,6 +107,131 @@ function isRoll(legs: OptionLeg[], i: number): boolean {
   if (curr.type !== "SELL" && curr.type !== "BUY") return false;
   const diff = (new Date(curr.date).getTime() - new Date(prev.date).getTime()) / 86400000;
   return diff <= 1 && curr.strike !== prev.strike && curr.type !== prev.type;
+}
+
+function MonthlyChart({ chains }: { chains: OptionChain[] }) {
+  const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
+  const byMonth = new Map<string, number>();
+  for (const c of realized) {
+    const m = c.close_month!;
+    byMonth.set(m, (byMonth.get(m) ?? 0) + c.net_pnl);
+  }
+  const putPeaks = computePutCapitalPeaks(chains);
+
+  // Union of all months present in either dataset
+  const allMonths = Array.from(new Set([...byMonth.keys(), ...putPeaks.keys()])).sort();
+  if (allMonths.length === 0) return null;
+
+  const pnlValues = allMonths.map(m => byMonth.get(m) ?? 0);
+  const peakValues = allMonths.map(m => putPeaks.get(m) ?? 0);
+
+  const maxAbsPnl = Math.max(...pnlValues.map(Math.abs), 1);
+  const maxPeak = Math.max(...peakValues, 1);
+
+  const W = 400;
+  const H = 160;
+  const PAD_L = 48;
+  const PAD_R = 52;
+  const PAD_T = 12;
+  const PAD_B = 28;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const midY = PAD_T + chartH / 2;
+
+  const n = allMonths.length;
+  const barW = Math.max(4, Math.floor(chartW / n) - 3);
+  const step = chartW / n;
+
+  function barX(i: number) { return PAD_L + i * step + step / 2; }
+  function pnlY(v: number) { return midY - (v / maxAbsPnl) * (chartH / 2); }
+  function peakY(v: number) { return PAD_T + chartH - (v / maxPeak) * chartH; }
+
+  const linePoints = allMonths
+    .map((_, i) => `${barX(i)},${peakY(peakValues[i])}`)
+    .join(" ");
+
+  const yTicks = [-maxAbsPnl, -maxAbsPnl / 2, 0, maxAbsPnl / 2, maxAbsPnl];
+
+  return (
+    <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+        <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Monthly P&amp;L</span>
+        <div className="flex items-center gap-3 text-[10px] text-stone-400">
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-emerald-400" /> P&amp;L</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 border-t-2 border-amber-400 border-dashed" /> PUT Collateral</span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 160 }}>
+        {/* Zero line */}
+        <line x1={PAD_L} y1={midY} x2={W - PAD_R} y2={midY} stroke="#e7e5e4" strokeWidth={1} />
+
+        {/* Left Y-axis ticks */}
+        {yTicks.map((v, i) => (
+          <g key={i}>
+            <line x1={PAD_L - 3} y1={pnlY(v)} x2={PAD_L} y2={pnlY(v)} stroke="#d6d3d1" strokeWidth={1} />
+            <text x={PAD_L - 5} y={pnlY(v) + 3.5} textAnchor="end" fontSize={8} fill="#a8a29e">
+              {fmtK(v)}
+            </text>
+          </g>
+        ))}
+
+        {/* Right Y-axis ticks */}
+        {[0, 0.5, 1].map((frac, i) => {
+          const val = frac * maxPeak;
+          const y = peakY(val);
+          return (
+            <g key={i}>
+              <line x1={W - PAD_R} y1={y} x2={W - PAD_R + 3} y2={y} stroke="#fcd34d" strokeWidth={1} />
+              <text x={W - PAD_R + 5} y={y + 3.5} textAnchor="start" fontSize={8} fill="#d97706">
+                {fmtK(val)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Bars */}
+        {allMonths.map((_, i) => {
+          const v = pnlValues[i];
+          const x = barX(i) - barW / 2;
+          const h = Math.abs(v / maxAbsPnl) * (chartH / 2);
+          const y = v >= 0 ? midY - h : midY;
+          return (
+            <rect
+              key={i}
+              x={x} y={y} width={barW} height={Math.max(1, h)}
+              fill={v >= 0 ? "#34d399" : "#f87171"}
+              rx={1}
+            />
+          );
+        })}
+
+        {/* PUT collateral peak line */}
+        {allMonths.length > 1 && (
+          <polyline
+            points={linePoints}
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth={1.5}
+            strokeDasharray="4 2"
+          />
+        )}
+        {allMonths.map((_, i) => (
+          <circle key={i} cx={barX(i)} cy={peakY(peakValues[i])} r={2} fill="#f59e0b" />
+        ))}
+
+        {/* Month labels */}
+        {allMonths.map((m, i) => (
+          <text
+            key={i}
+            x={barX(i)} y={H - 6}
+            textAnchor="middle" fontSize={8} fill="#a8a29e"
+          >
+            {fmtMonthShort(m)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
 }
 
 function ChainCard({ chain }: { chain: OptionChain }) {
@@ -80,7 +250,9 @@ function ChainCard({ chain }: { chain: OptionChain }) {
     : null;
 
   const openLeg = findOpenLeg(chain);
-  const capitalLocked = isOpenWithUnits && openLeg
+  // Capital locked only applies to PUTs (covered calls don't require collateral)
+  const isPut = chain.option_type.toUpperCase() === "PUT";
+  const capitalLocked = isPut && isOpenWithUnits && openLeg
     ? openLeg.strike * 100 * Math.abs(chain.open_units)
     : null;
 
@@ -246,7 +418,6 @@ function ChainCard({ chain }: { chain: OptionChain }) {
 }
 
 function MonthlyView({ chains }: { chains: OptionChain[] }) {
-  // Only realized (closed/expired/assigned) chains contribute to monthly returns
   const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
 
   const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
@@ -260,55 +431,58 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   const totalPnl = months.reduce((s, [, v]) => s + v.pnl, 0);
 
-  if (months.length === 0) {
-    return <p className="text-sm text-stone-400 text-center py-8">No closed positions in this period</p>;
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      {/* Period total */}
-      <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
-        <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">90-Day Total</span>
-        <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-          {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
-        </span>
-      </div>
+      <MonthlyChart chains={chains} />
 
-      {months.map(([month, { pnl, chains: mChains }]) => {
-        const winners = mChains.filter(c => c.net_pnl > 0).length;
-        const losers = mChains.filter(c => c.net_pnl <= 0).length;
-        const byUnderlying = mChains.reduce<Record<string, number>>((acc, c) => {
-          const k = `${c.underlying} ${c.option_type}`;
-          acc[k] = (acc[k] ?? 0) + c.net_pnl;
-          return acc;
-        }, {});
+      {months.length > 0 && (
+        <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year Total</span>
+          <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
+          </span>
+        </div>
+      )}
 
-        return (
-          <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
-                <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
+      {months.length === 0 ? (
+        <p className="text-sm text-stone-400 text-center py-8">No closed positions this year</p>
+      ) : (
+        months.map(([month, { pnl, chains: mChains }]) => {
+          const winners = mChains.filter(c => c.net_pnl > 0).length;
+          const losers = mChains.filter(c => c.net_pnl <= 0).length;
+          const byUnderlying = mChains.reduce<Record<string, number>>((acc, c) => {
+            const k = `${c.underlying} ${c.option_type}`;
+            acc[k] = (acc[k] ?? 0) + c.net_pnl;
+            return acc;
+          }, {});
+
+          return (
+            <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
+                  <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
+                </div>
+                <span className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
+                </span>
               </div>
-              <span className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
-              </span>
+              <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
+                {Object.entries(byUnderlying)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([key, val]) => (
+                    <div key={key} className="flex justify-between text-xs">
+                      <span className="text-stone-500">{key}</span>
+                      <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {val >= 0 ? "+" : ""}{fmtCurrency(val)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
-              {Object.entries(byUnderlying)
-                .sort((a, b) => b[1] - a[1])
-                .map(([key, val]) => (
-                  <div key={key} className="flex justify-between text-xs">
-                    <span className="text-stone-500">{key}</span>
-                    <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {val >= 0 ? "+" : ""}{fmtCurrency(val)}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
     </div>
   );
 }
@@ -317,7 +491,7 @@ export default function PortfolioPage() {
   const [chains, setChains] = useState<OptionChain[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterTab>("Closed");
+  const [filter, setFilter] = useState<FilterTab>("Open");
 
   const fetchChains = useCallback(() => {
     setLoading(true);
@@ -369,56 +543,59 @@ export default function PortfolioPage() {
   const assigned = chains.filter(c => c.status === "ASSIGNED");
   const closedPnl = closed.reduce((s, c) => s + c.net_pnl, 0);
 
-  // Total collateral locked in open short positions (strike × 100 × contracts)
-  const capitalLocked = open.reduce((sum, c) => {
+  // Capital locked = PUT collateral only (covered calls don't lock cash)
+  const openPuts = open.filter(c => c.option_type.toUpperCase() === "PUT");
+  const capitalLocked = openPuts.reduce((sum, c) => {
     if (c.open_units === 0) return sum;
     const leg = findOpenLeg(c);
     if (!leg) return sum;
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Closed", "Open", "Assigned", "Monthly"];
+  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
 
   const filtered =
-    filter === "Closed"   ? closed :
     filter === "Open"     ? open :
+    filter === "Closed"   ? closed :
     filter === "Assigned" ? assigned : [];
 
   return (
     <div className="flex flex-col">
       {/* Summary */}
-      <div className="px-4 pt-4 pb-2 flex flex-col gap-2">
-        <div className="bg-white border border-stone-100 rounded-2xl px-5 py-4 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">90-Day Realized</div>
-            <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {closedPnl >= 0 ? "+" : ""}{fmtCurrency(closedPnl)}
+      <div className="px-4 pt-4 pb-2">
+        <div className="bg-white border border-stone-100 rounded-2xl px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">Year so far</div>
+              <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {closedPnl >= 0 ? "+" : ""}{fmtCurrency(closedPnl)}
+              </div>
+            </div>
+            <div className="flex gap-4 text-right">
+              <div>
+                <div className="text-xs text-stone-500">Open</div>
+                <div className="text-sm font-semibold">{open.length}</div>
+              </div>
+              <div>
+                <div className="text-xs text-stone-500">Closed</div>
+                <div className="text-sm font-semibold">{closed.length}</div>
+              </div>
+              <div>
+                <div className="text-xs text-stone-500">Assigned</div>
+                <div className="text-sm font-semibold">{assigned.length}</div>
+              </div>
             </div>
           </div>
-          <div className="flex gap-4 text-right">
-            <div>
-              <div className="text-xs text-stone-500">Open</div>
-              <div className="text-sm font-semibold">{open.length}</div>
+          {capitalLocked > 0 && (
+            <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between">
+              <div>
+                <div className="text-xs text-amber-600 font-medium">PUT Collateral Locked</div>
+                <div className="text-[11px] text-stone-400">{openPuts.length} open put{openPuts.length !== 1 ? "s" : ""}</div>
+              </div>
+              <div className="text-base font-bold text-amber-700">{fmtCurrency(capitalLocked)}</div>
             </div>
-            <div>
-              <div className="text-xs text-stone-500">Closed</div>
-              <div className="text-sm font-semibold">{closed.length}</div>
-            </div>
-            <div>
-              <div className="text-xs text-stone-500">Assigned</div>
-              <div className="text-sm font-semibold">{assigned.length}</div>
-            </div>
-          </div>
+          )}
         </div>
-        {capitalLocked > 0 && (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-5 py-3 flex items-center justify-between">
-            <div>
-              <div className="text-xs text-amber-600 font-medium uppercase tracking-wider mb-0.5">Capital Locked</div>
-              <div className="text-xs text-amber-500">{open.length} open contract{open.length !== 1 ? "s" : ""} · collateral</div>
-            </div>
-            <div className="text-xl font-bold text-amber-700">{fmtCurrency(capitalLocked)}</div>
-          </div>
-        )}
       </div>
 
       {/* Filter tabs */}
