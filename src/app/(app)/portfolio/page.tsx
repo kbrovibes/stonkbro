@@ -119,64 +119,21 @@ function fmtMonthShort(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-// weekKey = "YYYY-MM-DD" of Monday
-function getWeekKey(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-  return d.toISOString().split("T")[0];
-}
+type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly";
 
-function fmtWeekLabel(weekKey: string): string {
-  const monday = new Date(weekKey + "T12:00:00");
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  const mo = monday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const fr = friday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${mo} – ${fr}`;
+// Annualized return on collateral for closed PUT chains
+function annualizedReturnPct(chain: OptionChain): number | null {
+  if (chain.option_type.toUpperCase() !== "PUT") return null;
+  if (chain.status === "OPEN") return null;
+  const firstSell = chain.legs.find(l => l.type === "SELL");
+  if (!firstSell || firstSell.strike === 0) return null;
+  const collateral = firstSell.strike * 100 * Math.abs(firstSell.units);
+  if (collateral === 0) return null;
+  const start = new Date(chain.start_date);
+  const end = chain.end_date ? new Date(chain.end_date) : new Date();
+  const days = Math.max(1, (end.getTime() - start.getTime()) / 86400000);
+  return (chain.net_pnl / collateral) * (365 / days) * 100;
 }
-
-function fmtWeekShort(weekKey: string): string {
-  const d = new Date(weekKey + "T12:00:00");
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
-function computePutCapitalPeaksWeekly(chains: OptionChain[]): Map<string, PutCapitalMonthData> {
-  type Ev = { dateStr: string; delta: number };
-  const events: Ev[] = [];
-  for (const chain of chains) {
-    if (chain.option_type.toUpperCase() !== "PUT") continue;
-    let chainRunning = 0;
-    for (const leg of chain.legs) {
-      if (leg.type === "SELL") {
-        const amt = Math.abs(leg.units) * leg.strike * 100;
-        chainRunning += amt;
-        events.push({ dateStr: leg.date, delta: amt });
-      } else if (leg.type === "BUY") {
-        const amt = Math.abs(leg.units) * leg.strike * 100;
-        chainRunning = Math.max(0, chainRunning - amt);
-        events.push({ dateStr: leg.date, delta: -amt });
-      } else if (leg.type === "OPTIONEXPIRATION" || leg.type === "OPTIONASSIGNMENT") {
-        if (chainRunning > 0) {
-          events.push({ dateStr: leg.date, delta: -chainRunning });
-          chainRunning = 0;
-        }
-      }
-    }
-  }
-  events.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-  const peaks = new Map<string, PutCapitalMonthData>();
-  let running = 0;
-  for (const ev of events) {
-    running = Math.max(0, running + ev.delta);
-    const wk = getWeekKey(ev.dateStr);
-    const cur = peaks.get(wk);
-    if (!cur || running > cur.peak) peaks.set(wk, { peak: running, peakDate: ev.dateStr });
-  }
-  return peaks;
-}
-
-type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly" | "Weekly";
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN:     "bg-sky-100 text-sky-700",
@@ -455,6 +412,18 @@ function ChainCard({ chain }: { chain: OptionChain }) {
                 : `In the hole — close adds ${fmtCurrency(Math.abs(breakevenClose))} more loss`}
             </div>
           )}
+          {(() => {
+            const ret = annualizedReturnPct(chain);
+            if (ret === null) return null;
+            const days = chain.end_date
+              ? Math.round((new Date(chain.end_date).getTime() - new Date(chain.start_date).getTime()) / 86400000)
+              : null;
+            return (
+              <div className={`text-[11px] mt-0.5 font-medium ${ret >= 0 ? "text-sky-600" : "text-rose-400"}`}>
+                {ret >= 0 ? "+" : ""}{ret.toFixed(0)}% ann. · {days ? `${days}d held` : ""}
+              </div>
+            );
+          })()}
         </div>
         <div className="text-right flex-shrink-0">
           <div className={`font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
@@ -684,129 +653,6 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   );
 }
 
-function WeeklyView({ chains }: { chains: OptionChain[] }) {
-  const realized = chains.filter(c => c.end_date && c.status !== "OPEN");
-  const putCapData = computePutCapitalPeaksWeekly(chains);
-
-  const byWeek = new Map<string, { pnl: number; chains: OptionChain[] }>();
-  for (const c of realized) {
-    const wk = getWeekKey(c.end_date!);
-    if (!byWeek.has(wk)) byWeek.set(wk, { pnl: 0, chains: [] });
-    byWeek.get(wk)!.pnl += c.net_pnl;
-    byWeek.get(wk)!.chains.push(c);
-  }
-
-  const allWeeks = Array.from(new Set([...byWeek.keys(), ...putCapData.keys()])).sort();
-  const chartPnl = allWeeks.map(w => byWeek.get(w)?.pnl ?? 0);
-  const chartPeak = allWeeks.map(w => putCapData.get(w)?.peak ?? 0);
-  const totalPnl = chartPnl.reduce((s, v) => s + v, 0);
-  const maxPeak = Math.max(...chartPeak, 0);
-  const ytdReturnPct = maxPeak > 0 ? (totalPnl / maxPeak) * 100 : null;
-
-  const weeks = Array.from(byWeek.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-
-  return (
-    <div className="flex flex-col gap-3">
-      <PnlChart
-        periods={allWeeks}
-        pnlValues={chartPnl}
-        peakValues={chartPeak}
-        putCapData={putCapData}
-        fmtLabel={fmtWeekLabel}
-        fmtShort={fmtWeekShort}
-        ytdReturnPct={ytdReturnPct}
-        title="Weekly P&L"
-      />
-
-      {weeks.length > 0 && (
-        <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year Total</span>
-          <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
-          </span>
-        </div>
-      )}
-
-      <p className="text-[11px] text-stone-400 px-1 italic">
-        P&L lands in the week the contract closed. Rolling a position splits premium across weeks.
-      </p>
-
-      {weeks.length === 0 ? (
-        <p className="text-sm text-stone-400 text-center py-8">No closed positions this year</p>
-      ) : (
-        weeks.map(([week, { pnl, chains: wChains }]) => {
-          const winners = wChains.filter(c => c.net_pnl > 0).length;
-          const losers = wChains.filter(c => c.net_pnl <= 0).length;
-          const byUnderlying = wChains.reduce<Record<string, number>>((acc, c) => {
-            const k = `${c.underlying} ${c.option_type}`;
-            acc[k] = (acc[k] ?? 0) + c.net_pnl;
-            return acc;
-          }, {});
-          const capData = putCapData.get(week);
-          const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
-          const weekReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
-
-          return (
-            <div key={week} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="font-semibold text-sm text-stone-900">{fmtWeekLabel(week)}</div>
-                  <div className="text-xs text-stone-400">
-                    {wChains.length} chain{wChains.length !== 1 ? "s" : ""} · {winners}W / {losers}L
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
-                  </div>
-                  {weekReturnPct !== null && (
-                    <div className="text-[11px] text-stone-400">
-                      {weekReturnPct >= 0 ? "+" : ""}{weekReturnPct.toFixed(1)}% on collateral
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
-                {Object.entries(byUnderlying)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([key, val]) => (
-                    <div key={key} className="flex justify-between text-xs">
-                      <span className="text-stone-500">{key}</span>
-                      <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {val >= 0 ? "+" : ""}{fmtCurrency(val)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-
-              {capData && capData.peak > 0 && (
-                <div className="mt-2 pt-2 border-t border-stone-50">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-amber-600">
-                      Peak PUT collateral · {fmtDate(capData.peakDate)}
-                    </span>
-                    <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
-                  </div>
-                  <p className="text-[10px] text-stone-400 mb-1 italic">Open on peak date (may close a later week)</p>
-                  {peakPositions.map((pos, j) => (
-                    <div key={j} className="flex justify-between text-[10px] pl-2">
-                      <span className="text-stone-400">
-                        {pos.underlying} PUT ${pos.strike} × {pos.units}
-                      </span>
-                      <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
-}
-
 export default function PortfolioPage() {
   const [chains, setChains] = useState<OptionChain[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -814,6 +660,8 @@ export default function PortfolioPage() {
   const [filter, setFilter] = useState<FilterTab>("Open");
   type OpenSort = "expiry" | "collateral" | "pnl" | "type" | "ticker";
   const [openSort, setOpenSort] = useState<OpenSort>("expiry");
+  type ClosedSort = "date" | "pnl" | "annReturn" | "ticker";
+  const [closedSort, setClosedSort] = useState<ClosedSort>("date");
 
   const fetchChains = useCallback(() => {
     setLoading(true);
@@ -874,7 +722,7 @@ export default function PortfolioPage() {
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly", "Weekly"];
+  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
 
   const sortedOpen = [...open].sort((a, b) => {
     switch (openSort) {
@@ -901,9 +749,23 @@ export default function PortfolioPage() {
     }
   });
 
+  const sortedClosed = [...closed].sort((a, b) => {
+    switch (closedSort) {
+      case "date":      return (b.end_date ?? "").localeCompare(a.end_date ?? "");
+      case "pnl":       return b.net_pnl - a.net_pnl;
+      case "annReturn": {
+        const ra = annualizedReturnPct(a) ?? -Infinity;
+        const rb = annualizedReturnPct(b) ?? -Infinity;
+        return rb - ra;
+      }
+      case "ticker":    return a.underlying.localeCompare(b.underlying);
+      default:          return 0;
+    }
+  });
+
   const filtered =
     filter === "Open"     ? sortedOpen :
-    filter === "Closed"   ? closed :
+    filter === "Closed"   ? sortedClosed :
     filter === "Assigned" ? assigned : [];
 
   return (
@@ -985,12 +847,34 @@ export default function PortfolioPage() {
         </div>
       )}
 
+      {/* Sort bar — Closed tab */}
+      {filter === "Closed" && closed.length > 0 && (
+        <div className="px-4 pb-1 flex gap-1.5 overflow-x-auto scrollbar-hide">
+          {([
+            ["date",      "Date"],
+            ["pnl",       "P&L"],
+            ["annReturn", "Ann. Return"],
+            ["ticker",    "Ticker"],
+          ] as [typeof closedSort, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setClosedSort(key)}
+              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+                closedSort === key
+                  ? "bg-stone-800 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Content */}
       <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
         {filter === "Monthly" ? (
           <MonthlyView chains={chains} />
-        ) : filter === "Weekly" ? (
-          <WeeklyView chains={chains} />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">No {filter.toLowerCase()} positions</p>
         ) : (
