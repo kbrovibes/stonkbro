@@ -119,7 +119,64 @@ function fmtMonthShort(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly";
+// weekKey = "YYYY-MM-DD" of Monday
+function getWeekKey(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return d.toISOString().split("T")[0];
+}
+
+function fmtWeekLabel(weekKey: string): string {
+  const monday = new Date(weekKey + "T12:00:00");
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+  const mo = monday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fr = friday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${mo} – ${fr}`;
+}
+
+function fmtWeekShort(weekKey: string): string {
+  const d = new Date(weekKey + "T12:00:00");
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function computePutCapitalPeaksWeekly(chains: OptionChain[]): Map<string, PutCapitalMonthData> {
+  type Ev = { dateStr: string; delta: number };
+  const events: Ev[] = [];
+  for (const chain of chains) {
+    if (chain.option_type.toUpperCase() !== "PUT") continue;
+    let chainRunning = 0;
+    for (const leg of chain.legs) {
+      if (leg.type === "SELL") {
+        const amt = Math.abs(leg.units) * leg.strike * 100;
+        chainRunning += amt;
+        events.push({ dateStr: leg.date, delta: amt });
+      } else if (leg.type === "BUY") {
+        const amt = Math.abs(leg.units) * leg.strike * 100;
+        chainRunning = Math.max(0, chainRunning - amt);
+        events.push({ dateStr: leg.date, delta: -amt });
+      } else if (leg.type === "OPTIONEXPIRATION" || leg.type === "OPTIONASSIGNMENT") {
+        if (chainRunning > 0) {
+          events.push({ dateStr: leg.date, delta: -chainRunning });
+          chainRunning = 0;
+        }
+      }
+    }
+  }
+  events.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  const peaks = new Map<string, PutCapitalMonthData>();
+  let running = 0;
+  for (const ev of events) {
+    running = Math.max(0, running + ev.delta);
+    const wk = getWeekKey(ev.dateStr);
+    const cur = peaks.get(wk);
+    if (!cur || running > cur.peak) peaks.set(wk, { peak: running, peakDate: ev.dateStr });
+  }
+  return peaks;
+}
+
+type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly" | "Weekly";
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN:     "bg-sky-100 text-sky-700",
@@ -144,34 +201,30 @@ function isRoll(legs: OptionLeg[], i: number): boolean {
   return diff <= 1 && curr.strike !== prev.strike && curr.type !== prev.type;
 }
 
-function MonthlyChart({
-  chains,
-  putCapitalData,
+function PnlChart({
+  periods,
+  pnlValues,
+  peakValues,
+  putCapData,
+  fmtLabel,
+  fmtShort,
+  ytdReturnPct,
+  title = "P&L",
 }: {
-  chains: OptionChain[];
-  putCapitalData: Map<string, PutCapitalMonthData>;
+  periods: string[];
+  pnlValues: number[];
+  peakValues: number[];
+  putCapData: Map<string, PutCapitalMonthData>;
+  fmtLabel: (k: string) => string;
+  fmtShort: (k: string) => string;
+  ytdReturnPct: number | null;
+  title?: string;
 }) {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
-
-  const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
-  const byMonth = new Map<string, number>();
-  for (const c of realized) {
-    const m = c.close_month!;
-    byMonth.set(m, (byMonth.get(m) ?? 0) + c.net_pnl);
-  }
-
-  const allMonths = Array.from(new Set([...byMonth.keys(), ...putCapitalData.keys()])).sort();
-  if (allMonths.length === 0) return null;
-
-  const pnlValues = allMonths.map(m => byMonth.get(m) ?? 0);
-  const peakValues = allMonths.map(m => putCapitalData.get(m)?.peak ?? 0);
+  if (periods.length === 0) return null;
 
   const maxAbsPnl = Math.max(...pnlValues.map(Math.abs), 1);
   const maxPeak = Math.max(...peakValues, 1);
-
-  const totalYearPnl = pnlValues.reduce((s, v) => s + v, 0);
-  const maxEverCollateral = Math.max(...peakValues, 0);
-  const ytdReturnPct = maxEverCollateral > 0 ? (totalYearPnl / maxEverCollateral) * 100 : null;
 
   const W = 400;
   const H = 180;
@@ -183,28 +236,26 @@ function MonthlyChart({
   const chartH = H - PAD_T - PAD_B;
   const midY = PAD_T + chartH / 2;
 
-  const n = allMonths.length;
+  const n = periods.length;
   const step = chartW / n;
   const halfBarW = Math.max(2, Math.floor(step * 0.3));
 
   function cx(i: number) { return PAD_L + i * step + step / 2; }
-  // Both axes share the same zero at midY
   function pnlY(v: number) { return midY - (v / maxAbsPnl) * (chartH / 2); }
-  // Collateral: 0 at midY, maxPeak at top (occupies upper half only)
   function collY(v: number) { return midY - (v / maxPeak) * (chartH / 2); }
 
   const tooltip = activeIdx !== null ? {
-    month: allMonths[activeIdx],
+    period: periods[activeIdx],
     pnl: pnlValues[activeIdx],
     collateral: peakValues[activeIdx],
-    peakDate: putCapitalData.get(allMonths[activeIdx])?.peakDate ?? null,
+    peakDate: putCapData.get(periods[activeIdx])?.peakDate ?? null,
     returnPct: peakValues[activeIdx] > 0 ? (pnlValues[activeIdx] / peakValues[activeIdx]) * 100 : null,
   } : null;
 
   return (
     <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Monthly P&amp;L</span>
+        <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{title}</span>
         <div className="flex items-center gap-3 text-[10px] text-stone-400">
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-emerald-400" /> P&amp;L</span>
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-amber-300" /> Collateral</span>
@@ -216,10 +267,8 @@ function MonthlyChart({
         style={{ height: 180 }}
         onMouseLeave={() => setActiveIdx(null)}
       >
-        {/* Zero line */}
         <line x1={PAD_L} y1={midY} x2={W - PAD_R} y2={midY} stroke="#e7e5e4" strokeWidth={1} />
 
-        {/* Left Y-axis ticks (P&L) */}
         {[-1, -0.5, 0, 0.5, 1].map((f, i) => {
           const v = f * maxAbsPnl;
           return (
@@ -230,7 +279,6 @@ function MonthlyChart({
           );
         })}
 
-        {/* Right Y-axis ticks (collateral — 0 at midY, max at top) */}
         {[0, 0.5, 1].map((f, i) => {
           const v = f * maxPeak;
           const y = collY(v);
@@ -242,21 +290,16 @@ function MonthlyChart({
           );
         })}
 
-        {/* Bars per month */}
-        {allMonths.map((_, i) => {
+        {periods.map((_, i) => {
           const pnl = pnlValues[i];
           const coll = peakValues[i];
           const x = cx(i);
           const isActive = activeIdx === i;
-
           const pnlH = Math.abs((pnl / maxAbsPnl) * (chartH / 2));
           const pnlBarY = pnl >= 0 ? pnlY(pnl) : midY;
           const collH = (coll / maxPeak) * (chartH / 2);
-          const collBarY = collY(coll);
-
           return (
             <g key={i}>
-              {/* Invisible hit area */}
               <rect
                 x={x - step / 2} y={PAD_T} width={step} height={chartH}
                 fill={isActive ? "rgba(0,0,0,0.04)" : "transparent"}
@@ -264,17 +307,15 @@ function MonthlyChart({
                 onMouseEnter={() => setActiveIdx(i)}
                 onClick={() => setActiveIdx(i === activeIdx ? null : i)}
               />
-              {/* P&L bar — left of center */}
               <rect
                 x={x - halfBarW - 1} y={pnlBarY}
                 width={halfBarW} height={Math.max(1, pnlH)}
                 fill={pnl >= 0 ? "#34d399" : "#f87171"} rx={1}
                 pointerEvents="none"
               />
-              {/* Collateral bar — right of center, above zero line only */}
               {coll > 0 && (
                 <rect
-                  x={x + 1} y={collBarY}
+                  x={x + 1} y={collY(coll)}
                   width={halfBarW} height={Math.max(1, collH)}
                   fill={isActive ? "#f59e0b" : "#fcd34d"} rx={1}
                   pointerEvents="none"
@@ -284,41 +325,31 @@ function MonthlyChart({
           );
         })}
 
-        {/* Month labels */}
-        {allMonths.map((m, i) => (
-          <text
-            key={i} x={cx(i)} y={H - 6}
-            textAnchor="middle" fontSize={8}
-            fill={activeIdx === i ? "#57534e" : "#a8a29e"}
-          >
-            {fmtMonthShort(m)}
+        {periods.map((p, i) => (
+          <text key={i} x={cx(i)} y={H - 6} textAnchor="middle" fontSize={8} fill={activeIdx === i ? "#57534e" : "#a8a29e"}>
+            {fmtShort(p)}
           </text>
         ))}
 
-        {/* Tooltip */}
         {tooltip && activeIdx !== null && (() => {
           const x = cx(activeIdx);
           const flipLeft = x > W * 0.6;
           const lines = [
-            fmtMonth(tooltip.month),
+            fmtLabel(tooltip.period),
             `P&L: ${tooltip.pnl >= 0 ? "+" : ""}${fmtCurrency(tooltip.pnl)}`,
             tooltip.collateral > 0 ? `Collateral: ${fmtCurrency(tooltip.collateral)}` : null,
             tooltip.peakDate ? `Peak: ${fmtDate(tooltip.peakDate)}` : null,
             tooltip.returnPct !== null ? `Return: ${tooltip.returnPct.toFixed(1)}%` : null,
           ].filter(Boolean) as string[];
-          const bW = 148;
+          const bW = 152;
           const bH = lines.length * 13 + 8;
           const bX = flipLeft ? x - bW - 4 : x + 4;
-          const bY = PAD_T + 2;
           return (
             <g pointerEvents="none">
-              <rect x={bX} y={bY} width={bW} height={bH} rx={4} fill="white" stroke="#e7e5e4" strokeWidth={1} />
+              <rect x={bX} y={PAD_T + 2} width={bW} height={bH} rx={4} fill="white" stroke="#e7e5e4" strokeWidth={1} />
               {lines.map((line, j) => (
-                <text
-                  key={j} x={bX + 7} y={bY + 14 + j * 13}
-                  fontSize={9} fill={j === 0 ? "#1c1917" : "#57534e"}
-                  fontWeight={j === 0 ? "bold" : "normal"}
-                >
+                <text key={j} x={bX + 7} y={PAD_T + 16 + j * 13} fontSize={9}
+                  fill={j === 0 ? "#1c1917" : "#57534e"} fontWeight={j === 0 ? "bold" : "normal"}>
                   {line}
                 </text>
               ))}
@@ -534,12 +565,27 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
     byMonth.get(m)!.chains.push(c);
   }
 
+  const allMonths = Array.from(new Set([...byMonth.keys(), ...putCapitalData.keys()])).sort();
+  const chartPnl = allMonths.map(m => byMonth.get(m)?.pnl ?? 0);
+  const chartPeak = allMonths.map(m => putCapitalData.get(m)?.peak ?? 0);
+  const totalPnl = chartPnl.reduce((s, v) => s + v, 0);
+  const maxPeak = Math.max(...chartPeak, 0);
+  const ytdReturnPct = maxPeak > 0 ? (totalPnl / maxPeak) * 100 : null;
+
   const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  const totalPnl = months.reduce((s, [, v]) => s + v.pnl, 0);
 
   return (
     <div className="flex flex-col gap-3">
-      <MonthlyChart chains={chains} putCapitalData={putCapitalData} />
+      <PnlChart
+        periods={allMonths}
+        pnlValues={chartPnl}
+        peakValues={chartPeak}
+        putCapData={putCapitalData}
+        fmtLabel={fmtMonth}
+        fmtShort={fmtMonthShort}
+        ytdReturnPct={ytdReturnPct}
+        title="Monthly P&L"
+      />
 
       {months.length > 0 && (
         <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -638,6 +684,129 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   );
 }
 
+function WeeklyView({ chains }: { chains: OptionChain[] }) {
+  const realized = chains.filter(c => c.end_date && c.status !== "OPEN");
+  const putCapData = computePutCapitalPeaksWeekly(chains);
+
+  const byWeek = new Map<string, { pnl: number; chains: OptionChain[] }>();
+  for (const c of realized) {
+    const wk = getWeekKey(c.end_date!);
+    if (!byWeek.has(wk)) byWeek.set(wk, { pnl: 0, chains: [] });
+    byWeek.get(wk)!.pnl += c.net_pnl;
+    byWeek.get(wk)!.chains.push(c);
+  }
+
+  const allWeeks = Array.from(new Set([...byWeek.keys(), ...putCapData.keys()])).sort();
+  const chartPnl = allWeeks.map(w => byWeek.get(w)?.pnl ?? 0);
+  const chartPeak = allWeeks.map(w => putCapData.get(w)?.peak ?? 0);
+  const totalPnl = chartPnl.reduce((s, v) => s + v, 0);
+  const maxPeak = Math.max(...chartPeak, 0);
+  const ytdReturnPct = maxPeak > 0 ? (totalPnl / maxPeak) * 100 : null;
+
+  const weeks = Array.from(byWeek.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+  return (
+    <div className="flex flex-col gap-3">
+      <PnlChart
+        periods={allWeeks}
+        pnlValues={chartPnl}
+        peakValues={chartPeak}
+        putCapData={putCapData}
+        fmtLabel={fmtWeekLabel}
+        fmtShort={fmtWeekShort}
+        ytdReturnPct={ytdReturnPct}
+        title="Weekly P&L"
+      />
+
+      {weeks.length > 0 && (
+        <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year Total</span>
+          <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
+          </span>
+        </div>
+      )}
+
+      <p className="text-[11px] text-stone-400 px-1 italic">
+        P&L lands in the week the contract closed. Rolling a position splits premium across weeks.
+      </p>
+
+      {weeks.length === 0 ? (
+        <p className="text-sm text-stone-400 text-center py-8">No closed positions this year</p>
+      ) : (
+        weeks.map(([week, { pnl, chains: wChains }]) => {
+          const winners = wChains.filter(c => c.net_pnl > 0).length;
+          const losers = wChains.filter(c => c.net_pnl <= 0).length;
+          const byUnderlying = wChains.reduce<Record<string, number>>((acc, c) => {
+            const k = `${c.underlying} ${c.option_type}`;
+            acc[k] = (acc[k] ?? 0) + c.net_pnl;
+            return acc;
+          }, {});
+          const capData = putCapData.get(week);
+          const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
+          const weekReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
+
+          return (
+            <div key={week} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="font-semibold text-sm text-stone-900">{fmtWeekLabel(week)}</div>
+                  <div className="text-xs text-stone-400">
+                    {wChains.length} chain{wChains.length !== 1 ? "s" : ""} · {winners}W / {losers}L
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
+                  </div>
+                  {weekReturnPct !== null && (
+                    <div className="text-[11px] text-stone-400">
+                      {weekReturnPct >= 0 ? "+" : ""}{weekReturnPct.toFixed(1)}% on collateral
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
+                {Object.entries(byUnderlying)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([key, val]) => (
+                    <div key={key} className="flex justify-between text-xs">
+                      <span className="text-stone-500">{key}</span>
+                      <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {val >= 0 ? "+" : ""}{fmtCurrency(val)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+
+              {capData && capData.peak > 0 && (
+                <div className="mt-2 pt-2 border-t border-stone-50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-medium text-amber-600">
+                      Peak PUT collateral · {fmtDate(capData.peakDate)}
+                    </span>
+                    <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+                  </div>
+                  <p className="text-[10px] text-stone-400 mb-1 italic">Open on peak date (may close a later week)</p>
+                  {peakPositions.map((pos, j) => (
+                    <div key={j} className="flex justify-between text-[10px] pl-2">
+                      <span className="text-stone-400">
+                        {pos.underlying} PUT ${pos.strike} × {pos.units}
+                      </span>
+                      <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 export default function PortfolioPage() {
   const [chains, setChains] = useState<OptionChain[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -705,7 +874,7 @@ export default function PortfolioPage() {
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
+  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly", "Weekly"];
 
   const sortedOpen = [...open].sort((a, b) => {
     switch (openSort) {
@@ -820,6 +989,8 @@ export default function PortfolioPage() {
       <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
         {filter === "Monthly" ? (
           <MonthlyView chains={chains} />
+        ) : filter === "Weekly" ? (
+          <WeeklyView chains={chains} />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">No {filter.toLowerCase()} positions</p>
         ) : (
