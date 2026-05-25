@@ -602,12 +602,15 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
               {/* Peak collateral breakdown */}
               {capData && capData.peak > 0 && (
                 <div className="mt-2 pt-2 border-t border-stone-50">
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1">
                     <span className="text-[11px] font-medium text-amber-600">
                       Peak PUT collateral · {fmtDate(capData.peakDate)}
                     </span>
                     <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
                   </div>
+                  <p className="text-[10px] text-stone-400 mb-1.5 italic">
+                    Snapshot of open positions on peak date. Contracts closing in a later month appear here but their P&amp;L shows in that month.
+                  </p>
                   {peakPositions.map((pos, j) => (
                     <div key={j} className="flex justify-between text-[10px] pl-2">
                       <span className="text-stone-400">
