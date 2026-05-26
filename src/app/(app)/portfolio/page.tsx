@@ -119,7 +119,7 @@ function fmtMonthShort(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly";
+type FilterTab = "Open" | "Closed" | "Assigned" | "Yearly";
 
 // Annualized return on collateral for closed PUT chains
 function annualizedReturnPct(chain: OptionChain): number | null {
@@ -523,132 +523,265 @@ function ChainCard({ chain }: { chain: OptionChain }) {
 }
 
 function MonthlyView({ chains }: { chains: OptionChain[] }) {
-  const realized = chains.filter(c => c.close_month && c.status !== "OPEN");
+  const today = new Date();
+  const currentYearStr = today.getFullYear().toString();
+  const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+  const [expandedFuture, setExpandedFuture] = useState<Set<string>>(new Set([currentMonthStr]));
+
+  // Bug fix: match header — only count CLOSED + EXPIRED (exclude ASSIGNED)
+  const realized = chains.filter(c => c.close_month && (c.status === "CLOSED" || c.status === "EXPIRED"));
   const putCapitalData = computePutCapitalPeaks(chains);
 
-  const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
+  // Group realized by year → month
+  const byYear = new Map<string, { byMonth: Map<string, { pnl: number; chains: OptionChain[] }>; pnl: number }>();
   for (const c of realized) {
     const m = c.close_month!;
-    if (!byMonth.has(m)) byMonth.set(m, { pnl: 0, chains: [] });
-    byMonth.get(m)!.pnl += c.net_pnl;
-    byMonth.get(m)!.chains.push(c);
+    const yr = m.slice(0, 4);
+    if (!byYear.has(yr)) byYear.set(yr, { byMonth: new Map(), pnl: 0 });
+    const yd = byYear.get(yr)!;
+    yd.pnl += c.net_pnl;
+    if (!yd.byMonth.has(m)) yd.byMonth.set(m, { pnl: 0, chains: [] });
+    yd.byMonth.get(m)!.pnl += c.net_pnl;
+    yd.byMonth.get(m)!.chains.push(c);
   }
 
-  const allMonths = Array.from(new Set([...byMonth.keys(), ...putCapitalData.keys()])).sort();
-  const chartPnl = allMonths.map(m => byMonth.get(m)?.pnl ?? 0);
-  const chartPeak = allMonths.map(m => putCapitalData.get(m)?.peak ?? 0);
-  const totalPnl = chartPnl.reduce((s, v) => s + v, 0);
-  const maxPeak = Math.max(...chartPeak, 0);
-  const ytdReturnPct = maxPeak > 0 ? (totalPnl / maxPeak) * 100 : null;
+  // Best case: open contracts grouped by expiry month (net_pnl = total credit = max gain if expires worthless)
+  const bestCaseByMonth = new Map<string, { gain: number; chains: OptionChain[] }>();
+  for (const c of chains) {
+    if (c.status !== "OPEN" || c.open_units === 0) continue;
+    const leg = findOpenLeg(c);
+    if (!leg) continue;
+    const expMonth = leg.expiry.substring(0, 7);
+    if (!bestCaseByMonth.has(expMonth)) bestCaseByMonth.set(expMonth, { gain: 0, chains: [] });
+    bestCaseByMonth.get(expMonth)!.gain += c.net_pnl;
+    bestCaseByMonth.get(expMonth)!.chains.push(c);
+  }
+  const bestCaseMonths = Array.from(bestCaseByMonth.keys()).sort();
 
-  const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  const allYears = Array.from(new Set([
+    ...byYear.keys(),
+    ...(bestCaseMonths.length > 0 ? [currentYearStr] : []),
+  ])).sort((a, b) => b.localeCompare(a));
+
+  if (allYears.length === 0) {
+    return <p className="text-sm text-stone-400 text-center py-8">No closed positions</p>;
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <PnlChart
-        periods={allMonths}
-        pnlValues={chartPnl}
-        peakValues={chartPeak}
-        putCapData={putCapitalData}
-        fmtLabel={fmtMonth}
-        fmtShort={fmtMonthShort}
-        ytdReturnPct={ytdReturnPct}
-        title="Monthly P&L"
-      />
+    <div className="flex flex-col gap-6">
+      {allYears.map(yr => {
+        const yd = byYear.get(yr);
+        const isCurrentYear = yr === currentYearStr;
+        const yearPnl = yd?.pnl ?? 0;
+        const yearPutCapData = new Map(Array.from(putCapitalData.entries()).filter(([k]) => k.startsWith(yr)));
+        const peakVals = Array.from(yearPutCapData.values()).map(v => v.peak);
+        const maxPeak = Math.max(...peakVals, 0);
+        const yearReturnPct = maxPeak > 0 ? (yearPnl / maxPeak) * 100 : null;
 
-      {months.length > 0 && (
-        <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year Total</span>
-          <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
-          </span>
-        </div>
-      )}
-
-      {months.length === 0 ? (
-        <p className="text-sm text-stone-400 text-center py-8">No closed positions this year</p>
-      ) : (
-        months.map(([month, { pnl, chains: mChains }]) => {
-          const winners = mChains.filter(c => c.net_pnl > 0).length;
-          const losers = mChains.filter(c => c.net_pnl <= 0).length;
-          const byUnderlying = mChains.reduce<Record<string, number>>((acc, c) => {
-            const k = `${c.underlying} ${c.option_type}`;
-            acc[k] = (acc[k] ?? 0) + c.net_pnl;
-            return acc;
-          }, {});
-
-          const capData = putCapitalData.get(month);
-          const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
-          const monthReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
-
+        if (isCurrentYear) {
           return (
-            <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
+            <div key={yr} className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{yr}</span>
+                <div className="flex-1 h-px bg-stone-100" />
+              </div>
+
+              <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
-                  <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
-                  </div>
-                  {monthReturnPct !== null && (
-                    <div className="text-[11px] text-stone-400">
-                      {monthReturnPct >= 0 ? "+" : ""}{monthReturnPct.toFixed(1)}% on collateral
+                  <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Realized</span>
+                  {yearReturnPct !== null && (
+                    <div className="text-[11px] text-stone-400 mt-0.5">
+                      {yearReturnPct >= 0 ? "+" : ""}{yearReturnPct.toFixed(1)}% on collateral
                     </div>
                   )}
                 </div>
+                <span className={`font-bold text-lg ${yearPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {yearPnl >= 0 ? "+" : ""}{fmtCurrency(yearPnl)}
+                </span>
               </div>
 
-              {/* P&L by underlying */}
-              <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
-                {Object.entries(byUnderlying)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([key, val]) => (
-                    <div key={key} className="flex justify-between text-xs">
-                      <span className="text-stone-500">{key}</span>
-                      <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {val >= 0 ? "+" : ""}{fmtCurrency(val)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-
-              {/* Peak collateral breakdown */}
-              {capData && capData.peak > 0 && (
-                <div className="mt-2 pt-2 border-t border-stone-50">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-amber-600">
-                      Peak PUT collateral · {fmtDate(capData.peakDate)}
-                    </span>
-                    <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+              {bestCaseMonths.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs text-stone-400 font-medium px-1 mt-1">
+                    Unsettled · best case if all expire worthless
                   </div>
-                  <p className="text-[10px] text-stone-400 mb-1.5 italic">
-                    Snapshot of open positions on peak date. Contracts closing in a later month appear here but their P&amp;L shows in that month.
-                  </p>
-                  {peakPositions.map((pos, j) => (
-                    <div key={j} className="flex justify-between text-[10px] pl-2">
-                      <span className="text-stone-400">
-                        {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
-                        <span className="text-stone-300 ml-1">= ${pos.strike} × 100 × {pos.units}</span>
-                      </span>
-                      <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
-                    </div>
-                  ))}
-                  {peakPositions.length > 1 && (
-                    <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 mt-0.5">
-                      <span className="text-stone-400">Total</span>
-                      <span className="text-amber-700 font-semibold">
-                        {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
-                      </span>
-                    </div>
-                  )}
+                  {bestCaseMonths.map(month => {
+                    const data = bestCaseByMonth.get(month)!;
+                    const isThisMonth = month === currentMonthStr;
+                    const isExpanded = expandedFuture.has(month);
+
+                    return (
+                      <div key={month} className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                        <button
+                          className="w-full flex items-center justify-between"
+                          onClick={() => {
+                            if (isThisMonth) return;
+                            setExpandedFuture(prev => {
+                              const next = new Set(prev);
+                              if (next.has(month)) next.delete(month); else next.add(month);
+                              return next;
+                            });
+                          }}
+                        >
+                          <div className="text-left">
+                            <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
+                            <div className="text-xs text-amber-600">
+                              {data.chains.length} open · best case
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-base text-amber-700">+{fmtCurrency(data.gain)}</span>
+                            {!isThisMonth && (
+                              <span className="text-stone-400 text-xs">{isExpanded ? "▲" : "▼"}</span>
+                            )}
+                          </div>
+                        </button>
+
+                        {(isThisMonth || isExpanded) && (
+                          <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-amber-100">
+                            {data.chains.map((c, i) => {
+                              const leg = findOpenLeg(c);
+                              return (
+                                <div key={i} className="flex justify-between text-xs">
+                                  <span className="text-stone-500">
+                                    {c.underlying} {c.option_type} ${leg?.strike}
+                                    {Math.abs(c.open_units) > 1 && <span className="text-stone-400"> ×{Math.abs(c.open_units)}</span>}
+                                    {" "}exp {fmtDate(leg?.expiry ?? null)}
+                                  </span>
+                                  <span className="font-medium text-amber-700">+{fmtCurrency(c.net_pnl)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           );
-        })
-      )}
+        }
+
+        // Past year: chart + monthly breakdown
+        const months = Array.from(yd!.byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+        const yearMonthKeys = Array.from(new Set([...yd!.byMonth.keys(), ...yearPutCapData.keys()])).sort();
+        const chartPnl = yearMonthKeys.map(m => yd!.byMonth.get(m)?.pnl ?? 0);
+        const chartPeak = yearMonthKeys.map(m => yearPutCapData.get(m)?.peak ?? 0);
+
+        return (
+          <div key={yr} className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 px-1">
+              <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{yr}</span>
+              <div className="flex-1 h-px bg-stone-100" />
+            </div>
+
+            <PnlChart
+              periods={yearMonthKeys}
+              pnlValues={chartPnl}
+              peakValues={chartPeak}
+              putCapData={yearPutCapData}
+              fmtLabel={fmtMonth}
+              fmtShort={fmtMonthShort}
+              ytdReturnPct={yearReturnPct}
+              title={`${yr} Monthly P&L`}
+            />
+
+            <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year Total</span>
+                {yearReturnPct !== null && (
+                  <div className="text-[11px] text-stone-400 mt-0.5">
+                    {yearReturnPct >= 0 ? "+" : ""}{yearReturnPct.toFixed(1)}% on collateral
+                  </div>
+                )}
+              </div>
+              <span className={`font-bold text-lg ${yearPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {yearPnl >= 0 ? "+" : ""}{fmtCurrency(yearPnl)}
+              </span>
+            </div>
+
+            {months.map(([month, { pnl, chains: mChains }]) => {
+              const winners = mChains.filter(c => c.net_pnl > 0).length;
+              const losers = mChains.filter(c => c.net_pnl <= 0).length;
+              const byUnderlying = mChains.reduce<Record<string, number>>((acc, c) => {
+                const k = `${c.underlying} ${c.option_type}`;
+                acc[k] = (acc[k] ?? 0) + c.net_pnl;
+                return acc;
+              }, {});
+              const capData = putCapitalData.get(month);
+              const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
+              const monthReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
+
+              return (
+                <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
+                      <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
+                      </div>
+                      {monthReturnPct !== null && (
+                        <div className="text-[11px] text-stone-400">
+                          {monthReturnPct >= 0 ? "+" : ""}{monthReturnPct.toFixed(1)}% on collateral
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
+                    {Object.entries(byUnderlying)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([key, val]) => (
+                        <div key={key} className="flex justify-between text-xs">
+                          <span className="text-stone-500">{key}</span>
+                          <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {val >= 0 ? "+" : ""}{fmtCurrency(val)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+
+                  {capData && capData.peak > 0 && (
+                    <div className="mt-2 pt-2 border-t border-stone-50">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-medium text-amber-600">
+                          Peak PUT collateral · {fmtDate(capData.peakDate)}
+                        </span>
+                        <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+                      </div>
+                      <p className="text-[10px] text-stone-400 mb-1.5 italic">
+                        Snapshot of open positions on peak date. Contracts closing in a later month appear here but their P&amp;L shows in that month.
+                      </p>
+                      {peakPositions.map((pos, j) => (
+                        <div key={j} className="flex justify-between text-[10px] pl-2">
+                          <span className="text-stone-400">
+                            {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
+                            <span className="text-stone-300 ml-1">= ${pos.strike} × 100 × {pos.units}</span>
+                          </span>
+                          <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
+                        </div>
+                      ))}
+                      {peakPositions.length > 1 && (
+                        <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 mt-0.5">
+                          <span className="text-stone-400">Total</span>
+                          <span className="text-amber-700 font-semibold">
+                            {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -665,7 +798,7 @@ export default function PortfolioPage() {
 
   const fetchChains = useCallback(() => {
     setLoading(true);
-    fetch("/api/portfolio?include=option-chains")
+    fetch("/api/portfolio?include=option-chains&startDate=2025-01-01")
       .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
         if (!r.ok) {
@@ -722,7 +855,7 @@ export default function PortfolioPage() {
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
+  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Yearly"];
 
   const sortedOpen = [...open].sort((a, b) => {
     switch (openSort) {
@@ -873,7 +1006,7 @@ export default function PortfolioPage() {
 
       {/* Content */}
       <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
-        {filter === "Monthly" ? (
+        {filter === "Yearly" ? (
           <MonthlyView chains={chains} />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">No {filter.toLowerCase()} positions</p>
