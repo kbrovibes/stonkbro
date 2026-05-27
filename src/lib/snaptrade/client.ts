@@ -306,7 +306,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
       contractChains.push({
         underlying, option_type, strike, expiry,
         legs: [...currentLegs],
-        net_pnl: currentLegs.reduce((s, l) => s + l.amount, 0),
+        net_pnl: currentLegs.filter(l => l.type === "BUY" || l.type === "SELL").reduce((s, l) => s + l.amount, 0),
         status,
         start_date: currentLegs[0].date,
         end_date: status === "OPEN" ? null : currentLegs[currentLegs.length - 1].date,

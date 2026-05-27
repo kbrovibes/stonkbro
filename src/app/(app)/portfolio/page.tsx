@@ -553,14 +553,16 @@ function ChainCard({ chain }: { chain: OptionChain }) {
 
 function MonthlyView({ chains }: { chains: OptionChain[] }) {
   const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
   const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const [expandedFuture, setExpandedFuture] = useState<Set<string>>(new Set([currentMonthStr]));
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const [expandedCollateral, setExpandedCollateral] = useState<Set<string>>(new Set());
 
   const realized = chains.filter(c => c.close_month && (c.status === "CLOSED" || c.status === "EXPIRED"));
   const putCapitalData = computePutCapitalPeaks(chains);
 
-  // Flat month map (all years)
   const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
   for (const c of realized) {
     const m = c.close_month!;
@@ -569,12 +571,12 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
     byMonth.get(m)!.chains.push(c);
   }
 
-  // Best case: open contracts by expiry month
+  // Best case: only open contracts whose expiry hasn't passed yet
   const bestCaseByMonth = new Map<string, { gain: number; chains: OptionChain[] }>();
   for (const c of chains) {
     if (c.status !== "OPEN" || c.open_units === 0) continue;
     const leg = findOpenLeg(c);
-    if (!leg) continue;
+    if (!leg || leg.expiry < todayStr) continue;
     const expMonth = leg.expiry.substring(0, 7);
     if (!bestCaseByMonth.has(expMonth)) bestCaseByMonth.set(expMonth, { gain: 0, chains: [] });
     bestCaseByMonth.get(expMonth)!.gain += c.net_pnl;
@@ -589,12 +591,15 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   const maxPeak = Math.max(...chartPeak, 0);
   const overallReturnPct = maxPeak > 0 ? (totalPnl / maxPeak) * 100 : null;
 
-  // Reverse-chron month cards with year separators
   const months = Array.from(byMonth.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+  function toggleSet(setter: React.Dispatch<React.SetStateAction<Set<string>>>, key: string) {
+    setter(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Best-case unsettled */}
+      {/* Best-case unsettled — future only */}
       {bestCaseMonths.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="text-xs text-stone-400 font-medium px-1">
@@ -608,14 +613,7 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
               <div key={month} className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                 <button
                   className="w-full flex items-center justify-between"
-                  onClick={() => {
-                    if (isThisMonth) return;
-                    setExpandedFuture(prev => {
-                      const next = new Set(prev);
-                      if (next.has(month)) next.delete(month); else next.add(month);
-                      return next;
-                    });
-                  }}
+                  onClick={() => { if (!isThisMonth) toggleSet(setExpandedFuture, month); }}
                 >
                   <div className="text-left">
                     <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
@@ -623,9 +621,7 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-base text-amber-700">+{fmtCurrency(data.gain)}</span>
-                    {!isThisMonth && (
-                      <span className="text-stone-400 text-xs">{isExpanded ? "▲" : "▼"}</span>
-                    )}
+                    {!isThisMonth && <span className="text-stone-400 text-xs">{isExpanded ? "▲" : "▼"}</span>}
                   </div>
                 </button>
                 {(isThisMonth || isExpanded) && (
@@ -688,8 +684,9 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
           }
           lastYear = yr;
 
+          const isOpen = expandedMonths.has(month);
           const winners = mChains.filter(c => c.net_pnl > 0).length;
-          const losers = mChains.filter(c => c.net_pnl <= 0).length;
+          const losers  = mChains.filter(c => c.net_pnl <= 0).length;
           const byUnderlying = mChains.reduce<Record<string, number>>((acc, c) => {
             const k = `${c.underlying} ${c.option_type}`;
             acc[k] = (acc[k] ?? 0) + c.net_pnl;
@@ -698,65 +695,89 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
           const capData = putCapitalData.get(month);
           const peakPositions = capData ? getPutPositionsOnDate(chains, capData.peakDate) : [];
           const monthReturnPct = capData && capData.peak > 0 ? (pnl / capData.peak) * 100 : null;
+          const isCollOpen = expandedCollateral.has(month);
 
           items.push(
-            <div key={month} className="bg-white border border-stone-100 rounded-xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
+            <div key={month} className="bg-white border border-stone-100 rounded-xl overflow-hidden">
+              {/* Header — always visible, click to expand */}
+              <button
+                className="w-full flex items-center justify-between px-4 py-3"
+                onClick={() => toggleSet(setExpandedMonths, month)}
+              >
+                <div className="text-left">
                   <div className="font-semibold text-sm text-stone-900">{fmtMonth(month)}</div>
-                  <div className="text-xs text-stone-400">{mChains.length} chains · {winners}W / {losers}L</div>
+                  <div className="text-xs text-stone-400">{mChains.length} chain{mChains.length !== 1 ? "s" : ""} · {winners}W / {losers}L</div>
                 </div>
-                <div className="text-right">
-                  <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
-                  </div>
-                  {monthReturnPct !== null && (
-                    <div className="text-[11px] text-stone-400">
-                      {monthReturnPct >= 0 ? "+" : ""}{monthReturnPct.toFixed(1)}% on collateral
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
                     </div>
-                  )}
+                    {monthReturnPct !== null && (
+                      <div className="text-[11px] text-stone-400">
+                        {monthReturnPct >= 0 ? "+" : ""}{monthReturnPct.toFixed(1)}% on collateral
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-stone-300 text-xs ml-1">{isOpen ? "▲" : "▼"}</span>
                 </div>
-              </div>
+              </button>
 
-              <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-stone-50">
-                {Object.entries(byUnderlying)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([key, val]) => (
-                    <div key={key} className="flex justify-between text-xs">
-                      <span className="text-stone-500">{key}</span>
-                      <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {val >= 0 ? "+" : ""}{fmtCurrency(val)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-
-              {capData && capData.peak > 0 && (
-                <div className="mt-2 pt-2 border-t border-stone-50">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-amber-600">
-                      Peak PUT collateral · {fmtDate(capData.peakDate)}
-                    </span>
-                    <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+              {/* Expanded detail */}
+              {isOpen && (
+                <div className="px-4 pb-3 border-t border-stone-50">
+                  {/* P&L by underlying */}
+                  <div className="flex flex-col gap-0.5 pt-2">
+                    {Object.entries(byUnderlying)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([key, val]) => (
+                        <div key={key} className="flex justify-between text-xs">
+                          <span className="text-stone-500">{key}</span>
+                          <span className={`font-medium ${val >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {val >= 0 ? "+" : ""}{fmtCurrency(val)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
-                  <p className="text-[10px] text-stone-400 mb-1.5 italic">
-                    Snapshot of open positions on peak date. Contracts closing in a later month appear here but their P&amp;L shows in that month.
-                  </p>
-                  {peakPositions.map((pos, j) => (
-                    <div key={j} className="flex justify-between text-[10px] pl-2">
-                      <span className="text-stone-400">
-                        {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
-                        <span className="text-stone-300 ml-1">= ${pos.strike} × 100 × {pos.units}</span>
-                      </span>
-                      <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
-                    </div>
-                  ))}
-                  {peakPositions.length > 1 && (
-                    <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 mt-0.5">
-                      <span className="text-stone-400">Total</span>
-                      <span className="text-amber-700 font-semibold">
-                        {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
-                      </span>
+
+                  {/* Peak collateral — foldable */}
+                  {capData && capData.peak > 0 && (
+                    <div className="mt-2 pt-2 border-t border-stone-50">
+                      <button
+                        className="w-full flex items-center justify-between"
+                        onClick={() => toggleSet(setExpandedCollateral, month)}
+                      >
+                        <span className="text-[11px] font-medium text-amber-600">
+                          Peak PUT collateral · {fmtDate(capData.peakDate)}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+                          <span className="text-stone-300 text-xs">{isCollOpen ? "▲" : "▼"}</span>
+                        </div>
+                      </button>
+                      {isCollOpen && (
+                        <div className="mt-1.5">
+                          <p className="text-[10px] text-stone-400 mb-1.5 italic">
+                            Snapshot on peak date. Contracts closing later show P&amp;L in their own month.
+                          </p>
+                          {peakPositions.map((pos, j) => (
+                            <div key={j} className="flex justify-between text-[10px] pl-2">
+                              <span className="text-stone-400">
+                                {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
+                              </span>
+                              <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
+                            </div>
+                          ))}
+                          {peakPositions.length > 1 && (
+                            <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 mt-0.5">
+                              <span className="text-stone-400">Total</span>
+                              <span className="text-amber-700 font-semibold">
+                                {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
