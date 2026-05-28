@@ -30,6 +30,31 @@ export async function GET(req: Request) {
       return NextResponse.json({ chains });
     }
 
+    if (include === "debug-txns") {
+      const startDate = searchParams.get("startDate") ?? "2025-01-01";
+      const underlying = searchParams.get("underlying")?.toUpperCase();
+      const txns = await getTransactions(startDate);
+      const optionTxns = txns.filter((t: any) => t.option_symbol != null);
+      const filtered = underlying
+        ? optionTxns.filter((t: any) =>
+            (t.option_symbol?.underlying_symbol?.symbol ?? "").toUpperCase() === underlying
+          )
+        : optionTxns;
+      return NextResponse.json(filtered.map((t: any) => ({
+        date: t.trade_date ?? t.settlement_date,
+        type: t.type,
+        underlying: t.option_symbol?.underlying_symbol?.symbol,
+        option_type: t.option_symbol?.option_type,
+        strike: t.option_symbol?.strike_price,
+        expiry: t.option_symbol?.expiration_date,
+        ticker: t.option_symbol?.ticker,
+        units: t.units,
+        price: t.price,
+        amount: t.amount,
+        _raw_type: t.type,
+      })));
+    }
+
     const portfolio = await getPortfolio();
     return NextResponse.json(portfolio);
   } catch (err: any) {
