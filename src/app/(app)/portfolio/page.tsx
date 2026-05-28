@@ -798,7 +798,7 @@ export default function PortfolioPage() {
   const [filter, setFilter] = useState<FilterTab>("Open");
   type OpenSort = "expiry" | "collateral" | "pnl" | "type" | "ticker";
   const [openSort, setOpenSort] = useState<OpenSort>("expiry");
-  type ClosedSort = "date" | "pnl" | "annReturn" | "ticker";
+  type ClosedSort = "date" | "pnl" | "annReturn" | "ticker" | "type";
   const [closedSort, setClosedSort] = useState<ClosedSort>("date");
 
   const fetchChains = useCallback(() => {
@@ -901,6 +901,7 @@ export default function PortfolioPage() {
         return rb - ra;
       }
       case "ticker":    return a.underlying.localeCompare(b.underlying);
+      case "type":      return a.option_type.localeCompare(b.option_type);
       default:          return 0;
     }
   });
@@ -997,6 +998,7 @@ export default function PortfolioPage() {
             ["pnl",       "P&L"],
             ["annReturn", "Ann. Return"],
             ["ticker",    "Ticker"],
+            ["type",      "Call/Put"],
           ] as [typeof closedSort, string][]).map(([key, label]) => (
             <button
               key={key}
