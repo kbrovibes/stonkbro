@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { MORE_GROUPS, MoreTile } from "@/components/MoreNav";
 
 const tabs = [
   {
@@ -32,15 +34,6 @@ const tabs = [
     ),
   },
   {
-    name: "Research",
-    href: "/research",
-    icon: (active: boolean) => (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-      </svg>
-    ),
-  },
-  {
     name: "Portfolio",
     href: "/portfolio",
     icon: (active: boolean) => (
@@ -49,50 +42,133 @@ const tabs = [
       </svg>
     ),
   },
+];
+
+const moreIcon = (active: boolean) => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+  </svg>
+);
+
+// Guest tabs: Plays, Options, Research (research stays addressable for guests)
+const guestTabs = [
+  tabs.find((t) => t.href === "/today")!,
+  tabs.find((t) => t.href === "/csp-hunter")!,
   {
-    name: "More",
-    href: "/more",
+    name: "Research",
+    href: "/research",
     icon: (active: boolean) => (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={active ? 2 : 1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
       </svg>
     ),
   },
 ];
 
-const guestTabs = tabs.filter((t) => ["/today", "/csp-hunter", "/research"].includes(t.href));
-
 export default function BottomNav({
-  showPortfolio = false,
   isGuest = false,
 }: {
   showPortfolio?: boolean;
   isGuest?: boolean;
 }) {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
   const visibleTabs = isGuest ? guestTabs : tabs;
 
+  // Close popup whenever the route changes
+  useEffect(() => { setMoreOpen(false); }, [pathname]);
+
+  // Lock body scroll while popup is open
+  useEffect(() => {
+    if (moreOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [moreOpen]);
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-100">
-      <div className="max-w-2xl mx-auto flex">
-        {visibleTabs.map((tab) => {
-          const active = tab.href === "/home"
-            ? pathname === "/home"
-            : pathname.startsWith(tab.href);
-          return (
-            <Link
-              key={tab.name}
-              href={tab.href}
+    <>
+      {/* More popup (bottom sheet) */}
+      {moreOpen && (
+        <>
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 z-40 bg-stone-900/40"
+          />
+          {/* Sheet */}
+          <div className="fixed bottom-[64px] left-0 right-0 z-50 bg-white border-t border-stone-200 rounded-t-2xl shadow-2xl max-h-[75vh] overflow-y-auto">
+            <div className="max-w-2xl mx-auto px-3 pt-3 pb-4">
+              {/* Drag handle */}
+              <div className="flex justify-center mb-2">
+                <div className="h-1 w-10 rounded-full bg-stone-200" />
+              </div>
+
+              {MORE_GROUPS.map((group) => (
+                <section key={group.label} className="mb-3 last:mb-0">
+                  <div className="flex items-center gap-2 px-1 mb-1.5">
+                    <span className="text-stone-500">{group.icon}</span>
+                    <span className="text-[10px] font-bold text-stone-700 uppercase tracking-wide">{group.label}</span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                    {group.links.map((link) => (
+                      <MoreTile key={link.href} link={link} onClick={() => setMoreOpen(false)} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+
+              {/* View All */}
+              <Link
+                href="/more"
+                onClick={() => setMoreOpen(false)}
+                className="mt-2 block text-center text-xs font-semibold text-sky-600 hover:text-sky-800 active:bg-sky-50 py-2.5 rounded-lg border border-sky-200"
+              >
+                View All &rarr;
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-100">
+        <div className="max-w-2xl mx-auto flex">
+          {visibleTabs.map((tab) => {
+            const active = tab.href === "/home"
+              ? pathname === "/home"
+              : pathname.startsWith(tab.href);
+            return (
+              <Link
+                key={tab.name}
+                href={tab.href}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-stone-100 ${
+                  active ? "text-sky-600" : "text-stone-400"
+                }`}
+              >
+                {tab.icon(active)}
+                {tab.name}
+              </Link>
+            );
+          })}
+          {!isGuest && (
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              aria-label="More"
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-stone-100 ${
-                active ? "text-sky-600" : "text-stone-400"
+                moreOpen || pathname.startsWith("/more") ? "text-sky-600" : "text-stone-400"
               }`}
             >
-              {tab.icon(active)}
-              {tab.name}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+              {moreIcon(moreOpen)}
+              More
+            </button>
+          )}
+        </div>
+      </nav>
+    </>
   );
 }
