@@ -122,7 +122,7 @@ export default function BottomNav({
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
           {/* Drop-up: anchored above the More button, width = longest entry */}
-          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-[min(92vw,440px)] min-w-[300px] flex flex-col">
+          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-[min(88vw,400px)] min-w-[280px] flex flex-col">
             <div className="overflow-y-auto py-1.5 px-1 min-h-0">
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-1 last:mb-0">
