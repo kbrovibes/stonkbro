@@ -325,6 +325,7 @@ export default function TimeMachinePage() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {inline.map(renderBtn)}
+                {showMoreMonths && overflow.map(renderBtn)}
                 {overflow.length > 0 && (
                   <button
                     type="button"
@@ -334,7 +335,6 @@ export default function TimeMachinePage() {
                     {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
                   </button>
                 )}
-                {showMoreMonths && overflow.map(renderBtn)}
               </div>
               <div className="flex items-center gap-3 text-[9px] text-stone-400">
                 <span className="flex items-center gap-1">

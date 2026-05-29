@@ -102,36 +102,39 @@ export default function BottomNav({
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
           {/* Drop-up: anchored above the More button, width = longest entry */}
-          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] overflow-y-auto w-max max-w-[min(80vw,320px)] py-1.5 px-1">
-            {moreGroups.map((group) => (
-              <section key={group.label} className="mb-1 last:mb-0">
-                <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
-                  <span className="text-stone-400">{group.icon}</span>
-                  <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wide whitespace-nowrap">{group.label}</span>
-                </div>
-                <ul>
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setMoreOpen(false)}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors whitespace-nowrap"
-                      >
-                        <span className="text-sm leading-none w-5 text-center">{link.emoji}</span>
-                        <span className="text-[13px] font-medium text-stone-800">{link.title}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-max max-w-[min(80vw,320px)] flex flex-col">
+            <div className="overflow-y-auto py-1.5 px-1 flex-1 min-h-0">
+              {moreGroups.map((group) => (
+                <section key={group.label} className="mb-1 last:mb-0">
+                  <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
+                    <span className="text-stone-400">{group.icon}</span>
+                    <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wide whitespace-nowrap">{group.label}</span>
+                  </div>
+                  <ul>
+                    {group.links.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          onClick={() => setMoreOpen(false)}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors whitespace-nowrap"
+                        >
+                          <span className="text-sm leading-none w-5 text-center">{link.emoji}</span>
+                          <span className="text-[13px] font-medium text-stone-800">{link.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
 
+            {/* Sticky footer — always visible regardless of scroll */}
             <Link
               href="/more"
               onClick={() => setMoreOpen(false)}
-              className="mt-1 mx-1 block text-center text-[11px] font-semibold text-sky-600 hover:text-sky-800 active:bg-sky-50 py-1.5 rounded-md border border-sky-200 whitespace-nowrap"
+              className="m-1 block text-center text-[12px] font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 py-2 rounded-md whitespace-nowrap shrink-0"
             >
-              View All &rarr;
+              View All Pages &rarr;
             </Link>
           </div>
         </>
