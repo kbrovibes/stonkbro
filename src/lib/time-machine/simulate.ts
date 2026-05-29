@@ -58,6 +58,10 @@ export interface SimulationResult {
       accountCount: number;
       stockPositionCount: number;
       optionPositionCount: number;
+      perAccount?: Array<{
+        id: string; name: string; institution: string; number: string;
+        stocks: number; options: number; cash: number; total: number;
+      }>;
     };
   };
   delta: { absolute: number; pct: number; favorableToHold: boolean };

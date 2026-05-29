@@ -67,6 +67,10 @@ interface TimeMachineResult {
       accountCount: number;
       stockPositionCount: number;
       optionPositionCount: number;
+      perAccount?: Array<{
+        id: string; name: string; institution: string; number: string;
+        stocks: number; options: number; cash: number; total: number;
+      }>;
     };
   };
   delta: { absolute: number; pct: number; favorableToHold: boolean };
@@ -322,8 +326,19 @@ export default function TimeMachinePage() {
                     <div className="flex justify-between"><span>Stocks ({data.actual.breakdown.stockPositionCount})</span><span>{fmtCurrency0(data.actual.breakdown.stocks)}</span></div>
                     <div className="flex justify-between"><span>Options ({data.actual.breakdown.optionPositionCount}, net of shorts)</span><span>{fmtCurrency0(data.actual.breakdown.options)}</span></div>
                     <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(data.actual.breakdown.cash)}</span></div>
-                    <div className="flex justify-between text-stone-400 pt-1 border-t border-stone-100 mt-1">
-                      <span>{data.actual.breakdown.accountCount} account{data.actual.breakdown.accountCount === 1 ? "" : "s"} · via SnapTrade</span>
+                    <div className="pt-1.5 mt-1.5 border-t border-stone-100">
+                      <div className="text-stone-400 mb-1">
+                        {data.actual.breakdown.accountCount} account{data.actual.breakdown.accountCount === 1 ? "" : "s"} linked via SnapTrade
+                      </div>
+                      {data.actual.breakdown.perAccount && data.actual.breakdown.perAccount.map((a) => (
+                        <div key={a.id} className="flex justify-between py-0.5 border-t border-stone-50">
+                          <span className="truncate pr-2 text-stone-600">
+                            {a.institution} · {a.name}
+                            {a.number ? ` (${a.number.slice(-4)})` : ""}
+                          </span>
+                          <span className="text-stone-700 font-medium">{fmtCurrency0(a.total)}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

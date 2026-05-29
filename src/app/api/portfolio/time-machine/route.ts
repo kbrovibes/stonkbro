@@ -70,6 +70,30 @@ export async function GET(req: Request) {
     const actualTotal = stocksMV + optionsMV + cashTotal;
 
     const result = await simulateTimeMachine({ snapshotDate, txns, actualTotal });
+    // Per-account breakdown so the user can verify only the intended
+    // accounts are being summed (SnapTrade-linked vs all Fidelity accounts).
+    const perAccount = portfolio.accounts.map((a) => {
+      const acctStocks = portfolio.positions
+        .filter((p) => p.account_name === a.name)
+        .reduce((s, p) => s + p.market_value, 0);
+      const acctOptions = portfolio.options
+        .filter((o) => o.account_name === a.name)
+        .reduce((s, o) => s + o.market_value, 0);
+      const acctCash = portfolio.balances
+        .filter((b) => b.account_id === a.id)
+        .reduce((s, b) => s + b.cash, 0);
+      return {
+        id: a.id,
+        name: a.name,
+        institution: a.institution,
+        number: a.number,
+        stocks: acctStocks,
+        options: acctOptions,
+        cash: acctCash,
+        total: acctStocks + acctOptions + acctCash,
+      };
+    });
+
     return NextResponse.json({
       ...result,
       earliestAvailable,
@@ -82,6 +106,7 @@ export async function GET(req: Request) {
           accountCount: portfolio.accounts.length,
           stockPositionCount: portfolio.positions.length,
           optionPositionCount: portfolio.options.length,
+          perAccount,
         },
       },
     });
