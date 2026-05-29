@@ -122,8 +122,8 @@ export default function BottomNav({
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
           {/* Drop-up: anchored above the More button, width = longest entry */}
-          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-96 max-w-[92vw] flex flex-col">
-            <div className="overflow-y-auto py-1.5 px-1 min-h-0">
+          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-fit max-w-[88vw] flex flex-col">
+            <div className="overflow-y-auto py-1.5 px-2 min-h-0">
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-1 last:mb-0">
                   <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
@@ -136,7 +136,7 @@ export default function BottomNav({
                         <Link
                           href={link.href}
                           onClick={() => setMoreOpen(false)}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors whitespace-nowrap"
+                          className="flex items-center gap-2.5 pl-2 pr-6 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors whitespace-nowrap"
                         >
                           <span className="text-sm leading-none w-5 text-center">{link.emoji}</span>
                           <span className="text-[13px] font-medium text-stone-800">{link.title}</span>
