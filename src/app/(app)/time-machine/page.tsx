@@ -324,7 +324,7 @@ export default function TimeMachinePage() {
               <button
                 key={s.snapshotDate}
                 onClick={() => loadCached(s.snapshotDate)}
-                className={`flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 ${intensityClass(s)} ${ring}`}
+                className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-10 min-w-[60px] ${intensityClass(s)} ${ring}`}
                 title={showDeltas
                   ? `${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`
                   : `${s.snapshotDate}`}
@@ -378,7 +378,7 @@ export default function TimeMachinePage() {
                   <button
                     type="button"
                     onClick={() => setShowMoreMonths((v) => !v)}
-                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-semibold text-stone-600 hover:bg-stone-100 transition shrink-0"
+                    className="px-2.5 rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-semibold text-stone-600 hover:bg-stone-100 transition shrink-0 h-10"
                   >
                     {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
                   </button>
@@ -391,8 +391,6 @@ export default function TimeMachinePage() {
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
                 </span>
-                <span className="text-stone-300">·</span>
-                <span>deeper color = bigger magnitude</span>
               </div>
               {backfillResult && (
                 <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>
