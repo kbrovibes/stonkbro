@@ -62,10 +62,18 @@ interface TimeMachineResult {
   delta: { absolute: number; pct: number; favorableToHold: boolean };
   realizedGains?: {
     options: number;
-    stocks: number;
+    stocksShortTerm: number;
+    stocksLongTerm: number;
     total: number;
     estimatedTax: number;
-    taxRateUsed: number;
+    taxBreakdown: {
+      stcgRate: number;
+      ltcgRate: number;
+      stcgBase: number;
+      ltcgBase: number;
+      stcgTax: number;
+      ltcgTax: number;
+    };
     taxRateLabel: string;
   };
   assumptions: string[];
@@ -440,7 +448,7 @@ export default function TimeMachinePage() {
               )}
             </div>
 
-            {/* Realized gains + tax context */}
+            {/* Realized gains + tax context (WA-specific) */}
             {data.realizedGains && data.realizedGains.total !== 0 && (
               <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -453,26 +461,50 @@ export default function TimeMachinePage() {
                   trigger a tax bill. In the sim you didn&apos;t trade, so no tax — meaning some portion of the
                   withdrawals above were likely real obligations.
                 </p>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-white border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Realized gains</div>
-                    <div className="text-base font-bold text-stone-900">{fmtCurrency0(data.realizedGains.total)}</div>
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Options (STCG)</div>
+                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.options)}</div>
+                    <div className="text-[10px] text-stone-500 mt-1">All short-term</div>
+                  </div>
+                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks STCG</div>
+                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
+                    <div className="text-[10px] text-stone-500 mt-1">Held &lt; 1 yr</div>
+                  </div>
+                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks LTCG</div>
+                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
+                    <div className="text-[10px] text-stone-500 mt-1">Held ≥ 1 yr</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mt-3">
+                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
+                    <div className="text-sm font-bold text-rose-600">
+                      ~{fmtCurrency0(data.realizedGains.taxBreakdown.stcgTax)}
+                    </div>
                     <div className="text-[10px] text-stone-500 mt-1">
-                      Options: {fmtCurrency0(data.realizedGains.options)}
-                      {data.realizedGains.stocks !== 0 && (
-                        <> · Stock: {fmtCurrency0(data.realizedGains.stocks)}</>
-                      )}
+                      on {fmtCurrency0(data.realizedGains.taxBreakdown.stcgBase)}
                     </div>
                   </div>
                   <div className="bg-white border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Est. tax owed</div>
-                    <div className="text-base font-bold text-rose-600">~{fmtCurrency0(data.realizedGains.estimatedTax)}</div>
-                    <div className="text-[10px] text-stone-500 mt-1">@ {(data.realizedGains.taxRateUsed * 100).toFixed(0)}% effective</div>
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
+                    <div className="text-sm font-bold text-rose-600">
+                      ~{fmtCurrency0(data.realizedGains.taxBreakdown.ltcgTax)}
+                    </div>
+                    <div className="text-[10px] text-stone-500 mt-1">
+                      on {fmtCurrency0(data.realizedGains.taxBreakdown.ltcgBase)}
+                    </div>
                   </div>
                 </div>
+                <div className="bg-white border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
+                  <span className="text-[11px] text-violet-700 font-semibold uppercase tracking-wider">Total est. tax</span>
+                  <span className="text-base font-bold text-rose-600">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
+                </div>
                 <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
-                  {data.realizedGains.taxRateLabel}. Assumes income &gt; $500K. Stock realized gains
-                  are best-effort (in-window BUYs only).
+                  {data.realizedGains.taxRateLabel}. Stock hold-period uses earliest in-window
+                  BUY date; SELLs without an in-window BUY are skipped (incomplete history).
                 </p>
               </div>
             )}

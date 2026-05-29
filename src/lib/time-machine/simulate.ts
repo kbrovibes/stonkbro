@@ -53,10 +53,18 @@ export interface SimulationResult {
   delta: { absolute: number; pct: number; favorableToHold: boolean };
   realizedGains: {
     options: number;
-    stocks: number;
+    stocksShortTerm: number;
+    stocksLongTerm: number;
     total: number;
     estimatedTax: number;
-    taxRateUsed: number;
+    taxBreakdown: {
+      stcgRate: number;
+      ltcgRate: number;
+      stcgBase: number;
+      ltcgBase: number;
+      stcgTax: number;
+      ltcgTax: number;
+    };
     taxRateLabel: string;
   };
   assumptions: string[];

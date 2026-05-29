@@ -453,25 +453,37 @@ export function categorizePostSnapshotCashFlows(
 // ─────────────────────────────────────────────────────────────────────────
 
 export interface RealizedGainsSummary {
-  options: number;   // net cash from options trading after snapshot
-  stocks: number;    // net cash from stock trading after snapshot (best-effort)
+  options: number;          // all STCG (almost all of this user's options are <45 DTE)
+  stocksShortTerm: number;  // held < 365d
+  stocksLongTerm: number;   // held >= 365d
   total: number;
   estimatedTax: number;
-  taxRateUsed: number;
+  taxBreakdown: {
+    stcgRate: number;
+    ltcgRate: number;
+    stcgBase: number;       // total gains taxed at STCG rate
+    ltcgBase: number;       // total gains taxed at LTCG rate
+    stcgTax: number;
+    ltcgTax: number;
+  };
   taxRateLabel: string;
 }
 
 /**
- * Estimates the realized gains from ACTUAL trading activity after the
- * snapshot date. Used to surface why the user may have withdrawn cash
- * (likely to cover taxes on gains that wouldn't have existed in the sim).
+ * Estimates realized gains from ACTUAL trading activity after the snapshot
+ * date, split by short- vs long-term holding period.
  *
- * v1: sums all post-snapshot option BUY/SELL `amount` values and all
- * stock SELL `amount` minus cost basis from in-window BUYs. Crude but
- * captures the order of magnitude.
+ * Rates (WA resident, income > $500K):
+ *   STCG = 37% federal + 3.8% NIIT = 40.8%  (WA does not tax STCG)
+ *   LTCG = 20% federal + 3.8% NIIT + 7% WA = 30.8%  (WA taxes LTCG > ~$270K)
  *
- * Tax rate assumes high-income (>$500K) options trader: 37% federal +
- * 3.8% NIIT + ~4% state midpoint = ~45% effective on short-term gains.
+ * Options realized are treated as 100% STCG since this user's strategies
+ * (CSPs, covered calls, short-dated rolls) virtually never qualify for LTCG.
+ *
+ * For stocks: each SELL is categorized via the earliest in-window BUY date
+ * of that symbol. If `sellDate - earliestBuyDate >= 365`, it's LTCG;
+ * otherwise STCG. When no in-window BUY exists (incomplete history),
+ * default to STCG — conservative (overstates tax slightly).
  */
 export function computeRealizedGainsSinceSnapshot(
   snapshotDate: string,
@@ -479,18 +491,17 @@ export function computeRealizedGainsSinceSnapshot(
 ): RealizedGainsSummary {
   const sorted = sortAscending(txns);
   let optionsRealized = 0;
-  let stocksRealized = 0;
+  let stocksShortTerm = 0;
+  let stocksLongTerm = 0;
 
-  // For stocks, track avg cost using in-window BUYs. Falls back to 0
-  // realized when SELL has no prior BUY in window (incomplete history).
-  const stockAvgCost = new Map<string, { units: number; totalCost: number }>();
+  // Per-symbol running avg cost + earliest BUY date (used for hold-period bucket).
+  const stockLots = new Map<string, { units: number; totalCost: number; earliestBuy: string }>();
 
   for (const tx of sorted) {
     const date = txnDate(tx);
     if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
 
     if (isOptionTxn(tx)) {
-      // Only post-snapshot option cash flows count as "realized after snapshot"
       if (date <= snapshotDate) continue;
       if (tx.type === "BUY" || tx.type === "SELL") {
         optionsRealized += tx.amount;  // signed
@@ -501,37 +512,57 @@ export function computeRealizedGainsSinceSnapshot(
     const sym = extractSymbol(tx);
     if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
 
-    // Pre-snapshot stock BUYs feed cost basis for post-snapshot SELLs.
     if (tx.type === "BUY") {
       const units = Math.abs(tx.units);
       const cost = Math.abs(tx.amount);
-      const cur = stockAvgCost.get(sym) ?? { units: 0, totalCost: 0 };
-      cur.units += units;
-      cur.totalCost += cost;
-      stockAvgCost.set(sym, cur);
+      const cur = stockLots.get(sym);
+      if (cur) {
+        cur.units += units;
+        cur.totalCost += cost;
+        // earliestBuy is the earliest known BUY; don't overwrite.
+      } else {
+        stockLots.set(sym, { units, totalCost: cost, earliestBuy: date });
+      }
       continue;
     }
 
     if (tx.type === "SELL" && date > snapshotDate) {
       const units = Math.abs(tx.units);
       const proceeds = Math.abs(tx.amount);
-      const cur = stockAvgCost.get(sym);
+      const cur = stockLots.get(sym);
       if (cur && cur.units > 0) {
         const avgCost = cur.totalCost / cur.units;
         const consumed = Math.min(units, cur.units);
         const gain = proceeds - avgCost * consumed;
-        stocksRealized += gain;
+        const holdDays = (Date.parse(date) - Date.parse(cur.earliestBuy)) / 86400_000;
+        if (holdDays >= 365) stocksLongTerm += gain;
+        else stocksShortTerm += gain;
         cur.units -= consumed;
         cur.totalCost -= avgCost * consumed;
-        stockAvgCost.set(sym, cur);
+      } else {
+        // No in-window BUY — assume STCG (conservative). Use proceeds as gain
+        // proxy? No — that would overcount. Skip this SELL from the tally.
       }
     }
   }
 
-  const total = optionsRealized + stocksRealized;
-  const taxRateUsed = 0.45;
-  const taxRateLabel = "~45% blended (37% fed + 3.8% NIIT + ~4% state midpoint, short-term)";
-  const estimatedTax = Math.max(0, total) * taxRateUsed;
+  const stcgRate = 0.408;  // 37% fed + 3.8% NIIT (WA has no state STCG)
+  const ltcgRate = 0.308;  // 20% fed + 3.8% NIIT + 7% WA LTCG
+  const stcgBase = Math.max(0, optionsRealized + stocksShortTerm);
+  const ltcgBase = Math.max(0, stocksLongTerm);
+  const stcgTax = stcgBase * stcgRate;
+  const ltcgTax = ltcgBase * ltcgRate;
+  const estimatedTax = stcgTax + ltcgTax;
+  const total = optionsRealized + stocksShortTerm + stocksLongTerm;
+  const taxRateLabel = "WA resident, income > $500K: STCG 40.8% (37% fed + 3.8% NIIT), LTCG 30.8% (20% fed + 3.8% NIIT + 7% WA)";
 
-  return { options: optionsRealized, stocks: stocksRealized, total, estimatedTax, taxRateUsed, taxRateLabel };
+  return {
+    options: optionsRealized,
+    stocksShortTerm,
+    stocksLongTerm,
+    total,
+    estimatedTax,
+    taxBreakdown: { stcgRate, ltcgRate, stcgBase, ltcgBase, stcgTax, ltcgTax },
+    taxRateLabel,
+  };
 }
