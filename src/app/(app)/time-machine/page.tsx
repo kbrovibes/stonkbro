@@ -287,7 +287,10 @@ export default function TimeMachinePage() {
                 todayPrice: 1,
                 snapshotValue: cashSnap,
                 todayValue: cashToday,
-                returnPct: cashSnap > 0 ? ((cashToday - cashSnap) / cashSnap) * 100 : null,
+                // Cash never "appreciates" — any delta between snap and today
+                // comes from added cash (deposits/dividends/interest), not
+                // price growth. Always report 0% to avoid implying yield.
+                returnPct: 0,
                 isCash: true,
               };
               const allRows = [...stockRows, cashRow];
@@ -349,7 +352,7 @@ export default function TimeMachinePage() {
                           return (
                             <tr key={r.symbol} className={`border-t border-stone-50 ${r.isCash ? "bg-amber-50/30" : ""}`}>
                               <td className="px-3 py-2 font-semibold text-stone-900">{r.symbol}</td>
-                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : r.units}</td>
+                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : Math.round(r.units)}</td>
                               <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—")}</td>
                               <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : fmtCurrency(r.todayPrice)}</td>
                               <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{fmtCurrency0(r.snapshotValue)}</td>

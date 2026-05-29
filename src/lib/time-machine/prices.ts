@@ -33,7 +33,7 @@ const historicalCloseCache = new Map<string, number | null>();
  */
 const MANUAL_PRICES: Record<string, number> = {
   FXAIX: 263.16,   // Fidelity 500 Index Fund
-  FSELS: 67.91,    // Fidelity Select Semiconductors
+  FSELX: 67.91,    // Fidelity Select Semiconductors Portfolio
 };
 
 /**
