@@ -693,42 +693,37 @@ function CSPCard({ candidate: c, rank }: { candidate: Candidate; rank: number })
 
   return (
     <div
-      className="px-4 py-3 hover:bg-stone-50/50 transition cursor-pointer"
+      className="px-3 py-1.5 hover:bg-stone-50/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-stone-300 text-xs w-5">{rank}</span>
-          <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[c.priority]}`} />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-stone-300 text-[10px] w-4 shrink-0 text-right">{rank}</span>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[c.priority]}`} />
           <Link
             href={`/ticker/${c.symbol}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-bold text-stone-900 hover:text-emerald-600 transition"
+            className="text-[13px] font-bold text-stone-900 hover:text-emerald-600 transition"
           >
             {c.symbol}
           </Link>
-          <span className="text-xs text-stone-400">
-            ${c.strike} P · {c.expiry.slice(5)} · {c.dte}d
+          <span className="text-[11px] text-stone-400 truncate">
+            ${c.strike}P · {c.expiry.slice(5)} · {c.dte}d
           </span>
+          <span className="text-[11px] text-stone-500 shrink-0">${c.mid.toFixed(2)}</span>
+          <span className="text-[11px] text-emerald-600 shrink-0">${(c.totalPremium / 1000).toFixed(1)}k</span>
         </div>
-        <div className="text-right">
-          <div className="text-sm font-semibold text-emerald-600">{c.aroc}%</div>
-          <div className="text-[10px] text-stone-400">AROC</div>
+        <div className="text-right shrink-0">
+          <span className="text-[13px] font-semibold text-emerald-600">{c.aroc}%</span>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3 mt-1.5 ml-7">
-        <span className="text-xs text-stone-500">${c.mid.toFixed(2)} mid</span>
-        <span className="text-xs text-stone-400">{c.contractsAt100k} contracts</span>
-        <span className="text-xs text-emerald-600">${c.totalPremium.toLocaleString()} income</span>
       </div>
 
       {c.catalyst && (
-        <p className="text-xs text-stone-500 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
+        <p className="text-[10px] text-stone-500 mt-0.5 ml-6 italic leading-tight truncate">{c.catalyst}</p>
       )}
 
       {expanded && (
-        <div className="mt-3 ml-7 p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
+        <div className="mt-2 ml-6 p-2.5 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500">
             <div>Current Price: <span className="text-stone-900">${c.currentPrice.toFixed(2)}</span></div>
             <div>Strike: <span className="text-stone-900">${c.strike.toFixed(2)}</span></div>
@@ -766,77 +761,53 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
 
   return (
     <div
-      className="px-4 py-3 hover:bg-stone-50/50 transition cursor-pointer"
+      className="px-3 py-1.5 hover:bg-stone-50/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Top row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-stone-300 text-xs w-5">{rank}</span>
-          <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[c.priority]}`} />
+      {/* Top row — all the essentials inline */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-stone-300 text-[10px] w-4 shrink-0 text-right">{rank}</span>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[c.priority]}`} />
           <Link
             href={`/ticker/${c.symbol}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-bold text-stone-900 hover:text-sky-600 transition"
+            className="text-[13px] font-bold text-stone-900 hover:text-sky-600 transition"
           >
             {c.symbol}
           </Link>
-          <span className="text-xs text-stone-400">
-            ${c.strike} C · {c.expiry.slice(5)} · {c.dte}d
+          <span className="text-[11px] text-stone-400 truncate">
+            ${c.strike}C · {c.expiry.slice(5)} · {c.dte}d
           </span>
+          <span className="text-[11px] text-stone-500 shrink-0">${c.mid.toFixed(2)}</span>
+          <span className="text-[11px] text-stone-400 shrink-0">${(c.totalCost / 1000).toFixed(1)}k</span>
         </div>
-        <div className="text-right">
-          <div className="text-sm font-semibold text-sky-600">{c.score}/100</div>
-          <div className="text-[10px] text-stone-400">Score</div>
+        <div className="text-right shrink-0">
+          <span className="text-[13px] font-semibold text-sky-600">{c.score}</span>
         </div>
       </div>
 
-      {/* Key metrics */}
-      <div className="flex items-center gap-3 mt-1.5 ml-7">
-        <span className="text-xs text-stone-500">${c.mid.toFixed(2)} mid</span>
-        <span className="text-xs text-stone-400">{c.contractsAt100k} contracts</span>
-        <span className="text-xs text-stone-500">${c.totalCost.toLocaleString()} cost</span>
-      </div>
-
-      {/* Catalyst */}
+      {/* Catalyst — single truncated line */}
       {c.catalyst && (
-        <p className="text-xs text-stone-500 mt-1.5 ml-7 italic leading-snug">{c.catalyst}</p>
+        <p className="text-[10px] text-stone-500 mt-0.5 ml-6 italic leading-tight truncate">{c.catalyst}</p>
       )}
 
-      {/* Outcome scenarios — always visible */}
-      <div className="mt-2 ml-7 grid grid-cols-3 gap-2">
-        <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-100">
-          <div className="text-[10px] text-emerald-600 font-medium uppercase">Stock +5%</div>
-          <div className={`text-sm font-bold ${c.outcome50pct.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {c.outcome50pct.profit >= 0 ? "+" : ""}${Math.abs(c.outcome50pct.profit).toLocaleString()}
-          </div>
-          <div className={`text-[10px] ${c.outcome50pct.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
-            {c.outcome50pct.returnPct >= 0 ? "+" : ""}{c.outcome50pct.returnPct}%
-          </div>
-        </div>
-        <div className="bg-sky-50 rounded-lg p-2 text-center border border-sky-100">
-          <div className="text-[10px] text-sky-600 font-medium uppercase">Stock +10%</div>
-          <div className={`text-sm font-bold ${c.outcome100pct.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {c.outcome100pct.profit >= 0 ? "+" : ""}${Math.abs(c.outcome100pct.profit).toLocaleString()}
-          </div>
-          <div className={`text-[10px] ${c.outcome100pct.returnPct >= 0 ? "text-emerald-500" : "text-red-400"}`}>
-            {c.outcome100pct.returnPct >= 0 ? "+" : ""}{c.outcome100pct.returnPct}%
-          </div>
-        </div>
-        <div className="bg-violet-50 rounded-lg p-2 text-center border border-violet-100">
-          <div className="text-[10px] text-violet-600 font-medium uppercase">Stock +20%</div>
-          <div className="text-sm font-bold text-emerald-700">
-            +${c.outcomeHomeRun.profit.toLocaleString()}
-          </div>
-          <div className="text-[10px] text-emerald-500">
-            +{c.outcomeHomeRun.returnPct}%
-          </div>
-        </div>
+      {/* Outcome scenarios — compact inline strip */}
+      <div className="mt-1 ml-6 flex items-center gap-1.5 text-[10px]">
+        <span className={`px-1.5 py-0.5 rounded ${c.outcome50pct.profit >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+          +5%: {c.outcome50pct.profit >= 0 ? "+" : ""}${(Math.abs(c.outcome50pct.profit) / 1000).toFixed(1)}k ({c.outcome50pct.returnPct >= 0 ? "+" : ""}{c.outcome50pct.returnPct}%)
+        </span>
+        <span className={`px-1.5 py-0.5 rounded ${c.outcome100pct.profit >= 0 ? "bg-sky-50 text-sky-700" : "bg-red-50 text-red-600"}`}>
+          +10%: {c.outcome100pct.profit >= 0 ? "+" : ""}${(Math.abs(c.outcome100pct.profit) / 1000).toFixed(1)}k ({c.outcome100pct.returnPct >= 0 ? "+" : ""}{c.outcome100pct.returnPct}%)
+        </span>
+        <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+          +20%: +${(c.outcomeHomeRun.profit / 1000).toFixed(1)}k (+{c.outcomeHomeRun.returnPct}%)
+        </span>
       </div>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-3 ml-7 p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
+        <div className="mt-2 ml-6 p-2.5 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500">
             <div>Current Price: <span className="text-stone-900">${c.currentPrice.toFixed(2)}</span></div>
             <div>Strike: <span className="text-stone-900">${c.strike.toFixed(2)}</span></div>
