@@ -57,7 +57,25 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Surface earliestAvailable from the newest payload (all share the same value)
+  // so the list view can drive the full expected-months timeline without
+  // having to load a full payload first.
+  let earliestAvailable: string | null = null;
+  if (!expand && data && data.length > 0) {
+    const { data: probe } = await supabase
+      .from("time_machine_snapshots")
+      .select("payload")
+      .eq("owner_email", user.email!)
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    earliestAvailable = (probe?.payload as any)?.earliestAvailable ?? null;
+  } else if (expand && data && data.length > 0) {
+    earliestAvailable = ((data[0] as any).payload as any)?.earliestAvailable ?? null;
+  }
+
   return NextResponse.json({
+    earliestAvailable,
     snapshots: (data ?? []).map((r: any) => ({
       snapshotDate: r.snapshot_date,
       deltaAbsolute: Number(r.delta_absolute ?? 0),

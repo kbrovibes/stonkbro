@@ -167,6 +167,7 @@ export default function TimeMachinePage() {
   // Backfilled monthly snapshots — drives the colored month-button strip.
   type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
+  const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
   const [showMoreMonths, setShowMoreMonths] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
@@ -226,7 +227,9 @@ export default function TimeMachinePage() {
         const res = await fetch("/api/portfolio/time-machine/cached");
         if (!res.ok) return;
         const json = await res.json();
-        if (!cancelled) setSnapshotList(json.snapshots || []);
+        if (cancelled) return;
+        setSnapshotList(json.snapshots || []);
+        if (json.earliestAvailable) setEarliestAvailableMeta(json.earliestAvailable);
       } catch { /* silent */ }
     })();
     return () => { cancelled = true; };
@@ -284,37 +287,25 @@ export default function TimeMachinePage() {
   }
 
   // Auto-detect & auto-fire batch backfill on first load when stuff is missing.
-  // Bounded to last 12 months so we don't grind on years of pre-history.
+  // Bounded by what the broker actually has (earliestAvailable from API)
+  // — historically up to 24 months for Fidelity-via-SnapTrade.
   useEffect(() => {
     if (autoBatchKickedOff || snapshotList.length === 0) return;
     const haveDates = new Set(snapshotList.map((s) => s.snapshotDate.slice(0, 7)));
-    // We assume last 12 months are expected (back to ~earliest activity).
-    // Bound: use snapshotList's oldest date as a floor too.
-    const today = new Date();
-    const expected: string[] = [];
-    let y = today.getUTCFullYear();
-    let m = today.getUTCMonth() - 1;
-    if (m < 0) { m = 11; y -= 1; }
-    for (let i = 0; i < 12; i++) {
-      const monthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
-      const lastDay = new Date(Date.UTC(y, m + 1, 0));
-      const dow = lastDay.getUTCDay();
-      if (dow === 0) lastDay.setUTCDate(lastDay.getUTCDate() - 2);
-      else if (dow === 6) lastDay.setUTCDate(lastDay.getUTCDate() - 1);
-      expected.push(lastDay.toISOString().slice(0, 10));
-      if (!haveDates.has(monthKey)) { /* track missing */ }
-      m -= 1;
-      if (m < 0) { m = 11; y -= 1; }
-    }
-    const missing = expected.filter((d) => !haveDates.has(d.slice(0, 7)));
-    if (missing.length > 0 && missing.length <= 12) {
+    const earliest = earliestAvailableMeta ?? "2025-01-01";
+    const expected = computeExpectedMonthEnds(earliest);
+    const missing = expected
+      .map((e) => ({ date: e.date, monthKey: e.monthKey }))
+      .filter((e) => !haveDates.has(e.monthKey))
+      .map((e) => e.date);
+    if (missing.length > 0 && missing.length <= 30) {
       setAutoBatchKickedOff(true);
       runBatchBackfills(missing);
     } else {
       setAutoBatchKickedOff(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshotList, autoBatchKickedOff]);
+  }, [snapshotList, earliestAvailableMeta, autoBatchKickedOff]);
 
   async function loadCached(date: string) {
     setSelectedDate(date);
@@ -384,6 +375,7 @@ export default function TimeMachinePage() {
           // Merge expected months with cached snapshots into a single timeline.
           const earliestForStrip =
             data?.earliestAvailable ??
+            earliestAvailableMeta ??
             (snapshotList.length > 0 ? snapshotList[snapshotList.length - 1].snapshotDate : "2025-01-01");
           const expectedRaw = computeExpectedMonthEnds(earliestForStrip);
           const byMonth = new Map(snapshotList.map((s) => [s.snapshotDate.slice(0, 7), s]));
