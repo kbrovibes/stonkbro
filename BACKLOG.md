@@ -10,6 +10,7 @@
 - [ ] **49 — Top CSP Picks Page** · Standalone page showing best CSP options today grouped by premium, return, with strike/DTE suggestions and rationale; auto-refresh every 4 hours
 
 - [ ] **53 — Gemini Health Check Failure** · Both Gemini models fail the AI health check in Settings even though `GEMINI_API_KEY` is set in Vercel Production. Claude models pass. Likely cause: `gemini-1.5-pro` was deprecated (replaced with `gemini-2.0-flash-lite` in constants.ts) but `gemini-2.0-flash` also fails — needs log inspection. Steps: deploy, tap "Failed ✕" on Gemini 2.0 Flash in Settings → AI Health, read the tooltip error, diagnose (quota / API version / SDK bug).
+- [ ] **54 — Portfolio Manager** · Daily AI research + BUY/SELL ratings for every stock in connected portfolio, plus $100K allocation plan; cron at market open+close, force-regen button, expandable-row table, standalone tab — see `specs/54-portfolio-manager.md`
 
 ## 📋 P2 — Do Next
 
