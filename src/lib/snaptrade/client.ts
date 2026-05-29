@@ -219,24 +219,57 @@ export async function getTransactions(startDate = "2026-01-01") {
 /**
  * Returns the RAW activity feed across all accounts — no filtering for
  * options or anything else. Used by the Time Machine to reconstruct
- * historical positions (BUY/SELL/DIVIDEND/DEPOSIT/WITHDRAWAL/INTEREST/FEE/
- * OPTIONEXPIRATION/OPTIONASSIGNMENT/etc).
+ * historical positions.
+ *
+ * SnapTrade caps each `getAccountActivities` call at 1000 records. To get
+ * complete history we split the date range whenever a single chunk returns
+ * exactly 1000 (cap hit), recurse on each half, then dedupe by id.
  */
+const ACTIVITIES_CAP = 1000;
+
+async function fetchActivitiesWindow(
+  accountId: string,
+  startISO: string,
+  endISO: string,
+  depth = 0,
+): Promise<any[]> {
+  const res = await accountApi.getAccountActivities({
+    userId: UID, userSecret: USEC, accountId,
+    startDate: startISO, endDate: endISO,
+  });
+  const chunk = ((res.data as any)?.data ?? res.data ?? []) as any[];
+
+  // Hit the cap → split unless the window is already a single day or we've recursed too deep.
+  if (chunk.length >= ACTIVITIES_CAP && depth < 10) {
+    const startDt = Date.parse(startISO);
+    const endDt = Date.parse(endISO);
+    if (endDt - startDt > 86400_000) {
+      const midDt = new Date((startDt + endDt) / 2).toISOString().slice(0, 10);
+      const [left, right] = await Promise.all([
+        fetchActivitiesWindow(accountId, startISO, midDt, depth + 1),
+        fetchActivitiesWindow(accountId, midDt, endISO, depth + 1),
+      ]);
+      // Dedupe by id (midpoint day may appear in both halves)
+      const seen = new Set<string>();
+      const out: any[] = [];
+      for (const t of [...left, ...right]) {
+        const id = t?.id;
+        if (!id || !seen.has(id)) {
+          if (id) seen.add(id);
+          out.push(t);
+        }
+      }
+      return out;
+    }
+  }
+  return chunk;
+}
+
 export async function getAllActivities(startDate = "2010-01-01"): Promise<any[]> {
-  const end = new Date().toISOString().split("T")[0];
-  const start = startDate;
+  const endDate = new Date().toISOString().slice(0, 10);
   const accounts = await getAccounts();
   const all = await Promise.all(
-    accounts.map(async (acct) => {
-      const res = await accountApi.getAccountActivities({
-        userId: UID,
-        userSecret: USEC,
-        accountId: acct.id,
-        startDate: start,
-        endDate: end,
-      });
-      return ((res.data as any)?.data ?? res.data ?? []) as any[];
-    })
+    accounts.map((acct) => fetchActivitiesWindow(acct.id, startDate, endDate))
   );
   return all.flat();
 }

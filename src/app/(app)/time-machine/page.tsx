@@ -39,6 +39,7 @@ interface DividendItem { date: string; symbol: string; amount: number }
 interface TimeMachineResult {
   snapshotDate: string;
   todayDate: string;
+  earliestAvailable?: string;
   snapshot: {
     positions: SnapshotPosition[];
     options: SnapshotOption[];
@@ -117,8 +118,8 @@ export default function TimeMachinePage() {
   const [error, setError] = useState<string | null>(null);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
 
-  // Placeholder until API surfaces the real earliest-available date.
-  const earliestAvailable = "2020-01-01";
+  // Earliest date the broker has activity for — populated from API response.
+  const earliestAvailable = data?.earliestAvailable ?? "2020-01-01";
 
   async function runSimulation() {
     setLoading(true);

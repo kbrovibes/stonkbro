@@ -44,13 +44,32 @@ export async function GET(req: Request) {
 
     const txns = activities as SnapTradeTxn[];
 
+    // Compute earliest available txn date — clamps how far back the user can go.
+    let earliestAvailable: string | null = null;
+    for (const t of activities as any[]) {
+      const d = (t?.trade_date ?? t?.settlement_date ?? "").slice(0, 10);
+      if (!d) continue;
+      if (earliestAvailable === null || d < earliestAvailable) earliestAvailable = d;
+    }
+
+    if (earliestAvailable && snapshotDate < earliestAvailable) {
+      return NextResponse.json(
+        {
+          error: "Snapshot date is before available transaction history",
+          detail: `Earliest activity from broker: ${earliestAvailable}. Try a later date.`,
+          earliestAvailable,
+        },
+        { status: 400 }
+      );
+    }
+
     // Actual current total = market value of stock + options + cash
     const optionsMV = portfolio.options.reduce((s, o) => s + o.market_value, 0);
     const actualTotal =
       portfolio.summary.total_market_value + optionsMV + portfolio.summary.cash;
 
     const result = await simulateTimeMachine({ snapshotDate, txns, actualTotal });
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, earliestAvailable });
   } catch (err: any) {
     const status = err?.response?.status;
     const detail = err?.response?.data ?? err?.message ?? String(err);

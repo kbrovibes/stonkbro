@@ -23,8 +23,33 @@ import type {
 
 /** Best-effort date extraction; settlement_date fallback matches SnapTrade client. */
 function txnDate(t: SnapTradeTxn): string {
-  return t.trade_date ?? t.settlement_date ?? "";
+  // SnapTrade returns ISO timestamps like "2026-05-28T04:00:00Z".
+  // Slice to YYYY-MM-DD for lexicographic date comparisons.
+  const raw = t.trade_date ?? t.settlement_date ?? "";
+  return raw.slice(0, 10);
 }
+
+/**
+ * Symbols that represent Fidelity's cash sweep / money-market funds. Trades
+ * against these are cash-equivalent — the cash leg is already counted in
+ * the BUY/SELL amount, so we must NOT also book a "stock position" for them.
+ */
+const MMF_SYMBOLS = new Set(["SPAXX", "FDRXX", "SPRXX", "FZFXX", "FCASH"]);
+
+/**
+ * Symbol prefixes / type codes that represent Fidelity bookkeeping artifacts
+ * (fully-paid securities lending collateral, etc.) — never real positions.
+ */
+function isBookkeepingSymbol(sym: string): boolean {
+  return sym.startsWith("L0C") || /^[0-9]{3}[A-Z0-9]{6}$/.test(sym); // CUSIP-like
+}
+
+function isMoneyMarketSymbol(sym: string): boolean {
+  return MMF_SYMBOLS.has(sym.toUpperCase());
+}
+
+/** Activity types whose net effect on portfolio state is zero. */
+const ZERO_EFFECT_TYPES = new Set(["LOAN", "JOURNALED", "REI", "ADJUSTMENT", "SPINOFF"]);
 
 /**
  * Equity symbol extraction. Matches the pattern used by `getOptionChains` in
@@ -95,6 +120,7 @@ export function reconstructStockPositionsAt(
 
   for (const tx of sorted) {
     if (txnDate(tx) > snapshotDate) break;
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
 
     if (isOptionTxn(tx)) {
       const key = contractKey(tx);
@@ -115,7 +141,10 @@ export function reconstructStockPositionsAt(
           const underlying = tx.option_symbol?.underlying_symbol?.symbol ?? "UNKNOWN";
           const contracts = Math.abs(prevUnits || tx.units);
           const shareImpact = 100 * contracts;
-          const wasShort = prevUnits < 0;
+          // If prior history was complete: prevUnits < 0 ⇒ short. If prevUnits == 0
+          // (open contract pre-dated SnapTrade's window), default to SHORT — the
+          // overwhelming majority of this user's options activity is CSP/CC.
+          const wasShort = prevUnits < 0 || prevUnits === 0;
 
           if (optionType === "CALL") {
             // Short call assigned: shares called away (-). Long call exercised: shares acquired (+).
@@ -136,15 +165,17 @@ export function reconstructStockPositionsAt(
       continue;
     }
 
-    // Equity legs.
+    // Equity legs — skip money-market sweeps and bookkeeping artifacts.
     if (tx.type === "BUY") {
       const sym = extractSymbol(tx);
+      if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
       stocks.set(sym, (stocks.get(sym) ?? 0) + Math.abs(tx.units));
     } else if (tx.type === "SELL") {
       const sym = extractSymbol(tx);
+      if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
       stocks.set(sym, (stocks.get(sym) ?? 0) - Math.abs(tx.units));
     }
-    // DIVIDEND / DEPOSIT / WITHDRAWAL / INTEREST / FEE don't move shares.
+    // DIVIDEND / CONTRIBUTION / WITHDRAWAL / INTEREST / FEE / TAX don't move shares.
   }
 
   // Prune zero balances for a clean output.
@@ -186,11 +217,11 @@ export function reconstructOptionPositionsAt(
     let entry = map.get(key);
     if (!entry) {
       entry = {
-        ticker: os.ticker ?? key,
+        ticker: (os.ticker ?? key).trim(),
         underlying: os.underlying_symbol?.symbol ?? "UNKNOWN",
         optionType: optionType === "PUT" ? "PUT" : "CALL",
         strike: Number(os.strike_price ?? 0),
-        expiry: os.expiration_date ?? "",
+        expiry: (os.expiration_date ?? "").slice(0, 10),
         units: 0,
         premiumCollected: 0,
       };
@@ -246,6 +277,7 @@ export function reconstructCashAt(
 
   for (const tx of sorted) {
     if (txnDate(tx) > snapshotDate) break;
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
 
     // Track in-flight option direction so we can resolve OPTIONASSIGNMENT
     // cash when SnapTrade doesn't pre-populate `amount`.
@@ -263,7 +295,8 @@ export function reconstructCashAt(
           const optionType = (tx.option_symbol?.option_type ?? "").toUpperCase();
           const strike = Number(tx.option_symbol?.strike_price ?? 0);
           const contracts = Math.abs(prev || tx.units);
-          const wasShort = prev < 0;
+          // Same SHORT-default fallback as stock reconstruction.
+          const wasShort = prev < 0 || prev === 0;
           const notional = strike * 100 * contracts;
           if (optionType === "CALL") {
             // Short call assigned → cash IN. Long call exercised → cash OUT.
@@ -285,25 +318,32 @@ export function reconstructCashAt(
     }
 
     // Non-option rows.
+    const sym = extractSymbol(tx);
+    const isMMF = isMoneyMarketSymbol(sym);
+    const isBook = isBookkeepingSymbol(sym);
+
     switch (tx.type) {
       case "BUY":
-        // SnapTrade reports BUY amount as negative; spec says cash -= amount.
-        // Trust the signed field — equivalent and resilient to future flips.
-        cash += tx.amount;
-        break;
       case "SELL":
+        // Money-market and bookkeeping sweeps don't move real cash for
+        // simulation purposes — the user's "cash" already includes MMF.
+        if (isMMF || isBook) break;
+        // SnapTrade reports signed `amount` (BUY is negative). Trust it.
         cash += tx.amount;
         break;
       case "DEPOSIT":
+      case "CONTRIBUTION":      // Fidelity's actual deposit type
       case "DIVIDEND":
       case "INTEREST":
-        cash += tx.amount;
+        cash += Math.abs(tx.amount);
         break;
       case "WITHDRAWAL":
       case "FEE":
-        cash += tx.amount; // already negative
+      case "TAX":
+        cash -= Math.abs(tx.amount);
         break;
       default:
+        // Unknown type — ignore (logged elsewhere)
         break;
     }
   }
@@ -352,12 +392,20 @@ export function categorizePostSnapshotCashFlows(
   for (const tx of txns) {
     const date = txnDate(tx);
     if (date <= snapshotDate) continue;
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
 
     const mag = Math.abs(tx.amount);
+    const sym = extractSymbol(tx);
+
+    // Money-market sweeps + bookkeeping aren't cash flows we care about.
+    if ((tx.type === "BUY" || tx.type === "SELL") && (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym))) {
+      continue;
+    }
 
     switch (tx.type) {
-      case "DEPOSIT": {
-        const entry: CashFlowEntry = { date, amount: mag, note: "DEPOSIT" };
+      case "DEPOSIT":
+      case "CONTRIBUTION": {     // Fidelity calls deposits CONTRIBUTION
+        const entry: CashFlowEntry = { date, amount: mag, note: tx.type };
         result.deposits.push(entry);
         result.totalDeposits += mag;
         break;
@@ -369,8 +417,10 @@ export function categorizePostSnapshotCashFlows(
         break;
       }
       case "DIVIDEND": {
-        const sym = extractSymbol(tx);
-        if (!heldSymbols.has(sym)) break; // skip — symbol wasn't held at snapshot
+        // Skip money-market sweep dividends (SPAXX/etc) — they're just
+        // interest on cash, not portfolio dividends.
+        if (isMoneyMarketSymbol(sym)) break;
+        if (!heldSymbols.has(sym)) break; // wasn't held at snapshot
         const entry: CashFlowEntry = { date, amount: mag, symbol: sym, note: "DIVIDEND" };
         result.dividends.push(entry);
         result.totalDividends += mag;
@@ -382,8 +432,9 @@ export function categorizePostSnapshotCashFlows(
         result.totalInterest += mag;
         break;
       }
-      case "FEE": {
-        const entry: CashFlowEntry = { date, amount: mag, note: "FEE" };
+      case "FEE":
+      case "TAX": {
+        const entry: CashFlowEntry = { date, amount: mag, note: tx.type };
         result.fees.push(entry);
         result.totalFees += mag;
         break;
