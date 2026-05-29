@@ -169,6 +169,8 @@ export default function TimeMachinePage() {
   const [showMoreMonths, setShowMoreMonths] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
+  // Privacy: hide exact dollar deltas on month buttons (for screenshot sharing).
+  const [showDeltas, setShowDeltas] = useState(true);
 
   // Restore persisted column order on mount; persist on change.
   useEffect(() => {
@@ -285,7 +287,7 @@ export default function TimeMachinePage() {
           <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
         </div>
 
-        {/* Monthly snapshot strip — color-coded by favorability */}
+        {/* Monthly snapshot strip — intensity-scaled, flipped colors */}
         {snapshotList.length > 0 && (() => {
           const inline = snapshotList.slice(0, 6);
           const overflow = snapshotList.slice(6);
@@ -293,41 +295,81 @@ export default function TimeMachinePage() {
             const [y, m] = iso.split("-");
             return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
           };
+          // Scale color intensity by |delta| relative to the biggest |delta|
+          // in the visible set. Bigger magnitude → deeper color.
+          const maxAbs = Math.max(...snapshotList.map((s) => Math.abs(s.deltaAbsolute)), 1);
+          // Color semantics (flipped from prior version):
+          //   GREEN = trading WORKED (actual > sim → favorableToHold=false)
+          //   RED   = should have stopped (actual < sim → favorableToHold=true)
+          const intensityClass = (s: SnapshotMeta) => {
+            const tier = Math.abs(s.deltaAbsolute) / maxAbs;
+            const isRed = s.favorableToHold;
+            if (tier >= 0.75) return isRed
+              ? "bg-rose-300 border-rose-400 text-rose-900 hover:bg-rose-400"
+              : "bg-emerald-300 border-emerald-400 text-emerald-900 hover:bg-emerald-400";
+            if (tier >= 0.5) return isRed
+              ? "bg-rose-200 border-rose-300 text-rose-900 hover:bg-rose-300"
+              : "bg-emerald-200 border-emerald-300 text-emerald-900 hover:bg-emerald-300";
+            if (tier >= 0.25) return isRed
+              ? "bg-rose-100 border-rose-200 text-rose-800 hover:bg-rose-200"
+              : "bg-emerald-100 border-emerald-200 text-emerald-800 hover:bg-emerald-200";
+            return isRed
+              ? "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100"
+              : "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100";
+          };
           const renderBtn = (s: SnapshotMeta) => {
             const sel = selectedDate === s.snapshotDate;
-            const color = s.favorableToHold
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
-              : "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100";
             const ring = sel ? "ring-2 ring-stone-900 ring-offset-1" : "";
             return (
               <button
                 key={s.snapshotDate}
                 onClick={() => loadCached(s.snapshotDate)}
-                className={`flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 ${color} ${ring}`}
-                title={`${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`}
+                className={`flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 ${intensityClass(s)} ${ring}`}
+                title={showDeltas
+                  ? `${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`
+                  : `${s.snapshotDate}`}
               >
                 <span className="font-bold leading-tight">{monthLabel(s.snapshotDate)}</span>
-                <span className="text-[9px] opacity-70 leading-tight">
-                  {s.deltaAbsolute >= 0 ? "+" : ""}{fmtCurrency0(s.deltaAbsolute)}
-                </span>
+                {showDeltas && (
+                  <span className="text-[9px] opacity-70 leading-tight">
+                    {s.deltaAbsolute >= 0 ? "+" : ""}{fmtCurrency0(s.deltaAbsolute)}
+                  </span>
+                )}
               </button>
             );
           };
           return (
             <div className="bg-white border border-stone-200 rounded-xl p-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
                   Monthly snapshots · click to load
                 </span>
-                <button
-                  type="button"
-                  onClick={runBackfill}
-                  disabled={backfilling}
-                  className="text-[10px] text-stone-400 hover:text-stone-600 transition disabled:opacity-50"
-                  title="Regenerate every monthly snapshot"
-                >
-                  {backfilling ? "Backfilling…" : "↻ Backfill"}
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* iOS-style toggle for delta visibility (screenshot-safe mode) */}
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <span className="text-[10px] text-stone-500">$</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showDeltas}
+                      onClick={() => setShowDeltas((v) => !v)}
+                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDeltas ? "bg-emerald-500" : "bg-stone-300"}`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDeltas ? "translate-x-3.5" : "translate-x-0.5"}`}
+                      />
+                    </button>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={runBackfill}
+                    disabled={backfilling}
+                    className="text-[10px] text-stone-400 hover:text-stone-600 transition disabled:opacity-50"
+                    title="Regenerate every monthly snapshot"
+                  >
+                    {backfilling ? "Backfilling…" : "↻ Backfill"}
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {inline.map(renderBtn)}
@@ -342,13 +384,15 @@ export default function TimeMachinePage() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[9px] text-stone-400">
+              <div className="flex items-center gap-3 text-[9px] text-stone-400 flex-wrap">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-300" /> would&apos;ve been better to stop
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-300" /> better to keep trading
+                  <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
                 </span>
+                <span className="text-stone-300">·</span>
+                <span>deeper color = bigger magnitude</span>
               </div>
               {backfillResult && (
                 <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>
