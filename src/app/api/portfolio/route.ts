@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { getPortfolio, getTransactions, getOptionChains } from "@/lib/snaptrade/client";
+import { getPortfolio, getTransactions, getOptionChains, getAllActivities } from "@/lib/snaptrade/client";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -28,6 +28,38 @@ export async function GET(req: Request) {
       const startDate = searchParams.get("startDate") ?? "2026-01-01";
       const chains = await getOptionChains(startDate);
       return NextResponse.json({ chains });
+    }
+
+    if (include === "debug-all-txns") {
+      const activities = await getAllActivities("2010-01-01");
+      const totalCount = activities.length;
+
+      // Compute earliest/latest date range
+      let earliest: string | null = null;
+      let latest: string | null = null;
+      for (const t of activities) {
+        const d = t?.trade_date ?? t?.settlement_date ?? null;
+        if (!d) continue;
+        if (earliest === null || d < earliest) earliest = d;
+        if (latest === null || d > latest) latest = d;
+      }
+
+      // Count by type and collect samples (first 3 per type)
+      const byType: Record<string, number> = {};
+      const sample: Record<string, any[]> = {};
+      for (const t of activities) {
+        const ty = String(t?.type ?? "UNKNOWN");
+        byType[ty] = (byType[ty] ?? 0) + 1;
+        if (!sample[ty]) sample[ty] = [];
+        if (sample[ty].length < 3) sample[ty].push(t);
+      }
+
+      return NextResponse.json({
+        totalCount,
+        dateRangeFound: { earliest, latest },
+        byType,
+        sample,
+      });
     }
 
     if (include === "debug-txns") {

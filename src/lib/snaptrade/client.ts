@@ -216,6 +216,31 @@ export async function getTransactions(startDate = "2026-01-01") {
   return all.flat();
 }
 
+/**
+ * Returns the RAW activity feed across all accounts — no filtering for
+ * options or anything else. Used by the Time Machine to reconstruct
+ * historical positions (BUY/SELL/DIVIDEND/DEPOSIT/WITHDRAWAL/INTEREST/FEE/
+ * OPTIONEXPIRATION/OPTIONASSIGNMENT/etc).
+ */
+export async function getAllActivities(startDate = "2010-01-01"): Promise<any[]> {
+  const end = new Date().toISOString().split("T")[0];
+  const start = startDate;
+  const accounts = await getAccounts();
+  const all = await Promise.all(
+    accounts.map(async (acct) => {
+      const res = await accountApi.getAccountActivities({
+        userId: UID,
+        userSecret: USEC,
+        accountId: acct.id,
+        startDate: start,
+        endDate: end,
+      });
+      return ((res.data as any)?.data ?? res.data ?? []) as any[];
+    })
+  );
+  return all.flat();
+}
+
 export interface OptionLeg {
   date: string;
   type: string;   // "BUY" | "SELL" | "OPTIONEXPIRATION" | "OPTIONASSIGNMENT"
