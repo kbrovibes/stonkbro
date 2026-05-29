@@ -727,96 +727,108 @@ export default function TimeMachinePage() {
               );
             })()}
 
-            {/* Deposits — warm yellow */}
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
-                  Cash deposits since {fmtDate(data.snapshotDate)}
+            {/* Stale-data nudge — cached snapshot pre-dates RSU detection */}
+            {!data.rsuVests && (
+              <div className="rounded-xl border border-amber-300 bg-amber-100/60 px-3 py-2 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-amber-900">
+                  This cached snapshot was computed before RSU detection landed. AMZN vests are missing from it.
                 </p>
-                <p className="text-[10px] text-amber-700/70">kept in sim</p>
-              </div>
-              {data.simulation.deposits.length === 0 ? (
-                <p className="text-xs text-amber-700/60 mt-2">No deposits in this window.</p>
-              ) : (
-                <div className="flex flex-col gap-0.5 mt-2">
-                  {data.simulation.deposits.map((d, i) => (
-                    <div key={i} className="flex justify-between text-[11px]">
-                      <span className="text-amber-900/80">{fmtDateShort(d.date)}</span>
-                      <span className="font-medium text-amber-800">+{fmtCurrency(d.amount)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-amber-200">
-                    <span className="font-semibold text-amber-900">Total added</span>
-                    <span className="font-bold text-amber-900">+{fmtCurrency(data.simulation.totalDepositsAdded)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* RSU vests — teal */}
-            {data.rsuVests && data.rsuVests.items.length > 0 && (
-              <div className="rounded-xl border border-teal-200 bg-teal-50 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-wider text-teal-700 font-semibold">
-                    RSU vests since snapshot
-                  </p>
-                  <p className="text-[10px] text-teal-700/70">added to sim portfolio</p>
-                </div>
-                <p className="text-[11px] text-teal-800 mb-2 mt-1">
-                  Vests in {data.rsuVests.monthsWithVests.length} month
-                  {data.rsuVests.monthsWithVests.length === 1 ? "" : "s"}:
-                  {" "}
-                  <span className="font-semibold">
-                    {data.rsuVests.monthsWithVests
-                      .map((m) => {
-                        const [y, mo] = m.split("-");
-                        return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-                      })
-                      .join(" · ")}
-                  </span>
-                </p>
-                <div className="bg-white border border-teal-100 rounded-lg overflow-hidden">
-                  <table className="w-full text-[11px]">
-                    <thead>
-                      <tr className="text-teal-700/70 border-b border-teal-100">
-                        <th className="text-left px-2 py-1 font-medium">Date</th>
-                        <th className="text-left px-2 py-1 font-medium">Sym</th>
-                        <th className="text-right px-2 py-1 font-medium">Units</th>
-                        <th className="text-right px-2 py-1 font-medium">Vest $</th>
-                        <th className="text-right px-2 py-1 font-medium">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.rsuVests.items.map((v, i) => (
-                        <tr key={i} className="border-t border-teal-50">
-                          <td className="px-2 py-1 text-stone-600">{fmtDate(v.date)}</td>
-                          <td className="px-2 py-1 font-semibold text-stone-900">{v.symbol}</td>
-                          <td className="px-2 py-1 text-right text-stone-700 tabular-nums">{Math.round(v.units)}</td>
-                          <td className="px-2 py-1 text-right text-stone-500 tabular-nums">{fmtCurrency(v.vestPrice)}</td>
-                          <td className="px-2 py-1 text-right font-medium text-teal-700 tabular-nums">{fmtCurrency0(v.valueAtVest)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t border-teal-100 bg-teal-50/50">
-                        <td className="px-2 py-1.5 font-bold text-teal-900" colSpan={4}>
-                          Total vested
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-bold text-teal-700 tabular-nums">
-                          {fmtCurrency0(data.rsuVests.totalValueAtVest)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-                <p className="text-[10px] text-teal-700/70 mt-2 italic">
-                  Detected via {data.rsuVests.items.some((v) => v.source === "description") ? "description keywords" : "AMZN-BUY fallback rule"}
-                  {data.rsuVests.items.some((v) => v.source === "amzn-rule") && data.rsuVests.items.some((v) => v.source === "description")
-                    ? " + description keywords"
-                    : ""}. Vested shares accrue without cash debit.
-                </p>
+                <button
+                  type="button"
+                  onClick={runBackfill}
+                  disabled={backfilling}
+                  className="text-[11px] font-semibold text-white bg-amber-700 hover:bg-amber-800 px-2 py-1 rounded shrink-0 disabled:opacity-50"
+                >
+                  {backfilling ? "Backfilling…" : "↻ Regenerate"}
+                </button>
               </div>
             )}
+
+            {/* Inflows since snapshot — unified cash deposits + RSU vests */}
+            {(() => {
+              const hasCash = data.simulation.deposits.length > 0;
+              const hasRsu = !!data.rsuVests && data.rsuVests.items.length > 0;
+              if (!hasCash && !hasRsu) {
+                return (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
+                      New deposits added since {fmtDate(data.snapshotDate)}
+                    </p>
+                    <p className="text-xs text-amber-700/60 mt-2">No inflows in this window.</p>
+                  </div>
+                );
+              }
+              const totalInflows =
+                data.simulation.totalDepositsAdded +
+                (data.rsuVests?.totalValueAtVest ?? 0);
+              return (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
+                      New deposits added since {fmtDate(data.snapshotDate)}
+                    </p>
+                    <p className="text-[10px] text-amber-700/70">kept in sim</p>
+                  </div>
+
+                  {/* Cash deposits */}
+                  {hasCash && (
+                    <div className="mt-3">
+                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
+                        Cash deposits · +{fmtCurrency(data.simulation.totalDepositsAdded)}
+                      </p>
+                      <div className="flex flex-col gap-0.5">
+                        {data.simulation.deposits.map((d, i) => (
+                          <div key={i} className="flex justify-between text-[11px]">
+                            <span className="text-amber-900/80">{fmtDateShort(d.date)}</span>
+                            <span className="font-medium text-amber-800">+{fmtCurrency(d.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RSU vests */}
+                  {hasRsu && data.rsuVests && (
+                    <div className="mt-3">
+                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
+                        RSU vests · +{fmtCurrency(data.rsuVests.totalValueAtVest)}
+                      </p>
+                      <p className="text-[10px] text-amber-900/70 mb-1.5">
+                        Vests in {data.rsuVests.monthsWithVests.length} month
+                        {data.rsuVests.monthsWithVests.length === 1 ? "" : "s"}:
+                        {" "}
+                        <span className="font-semibold">
+                          {data.rsuVests.monthsWithVests
+                            .map((m) => {
+                              const [y, mo] = m.split("-");
+                              return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+                            })
+                            .join(" · ")}
+                        </span>
+                      </p>
+                      <div className="flex flex-col gap-0.5">
+                        {data.rsuVests.items.map((v, i) => (
+                          <div key={i} className="flex justify-between text-[11px]">
+                            <span className="text-amber-900/80">
+                              {fmtDateShort(v.date)} · {v.symbol} × {Math.round(v.units)}
+                            </span>
+                            <span className="font-medium text-amber-800">+{fmtCurrency(v.valueAtVest)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-amber-800/60 mt-1.5 italic">
+                        Vested shares accrue without cash debit (income event).
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200">
+                    <span className="font-semibold text-amber-900">Total added</span>
+                    <span className="font-bold text-amber-900">+{fmtCurrency(totalInflows)}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Withdrawals — warm orange */}
             <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
