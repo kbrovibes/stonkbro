@@ -157,6 +157,13 @@ export default function TimeMachinePage() {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
 
+  // Backfilled monthly snapshots — drives the colored month-button strip.
+  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
+  const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
+  const [showMoreMonths, setShowMoreMonths] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
+
   // Restore persisted column order on mount; persist on change.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -195,6 +202,54 @@ export default function TimeMachinePage() {
   // Earliest date the broker has activity for — populated from API response.
   const earliestAvailable = data?.earliestAvailable ?? "2020-01-01";
 
+  // Fetch the list of cached monthly snapshots on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/portfolio/time-machine/cached");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) setSnapshotList(json.snapshots || []);
+      } catch { /* silent */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function loadCached(date: string) {
+    setSelectedDate(date);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/portfolio/time-machine/cached?date=${date}`);
+      if (!res.ok) throw new Error("Cached snapshot not available");
+      const json = (await res.json()) as TimeMachineResult;
+      setData(json);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load cached snapshot");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runBackfill() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const res = await fetch("/api/portfolio/time-machine/backfill?from=2025-01-01", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Backfill failed");
+      setBackfillResult(`Backfilled ${json.ok}/${json.targets} months (skipped ${json.skipped}, errors ${json.errors})`);
+      // Refresh list
+      const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json()).catch(() => null);
+      if (list?.snapshots) setSnapshotList(list.snapshots);
+    } catch (e) {
+      setBackfillResult(e instanceof Error ? e.message : "Backfill failed");
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   async function runSimulation() {
     setLoading(true);
     setError(null);
@@ -223,6 +278,93 @@ export default function TimeMachinePage() {
           </h1>
           <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
         </div>
+
+        {/* Monthly snapshot strip — color-coded by favorability */}
+        {snapshotList.length > 0 && (() => {
+          const inline = snapshotList.slice(0, 6);
+          const overflow = snapshotList.slice(6);
+          const monthLabel = (iso: string) => {
+            const [y, m] = iso.split("-");
+            return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+          };
+          const renderBtn = (s: SnapshotMeta) => {
+            const sel = selectedDate === s.snapshotDate;
+            const color = s.favorableToHold
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+              : "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100";
+            const ring = sel ? "ring-2 ring-stone-900 ring-offset-1" : "";
+            return (
+              <button
+                key={s.snapshotDate}
+                onClick={() => loadCached(s.snapshotDate)}
+                className={`flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 ${color} ${ring}`}
+                title={`${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`}
+              >
+                <span className="font-bold leading-tight">{monthLabel(s.snapshotDate)}</span>
+                <span className="text-[9px] opacity-70 leading-tight">
+                  {s.deltaAbsolute >= 0 ? "+" : ""}{fmtCurrency0(s.deltaAbsolute)}
+                </span>
+              </button>
+            );
+          };
+          return (
+            <div className="bg-white border border-stone-200 rounded-xl p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                  Monthly snapshots · click to load
+                </span>
+                <button
+                  type="button"
+                  onClick={runBackfill}
+                  disabled={backfilling}
+                  className="text-[10px] text-stone-400 hover:text-stone-600 transition disabled:opacity-50"
+                  title="Regenerate every monthly snapshot"
+                >
+                  {backfilling ? "Backfilling…" : "↻ Backfill"}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {inline.map(renderBtn)}
+                {overflow.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreMonths((v) => !v)}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-semibold text-stone-600 hover:bg-stone-100 transition shrink-0"
+                  >
+                    {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
+                  </button>
+                )}
+                {showMoreMonths && overflow.map(renderBtn)}
+              </div>
+              <div className="flex items-center gap-3 text-[9px] text-stone-400">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300" /> would&apos;ve been better to stop
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-rose-300" /> better to keep trading
+                </span>
+              </div>
+              {backfillResult && (
+                <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Empty state — prompt to run first backfill */}
+        {snapshotList.length === 0 && (
+          <div className="bg-white border border-stone-200 rounded-xl p-3 flex items-center justify-between">
+            <span className="text-xs text-stone-500">No monthly snapshots yet</span>
+            <button
+              type="button"
+              onClick={runBackfill}
+              disabled={backfilling}
+              className="px-3 py-1.5 rounded-lg bg-stone-800 text-white text-xs font-semibold hover:bg-stone-900 disabled:opacity-50 transition"
+            >
+              {backfilling ? "Backfilling…" : "Backfill 2025+"}
+            </button>
+          </div>
+        )}
 
         {/* Date picker row */}
         <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col gap-3">
