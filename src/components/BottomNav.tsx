@@ -102,8 +102,8 @@ export default function BottomNav({
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
           {/* Drop-up: anchored above the More button, width = longest entry */}
-          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-max max-w-[min(80vw,320px)] flex flex-col">
-            <div className="overflow-y-auto py-1.5 px-1 flex-1 min-h-0">
+          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-max max-w-[min(85vw,368px)] flex flex-col">
+            <div className="overflow-y-auto py-1.5 px-1 min-h-0">
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-1 last:mb-0">
                   <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
@@ -128,14 +128,16 @@ export default function BottomNav({
               ))}
             </div>
 
-            {/* Sticky footer — always visible regardless of scroll */}
-            <Link
-              href="/more"
-              onClick={() => setMoreOpen(false)}
-              className="m-1 block text-center text-[12px] font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 py-2 rounded-md whitespace-nowrap shrink-0"
-            >
-              View All Pages &rarr;
-            </Link>
+            {/* Sticky footer — sits below the scroll area in flex flow */}
+            <div className="border-t border-stone-200 p-1 shrink-0">
+              <Link
+                href="/more"
+                onClick={() => setMoreOpen(false)}
+                className="block text-center text-[12px] font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 py-2 rounded-md whitespace-nowrap"
+              >
+                View All &rarr;
+              </Link>
+            </div>
           </div>
         </>
       )}
