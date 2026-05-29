@@ -130,6 +130,8 @@ export default function OptionsScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showDelta, setShowDelta] = useState(false);
   const [tab, setTab] = useState<Tab>("csp");
   const [weekly, setWeekly] = useState<WeeklyRecap | null>(null);
   const [weeklyLoading, setWeeklyLoading] = useState(false);
@@ -213,52 +215,52 @@ export default function OptionsScannerPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      {/* Header */}
+      {/* Header — slim */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-stone-200">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <h1 className="text-lg font-bold text-stone-900">Options Scanner</h1>
-                <AIModelBadge />
-              </div>
-              <p className="text-[11px] text-stone-400 mt-0.5">
-                CSPs + Call buys · $100K capital · Top picks by profit potential
-              </p>
-            </div>
+        <div className="px-3 py-1.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-sm font-bold text-stone-900 truncate">Options Scanner</h1>
+            <AIModelBadge />
             <button
-              onClick={triggerScan}
-              disabled={scanning}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-300 text-white text-xs font-semibold rounded-lg transition"
+              onClick={() => setShowHistory((v) => !v)}
+              className="text-[10px] text-stone-400 hover:text-stone-600 transition shrink-0"
+              title="Scan history"
             >
-              {scanning ? "Scanning..." : "Run Scan"}
+              {scans.length > 1 ? `${scans.length} scans ▾` : ""}
             </button>
           </div>
-
-          {scans.length > 1 && (
-            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-              {scans.slice(0, 5).map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedScan(s)}
-                  className={`flex-shrink-0 px-2 py-1 rounded text-xs transition ${
-                    selectedScan?.id === s.id
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "bg-stone-50 text-stone-500 border border-stone-200"
-                  }`}
-                >
-                  {new Date(s.createdAt).toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}{" "}
-                  · {s.candidateCount}
-                </button>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={triggerScan}
+            disabled={scanning}
+            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-300 text-white text-[11px] font-semibold rounded-md transition shrink-0"
+          >
+            {scanning ? "Scanning..." : "Scan"}
+          </button>
         </div>
+
+        {showHistory && scans.length > 1 && (
+          <div className="flex gap-1.5 px-3 pb-2 overflow-x-auto">
+            {scans.slice(0, 5).map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedScan(s)}
+                className={`flex-shrink-0 px-2 py-0.5 rounded text-[10px] transition ${
+                  selectedScan?.id === s.id
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-stone-50 text-stone-500 border border-stone-200"
+                }`}
+              >
+                {new Date(s.createdAt).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}{" "}
+                · {s.candidateCount}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* No scans */}
@@ -277,11 +279,11 @@ export default function OptionsScannerPage() {
 
       {selectedScan && (
         <>
-          {/* Tab switcher */}
+          {/* Tab switcher — slim */}
           <div className="flex border-b border-stone-200">
             <button
               onClick={() => setTab("csp")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+              className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "csp"
                   ? "text-emerald-600 border-b-2 border-emerald-600"
                   : "text-stone-400 hover:text-stone-600"
@@ -291,7 +293,7 @@ export default function OptionsScannerPage() {
             </button>
             <button
               onClick={() => setTab("calls")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+              className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "calls"
                   ? "text-sky-600 border-b-2 border-sky-600"
                   : "text-stone-400 hover:text-stone-600"
@@ -301,7 +303,7 @@ export default function OptionsScannerPage() {
             </button>
             <button
               onClick={() => setTab("leaps")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+              className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "leaps"
                   ? "text-violet-600 border-b-2 border-violet-600"
                   : "text-stone-400 hover:text-stone-600"
@@ -311,7 +313,7 @@ export default function OptionsScannerPage() {
             </button>
             <button
               onClick={() => setTab("weekly")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${
+              className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "weekly"
                   ? "text-amber-600 border-b-2 border-amber-600"
                   : "text-stone-400 hover:text-stone-600"
@@ -324,57 +326,65 @@ export default function OptionsScannerPage() {
           {/* CSP tab */}
           {tab === "csp" && (
             <>
-              {/* Stats bar */}
+              {/* Stats bar — compact */}
               <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
                 {[
-                  { label: "CSP Picks", value: candidates.length, color: "text-stone-900" },
+                  { label: "Picks", value: candidates.length, color: "text-stone-900" },
                   { label: "Top AROC", value: `${candidates[0]?.aroc ?? 0}%`, color: "text-emerald-600" },
-                  { label: "Delta Changes", value: totalDeltaChanges, color: "text-sky-600" },
+                  { label: "Δ Changes", value: totalDeltaChanges, color: "text-sky-600" },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
-                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  <div key={stat.label} className="bg-white px-2 py-1 text-center flex items-baseline justify-center gap-1.5">
+                    <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
+                    <span className="text-[9px] text-stone-400 uppercase tracking-wider">{stat.label}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Delta section */}
+              {/* Delta section — collapsed by default */}
               {delta && totalDeltaChanges > 0 && (
-                <div className="border-b border-stone-200 bg-amber-50/50 px-4 py-3">
-                  <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">
-                    Changes Since Last Scan
-                  </h2>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {delta.premium_increased?.slice(0, 3).map((d, i) => (
-                      <div key={`up-${i}`} className="text-xs text-emerald-700">{d.message}</div>
-                    ))}
-                    {delta.new?.slice(0, 3).map((d, i) => (
-                      <div key={`new-${i}`} className="text-xs text-sky-700">{d.message}</div>
-                    ))}
-                    {delta.support_lost?.slice(0, 2).map((d, i) => (
-                      <div key={`sl-${i}`} className="text-xs text-red-600">{d.message}</div>
-                    ))}
-                    {delta.dropped?.slice(0, 2).map((d, i) => (
-                      <div key={`dr-${i}`} className="text-xs text-stone-500">{d.message}</div>
-                    ))}
-                  </div>
+                <div className="border-b border-stone-200 bg-amber-50/50">
+                  <button
+                    onClick={() => setShowDelta(!showDelta)}
+                    className="w-full px-3 py-1.5 flex items-center justify-between text-left hover:bg-amber-50 transition"
+                  >
+                    <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">
+                      Changes Since Last Scan ({totalDeltaChanges})
+                    </span>
+                    <span className="text-amber-600 text-[10px]">{showDelta ? "hide" : "show"}</span>
+                  </button>
+                  {showDelta && (
+                    <div className="px-3 pb-2 space-y-1 max-h-32 overflow-y-auto">
+                      {delta.premium_increased?.slice(0, 3).map((d, i) => (
+                        <div key={`up-${i}`} className="text-[11px] text-emerald-700">{d.message}</div>
+                      ))}
+                      {delta.new?.slice(0, 3).map((d, i) => (
+                        <div key={`new-${i}`} className="text-[11px] text-sky-700">{d.message}</div>
+                      ))}
+                      {delta.support_lost?.slice(0, 2).map((d, i) => (
+                        <div key={`sl-${i}`} className="text-[11px] text-red-600">{d.message}</div>
+                      ))}
+                      {delta.dropped?.slice(0, 2).map((d, i) => (
+                        <div key={`dr-${i}`} className="text-[11px] text-stone-500">{d.message}</div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Claude Analysis */}
+              {/* Claude Analysis — slim toggle */}
               {selectedScan.claudeAnalysis && (
                 <div className="border-b border-stone-200">
                   <button
                     onClick={() => setShowAnalysis(!showAnalysis)}
-                    className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-stone-50 transition"
+                    className="w-full px-3 py-1.5 flex items-center justify-between text-left hover:bg-stone-50 transition"
                   >
-                    <span className="text-xs font-semibold text-violet-600 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-violet-600 uppercase tracking-wider">
                       Claude Risk Analysis
                     </span>
-                    <span className="text-stone-400 text-xs">{showAnalysis ? "hide" : "show"}</span>
+                    <span className="text-stone-400 text-[10px]">{showAnalysis ? "hide" : "show"}</span>
                   </button>
                   {showAnalysis && (
-                    <div className="px-4 pb-4 text-sm text-stone-700 leading-relaxed whitespace-pre-wrap bg-violet-50/30">
+                    <div className="px-3 pb-3 text-xs text-stone-700 leading-relaxed whitespace-pre-wrap bg-violet-50/30">
                       {selectedScan.claudeAnalysis}
                     </div>
                   )}
@@ -402,20 +412,20 @@ export default function OptionsScannerPage() {
               {/* Stats bar */}
               <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
                 {[
-                  { label: "Call Picks", value: callCandidates.length, color: "text-stone-900" },
+                  { label: "Picks", value: callCandidates.length, color: "text-stone-900" },
                   { label: "Best Score", value: `${callCandidates[0]?.score ?? 0}/100`, color: "text-sky-600" },
                   { label: "Best +10%", value: callCandidates[0] ? `${callCandidates[0].outcome100pct.returnPct > 0 ? "+" : ""}${callCandidates[0].outcome100pct.returnPct}%` : "—", color: "text-emerald-600" },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
-                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  <div key={stat.label} className="bg-white px-2 py-1 text-center flex items-baseline justify-center gap-1.5">
+                    <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
+                    <span className="text-[9px] text-stone-400 uppercase tracking-wider">{stat.label}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="px-4 py-2 bg-sky-50/50 border-b border-stone-200">
-                <p className="text-[11px] text-sky-700">
-                  60-120 DTE calls · slightly OTM · $100K capital · 1 pick per ticker
+              <div className="px-3 py-1 bg-sky-50/50 border-b border-stone-200">
+                <p className="text-[10px] text-sky-700">
+                  60-120 DTE · slightly OTM · $100K · 1 pick/ticker
                 </p>
               </div>
 
@@ -439,20 +449,20 @@ export default function OptionsScannerPage() {
             <>
               <div className="grid grid-cols-3 gap-px bg-stone-200 border-b border-stone-200">
                 {[
-                  { label: "LEAPS Picks", value: leapsCandidates.length, color: "text-stone-900" },
+                  { label: "Picks", value: leapsCandidates.length, color: "text-stone-900" },
                   { label: "Best Score", value: `${leapsCandidates[0]?.score ?? 0}/100`, color: "text-violet-600" },
                   { label: "Best +10%", value: leapsCandidates[0] ? `${leapsCandidates[0].outcome100pct.returnPct > 0 ? "+" : ""}${leapsCandidates[0].outcome100pct.returnPct}%` : "—", color: "text-emerald-600" },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-white px-3 py-2 text-center">
-                    <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-                    <div className="text-[10px] text-stone-400 uppercase tracking-wider">{stat.label}</div>
+                  <div key={stat.label} className="bg-white px-2 py-1 text-center flex items-baseline justify-center gap-1.5">
+                    <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
+                    <span className="text-[9px] text-stone-400 uppercase tracking-wider">{stat.label}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="px-4 py-2 bg-violet-50/50 border-b border-stone-200">
-                <p className="text-[11px] text-violet-700">
-                  6-18 month LEAPS · slightly OTM · $100K capital · 1 pick per ticker
+              <div className="px-3 py-1 bg-violet-50/50 border-b border-stone-200">
+                <p className="text-[10px] text-violet-700">
+                  6-18mo LEAPS · slightly OTM · $100K · 1 pick/ticker
                 </p>
               </div>
 
