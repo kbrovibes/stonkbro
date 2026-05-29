@@ -91,15 +91,42 @@ For transactions where `tx.date > snapshotDate`:
 - **BUY/SELL/OPTION* on or after snapshot** → ignore entirely. This is the whole
   point: simulate as if no trading occurred.
 
-### Step 3 — Forward-simulate to today
+### Step 3 — Forward-simulate to today (Option C — faithful replay)
 
-- For each held stock: `value = units × Tradier today price`.
-- For each held option:
-  - If `expiry > today`: value at current market mid (use existing Tradier
-    options-chain pricing, optional v1).
-  - If `expiry <= today`: assume worthless. Long → already lost the premium
-    (sunk on snapshot); short → premium kept (already in cash from sale).
-- Sum: `simulatedTotal = stockValue + optionValue + simulatedCash`.
+For options held at snapshot, we replay every expiry between the snapshot
+date and today, applying the assignment / expiration consequences and
+continuing to hold any resulting stock through to today.
+
+For each held option (sorted by expiry ascending):
+
+1. **`expiry > today`** → still live. Value at current market mid via Tradier
+   options chain. No further state change.
+
+2. **`expiry <= today`** → resolved on its expiry date. Fetch the underlying's
+   close on `expiry` from Tradier `/markets/history`. Then by `option_type`
+   and direction (sign of `units`):
+
+   | Type | Direction | Underlying vs Strike at expiry | Outcome |
+   |------|-----------|-------------------------------|---------|
+   | CALL | LONG (units > 0)  | close ≥ strike | Exercise: cash -= strike×100×units; stockUnits[underlying] += 100×units; PnL captured in stock to-today |
+   | CALL | LONG  | close < strike | Expires worthless. No state change (premium already sunk in snapshot cash). |
+   | CALL | SHORT (units < 0) | close ≥ strike | Assigned: stockUnits[underlying] -= 100×\|units\|; cash += strike×100×\|units\|. (Short stock if we didn't already hold; covered-call case is the same arithmetic.) |
+   | CALL | SHORT | close < strike | Expires OTM. No state change. |
+   | PUT  | LONG  | close ≤ strike | Exercise: cash += strike×100×units; stockUnits[underlying] -= 100×units. |
+   | PUT  | LONG  | close > strike | Expires worthless. |
+   | PUT  | SHORT | close ≤ strike | Assigned: cash -= strike×100×\|units\|; stockUnits[underlying] += 100×\|units\|. |
+   | PUT  | SHORT | close > strike | Expires OTM. No state change. |
+
+3. After every option is resolved, value remaining live options + final
+   stock map (units × today's price) + accumulated cash.
+
+`simulatedTotal = liveOptionValue + simulatedStockValue + simulatedCash`.
+
+Edge cases:
+- Short stock balances are kept in the simulation (rare for this user, but
+  arithmetic is correct).
+- Tradier history miss on a given date → fall back to the prior trading day's
+  close. Document in `assumptions[]`.
 
 ### Step 4 — Compare to actual
 
@@ -170,17 +197,19 @@ Linked from MoreNav under **Portfolio** group.
    per-symbol split factor calc using Tradier history split fields. v1 punts
    and notes the assumption.
 
-3. **Long options that expired between snapshot and today.** v1 assumes
-   worthless (caps the loss at premium paid). For ITM expiries this
-   under-represents value — note in assumptions.
+3. **Live options today.** Valued at current market mid via Tradier options
+   chain. If the chain endpoint is rate-limited or the contract is illiquid,
+   fall back to intrinsic value and flag in assumptions.
 
 4. **Performance.** ~3 SnapTrade activity calls (one per account) + N Tradier
-   quotes for held symbols + 1 Tradier batch quote for options. Should complete
-   in <5s. Cache for 5 min on the API route.
+   history calls (one per option expiry between snapshot and today, cached) + 1
+   Tradier batch quote for held stocks. Expected <8s for a 1-year-back snapshot.
+   Cache the result for 5 min on the API route.
 
 ## Feasibility
 
-**Verdict: feasible to build now.** All data sources are available. Hardest
-v1 trade-off is option expiry treatment, which we punt on cleanly with
-documented assumptions. ~5 hours of implementation work, broken into ~18
-atomic tasks (see backlog).
+**Verdict: feasible to build now.** All data sources are available. The
+Option-C faithful replay adds one helper (historical underlying close on a
+given date) and an assignment-cascade loop in the simulator — ~1.5 hrs extra
+versus the Option-B sketch but produces an accurate sim. Total ~6.5 hrs of
+implementation work, broken into ~22 atomic tasks (see backlog).
