@@ -23,7 +23,7 @@ export default async function Header() {
       <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-center relative">
         <Link href="/" className="flex items-baseline gap-0.5">
           <span className="text-3xl font-extrabold tracking-tight text-stone-900">stonk</span>
-          <span className="text-4xl font-display text-sky-600 -tracking-wide leading-none">BRO</span>
+          <span className="text-4xl font-black text-[#00C805] -tracking-wide leading-none">BRO</span>
         </Link>
         <div className="absolute right-4">
           {user ? (

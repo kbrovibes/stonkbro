@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 import { CLAUDE_MODELS, GEMINI_MODELS } from "@/lib/ai/constants";
+import { THEME_FONTS, DEFAULT_THEME_FONT_KEY, THEME_FONT_STORAGE_KEY, applyThemeFont } from "@/lib/theme-fonts";
 
 export default function SettingsPage() {
   const [startingCash, setStartingCash] = useState("20000");
@@ -22,6 +23,7 @@ export default function SettingsPage() {
   const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
   const [activeErrorTooltip, setActiveErrorTooltip] = useState<string | null>(null);
+  const [themeFont, setThemeFont] = useState<string>(DEFAULT_THEME_FONT_KEY);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -29,6 +31,11 @@ export default function SettingsPage() {
     } else {
       setNotifPermission("unsupported");
     }
+
+    try {
+      const saved = localStorage.getItem(THEME_FONT_STORAGE_KEY);
+      if (saved) setThemeFont(saved);
+    } catch { /* ignore */ }
 
     fetch("/api/settings")
       .then((r) => r.json())
@@ -202,6 +209,39 @@ export default function SettingsPage() {
             </svg>
           </Link>
           <h2 className="text-lg font-bold text-stone-900">Settings</h2>
+        </div>
+
+        {/* Theme */}
+        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900">Theme</h3>
+          <p className="mt-1 text-sm text-stone-500">
+            Switch the font used across the whole app, including the title bar.
+            Choice is saved locally on this device.
+          </p>
+          <div className="mt-4">
+            <label htmlFor="theme-font" className="block text-xs font-medium text-stone-700 mb-1">
+              Font
+            </label>
+            <select
+              id="theme-font"
+              value={themeFont}
+              onChange={(e) => {
+                const next = e.target.value;
+                setThemeFont(next);
+                applyThemeFont(next);
+              }}
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+            >
+              {THEME_FONTS.map((f) => (
+                <option key={f.key} value={f.key}>{f.label}</option>
+              ))}
+            </select>
+            <p className="mt-2 text-[11px] text-stone-400">
+              Preview: <span style={{ fontFamily: (THEME_FONTS.find((f) => f.key === themeFont) ?? THEME_FONTS[0]).family }}>
+                stonk<span className="text-[#00C805] font-black">BRO</span> · The quick brown fox jumps over $1,234.56
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* Account Settings */}

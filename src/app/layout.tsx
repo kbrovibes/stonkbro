@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import NavigationProgress from "@/components/NavigationProgress";
+import ThemeFontProvider from "@/components/ThemeFontProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -55,6 +56,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <ThemeFontProvider />
         <NavigationProgress />
         {children}
         <ServiceWorkerRegistration />
