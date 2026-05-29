@@ -47,22 +47,32 @@ export function PortfolioManagerView() {
     loadLatest();
   }, [loadLatest]);
 
-  // Poll while a scan is running
+  // Track the scan id we kicked off so we can detect completion correctly
+  const [activeScanId, setActiveScanId] = useState<string | null>(null);
+
+  // Poll while a scan is running (either we just kicked one off, or /latest reports one)
   useEffect(() => {
-    if (!data?.refreshing && !scanning) return;
+    if (!data?.refreshing && !scanning && !activeScanId) return;
     const id = setInterval(() => {
       loadLatest();
-    }, 5000);
+    }, 4000);
     return () => clearInterval(id);
-  }, [data?.refreshing, scanning, loadLatest]);
+  }, [data?.refreshing, scanning, activeScanId, loadLatest]);
 
-  // Stop the scanning spinner once refreshing clears
+  // Clear the local spinner once /latest reports our scan is no longer running
+  // AND the latest completed row is newer than our scan id
   useEffect(() => {
-    if (scanning && !data?.refreshing) {
-      // Give one tick for the new completed row to be the latest
+    if (!activeScanId) return;
+    // Still running upstream — keep spinner
+    if (data?.refreshing) return;
+    // Refreshing cleared. Verify the latest completed row matches what we triggered.
+    if (data?.scan && data.scan.id === activeScanId) {
+      setActiveScanId(null);
       setScanning(false);
+      return;
     }
-  }, [scanning, data?.refreshing]);
+    // Edge: scan failed, no completed row matches. Give it 30s grace before giving up.
+  }, [activeScanId, data?.refreshing, data?.scan]);
 
   const onRescan = async () => {
     setScanError(null);
@@ -70,7 +80,10 @@ export function PortfolioManagerView() {
     try {
       const res = await fetch("/api/portfolio-manager/scan", { method: "POST" });
       if (res.status === 409) {
-        // Already running — leave spinner on, polling will catch up
+        // Already running upstream — pick up its id so polling tracks it
+        const j = (await res.json().catch(() => ({}))) as { scan_id?: string };
+        if (j.scan_id) setActiveScanId(j.scan_id);
+        await loadLatest();
         return;
       }
       if (!res.ok) {
@@ -79,7 +92,9 @@ export function PortfolioManagerView() {
         setScanning(false);
         return;
       }
-      // Force a fresh fetch immediately after success
+      const j = (await res.json()) as { scan_id?: string; queued?: boolean };
+      if (j.scan_id) setActiveScanId(j.scan_id);
+      // Trigger an immediate refresh so /latest sees the running row
       await loadLatest();
     } catch (e) {
       setScanError(e instanceof Error ? e.message : "Network error");

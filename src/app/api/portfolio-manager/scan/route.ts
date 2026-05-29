@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { runPortfolioManagerScan } from "@/lib/portfolio-manager/runner";
+import { initScan, executeScan } from "@/lib/portfolio-manager/runner";
 import { getRunningWithin } from "@/lib/db/portfolio-manager-scans";
 
 export const maxDuration = 300;
@@ -24,12 +24,26 @@ export async function POST() {
   }
 
   try {
-    const result = await runPortfolioManagerScan({
+    // Phase 1: insert row + return immediately (< 2s)
+    const t0 = Date.now();
+    const { scan_id, tickers, free_cash, ticker_count } = await initScan({
       scan_type: "manual",
       trigger_source: "user",
       userId: user.id,
     });
-    return NextResponse.json({ success: true, ...result });
+
+    // Phase 2: run enrichment + AI in background after response is sent.
+    // `after()` keeps the function instance alive until the promise settles,
+    // so this safely outlives the 60s Hobby plan response budget.
+    after(async () => {
+      try {
+        await executeScan(scan_id, tickers, free_cash, user.id, t0);
+      } catch (e) {
+        console.error(`[scan/after] ${scan_id} failed:`, e);
+      }
+    });
+
+    return NextResponse.json({ success: true, scan_id, ticker_count, queued: true });
   } catch (e) {
     console.error("[api/portfolio-manager/scan] failed:", e);
     return NextResponse.json(

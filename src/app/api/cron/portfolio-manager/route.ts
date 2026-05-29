@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { runPortfolioManagerScan } from "@/lib/portfolio-manager/runner";
+import { NextResponse, after } from "next/server";
+import { initScan, executeScan } from "@/lib/portfolio-manager/runner";
 
 export const maxDuration = 300;
 
@@ -23,11 +23,23 @@ export async function GET(request: Request) {
       : "cron-open";
 
   try {
-    const result = await runPortfolioManagerScan({
+    const t0 = Date.now();
+    const { scan_id, tickers, free_cash, ticker_count } = await initScan({
       scan_type: "scheduled",
       trigger_source,
     });
-    return NextResponse.json({ success: true, ...result });
+
+    // Background-execute so the cron handler returns in <2s,
+    // safely under the Hobby plan 60s function ceiling.
+    after(async () => {
+      try {
+        await executeScan(scan_id, tickers, free_cash, undefined, t0);
+      } catch (e) {
+        console.error(`[cron/after] ${scan_id} failed:`, e);
+      }
+    });
+
+    return NextResponse.json({ success: true, scan_id, ticker_count, queued: true });
   } catch (e) {
     console.error("[cron/portfolio-manager] failed:", e);
     return NextResponse.json(

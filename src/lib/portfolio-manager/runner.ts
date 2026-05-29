@@ -6,6 +6,7 @@ import {
   markComplete,
   markFailed,
 } from "@/lib/db/portfolio-manager-scans";
+import type { TickerSnapshot } from "./types";
 
 export type RunOptions = {
   scan_type: "scheduled" | "manual";
@@ -20,42 +21,63 @@ export type RunResult = {
   status: "completed" | "failed" | "empty";
 };
 
+/**
+ * One-shot: holdings → insert → enrich → analyze → markComplete.
+ * Blocks for the entire scan. On Vercel Hobby (60s cap), prefer the
+ * 2-phase API: initScan() + executeScan(scan_id, ...) with `after()`.
+ */
 export async function runPortfolioManagerScan(opts: RunOptions): Promise<RunResult> {
   const t0 = Date.now();
-
-  // 1. Holdings snapshot (cached daily)
   const { tickers, free_cash } = await getStockHoldingsToday();
-
-  // 2. Insert scan row in 'running' state
   const scan_id = await insertScan({
     scan_type: opts.scan_type,
     trigger_source: opts.trigger_source,
     tickers,
   });
-
-  // Empty portfolio short-circuit
   if (tickers.length === 0) {
-    await markComplete(scan_id, {
-      analyses: [],
-      allocation: null,
-      ai_provider: "none",
-      ai_model: "none",
-      ai_fallback: false,
-      input_tokens: 0,
-      output_tokens: 0,
-      duration_ms: Date.now() - t0,
-    });
+    await markEmpty(scan_id, t0);
     return { scan_id, ticker_count: 0, duration_ms: Date.now() - t0, status: "empty" };
   }
+  return executeScan(scan_id, tickers, free_cash, opts.userId, t0);
+}
 
+/**
+ * Phase 1 — quickly grab today's holdings, insert a 'running' row,
+ * return enough state for phase 2 to take over in the background.
+ */
+export async function initScan(opts: RunOptions): Promise<{
+  scan_id: string;
+  tickers: TickerSnapshot[];
+  free_cash: number;
+  ticker_count: number;
+}> {
+  const { tickers, free_cash } = await getStockHoldingsToday();
+  const scan_id = await insertScan({
+    scan_type: opts.scan_type,
+    trigger_source: opts.trigger_source,
+    tickers,
+  });
+  return { scan_id, tickers, free_cash, ticker_count: tickers.length };
+}
+
+/**
+ * Phase 2 — long-running enrichment + AI call. Awaits its own completion.
+ * Safe to schedule via `after()` after the HTTP response is sent.
+ */
+export async function executeScan(
+  scan_id: string,
+  tickers: TickerSnapshot[],
+  free_cash: number,
+  userId?: string,
+  t0: number = Date.now()
+): Promise<RunResult> {
+  if (tickers.length === 0) {
+    await markEmpty(scan_id, t0);
+    return { scan_id, ticker_count: 0, duration_ms: Date.now() - t0, status: "empty" };
+  }
   try {
-    // 3. Enrich in parallel (max 5 concurrent)
     const enrichments = await enrichAll(tickers.map((t) => t.symbol), 5);
-
-    // 4. AI analyze + allocation (batched single call)
-    const result = await analyzeAll(tickers, enrichments, free_cash, opts.userId);
-
-    // 5. Persist
+    const result = await analyzeAll(tickers, enrichments, free_cash, userId);
     await markComplete(scan_id, {
       analyses: result.analyses,
       allocation: result.allocation,
@@ -66,7 +88,6 @@ export async function runPortfolioManagerScan(opts: RunOptions): Promise<RunResu
       output_tokens: result.output_tokens,
       duration_ms: Date.now() - t0,
     });
-
     return {
       scan_id,
       ticker_count: tickers.length,
@@ -84,4 +105,17 @@ export async function runPortfolioManagerScan(opts: RunOptions): Promise<RunResu
       status: "failed",
     };
   }
+}
+
+async function markEmpty(scan_id: string, t0: number) {
+  await markComplete(scan_id, {
+    analyses: [],
+    allocation: null,
+    ai_provider: "none",
+    ai_model: "none",
+    ai_fallback: false,
+    input_tokens: 0,
+    output_tokens: 0,
+    duration_ms: Date.now() - t0,
+  });
 }
