@@ -447,3 +447,91 @@ export function categorizePostSnapshotCashFlows(
 
   return result;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Realized gains since snapshot — for tax-context disclosure
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface RealizedGainsSummary {
+  options: number;   // net cash from options trading after snapshot
+  stocks: number;    // net cash from stock trading after snapshot (best-effort)
+  total: number;
+  estimatedTax: number;
+  taxRateUsed: number;
+  taxRateLabel: string;
+}
+
+/**
+ * Estimates the realized gains from ACTUAL trading activity after the
+ * snapshot date. Used to surface why the user may have withdrawn cash
+ * (likely to cover taxes on gains that wouldn't have existed in the sim).
+ *
+ * v1: sums all post-snapshot option BUY/SELL `amount` values and all
+ * stock SELL `amount` minus cost basis from in-window BUYs. Crude but
+ * captures the order of magnitude.
+ *
+ * Tax rate assumes high-income (>$500K) options trader: 37% federal +
+ * 3.8% NIIT + ~4% state midpoint = ~45% effective on short-term gains.
+ */
+export function computeRealizedGainsSinceSnapshot(
+  snapshotDate: string,
+  txns: SnapTradeTxn[]
+): RealizedGainsSummary {
+  const sorted = sortAscending(txns);
+  let optionsRealized = 0;
+  let stocksRealized = 0;
+
+  // For stocks, track avg cost using in-window BUYs. Falls back to 0
+  // realized when SELL has no prior BUY in window (incomplete history).
+  const stockAvgCost = new Map<string, { units: number; totalCost: number }>();
+
+  for (const tx of sorted) {
+    const date = txnDate(tx);
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+
+    if (isOptionTxn(tx)) {
+      // Only post-snapshot option cash flows count as "realized after snapshot"
+      if (date <= snapshotDate) continue;
+      if (tx.type === "BUY" || tx.type === "SELL") {
+        optionsRealized += tx.amount;  // signed
+      }
+      continue;
+    }
+
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+
+    // Pre-snapshot stock BUYs feed cost basis for post-snapshot SELLs.
+    if (tx.type === "BUY") {
+      const units = Math.abs(tx.units);
+      const cost = Math.abs(tx.amount);
+      const cur = stockAvgCost.get(sym) ?? { units: 0, totalCost: 0 };
+      cur.units += units;
+      cur.totalCost += cost;
+      stockAvgCost.set(sym, cur);
+      continue;
+    }
+
+    if (tx.type === "SELL" && date > snapshotDate) {
+      const units = Math.abs(tx.units);
+      const proceeds = Math.abs(tx.amount);
+      const cur = stockAvgCost.get(sym);
+      if (cur && cur.units > 0) {
+        const avgCost = cur.totalCost / cur.units;
+        const consumed = Math.min(units, cur.units);
+        const gain = proceeds - avgCost * consumed;
+        stocksRealized += gain;
+        cur.units -= consumed;
+        cur.totalCost -= avgCost * consumed;
+        stockAvgCost.set(sym, cur);
+      }
+    }
+  }
+
+  const total = optionsRealized + stocksRealized;
+  const taxRateUsed = 0.45;
+  const taxRateLabel = "~45% blended (37% fed + 3.8% NIIT + ~4% state midpoint, short-term)";
+  const estimatedTax = Math.max(0, total) * taxRateUsed;
+
+  return { options: optionsRealized, stocks: stocksRealized, total, estimatedTax, taxRateUsed, taxRateLabel };
+}

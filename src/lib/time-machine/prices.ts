@@ -27,13 +27,28 @@ import { tradierFetch } from "../market/tradier-client";
 const historicalCloseCache = new Map<string, number | null>();
 
 /**
+ * Manual price overrides for symbols Tradier doesn't quote (mutual funds,
+ * proprietary tickers). Used as a final fallback after Tradier returns null.
+ * Update these periodically until we wire a proper mutual-fund data feed.
+ */
+const MANUAL_PRICES: Record<string, number> = {
+  FXAIX: 263.16,   // Fidelity 500 Index Fund
+  FSELS: 67.91,    // Fidelity Select Semiconductors
+};
+
+/**
  * Today's stock prices for a list of symbols (Tradier /markets/quotes, batched).
- * Returns an empty Map when the token is missing or the batch call fails.
+ * Falls back to MANUAL_PRICES for mutual funds Tradier doesn't quote.
  */
 export async function getCurrentStockPrices(
   symbols: string[]
 ): Promise<Map<string, number>> {
   const out = new Map<string, number>();
+  // Seed with manual overrides for everything in the requested list.
+  for (const s of symbols) {
+    const u = s?.trim().toUpperCase();
+    if (u && MANUAL_PRICES[u] != null) out.set(u, MANUAL_PRICES[u]);
+  }
   if (!process.env.TRADIER_API_TOKEN) return out;
 
   // Dedupe + drop blanks before the call.
@@ -69,6 +84,27 @@ export async function getCurrentStockPrices(
     console.error("getCurrentStockPrices error:", e);
     return out;
   }
+}
+
+/**
+ * Snapshot-date price for a list of symbols, with manual-price fallback.
+ * Uses getHistoricalClose for each symbol; for mutual funds without history,
+ * falls back to MANUAL_PRICES (same as today's price → return % shows 0).
+ */
+export async function getSnapshotStockPrices(
+  symbols: string[],
+  dateISO: string
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const uniq = Array.from(new Set(symbols.map((s) => s?.trim().toUpperCase()).filter(Boolean)));
+  await Promise.all(
+    uniq.map(async (sym) => {
+      const px = await getHistoricalClose(sym, dateISO);
+      if (px != null && px > 0) out.set(sym, px);
+      else if (MANUAL_PRICES[sym] != null) out.set(sym, MANUAL_PRICES[sym]);
+    })
+  );
+  return out;
 }
 
 /**

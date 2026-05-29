@@ -60,6 +60,14 @@ interface TimeMachineResult {
   };
   actual: { total: number };
   delta: { absolute: number; pct: number; favorableToHold: boolean };
+  realizedGains?: {
+    options: number;
+    stocks: number;
+    total: number;
+    estimatedTax: number;
+    taxRateUsed: number;
+    taxRateLabel: string;
+  };
   assumptions: string[];
 }
 
@@ -117,6 +125,13 @@ export default function TimeMachinePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  type SortCol = "symbol" | "units" | "snapshotPrice" | "todayPrice" | "snapshotValue" | "todayValue" | "returnPct" | "contribution";
+  const [sortCol, setSortCol] = useState<SortCol>("todayValue");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  function toggleSort(col: SortCol) {
+    if (col === sortCol) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir(col === "symbol" ? "asc" : "desc"); }
+  }
 
   // Earliest date the broker has activity for — populated from API response.
   const earliestAvailable = data?.earliestAvailable ?? "2020-01-01";
@@ -243,47 +258,129 @@ export default function TimeMachinePage() {
               </div>
             </div>
 
-            {/* Holdings comparison table */}
-            <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-              <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
-                  Holdings · snapshot units × today&apos;s price
-                </span>
-              </div>
-              {data.simulation.stockValues.length === 0 ? (
-                <p className="text-sm text-stone-400 text-center py-6">No stock holdings at snapshot</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-[11px]">
-                    <thead>
-                      <tr className="text-stone-400 border-y border-stone-100">
-                        <th className="text-left  px-4 py-1.5 font-medium">Symbol</th>
-                        <th className="text-right px-2 py-1.5 font-medium">Units</th>
-                        <th className="text-right px-2 py-1.5 font-medium">Today&apos;s price</th>
-                        <th className="text-right px-2 py-1.5 font-medium">Value</th>
-                        <th className="text-right px-4 py-1.5 font-medium">Contribution</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.simulation.stockValues.map((s) => {
-                        const contributionPct = data.simulation.total > 0
-                          ? (s.value / data.simulation.total) * 100
-                          : 0;
-                        return (
-                          <tr key={s.symbol} className="border-t border-stone-50">
-                            <td className="px-4 py-2 font-semibold text-stone-900">{s.symbol}</td>
-                            <td className="px-2 py-2 text-right text-stone-700">{s.units}</td>
-                            <td className="px-2 py-2 text-right text-stone-700">{fmtCurrency(s.todayPrice)}</td>
-                            <td className="px-2 py-2 text-right font-medium text-stone-900">{fmtCurrency0(s.value)}</td>
-                            <td className="px-4 py-2 text-right text-stone-500">{contributionPct.toFixed(1)}%</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+            {/* Holdings table — sortable, includes CASH */}
+            {(() => {
+              // Build sorted rows: stocks + a synthetic CASH row.
+              const snapPriceBySym = new Map(data.snapshot.positions.map((p) => [p.symbol, p.snapshotPrice]));
+              const stockRows = data.simulation.stockValues.map((s) => {
+                const snapPrice = snapPriceBySym.get(s.symbol) ?? 0;
+                const snapValue = snapPrice * s.units;
+                return {
+                  symbol: s.symbol,
+                  units: s.units,
+                  snapshotPrice: snapPrice,
+                  todayPrice: s.todayPrice,
+                  snapshotValue: snapValue,
+                  todayValue: s.value,
+                  returnPct: snapPrice > 0 ? ((s.todayPrice - snapPrice) / snapPrice) * 100 : null,
+                  isCash: false,
+                };
+              });
+              const sumStockToday = stockRows.reduce((a, r) => a + r.todayValue, 0);
+              const sumOptionToday = data.simulation.optionValues.reduce((a, o) => a + o.value, 0);
+              const cashToday = data.simulation.total - sumStockToday - sumOptionToday;
+              const cashSnap = data.snapshot.cash;
+              const cashRow = {
+                symbol: "CASH",
+                units: 1,
+                snapshotPrice: 1,
+                todayPrice: 1,
+                snapshotValue: cashSnap,
+                todayValue: cashToday,
+                returnPct: cashSnap > 0 ? ((cashToday - cashSnap) / cashSnap) * 100 : null,
+                isCash: true,
+              };
+              const allRows = [...stockRows, cashRow];
+              const cmp = (a: typeof allRows[number], b: typeof allRows[number]): number => {
+                let v = 0;
+                switch (sortCol) {
+                  case "symbol":        v = a.symbol.localeCompare(b.symbol); break;
+                  case "units":         v = a.units - b.units; break;
+                  case "snapshotPrice": v = a.snapshotPrice - b.snapshotPrice; break;
+                  case "todayPrice":    v = a.todayPrice - b.todayPrice; break;
+                  case "snapshotValue": v = a.snapshotValue - b.snapshotValue; break;
+                  case "todayValue":    v = a.todayValue - b.todayValue; break;
+                  case "returnPct":     v = (a.returnPct ?? -Infinity) - (b.returnPct ?? -Infinity); break;
+                  case "contribution":  v = a.todayValue - b.todayValue; break;
+                }
+                return sortDir === "asc" ? v : -v;
+              };
+              const sorted = [...allRows].sort(cmp);
+              const totalToday = data.simulation.total;
+
+              const arrow = (col: SortCol) => sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+              const headBtn = (col: SortCol, label: string, align: "left" | "right") => (
+                <button
+                  type="button"
+                  onClick={() => toggleSort(col)}
+                  className={`w-full ${align === "right" ? "text-right" : "text-left"} font-medium hover:text-stone-700 transition`}
+                >
+                  {label}{arrow(col)}
+                </button>
+              );
+
+              return (
+                <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+                  <div className="px-4 pt-3 pb-2">
+                    <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                      Holdings · snapshot → today
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="text-stone-400 border-y border-stone-100">
+                          <th className="px-3 py-1.5">{headBtn("symbol", "Symbol", "left")}</th>
+                          <th className="px-2 py-1.5">{headBtn("units", "Units", "right")}</th>
+                          <th className="px-2 py-1.5">{headBtn("snapshotPrice", "Snap $", "right")}</th>
+                          <th className="px-2 py-1.5">{headBtn("todayPrice", "Today $", "right")}</th>
+                          <th className="px-2 py-1.5">{headBtn("snapshotValue", "Snap value", "right")}</th>
+                          <th className="px-2 py-1.5">{headBtn("todayValue", "Today value", "right")}</th>
+                          <th className="px-2 py-1.5">{headBtn("returnPct", "Return", "right")}</th>
+                          <th className="px-3 py-1.5">{headBtn("contribution", "% of total", "right")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sorted.map((r) => {
+                          const contributionPct = totalToday > 0 ? (r.todayValue / totalToday) * 100 : 0;
+                          const retColor =
+                            r.returnPct == null ? "text-stone-400"
+                            : r.returnPct >= 0 ? "text-emerald-600" : "text-red-500";
+                          return (
+                            <tr key={r.symbol} className={`border-t border-stone-50 ${r.isCash ? "bg-amber-50/30" : ""}`}>
+                              <td className="px-3 py-2 font-semibold text-stone-900">{r.symbol}</td>
+                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : r.units}</td>
+                              <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—")}</td>
+                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : fmtCurrency(r.todayPrice)}</td>
+                              <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{fmtCurrency0(r.snapshotValue)}</td>
+                              <td className="px-2 py-2 text-right font-medium text-stone-900 tabular-nums">{fmtCurrency0(r.todayValue)}</td>
+                              <td className={`px-2 py-2 text-right font-medium tabular-nums ${retColor}`}>
+                                {r.returnPct == null ? "—" : `${r.returnPct >= 0 ? "+" : ""}${r.returnPct.toFixed(1)}%`}
+                              </td>
+                              <td className="px-3 py-2 text-right text-stone-500 tabular-nums">{contributionPct.toFixed(1)}%</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-stone-200 bg-stone-50">
+                          <td className="px-3 py-2 font-bold text-stone-900">Total</td>
+                          <td className="px-2 py-2" colSpan={3}></td>
+                          <td className="px-2 py-2 text-right font-bold text-stone-700 tabular-nums">{fmtCurrency0(data.snapshot.total)}</td>
+                          <td className="px-2 py-2 text-right font-bold text-stone-900 tabular-nums">{fmtCurrency0(totalToday)}</td>
+                          <td className="px-2 py-2 text-right font-bold tabular-nums">
+                            {data.snapshot.total > 0
+                              ? `${((totalToday - data.snapshot.total) / data.snapshot.total * 100).toFixed(1)}%`
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
             {/* Deposits — warm yellow */}
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -339,6 +436,43 @@ export default function TimeMachinePage() {
                 </div>
               )}
             </div>
+
+            {/* Realized gains + tax context */}
+            {data.realizedGains && data.realizedGains.total !== 0 && (
+              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] uppercase tracking-wider text-violet-700 font-semibold">
+                    Why you may have withdrawn cash
+                  </span>
+                </div>
+                <p className="text-xs text-violet-900 mb-3 leading-snug">
+                  Your <em>actual</em> trading since {fmtDate(data.snapshotDate)} generated realized gains that
+                  trigger a tax bill. In the sim you didn&apos;t trade, so no tax — meaning some portion of the
+                  withdrawals above were likely real obligations.
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Realized gains</div>
+                    <div className="text-base font-bold text-stone-900">{fmtCurrency0(data.realizedGains.total)}</div>
+                    <div className="text-[10px] text-stone-500 mt-1">
+                      Options: {fmtCurrency0(data.realizedGains.options)}
+                      {data.realizedGains.stocks !== 0 && (
+                        <> · Stock: {fmtCurrency0(data.realizedGains.stocks)}</>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Est. tax owed</div>
+                    <div className="text-base font-bold text-rose-600">~{fmtCurrency0(data.realizedGains.estimatedTax)}</div>
+                    <div className="text-[10px] text-stone-500 mt-1">@ {(data.realizedGains.taxRateUsed * 100).toFixed(0)}% effective</div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
+                  {data.realizedGains.taxRateLabel}. Assumes income &gt; $500K. Stock realized gains
+                  are best-effort (in-window BUYs only).
+                </p>
+              </div>
+            )}
 
             {/* Options replay timeline */}
             <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">

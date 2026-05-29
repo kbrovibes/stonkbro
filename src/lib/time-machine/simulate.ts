@@ -15,12 +15,13 @@ import {
   reconstructOptionPositionsAt,
   reconstructCashAt,
   categorizePostSnapshotCashFlows,
+  computeRealizedGainsSinceSnapshot,
 } from "./reconstruct";
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
 import {
   getCurrentStockPrices,
   getCurrentOptionMid,
-  getHistoricalClose,
+  getSnapshotStockPrices,
 } from "./prices";
 import { SnapTradeTxn } from "./types";
 
@@ -50,6 +51,14 @@ export interface SimulationResult {
   };
   actual: { total: number };
   delta: { absolute: number; pct: number; favorableToHold: boolean };
+  realizedGains: {
+    options: number;
+    stocks: number;
+    total: number;
+    estimatedTax: number;
+    taxRateUsed: number;
+    taxRateLabel: string;
+  };
   assumptions: string[];
 }
 
@@ -128,14 +137,16 @@ export async function simulateTimeMachine(args: {
   const optionValues = [...resolvedOptionRows, ...liveOptionValues];
 
   // ── Step 5: compute snapshot prices for display ─────────────────────
-  // Pull snapshot-date close per held symbol for the table; cache will hit
-  // for any repeats across the page.
-  const snapshotPriceLookups = await Promise.all(
-    [...stockUnitsAtSnapshot.entries()].map(async ([sym, units]) => {
-      const px = await getHistoricalClose(sym, snapshotDate);
-      return { sym, units, snapshotPrice: px ?? 0 };
-    })
+  // Use snapshotPriceLookups with manual-price fallback for mutual funds.
+  const snapshotPriceMap = await getSnapshotStockPrices(
+    [...stockUnitsAtSnapshot.keys()],
+    snapshotDate
   );
+  const snapshotPriceLookups = [...stockUnitsAtSnapshot.entries()].map(([sym, units]) => ({
+    sym,
+    units,
+    snapshotPrice: snapshotPriceMap.get(sym) ?? 0,
+  }));
 
   // ── Step 6: build response ──────────────────────────────────────────
   const snapshotPositions = snapshotPriceLookups.map((p) => ({
@@ -200,6 +211,7 @@ export async function simulateTimeMachine(args: {
     },
     actual: { total: actualTotal },
     delta: { absolute: delta, pct, favorableToHold: delta > 0 },
+    realizedGains: computeRealizedGainsSinceSnapshot(snapshotDate, txns),
     assumptions,
   };
 }
