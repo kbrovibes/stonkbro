@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // =========================================================================
 // Types — mirrors GET /api/portfolio/time-machine response shape from spec
@@ -58,7 +58,17 @@ interface TimeMachineResult {
     totalWithdrawalsFunded: number;
     total: number;
   };
-  actual: { total: number };
+  actual: {
+    total: number;
+    breakdown?: {
+      stocks: number;
+      options: number;
+      cash: number;
+      accountCount: number;
+      stockPositionCount: number;
+      optionPositionCount: number;
+    };
+  };
   delta: { absolute: number; pct: number; favorableToHold: boolean };
   realizedGains?: {
     options: number;
@@ -134,11 +144,48 @@ export default function TimeMachinePage() {
   const [error, setError] = useState<string | null>(null);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
   type SortCol = "symbol" | "units" | "snapshotPrice" | "todayPrice" | "snapshotValue" | "todayValue" | "returnPct" | "contribution";
+  const DEFAULT_COL_ORDER: SortCol[] = ["symbol", "units", "snapshotPrice", "todayPrice", "snapshotValue", "todayValue", "returnPct", "contribution"];
+  const COL_ORDER_KEY = "tm-col-order-v1";
   const [sortCol, setSortCol] = useState<SortCol>("todayValue");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [colOrder, setColOrder] = useState<SortCol[]>(DEFAULT_COL_ORDER);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+
+  // Restore persisted column order on mount; persist on change.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(COL_ORDER_KEY);
+      if (saved) {
+        const arr = JSON.parse(saved) as string[];
+        const valid = arr.filter((k) => DEFAULT_COL_ORDER.includes(k as SortCol)) as SortCol[];
+        if (valid.length === DEFAULT_COL_ORDER.length) setColOrder(valid);
+      }
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(COL_ORDER_KEY, JSON.stringify(colOrder));
+  }, [colOrder]);
+  function resetColOrder() { setColOrder(DEFAULT_COL_ORDER); }
+
   function toggleSort(col: SortCol) {
     if (col === sortCol) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortCol(col); setSortDir(col === "symbol" ? "asc" : "desc"); }
+  }
+  function handleColDrop(targetIdx: number) {
+    if (dragIdx == null || dragIdx === targetIdx) { setDragIdx(null); setDragOverIdx(null); return; }
+    setColOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+    setDragIdx(null);
+    setDragOverIdx(null);
   }
 
   // Earliest date the broker has activity for — populated from API response.
@@ -257,8 +304,29 @@ export default function TimeMachinePage() {
             {/* Today comparison */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-stone-200 bg-white p-3">
-                <p className="text-[10px] text-stone-400 uppercase tracking-wider">Actual today</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wider">Actual today</p>
+                  {data.actual.breakdown && (
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownOpen((v) => !v)}
+                      className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                    >
+                      {breakdownOpen ? "hide" : "details"}
+                    </button>
+                  )}
+                </div>
                 <p className="text-xl font-bold text-stone-900 mt-1">{fmtCurrency0(data.actual.total)}</p>
+                {breakdownOpen && data.actual.breakdown && (
+                  <div className="mt-2 pt-2 border-t border-stone-100 text-[10px] text-stone-500 space-y-0.5 tabular-nums">
+                    <div className="flex justify-between"><span>Stocks ({data.actual.breakdown.stockPositionCount})</span><span>{fmtCurrency0(data.actual.breakdown.stocks)}</span></div>
+                    <div className="flex justify-between"><span>Options ({data.actual.breakdown.optionPositionCount}, net of shorts)</span><span>{fmtCurrency0(data.actual.breakdown.options)}</span></div>
+                    <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(data.actual.breakdown.cash)}</span></div>
+                    <div className="flex justify-between text-stone-400 pt-1 border-t border-stone-100 mt-1">
+                      <span>{data.actual.breakdown.accountCount} account{data.actual.breakdown.accountCount === 1 ? "" : "s"} · via SnapTrade</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="rounded-xl border border-stone-200 bg-white p-3">
                 <p className="text-[10px] text-stone-400 uppercase tracking-wider">Simulated today</p>
@@ -320,71 +388,132 @@ export default function TimeMachinePage() {
               const totalToday = data.simulation.total;
 
               const arrow = (col: SortCol) => sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
-              const headBtn = (col: SortCol, label: string, align: "left" | "right") => (
-                <button
-                  type="button"
-                  onClick={() => toggleSort(col)}
-                  className={`w-full ${align === "right" ? "text-right" : "text-left"} font-medium hover:text-stone-700 transition`}
-                >
-                  {label}{arrow(col)}
-                </button>
-              );
+
+              // Column definitions — single source of truth for label, alignment,
+              // and how to render the header / body / footer cell for each column.
+              type RowT = typeof allRows[number];
+              const COL_DEFS: Record<SortCol, {
+                label: string;
+                align: "left" | "right";
+                body: (r: RowT) => React.ReactNode;
+                bodyClass?: (r: RowT) => string;
+                foot?: React.ReactNode;
+              }> = {
+                symbol: { label: "Symbol", align: "left",
+                  body: (r) => r.symbol,
+                  bodyClass: () => "font-semibold text-stone-900",
+                  foot: <span className="font-bold text-stone-900">Total</span>,
+                },
+                units: { label: "Units", align: "right",
+                  body: (r) => r.isCash ? "—" : Math.round(r.units),
+                  bodyClass: () => "text-stone-700 tabular-nums",
+                },
+                snapshotPrice: { label: "Snap $", align: "right",
+                  body: (r) => r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—"),
+                  bodyClass: () => "text-stone-500 tabular-nums",
+                },
+                todayPrice: { label: "Today $", align: "right",
+                  body: (r) => r.isCash ? "—" : fmtCurrency(r.todayPrice),
+                  bodyClass: () => "text-stone-700 tabular-nums",
+                },
+                snapshotValue: { label: "Snap value", align: "right",
+                  body: (r) => fmtCurrency0(r.snapshotValue),
+                  bodyClass: () => "text-stone-500 tabular-nums",
+                  foot: <span className="font-bold text-stone-700 tabular-nums">{fmtCurrency0(data.snapshot.total)}</span>,
+                },
+                todayValue: { label: "Today value", align: "right",
+                  body: (r) => fmtCurrency0(r.todayValue),
+                  bodyClass: () => "font-medium text-stone-900 tabular-nums",
+                  foot: <span className="font-bold text-stone-900 tabular-nums">{fmtCurrency0(totalToday)}</span>,
+                },
+                returnPct: { label: "Return", align: "right",
+                  body: (r) => r.returnPct == null ? "—" : `${r.returnPct >= 0 ? "+" : ""}${r.returnPct.toFixed(1)}%`,
+                  bodyClass: (r) => `font-medium tabular-nums ${r.returnPct == null ? "text-stone-400" : r.returnPct >= 0 ? "text-emerald-600" : "text-red-500"}`,
+                  foot: data.snapshot.total > 0 ? (
+                    <span className="font-bold tabular-nums">
+                      {`${((totalToday - data.snapshot.total) / data.snapshot.total * 100).toFixed(1)}%`}
+                    </span>
+                  ) : "—",
+                },
+                contribution: { label: "% of total", align: "right",
+                  body: (r) => `${(totalToday > 0 ? (r.todayValue / totalToday) * 100 : 0).toFixed(1)}%`,
+                  bodyClass: () => "text-stone-500 tabular-nums",
+                },
+              };
 
               return (
                 <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-                  <div className="px-4 pt-3 pb-2">
+                  <div className="px-4 pt-3 pb-2 flex items-center justify-between">
                     <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
-                      Holdings · snapshot → today
+                      Holdings · drag column headers to reorder
                     </span>
+                    <button
+                      type="button"
+                      onClick={resetColOrder}
+                      className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                      title="Reset column order"
+                    >
+                      Reset
+                    </button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr className="text-stone-400 border-y border-stone-100">
-                          <th className="px-3 py-1.5">{headBtn("symbol", "Symbol", "left")}</th>
-                          <th className="px-2 py-1.5">{headBtn("units", "Units", "right")}</th>
-                          <th className="px-2 py-1.5">{headBtn("snapshotPrice", "Snap $", "right")}</th>
-                          <th className="px-2 py-1.5">{headBtn("todayPrice", "Today $", "right")}</th>
-                          <th className="px-2 py-1.5">{headBtn("snapshotValue", "Snap value", "right")}</th>
-                          <th className="px-2 py-1.5">{headBtn("todayValue", "Today value", "right")}</th>
-                          <th className="px-2 py-1.5">{headBtn("returnPct", "Return", "right")}</th>
-                          <th className="px-3 py-1.5">{headBtn("contribution", "% of total", "right")}</th>
+                          {colOrder.map((col, idx) => {
+                            const def = COL_DEFS[col];
+                            const isOver = dragOverIdx === idx && dragIdx !== idx;
+                            return (
+                              <th
+                                key={col}
+                                draggable
+                                onDragStart={() => setDragIdx(idx)}
+                                onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                                onDragLeave={() => setDragOverIdx((cur) => (cur === idx ? null : cur))}
+                                onDrop={(e) => { e.preventDefault(); handleColDrop(idx); }}
+                                onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                                className={`px-2 py-1.5 font-medium select-none cursor-move ${isOver ? "bg-sky-50" : ""} ${dragIdx === idx ? "opacity-50" : ""}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSort(col)}
+                                  className={`w-full ${def.align === "right" ? "text-right" : "text-left"} font-medium hover:text-stone-700 transition flex items-center ${def.align === "right" ? "justify-end" : "justify-start"} gap-1`}
+                                >
+                                  <span className="text-stone-300 text-[9px]" aria-hidden>⋮⋮</span>
+                                  <span>{def.label}{arrow(col)}</span>
+                                </button>
+                              </th>
+                            );
+                          })}
                         </tr>
                       </thead>
                       <tbody>
-                        {sorted.map((r) => {
-                          const contributionPct = totalToday > 0 ? (r.todayValue / totalToday) * 100 : 0;
-                          const retColor =
-                            r.returnPct == null ? "text-stone-400"
-                            : r.returnPct >= 0 ? "text-emerald-600" : "text-red-500";
-                          return (
-                            <tr key={r.symbol} className={`border-t border-stone-50 ${r.isCash ? "bg-amber-50/30" : ""}`}>
-                              <td className="px-3 py-2 font-semibold text-stone-900">{r.symbol}</td>
-                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : Math.round(r.units)}</td>
-                              <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—")}</td>
-                              <td className="px-2 py-2 text-right text-stone-700 tabular-nums">{r.isCash ? "—" : fmtCurrency(r.todayPrice)}</td>
-                              <td className="px-2 py-2 text-right text-stone-500 tabular-nums">{fmtCurrency0(r.snapshotValue)}</td>
-                              <td className="px-2 py-2 text-right font-medium text-stone-900 tabular-nums">{fmtCurrency0(r.todayValue)}</td>
-                              <td className={`px-2 py-2 text-right font-medium tabular-nums ${retColor}`}>
-                                {r.returnPct == null ? "—" : `${r.returnPct >= 0 ? "+" : ""}${r.returnPct.toFixed(1)}%`}
-                              </td>
-                              <td className="px-3 py-2 text-right text-stone-500 tabular-nums">{contributionPct.toFixed(1)}%</td>
-                            </tr>
-                          );
-                        })}
+                        {sorted.map((r) => (
+                          <tr key={r.symbol} className={`border-t border-stone-50 ${r.isCash ? "bg-amber-50/30" : ""}`}>
+                            {colOrder.map((col) => {
+                              const def = COL_DEFS[col];
+                              return (
+                                <td
+                                  key={col}
+                                  className={`px-2 py-2 ${def.align === "right" ? "text-right" : ""} ${def.bodyClass?.(r) ?? ""}`}
+                                >
+                                  {def.body(r)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
                       </tbody>
                       <tfoot>
                         <tr className="border-t border-stone-200 bg-stone-50">
-                          <td className="px-3 py-2 font-bold text-stone-900">Total</td>
-                          <td className="px-2 py-2" colSpan={3}></td>
-                          <td className="px-2 py-2 text-right font-bold text-stone-700 tabular-nums">{fmtCurrency0(data.snapshot.total)}</td>
-                          <td className="px-2 py-2 text-right font-bold text-stone-900 tabular-nums">{fmtCurrency0(totalToday)}</td>
-                          <td className="px-2 py-2 text-right font-bold tabular-nums">
-                            {data.snapshot.total > 0
-                              ? `${((totalToday - data.snapshot.total) / data.snapshot.total * 100).toFixed(1)}%`
-                              : "—"}
-                          </td>
-                          <td className="px-3 py-2"></td>
+                          {colOrder.map((col) => {
+                            const def = COL_DEFS[col];
+                            return (
+                              <td key={col} className={`px-2 py-2 ${def.align === "right" ? "text-right" : ""}`}>
+                                {def.foot ?? null}
+                              </td>
+                            );
+                          })}
                         </tr>
                       </tfoot>
                     </table>

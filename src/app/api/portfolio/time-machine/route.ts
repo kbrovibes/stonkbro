@@ -63,13 +63,28 @@ export async function GET(req: Request) {
       );
     }
 
-    // Actual current total = market value of stock + options + cash
+    // Actual current total = stock MV + net options MV (signed) + cash
+    const stocksMV = portfolio.summary.total_market_value;
     const optionsMV = portfolio.options.reduce((s, o) => s + o.market_value, 0);
-    const actualTotal =
-      portfolio.summary.total_market_value + optionsMV + portfolio.summary.cash;
+    const cashTotal = portfolio.summary.cash;
+    const actualTotal = stocksMV + optionsMV + cashTotal;
 
     const result = await simulateTimeMachine({ snapshotDate, txns, actualTotal });
-    return NextResponse.json({ ...result, earliestAvailable });
+    return NextResponse.json({
+      ...result,
+      earliestAvailable,
+      actual: {
+        ...result.actual,
+        breakdown: {
+          stocks: stocksMV,
+          options: optionsMV,
+          cash: cashTotal,
+          accountCount: portfolio.accounts.length,
+          stockPositionCount: portfolio.positions.length,
+          optionPositionCount: portfolio.options.length,
+        },
+      },
+    });
   } catch (err: any) {
     const status = err?.response?.status;
     const detail = err?.response?.data ?? err?.message ?? String(err);

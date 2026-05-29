@@ -49,7 +49,17 @@ export interface SimulationResult {
     totalWithdrawalsFunded: number;
     total: number;
   };
-  actual: { total: number };
+  actual: {
+    total: number;
+    breakdown?: {
+      stocks: number;
+      options: number;
+      cash: number;
+      accountCount: number;
+      stockPositionCount: number;
+      optionPositionCount: number;
+    };
+  };
   delta: { absolute: number; pct: number; favorableToHold: boolean };
   realizedGains: {
     options: number;
