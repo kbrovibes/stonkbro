@@ -39,6 +39,13 @@ yarn-error.log*
 # backlog runner
 .claude-status
 
+# claude/ruflo local state
+.claude-flow/
+*.bak
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
