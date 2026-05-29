@@ -16,6 +16,7 @@ import {
   reconstructCashAt,
   categorizePostSnapshotCashFlows,
   computeRealizedGainsSinceSnapshot,
+  getRsuVestsAfter,
 } from "./reconstruct";
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
 import {
@@ -81,6 +82,12 @@ export interface SimulationResult {
     };
     taxRateLabel: string;
   };
+  rsuVests: {
+    items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
+    totalUnitsBySymbol: Record<string, number>;
+    totalValueAtVest: number;
+    monthsWithVests: string[];   // "YYYY-MM"
+  };
   assumptions: string[];
 }
 
@@ -117,6 +124,14 @@ export async function simulateTimeMachine(args: {
   cashRef.value += cashFlows.totalDeposits;
   cashRef.value += cashFlows.totalDividends;
   cashRef.value += cashFlows.totalInterest;
+
+  // Post-snapshot RSU vests: shares arrive in the account as income.
+  // They would have happened regardless of trading activity, so they
+  // accrue to the simulated portfolio. No cash effect (income event).
+  const rsuVests = getRsuVestsAfter(snapshotDate, txns);
+  for (const v of rsuVests) {
+    simStockUnits.set(v.symbol, (simStockUnits.get(v.symbol) ?? 0) + v.units);
+  }
 
   // ── Step 4: today's prices ──────────────────────────────────────────
   const heldStockSymbols = [...simStockUnits.keys()].filter(
@@ -201,6 +216,7 @@ export async function simulateTimeMachine(args: {
     "Withdrawals after the snapshot are tracked as 'would have needed to fund elsewhere' but NOT subtracted from the simulated total.",
     "Deposits, dividends on still-held shares, and interest after the snapshot are added to simulated cash.",
     "Live options today are valued at current Tradier option chain mid. Illiquid contracts may show $0.",
+    "RSU vests are detected by description keyword OR (fallback) by BUY transactions on AMZN. Vested shares accrue without a cash debit and are added to the simulated portfolio.",
   ];
 
   return {
@@ -234,6 +250,22 @@ export async function simulateTimeMachine(args: {
     actual: { total: actualTotal },
     delta: { absolute: delta, pct, favorableToHold: delta > 0 },
     realizedGains: computeRealizedGainsSinceSnapshot(snapshotDate, txns),
+    rsuVests: (() => {
+      const totalUnitsBySymbol: Record<string, number> = {};
+      const monthSet = new Set<string>();
+      let totalValueAtVest = 0;
+      for (const v of rsuVests) {
+        totalUnitsBySymbol[v.symbol] = (totalUnitsBySymbol[v.symbol] ?? 0) + v.units;
+        monthSet.add(v.date.slice(0, 7));
+        totalValueAtVest += v.valueAtVest;
+      }
+      return {
+        items: rsuVests,
+        totalUnitsBySymbol,
+        totalValueAtVest,
+        monthsWithVests: [...monthSet].sort(),
+      };
+    })(),
     assumptions,
   };
 }

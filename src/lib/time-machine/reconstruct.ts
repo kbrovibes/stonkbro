@@ -52,6 +52,33 @@ function isMoneyMarketSymbol(sym: string): boolean {
 const ZERO_EFFECT_TYPES = new Set(["LOAN", "JOURNALED", "REI", "ADJUSTMENT", "SPINOFF"]);
 
 /**
+ * Symbols whose BUY transactions should be treated as RSU vests (income,
+ * not cash purchases). Per user direction: AMZN BUYs are RSU vests.
+ */
+const RSU_BUY_AS_VEST_SYMBOLS = new Set(["AMZN"]);
+
+/** Description keywords that signal an RSU vest event from any broker. */
+const RSU_DESCRIPTION_KEYWORDS = /\b(RSU|VEST(?:ED|ING)?|RESTRICTED\s+STOCK|STOCK\s+PLAN|EQUITY\s+AWARD)\b/i;
+
+/**
+ * Returns true when a transaction should be treated as an RSU vest —
+ * i.e. shares arrive without a cash debit (income, not purchase).
+ *
+ * Detection priority:
+ *   1. Description text matches RSU/VEST keywords (broker-agnostic).
+ *   2. BUY on a symbol in RSU_BUY_AS_VEST_SYMBOLS (fallback).
+ */
+function isRsuVest(tx: SnapTradeTxn): boolean {
+  if (tx.type !== "BUY") return false;
+  if (isOptionTxn(tx)) return false;
+  const desc = tx.description ?? "";
+  if (RSU_DESCRIPTION_KEYWORDS.test(desc)) return true;
+  const sym = extractSymbol(tx).toUpperCase();
+  if (RSU_BUY_AS_VEST_SYMBOLS.has(sym)) return true;
+  return false;
+}
+
+/**
  * Equity symbol extraction. Matches the pattern used by `getOptionChains` in
  * `src/lib/snaptrade/client.ts`: SnapTrade nests the symbol two levels deep
  * in some payloads and exposes a flat `ticker` in others.
@@ -328,6 +355,8 @@ export function reconstructCashAt(
         // Money-market and bookkeeping sweeps don't move real cash for
         // simulation purposes — the user's "cash" already includes MMF.
         if (isMMF || isBook) break;
+        // RSU vests deliver shares without a cash debit (income, not purchase).
+        if (tx.type === "BUY" && isRsuVest(tx)) break;
         // SnapTrade reports signed `amount` (BUY is negative). Trust it.
         cash += tx.amount;
         break;
@@ -446,6 +475,69 @@ export function categorizePostSnapshotCashFlows(
   }
 
   return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// RSU vests
+// ─────────────────────────────────────────────────────────────────────────
+
+import { RsuVestEntry } from "./types";
+
+/**
+ * Returns RSU vest events that occurred strictly AFTER `snapshotDate`.
+ * These are surfaced for display ("equity income that arrived in the
+ * sim period") AND fed back into the simulation so the vested shares
+ * accrue to the simulated portfolio.
+ */
+export function getRsuVestsAfter(
+  snapshotDate: string,
+  txns: SnapTradeTxn[]
+): RsuVestEntry[] {
+  const out: RsuVestEntry[] = [];
+  for (const tx of txns) {
+    const date = txnDate(tx);
+    if (date <= snapshotDate) continue;
+    if (!isRsuVest(tx)) continue;
+    const sym = extractSymbol(tx);
+    const units = Math.abs(tx.units);
+    const vestPrice = Number(tx.price) || (units > 0 ? Math.abs(tx.amount) / units : 0);
+    const valueAtVest = vestPrice * units;
+    const matchedDesc = RSU_DESCRIPTION_KEYWORDS.test(tx.description ?? "");
+    out.push({
+      date,
+      symbol: sym,
+      units,
+      vestPrice,
+      valueAtVest,
+      source: matchedDesc ? "description" : "amzn-rule",
+    });
+  }
+  return out;
+}
+
+/**
+ * Returns ALL RSU vest events from the activity feed (any date).
+ * Used by display layers that want the full history (e.g. month markers).
+ */
+export function getAllRsuVests(txns: SnapTradeTxn[]): RsuVestEntry[] {
+  const out: RsuVestEntry[] = [];
+  for (const tx of txns) {
+    if (!isRsuVest(tx)) continue;
+    const date = txnDate(tx);
+    const sym = extractSymbol(tx);
+    const units = Math.abs(tx.units);
+    const vestPrice = Number(tx.price) || (units > 0 ? Math.abs(tx.amount) / units : 0);
+    const matchedDesc = RSU_DESCRIPTION_KEYWORDS.test(tx.description ?? "");
+    out.push({
+      date,
+      symbol: sym,
+      units,
+      vestPrice,
+      valueAtVest: vestPrice * units,
+      source: matchedDesc ? "description" : "amzn-rule",
+    });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -27,6 +27,8 @@ export interface SnapTradeTxn {
    * Treated as an opaque string; unknown types are ignored.
    */
   type: string;
+  /** Human-readable narrative. Used to detect RSU/VEST events from descriptions. */
+  description?: string;
   /** Share / contract quantity (always positive in SnapTrade). */
   units: number;
   /** Per-unit price (for equities) or per-contract premium (for options). */
@@ -126,4 +128,15 @@ export interface Snapshot {
   stocks: HeldStock[];
   options: HeldOption[];
   cash: number;
+}
+
+/** Single RSU vest event detected in the activity feed. */
+export interface RsuVestEntry {
+  date: string;        // YYYY-MM-DD
+  symbol: string;
+  units: number;
+  vestPrice: number;
+  valueAtVest: number;
+  /** Why we classified this as an RSU vest. */
+  source: "description" | "amzn-rule";
 }

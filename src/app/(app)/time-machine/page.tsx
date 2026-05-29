@@ -90,6 +90,12 @@ interface TimeMachineResult {
     };
     taxRateLabel: string;
   };
+  rsuVests?: {
+    items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
+    totalUnitsBySymbol: Record<string, number>;
+    totalValueAtVest: number;
+    monthsWithVests: string[];
+  };
   assumptions: string[];
 }
 
@@ -704,6 +710,71 @@ export default function TimeMachinePage() {
                 </div>
               )}
             </div>
+
+            {/* RSU vests — teal */}
+            {data.rsuVests && data.rsuVests.items.length > 0 && (
+              <div className="rounded-xl border border-teal-200 bg-teal-50 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase tracking-wider text-teal-700 font-semibold">
+                    RSU vests since snapshot
+                  </p>
+                  <p className="text-[10px] text-teal-700/70">added to sim portfolio</p>
+                </div>
+                <p className="text-[11px] text-teal-800 mb-2 mt-1">
+                  Vests in {data.rsuVests.monthsWithVests.length} month
+                  {data.rsuVests.monthsWithVests.length === 1 ? "" : "s"}:
+                  {" "}
+                  <span className="font-semibold">
+                    {data.rsuVests.monthsWithVests
+                      .map((m) => {
+                        const [y, mo] = m.split("-");
+                        return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+                      })
+                      .join(" · ")}
+                  </span>
+                </p>
+                <div className="bg-white border border-teal-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="text-teal-700/70 border-b border-teal-100">
+                        <th className="text-left px-2 py-1 font-medium">Date</th>
+                        <th className="text-left px-2 py-1 font-medium">Sym</th>
+                        <th className="text-right px-2 py-1 font-medium">Units</th>
+                        <th className="text-right px-2 py-1 font-medium">Vest $</th>
+                        <th className="text-right px-2 py-1 font-medium">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.rsuVests.items.map((v, i) => (
+                        <tr key={i} className="border-t border-teal-50">
+                          <td className="px-2 py-1 text-stone-600">{fmtDate(v.date)}</td>
+                          <td className="px-2 py-1 font-semibold text-stone-900">{v.symbol}</td>
+                          <td className="px-2 py-1 text-right text-stone-700 tabular-nums">{Math.round(v.units)}</td>
+                          <td className="px-2 py-1 text-right text-stone-500 tabular-nums">{fmtCurrency(v.vestPrice)}</td>
+                          <td className="px-2 py-1 text-right font-medium text-teal-700 tabular-nums">{fmtCurrency0(v.valueAtVest)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-teal-100 bg-teal-50/50">
+                        <td className="px-2 py-1.5 font-bold text-teal-900" colSpan={4}>
+                          Total vested
+                        </td>
+                        <td className="px-2 py-1.5 text-right font-bold text-teal-700 tabular-nums">
+                          {fmtCurrency0(data.rsuVests.totalValueAtVest)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <p className="text-[10px] text-teal-700/70 mt-2 italic">
+                  Detected via {data.rsuVests.items.some((v) => v.source === "description") ? "description keywords" : "AMZN-BUY fallback rule"}
+                  {data.rsuVests.items.some((v) => v.source === "amzn-rule") && data.rsuVests.items.some((v) => v.source === "description")
+                    ? " + description keywords"
+                    : ""}. Vested shares accrue without cash debit.
+                </p>
+              </div>
+            )}
 
             {/* Withdrawals — warm orange */}
             <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
