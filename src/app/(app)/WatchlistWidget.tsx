@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { cachedFetchJson } from "@/lib/client-cache";
 
 interface Ticker {
   symbol: string;
@@ -97,7 +98,7 @@ function InlineAdd({
       setSuggestions([]);
       return;
     }
-    const q = query.toUpperCase();
+    const q = query.toUpperCase().trim();
     const matches = ALL_TICKERS
       .filter((t) => t.includes(q) && !existingSymbols.has(t))
       .sort((a, b) => {
@@ -107,7 +108,15 @@ function InlineAdd({
         return aStart - bStart || a.localeCompare(b);
       })
       .slice(0, 5);
-    setSuggestions(matches);
+    // Always allow adding whatever the user typed (any ticker, e.g. "P").
+    // Prepend it as an explicit option if it's a valid-looking symbol
+    // (1-5 alphanumeric chars) and isn't already a match or already in the list.
+    const isValidSymbol = /^[A-Z][A-Z0-9.\-]{0,5}$/.test(q);
+    if (isValidSymbol && !matches.includes(q) && !existingSymbols.has(q)) {
+      setSuggestions([q, ...matches.slice(0, 4)]);
+    } else {
+      setSuggestions(matches);
+    }
   }, [query, existingSymbols]);
 
   async function addTicker(symbol: string) {
@@ -155,16 +164,24 @@ function InlineAdd({
 
       {/* Autocomplete dropdown */}
       {suggestions.length > 0 && (
-        <div className="absolute top-6 left-0 z-20 w-28 rounded-lg bg-white border border-stone-200 shadow-lg py-1">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => addTicker(s)}
-              className="w-full text-left px-3 py-1.5 text-[11px] font-bold text-stone-800 hover:bg-sky-50 hover:text-sky-700 transition-colors"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="absolute top-6 left-0 z-20 w-32 rounded-lg bg-white border border-stone-200 shadow-lg py-1">
+          {suggestions.map((s, i) => {
+            const typedQ = query.toUpperCase().trim();
+            const isTypedExact = i === 0 && s === typedQ && !ALL_TICKERS.includes(s);
+            return (
+              <button
+                key={s}
+                onClick={() => addTicker(s)}
+                className={`w-full text-left px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                  isTypedExact
+                    ? "text-sky-700 hover:bg-sky-100 border-b border-stone-100"
+                    : "text-stone-800 hover:bg-sky-50 hover:text-sky-700"
+                }`}
+              >
+                {isTypedExact ? `Add "${s}" →` : s}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -181,14 +198,13 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
 
-  // Fetch sparklines for all tickers on mount
+  // Fetch sparklines for all tickers on mount — cached for fast navigation
   const fetchSparklines = useCallback(async () => {
     const allSymbols = [...new Set(initial.flatMap((wl) => wl.tickers.map((t) => t.symbol)))];
     if (allSymbols.length === 0) return;
     try {
-      const res = await fetch(`/api/sparklines?symbols=${allSymbols.join(",")}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const url = `/api/sparklines?symbols=${allSymbols.join(",")}`;
+      const data = await cachedFetchJson<{ sparklines?: Record<string, number[]> }>(url, { ttlMs: 5 * 60_000 });
       setSparklines(data.sparklines || {});
     } catch {
       // silent

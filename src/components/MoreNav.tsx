@@ -68,17 +68,16 @@ export const MORE_GROUPS: MoreGroup[] = [
   },
 ];
 
-/** Compact tile used on the /more page grid. */
+/** Square tile used on the /more page grid. */
 export function MoreTile({ link, onClick }: { link: MoreLink; onClick?: () => void }) {
   return (
     <Link
       href={link.href}
       onClick={onClick}
-      className="rounded-xl border border-stone-200 bg-white px-2.5 py-2 flex flex-col items-start gap-0.5 hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100 transition-colors min-w-0"
+      className="aspect-square rounded-xl border border-stone-200 bg-white p-2 flex flex-col items-center justify-center gap-1 text-center hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100 transition-colors min-w-0"
     >
-      <span className="text-base leading-none">{link.emoji}</span>
-      <span className="text-[11px] font-bold text-stone-900 leading-tight truncate w-full">{link.title}</span>
-      <span className="text-[9px] text-stone-400 leading-snug line-clamp-2">{link.description}</span>
+      <span className="text-2xl leading-none">{link.emoji}</span>
+      <span className="text-[11px] font-bold text-stone-900 leading-tight line-clamp-2 w-full">{link.title}</span>
     </Link>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AIModelBadge } from "@/components/AIModelBadge";
+import { cachedFetchJson, invalidateCache } from "@/lib/client-cache";
 
 // --- Earnings types ---
 
@@ -175,9 +176,7 @@ export default function TodayPage() {
   const fetchMovers = useCallback(async () => {
     setMoversLoading(true);
     try {
-      const res = await fetch("/api/movers");
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await cachedFetchJson<{ movers?: Mover[] }>("/api/movers", { ttlMs: 5 * 60_000 });
       setMovers(data.movers || []);
       setMoversError(null);
     } catch {
@@ -191,8 +190,7 @@ export default function TodayPage() {
   const fetchRecs = useCallback(async () => {
     setRecsLoading(true);
     try {
-      const res = await fetch("/api/recommendations");
-      const data = await res.json();
+      const data = await cachedFetchJson<{ recommendations?: ThemeResult[]; running?: unknown[]; error?: string }>("/api/recommendations", { ttlMs: 5 * 60_000 });
       if (data.error) {
         setRecsError(data.error);
       } else {
@@ -211,9 +209,7 @@ export default function TodayPage() {
   const fetchFlow = useCallback(async () => {
     setFlowLoading(true);
     try {
-      const res = await fetch("/api/flow");
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await cachedFetchJson<{ flow?: FlowSummary[] }>("/api/flow", { ttlMs: 5 * 60_000 });
       setFlow(data.flow || []);
       setFlowError(null);
     } catch {
@@ -224,7 +220,12 @@ export default function TodayPage() {
     }
   }, []);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (forceFresh = false) => {
+    if (forceFresh) {
+      invalidateCache("/api/movers");
+      invalidateCache("/api/recommendations");
+      invalidateCache("/api/flow");
+    }
     await Promise.allSettled([fetchMovers(), fetchRecs(), fetchFlow()]);
     setLastUpdated(Date.now());
   }, [fetchMovers, fetchRecs, fetchFlow]);
@@ -272,7 +273,7 @@ export default function TodayPage() {
           />
         </div>
         <button
-          onClick={fetchAll}
+          onClick={() => fetchAll(true)}
           disabled={anyLoading}
           className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 active:bg-sky-800 transition-colors disabled:opacity-50"
         >

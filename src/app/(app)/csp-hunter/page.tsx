@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AIModelBadge } from "@/components/AIModelBadge";
+import { cachedFetchJson, invalidateCache } from "@/lib/client-cache";
 
 type Candidate = {
   symbol: string;
@@ -138,9 +139,8 @@ export default function OptionsScannerPage() {
 
   const fetchScans = useCallback(async (selectLatest = false) => {
     try {
-      const res = await fetch("/api/csp-hunter");
-      if (!res.ok) return;
-      const data = await res.json();
+      if (selectLatest) invalidateCache("/api/csp-hunter");
+      const data = await cachedFetchJson<{ scans?: ScanRecord[] }>("/api/csp-hunter", { ttlMs: 5 * 60_000 });
       const fetched = data.scans || [];
       setScans(fetched);
       if (fetched.length > 0) {
@@ -178,9 +178,7 @@ export default function OptionsScannerPage() {
   const fetchWeekly = useCallback(async () => {
     setWeeklyLoading(true);
     try {
-      const res = await fetch("/api/csp-hunter/weekly-recap");
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await cachedFetchJson<WeeklyRecap>("/api/csp-hunter/weekly-recap", { ttlMs: 10 * 60_000 });
       setWeekly(data);
     } catch {
       // silent
