@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRefreshEvent } from "@/hooks/useRefreshEvent";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
@@ -932,9 +933,18 @@ export default function PortfolioPage() {
       {/* Summary */}
       <div className="px-4 pt-4 pb-2">
         <div className="bg-white border border-stone-100 rounded-2xl px-5 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-xs text-stone-400 font-medium uppercase tracking-wider mb-1">Year so far</div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-xs text-stone-400 font-medium uppercase tracking-wider">Year so far</div>
+                <Link
+                  href="/time-machine"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-1.5 py-0.5 rounded transition-colors"
+                  title="What if you'd stopped trading on a past date?"
+                >
+                  <span>⏰</span> Time Machine
+                </Link>
+              </div>
               <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {closedPnl >= 0 ? "+" : ""}{fmtCurrency(closedPnl)}
               </div>

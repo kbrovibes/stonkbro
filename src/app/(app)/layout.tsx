@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
 import { createClient } from "@/lib/supabase-server";
+import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
 export default async function AppLayout({
   children,
@@ -10,7 +11,7 @@ export default async function AppLayout({
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const showPortfolio = user?.email === "k4rthikr@gmail.com";
+  const showPortfolio = hasPortfolioAccess(user?.email);
   const isGuest = !user;
 
   return (

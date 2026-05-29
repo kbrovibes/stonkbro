@@ -4,7 +4,12 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 export type MoreLink = { title: string; description: string; href: string; emoji: string };
-export type MoreGroup = { label: string; icon: ReactNode; links: MoreLink[] };
+export type MoreGroup = { label: string; icon: ReactNode; links: MoreLink[]; requiresPortfolio?: boolean };
+
+/** Filter MORE_GROUPS for the current user's access level. */
+export function getVisibleMoreGroups(hasPortfolioAccess: boolean): MoreGroup[] {
+  return MORE_GROUPS.filter((g) => !g.requiresPortfolio || hasPortfolioAccess);
+}
 
 export const MORE_GROUPS: MoreGroup[] = [
   {
@@ -42,6 +47,7 @@ export const MORE_GROUPS: MoreGroup[] = [
   },
   {
     label: "Portfolio",
+    requiresPortfolio: true,
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />

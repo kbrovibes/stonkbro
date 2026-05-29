@@ -5,14 +5,14 @@ import { getPortfolio, getTransactions, getOptionChains, getAllActivities } from
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const ALLOWED_EMAIL = "k4rthikr@gmail.com";
+import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.email !== ALLOWED_EMAIL) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const include = searchParams.get("include") ?? "portfolio";

@@ -20,7 +20,7 @@ import { SnapTradeTxn } from "@/lib/time-machine/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const ALLOWED_EMAIL = "k4rthikr@gmail.com";
+import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
 /** Last calendar day of the month for a given (year, monthIndex 0-11). */
 function lastDayOfMonth(year: number, monthIdx: number): string {
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.email !== ALLOWED_EMAIL) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const fromISO = searchParams.get("from") ?? "2025-01-01";

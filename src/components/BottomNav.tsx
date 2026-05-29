@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MORE_GROUPS } from "@/components/MoreNav";
+import { getVisibleMoreGroups } from "@/components/MoreNav";
 
 const tabs = [
   {
@@ -67,6 +67,7 @@ const guestTabs = [
 
 export default function BottomNav({
   isGuest = false,
+  showPortfolio = false,
 }: {
   showPortfolio?: boolean;
   isGuest?: boolean;
@@ -74,6 +75,7 @@ export default function BottomNav({
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const visibleTabs = isGuest ? guestTabs : tabs;
+  const moreGroups = getVisibleMoreGroups(showPortfolio);
 
   // Close popup whenever the route changes
   useEffect(() => { setMoreOpen(false); }, [pathname]);
@@ -99,45 +101,38 @@ export default function BottomNav({
             onClick={() => setMoreOpen(false)}
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
-          {/* Drop-up: compact text list grouped by section */}
-          <div className="fixed bottom-[64px] left-0 right-0 z-50 bg-white border-t border-stone-200 rounded-t-2xl shadow-2xl max-h-[75vh] overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-2 pt-2 pb-3">
-              {/* Drag handle */}
-              <div className="flex justify-center mb-1.5">
-                <div className="h-1 w-10 rounded-full bg-stone-200" />
-              </div>
+          {/* Drop-up: anchored above the More button, width = longest entry */}
+          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] overflow-y-auto w-max max-w-[min(80vw,320px)] py-1.5 px-1">
+            {moreGroups.map((group) => (
+              <section key={group.label} className="mb-1 last:mb-0">
+                <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
+                  <span className="text-stone-400">{group.icon}</span>
+                  <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wide whitespace-nowrap">{group.label}</span>
+                </div>
+                <ul>
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setMoreOpen(false)}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors whitespace-nowrap"
+                      >
+                        <span className="text-sm leading-none w-5 text-center">{link.emoji}</span>
+                        <span className="text-[13px] font-medium text-stone-800">{link.title}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
 
-              {MORE_GROUPS.map((group) => (
-                <section key={group.label} className="mb-1.5 last:mb-0">
-                  <div className="flex items-center gap-1.5 px-2 py-1">
-                    <span className="text-stone-400">{group.icon}</span>
-                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wide">{group.label}</span>
-                  </div>
-                  <ul>
-                    {group.links.map((link) => (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          onClick={() => setMoreOpen(false)}
-                          className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-stone-50 active:bg-sky-50 transition-colors"
-                        >
-                          <span className="text-sm leading-none w-5 text-center">{link.emoji}</span>
-                          <span className="text-[13px] font-medium text-stone-800">{link.title}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-
-              <Link
-                href="/more"
-                onClick={() => setMoreOpen(false)}
-                className="mt-1.5 block text-center text-xs font-semibold text-sky-600 hover:text-sky-800 active:bg-sky-50 py-2 rounded-lg border border-sky-200"
-              >
-                View All &rarr;
-              </Link>
-            </div>
+            <Link
+              href="/more"
+              onClick={() => setMoreOpen(false)}
+              className="mt-1 mx-1 block text-center text-[11px] font-semibold text-sky-600 hover:text-sky-800 active:bg-sky-50 py-1.5 rounded-md border border-sky-200 whitespace-nowrap"
+            >
+              View All &rarr;
+            </Link>
           </div>
         </>
       )}

@@ -1,13 +1,17 @@
-"use client";
+import { getVisibleMoreGroups, MoreTile } from "@/components/MoreNav";
+import { createClient } from "@/lib/supabase-server";
+import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
-import { MORE_GROUPS, MoreTile } from "@/components/MoreNav";
+export default async function MorePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const groups = getVisibleMoreGroups(hasPortfolioAccess(user?.email));
 
-export default function MorePage() {
   return (
     <div className="flex flex-col flex-1 px-3 py-4 gap-4">
       <h2 className="text-lg font-bold text-stone-900 px-1">More</h2>
 
-      {MORE_GROUPS.map((group) => (
+      {groups.map((group) => (
         <section key={group.label} className="flex flex-col gap-2">
           <div className="flex items-center gap-2 px-1">
             <span className="text-stone-500">{group.icon}</span>
