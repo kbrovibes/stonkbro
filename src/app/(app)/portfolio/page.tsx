@@ -119,7 +119,7 @@ function fmtMonthShort(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-type FilterTab = "Open" | "Closed" | "Assigned" | "Monthly";
+type FilterTab = "Monthly" | "Open" | "Closed" | "Assigned" | "Archive";
 
 // Annualized return on collateral for closed PUT chains
 function annualizedReturnPct(chain: OptionChain): number | null {
@@ -554,7 +554,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
   );
 }
 
-function MonthlyView({ chains }: { chains: OptionChain[] }) {
+function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yearFilter?: string | null }) {
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -563,8 +563,20 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [expandedCollateral, setExpandedCollateral] = useState<Set<string>>(new Set());
 
-  const realized = chains.filter(c => c.close_month && (c.status === "CLOSED" || c.status === "EXPIRED"));
-  const putCapitalData = computePutCapitalPeaks(chains);
+  // When yearFilter is set, restrict every chain set to that year only.
+  const inYear = (m: string | null | undefined) => !yearFilter || (m != null && m.startsWith(yearFilter));
+  const chainStartsInYear = (c: OptionChain) => !yearFilter || c.start_date.startsWith(yearFilter) || (c.close_month?.startsWith(yearFilter) ?? false);
+
+  const realized = chains
+    .filter(c => c.close_month && (c.status === "CLOSED" || c.status === "EXPIRED"))
+    .filter(c => inYear(c.close_month));
+  const putCapitalData = (() => {
+    const all = computePutCapitalPeaks(chains.filter(chainStartsInYear));
+    if (!yearFilter) return all;
+    const filtered = new Map<string, PutCapitalMonthData>();
+    for (const [k, v] of all) { if (inYear(k)) filtered.set(k, v); }
+    return filtered;
+  })();
 
   const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
   for (const c of realized) {
@@ -581,6 +593,7 @@ function MonthlyView({ chains }: { chains: OptionChain[] }) {
     const leg = findOpenLeg(c);
     if (!leg || leg.expiry < todayStr) continue;
     const expMonth = leg.expiry.substring(0, 7);
+    if (!inYear(expMonth)) continue;
     if (!bestCaseByMonth.has(expMonth)) bestCaseByMonth.set(expMonth, { gain: 0, chains: [] });
     bestCaseByMonth.get(expMonth)!.gain += c.net_pnl;
     bestCaseByMonth.get(expMonth)!.chains.push(c);
@@ -798,7 +811,7 @@ export default function PortfolioPage() {
   const [chains, setChains] = useState<OptionChain[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterTab>("Open");
+  const [filter, setFilter] = useState<FilterTab>("Monthly");
   type OpenSort = "expiry" | "collateral" | "pnl" | "type" | "ticker";
   const [openSort, setOpenSort] = useState<OpenSort>("expiry");
   type ClosedSort = "date" | "pnl" | "annReturn" | "ticker" | "type";
@@ -867,7 +880,7 @@ export default function PortfolioPage() {
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Open", "Closed", "Assigned", "Monthly"];
+  const TABS: FilterTab[] = ["Monthly", "Open", "Closed", "Assigned", "Archive"];
 
   const sortedOpen = [...open].sort((a, b) => {
     switch (openSort) {
@@ -1021,7 +1034,9 @@ export default function PortfolioPage() {
       {/* Content */}
       <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
         {filter === "Monthly" ? (
-          <MonthlyView chains={chains} />
+          <MonthlyView chains={chains} yearFilter={new Date().getFullYear().toString()} />
+        ) : filter === "Archive" ? (
+          <MonthlyView chains={chains} yearFilter={null} />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">No {filter.toLowerCase()} positions</p>
         ) : (
