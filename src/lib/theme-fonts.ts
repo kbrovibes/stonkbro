@@ -18,8 +18,14 @@ export interface ThemeFont {
 
 export const THEME_FONTS: ThemeFont[] = [
   {
+    key: "space",
+    label: "Space Grotesk (default)",
+    googleUrl: null,
+    family: "var(--font-space), system-ui, sans-serif",
+  },
+  {
     key: "jakarta",
-    label: "Plus Jakarta (default)",
+    label: "Plus Jakarta",
     googleUrl: null,
     family: "var(--font-jakarta), system-ui, sans-serif",
   },
@@ -48,12 +54,6 @@ export const THEME_FONTS: ThemeFont[] = [
     family: "'Sora', system-ui, sans-serif",
   },
   {
-    key: "space",
-    label: "Space Grotesk",
-    googleUrl: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap",
-    family: "'Space Grotesk', system-ui, sans-serif",
-  },
-  {
     key: "manrope",
     label: "Manrope",
     googleUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap",
@@ -80,7 +80,7 @@ export const THEME_FONTS: ThemeFont[] = [
 ];
 
 export const THEME_FONT_STORAGE_KEY = "stonkbro-theme-font";
-export const DEFAULT_THEME_FONT_KEY = "jakarta";
+export const DEFAULT_THEME_FONT_KEY = "space";
 
 export function findThemeFont(key: string | null | undefined): ThemeFont {
   return THEME_FONTS.find((f) => f.key === key) ?? THEME_FONTS[0];

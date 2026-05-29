@@ -17,7 +17,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   /* `--app-font` is set at runtime by ThemeFontProvider based on the user's
-     Settings choice. Defaults to the bundled Plus Jakarta Sans. */
-  font-family: var(--app-font, var(--font-jakarta), system-ui, sans-serif);
+     Settings choice. Default is the bundled Space Grotesk. */
+  font-family: var(--app-font, var(--font-space), system-ui, sans-serif);
   overscroll-behavior: none; /* disable browser pull-to-refresh so PWA handles it */
 }

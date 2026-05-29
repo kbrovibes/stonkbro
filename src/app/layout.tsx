@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Geist_Mono, Black_Ops_One } from "next/font/google";
+import { Plus_Jakarta_Sans, Geist_Mono, Black_Ops_One, Space_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -22,6 +22,12 @@ const blackOpsOne = Black_Ops_One({
   variable: "--font-black-ops",
   subsets: ["latin"],
   weight: "400",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -53,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <ThemeFontProvider />
