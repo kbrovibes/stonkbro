@@ -333,65 +333,65 @@ export default function TodayPage() {
         )}
 
         {!moversLoading && movers.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {movers.map((m) => {
               const isUp = m.direction === "up";
               return (
                 <div
                   key={m.symbol}
-                  className={`rounded-xl border bg-white px-3 py-2.5 ${
+                  className={`rounded-xl border bg-white px-2 py-2 ${
                     isUp ? "border-emerald-200" : "border-red-200"
                   }`}
                 >
                   {/* Top row: symbol, change, volume */}
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className={`text-xs font-bold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                  <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                    <span className={`text-[11px] font-bold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
                       {isUp ? "▲" : "▼"}
                     </span>
                     <Link
                       href={`/ticker/${m.symbol}`}
-                      className="text-xs font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                      className="text-[11px] font-bold text-stone-900 hover:text-sky-600 transition-colors"
                     >
                       {m.symbol}
                     </Link>
-                    <span className={`text-[10px] font-semibold tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                    <span className={`text-[9px] font-semibold tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
                       {isUp ? "+" : ""}{m.changePct.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-stone-400">
+                    <span className="text-[9px] text-stone-400">
                       {m.volumeRatio.toFixed(1)}x
                     </span>
                   </div>
 
                   {/* Name + price */}
-                  <p className="text-[10px] text-stone-500 mb-1.5">
+                  <p className="text-[9px] text-stone-500 mb-1 truncate">
                     {m.name} &middot; ${m.price.toFixed(2)}
                   </p>
 
                   {/* Suggested play */}
-                  <p className="text-[10px] font-medium text-stone-800 mb-0.5">
+                  <p className="text-[9px] font-medium text-stone-800 mb-0.5">
                     {m.suggestedPlay}
                   </p>
-                  <p className="text-[10px] text-stone-500 leading-snug mb-2">
+                  <p className="text-[9px] text-stone-500 leading-snug mb-1.5">
                     {m.reasoning}
                   </p>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 justify-end flex-wrap">
+                  <div className="flex items-center gap-1 justify-end flex-wrap">
                     <Link
                       href={`/ticker/${m.symbol}`}
-                      className="text-[10px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                      className="text-[9px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
                     >
                       Research &rarr;
                     </Link>
                     <Link
                       href={`/suggestions/${m.symbol}`}
-                      className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                      className="text-[9px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
                     >
                       Options &rarr;
                     </Link>
                     <Link
                       href={`/positions/new?symbol=${m.symbol}&strategy=Cash-Secured Put`}
-                      className="inline-flex items-center rounded-lg bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
+                      className="inline-flex items-center rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
                     >
                       Log Trade
                     </Link>
@@ -449,7 +449,7 @@ export default function TodayPage() {
         )}
 
         {!recsLoading && recommendations.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {recommendations.map((rec) => {
               const meta = THEME_META[rec.theme] || { label: rec.theme, emoji: "📊" };
               const isCollapsed = collapsed[rec.theme] ?? false;
@@ -459,20 +459,20 @@ export default function TodayPage() {
                   {/* Theme header */}
                   <button
                     onClick={() => toggleTheme(rec.theme)}
-                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-stone-50 active:bg-sky-50 transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 active:bg-sky-50 transition-colors"
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 min-w-0">
                       <svg
-                        className={`w-3 h-3 text-stone-400 transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}
+                        className={`w-3 h-3 shrink-0 text-stone-400 transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}
                         fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                       </svg>
-                      <span className="text-sm">{meta.emoji}</span>
-                      <span className="text-xs font-bold text-stone-900">{meta.label}</span>
-                      <span className="text-[10px] text-stone-400 font-medium">{rec.picks.length} picks</span>
+                      <span className="text-xs">{meta.emoji}</span>
+                      <span className="text-[11px] font-bold text-stone-900 truncate">{meta.label}</span>
+                      <span className="text-[9px] text-stone-400 font-medium shrink-0">{rec.picks.length}</span>
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    <span className={`text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0 ${
                       isStale(rec.generatedAt)
                         ? "text-amber-700 bg-amber-50"
                         : "text-stone-400"
@@ -483,28 +483,28 @@ export default function TodayPage() {
 
                   {/* Picks */}
                   {!isCollapsed && (
-                    <div className="px-3 pb-2 flex flex-col gap-1.5">
+                    <div className="px-2 pb-1.5 flex flex-col gap-1">
                       {rec.picks.map((pick, i) => (
                         <div
                           key={`${pick.symbol}-${i}`}
-                          className="rounded-lg bg-stone-50 px-2.5 py-2"
+                          className="rounded-lg bg-stone-50 px-2 py-1.5"
                         >
                           {/* Ticker row */}
-                          <div className="flex items-center justify-between mb-0.5">
-                            <div className="flex items-center gap-1.5">
+                          <div className="flex items-center justify-between mb-0.5 gap-1">
+                            <div className="flex items-center gap-1 min-w-0 flex-wrap">
                               <Link
                                 href={`/ticker/${pick.symbol}`}
-                                className="text-xs font-bold text-sky-600 hover:text-sky-800 transition-colors"
+                                className="text-[11px] font-bold text-sky-600 hover:text-sky-800 transition-colors"
                               >
                                 {pick.symbol}
                               </Link>
                               {pick.price != null && (
-                                <span className="text-[10px] text-stone-500 tabular-nums">
+                                <span className="text-[9px] text-stone-500 tabular-nums">
                                   ${pick.price.toFixed(2)}
                                 </span>
                               )}
                               {pick.changePct != null && (
-                                <span className={`text-[10px] font-semibold tabular-nums ${
+                                <span className={`text-[9px] font-semibold tabular-nums ${
                                   pick.changePct >= 0 ? "text-emerald-600" : "text-red-500"
                                 }`}>
                                   {pick.changePct >= 0 ? "+" : ""}{pick.changePct.toFixed(1)}%
@@ -512,33 +512,33 @@ export default function TodayPage() {
                               )}
                             </div>
                             {pick.strike && pick.premium && (
-                              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                                ${pick.premium.toFixed(2)} prem
+                              <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded-full shrink-0">
+                                ${pick.premium.toFixed(2)}
                               </span>
                             )}
                           </div>
 
                           {/* Action */}
-                          <p className="text-[10px] font-medium text-stone-800 mb-0.5">{pick.action}</p>
+                          <p className="text-[9px] font-medium text-stone-800 mb-0.5">{pick.action}</p>
 
                           {/* Rationale */}
-                          <p className="text-[10px] text-stone-500 leading-snug">{pick.rationale}</p>
+                          <p className="text-[9px] text-stone-500 leading-snug">{pick.rationale}</p>
 
                           {/* Optional details */}
                           {(pick.target || pick.risk || pick.annualizedReturn) && (
-                            <div className="flex flex-wrap gap-2 mt-1.5">
+                            <div className="flex flex-wrap gap-1 mt-1">
                               {pick.target && (
-                                <span className="text-[10px] text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] text-sky-600 bg-sky-50 px-1 py-0.5 rounded">
                                   Target: {pick.target}
                                 </span>
                               )}
                               {pick.annualizedReturn && (
-                                <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">
                                   {pick.annualizedReturn}
                                 </span>
                               )}
                               {pick.risk && (
-                                <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] text-red-500 bg-red-50 px-1 py-0.5 rounded">
                                   Risk: {pick.risk}
                                 </span>
                               )}
@@ -546,18 +546,18 @@ export default function TodayPage() {
                           )}
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2 justify-end mt-1.5">
+                          <div className="flex items-center gap-1 justify-end mt-1 flex-wrap">
                             <Link
                               href={`/ticker/${pick.symbol}`}
-                              className="text-[10px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                              className="text-[9px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
                             >
                               Research &rarr;
                             </Link>
                             <Link
                               href={`/positions/new?symbol=${pick.symbol}&strategy=${encodeURIComponent(pick.action?.split(" ")[0] === "Sell" ? "Cash-Secured Put" : "Covered Call")}`}
-                              className="inline-flex items-center rounded-lg bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
+                              className="inline-flex items-center rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
                             >
-                              Log Trade
+                              Log
                             </Link>
                           </div>
                         </div>
@@ -605,7 +605,7 @@ export default function TodayPage() {
         )}
 
         {!flowLoading && flow.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {flow.map((f) => {
               const sentMeta = SENTIMENT_META[f.sentiment] || SENTIMENT_META.neutral;
               const isExpanded = flowExpanded[f.symbol] ?? false;
@@ -615,11 +615,11 @@ export default function TodayPage() {
                   {/* Header — always visible */}
                   <button
                     onClick={() => setFlowExpanded((prev) => ({ ...prev, [f.symbol]: !prev[f.symbol] }))}
-                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-stone-50 active:bg-violet-50 transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 active:bg-violet-50 transition-colors gap-1"
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 min-w-0 flex-wrap">
                       <svg
-                        className={`w-3 h-3 text-stone-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                        className={`w-3 h-3 shrink-0 text-stone-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                         fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -627,19 +627,19 @@ export default function TodayPage() {
                       <Link
                         href={`/ticker/${f.symbol}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                        className="text-[11px] font-bold text-stone-900 hover:text-sky-600 transition-colors"
                       >
                         {f.symbol}
                       </Link>
-                      <span className="text-[10px] text-stone-400 tabular-nums">${f.price.toFixed(2)}</span>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${sentMeta.bg} ${sentMeta.color}`}>
+                      <span className="text-[9px] text-stone-400 tabular-nums">${f.price.toFixed(2)}</span>
+                      <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-full ${sentMeta.bg} ${sentMeta.color}`}>
                         {sentMeta.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-stone-400">{f.signals.length} signal{f.signals.length !== 1 ? "s" : ""}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[9px] text-stone-400">{f.signals.length}</span>
                       {/* Activity score bar */}
-                      <div className="w-12 h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                      <div className="w-8 h-1 rounded-full bg-stone-100 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
                             f.activityScore >= 60 ? "bg-violet-500" : f.activityScore >= 30 ? "bg-amber-400" : "bg-stone-300"
@@ -651,9 +651,9 @@ export default function TodayPage() {
                   </button>
 
                   {/* Stats row */}
-                  <div className="px-3 pb-1.5 flex items-center gap-3 text-[10px] text-stone-400">
-                    <span>Calls: {f.totalCallVolume.toLocaleString()} vol</span>
-                    <span>Puts: {f.totalPutVolume.toLocaleString()} vol</span>
+                  <div className="px-2 pb-1 flex items-center gap-2 text-[9px] text-stone-400 flex-wrap">
+                    <span>C: {f.totalCallVolume.toLocaleString()}</span>
+                    <span>P: {f.totalPutVolume.toLocaleString()}</span>
                     {f.putCallRatio != null && (
                       <span className={f.putCallRatio >= 1.5 ? "text-red-500 font-semibold" : f.putCallRatio <= 0.5 ? "text-emerald-600 font-semibold" : ""}>
                         P/C: {f.putCallRatio.toFixed(2)}
@@ -663,7 +663,7 @@ export default function TodayPage() {
 
                   {/* Expanded signals */}
                   {isExpanded && (
-                    <div className="px-3 pb-2 flex flex-col gap-1">
+                    <div className="px-2 pb-1.5 flex flex-col gap-1">
                       {f.signals.map((sig, i) => {
                         const dirColor = sig.direction === "bullish"
                           ? "text-emerald-600"
@@ -672,18 +672,18 @@ export default function TodayPage() {
                           : "text-stone-500";
 
                         return (
-                          <div key={i} className="rounded-lg bg-stone-50 px-2.5 py-1.5">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                          <div key={i} className="rounded-lg bg-stone-50 px-2 py-1">
+                            <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                              <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1 py-0.5 rounded">
                                 {FLOW_TYPE_LABELS[sig.type] || sig.type}
                               </span>
-                              <span className={`text-[10px] font-semibold ${dirColor}`}>
-                                {sig.direction === "bullish" ? "▲" : sig.direction === "bearish" ? "▼" : "—"} {sig.direction}
+                              <span className={`text-[9px] font-semibold ${dirColor}`}>
+                                {sig.direction === "bullish" ? "▲" : sig.direction === "bearish" ? "▼" : "—"}
                               </span>
                               <div className="flex-1" />
-                              <span className="text-[10px] text-stone-400">sig: {sig.significance}</span>
+                              <span className="text-[9px] text-stone-400">{sig.significance}</span>
                             </div>
-                            <p className="text-[10px] text-stone-600">{sig.description}</p>
+                            <p className="text-[9px] text-stone-600 leading-snug">{sig.description}</p>
                           </div>
                         );
                       })}
@@ -692,9 +692,9 @@ export default function TodayPage() {
                       <div className="flex justify-end mt-1">
                         <Link
                           href={`/suggestions/${f.symbol}`}
-                          className="text-xs font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                          className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
                         >
-                          View Options &rarr;
+                          Options &rarr;
                         </Link>
                       </div>
                     </div>
