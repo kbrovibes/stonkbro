@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.22.0 — Portfolio Manager
+
+- **Portfolio Manager** (`/portfolio-manager`): AI-driven daily research and BUY/SELL ratings for every stock in your connected portfolio, plus a $100K reallocation plan
+- **Per-ticker analysis**: rating (STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL), confidence, thesis, reasons, risks, catalysts, suggested action — all from one batched AI call
+- **$100K reallocation plan**: treats current holdings as capital to reallocate; recommends SELL/TRIM/HOLD/ADD/BUY actions capped at $100K new deployment
+- **Schedule**: one cron at market open (13:30 UTC weekdays), plus a fire-and-forget ride-along on the existing `/api/cron` (16:00 ET and 19:30 ET closes)
+- **Force-regen**: "Re-run now" button on the page with 10-minute concurrency guard
+- **Holdings cache**: SnapTrade holdings fetched once per UTC day in `portfolio_manager_holdings_cache`
+- **Enrichment**: per-ticker quote, RSI(14), MACD, SMA 50/200, volume ratio, 52w distance, plus Yahoo Finance news headlines (no API key required, 30-min in-memory cache)
+- **AI provider**: honors `preferred_ai_provider` / `preferred_ai_model` from user settings with auto-fallback
+- **UI**: expandable-row table (not cards), color-coded rating pills, confidence bars, rating filter, allocation card with capital released/deployed pills
+- **Navigation**: accessible from More page → Portfolio group → "Portfolio Manager" tile
+- **Schema**: new tables `portfolio_manager_scans` and `portfolio_manager_holdings_cache` with RLS
+
 ## v0.21.0 — Portfolio Page (SnapTrade Live Data)
 
 - **Portfolio Page**: New `/portfolio` page showing live brokerage data via SnapTrade API

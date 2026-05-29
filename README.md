@@ -37,6 +37,9 @@ Log your trades with full multi-leg support. PMCC with a LEAPS call and short ca
 ### Portfolio (Live P&L)
 See your actual P&L calculated from Supabase positions + live Yahoo Finance quotes. Summary cards for total P&L, premium collected, and active position count. Each position card breaks down individual leg performance.
 
+### Portfolio Manager
+AI-driven daily research for every stock in your connected SnapTrade portfolio. Each ticker gets a STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL rating with confidence, thesis, reasons, risks, and a suggested action — pulled from a single batched AI call that also produces a $100K reallocation plan (SELL/TRIM/HOLD/ADD/BUY) treating your current holdings as redeployable capital. Runs at market open and ride-alongs on the close cron; "Re-run now" button for on-demand. Expandable-row table with color-coded ratings, RSI/SMA/MACD/52w technicals, and Yahoo Finance headlines per ticker.
+
 ### Trade Signals
 Real-time alerts against your active positions:
 - **CLOSE** — Short options at 50%+ profit
@@ -202,6 +205,9 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.22.0** | Portfolio Manager (AI ratings + $100K reallocation plan) |
+| **v0.21.0** | Portfolio Page (SnapTrade Live Data) |
+| **v0.20.0** | CSP Alpha Hunter |
 | **v0.8.0** | All Real Data: No More Mocks |
 | **v0.7.0** | Full App: Watchlists, Positions, Research, Suggestions |
 | **v0.6.0** | Cron Alerts & Trade Signals |
