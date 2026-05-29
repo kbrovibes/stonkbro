@@ -419,6 +419,9 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             <span className="font-bold text-stone-900 text-sm">
               {chain.underlying} {chain.option_type}
             </span>
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chain.direction === "SELL" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"}`}>
+              {chain.direction === "SELL" ? "SHORT" : "LONG"}
+            </span>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[chain.status] ?? "bg-stone-100 text-stone-500"}`}>
               {chain.status}
             </span>

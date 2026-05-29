@@ -237,6 +237,7 @@ export interface OptionChain {
   open_units: number;
   roll_count: number;
   close_month: string | null; // "YYYY-MM" of end_date, for monthly grouping
+  direction: "SELL" | "BUY"; // first action — SELL = short/income, BUY = long/directional
 }
 
 export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionChain[]> {
@@ -274,7 +275,14 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
         amount: Number(t.amount ?? 0),
       };
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    // Sort by date; on ties, SELL/OPTIONEXPIRATION/OPTIONASSIGNMENT before BUY
+    // so a same-day SELL→BUY-to-close chain doesn't get misclassified as BUY-first.
+    .sort((a, b) => {
+      const d = a.date.localeCompare(b.date);
+      if (d !== 0) return d;
+      const rank = (t: string) => t === "BUY" ? 1 : 0;
+      return rank(a.type) - rank(b.type);
+    });
 
   // ── Step 1: per-contract chains (grouped by strike+expiry) ───────────────
   // Prevents mixing of simultaneous positions at different strikes/expiries.
@@ -368,6 +376,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
       open_units: last.open_units,
       roll_count: seq.length - 1,
       close_month: end_date ? end_date.substring(0, 7) : null,
+      direction: seq[0].first_action === "BUY" ? "BUY" : "SELL",
     };
   };
 
