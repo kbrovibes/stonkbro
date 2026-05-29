@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 // =========================================================================
 // Types — mirrors GET /api/portfolio/time-machine response shape from spec
@@ -171,6 +172,13 @@ export default function TimeMachinePage() {
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   // Privacy: hide exact dollar deltas on month buttons (for screenshot sharing).
   const [showDeltas, setShowDeltas] = useState(true);
+  // Months currently being backfilled (auto-batch). Used for pulsing UI.
+  const [inProgressMonths, setInProgressMonths] = useState<Set<string>>(new Set());
+  const [autoBatchKickedOff, setAutoBatchKickedOff] = useState(false);
+
+  // Helper: page-wide currency formatting that honors the privacy toggle.
+  const $ = (n: number) => (showDeltas ? fmtCurrency(n) : "$•••");
+  const $0 = (n: number) => (showDeltas ? fmtCurrency0(n) : "$•••");
 
   // Restore persisted column order on mount; persist on change.
   useEffect(() => {
@@ -223,6 +231,90 @@ export default function TimeMachinePage() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Compute every month-end (last weekday) from `earliest` through last month.
+  function computeExpectedMonthEnds(earliestISO: string): { date: string; monthKey: string }[] {
+    const earliest = earliestISO.slice(0, 10);
+    const today = new Date();
+    // Start at last completed month
+    let y = today.getUTCFullYear();
+    let m = today.getUTCMonth() - 1;
+    if (m < 0) { m = 11; y -= 1; }
+    const out: { date: string; monthKey: string }[] = [];
+    while (true) {
+      const lastDay = new Date(Date.UTC(y, m + 1, 0));
+      const dow = lastDay.getUTCDay();
+      if (dow === 0) lastDay.setUTCDate(lastDay.getUTCDate() - 2);
+      else if (dow === 6) lastDay.setUTCDate(lastDay.getUTCDate() - 1);
+      const dateISO = lastDay.toISOString().slice(0, 10);
+      if (dateISO < earliest) break;
+      out.push({ date: dateISO, monthKey: `${y}-${String(m + 1).padStart(2, "0")}` });
+      m -= 1;
+      if (m < 0) { m = 11; y -= 1; }
+      if (out.length > 240) break; // safety cap (20yr)
+    }
+    return out;
+  }
+
+  // Fire batched parallel backfills for `missingDates`. Each call gets up to
+  // 3 dates; calls run concurrently. The route processes its batch in parallel
+  // internally too — so 5 missing months becomes 2 concurrent HTTP calls × 3
+  // parallel sims each, instead of 5 sequential sims that would time out.
+  async function runBatchBackfills(missingDates: string[]) {
+    if (!missingDates.length) return;
+    const monthKeys = missingDates.map((d) => d.slice(0, 7));
+    setInProgressMonths(new Set(monthKeys));
+    const batches: string[][] = [];
+    for (let i = 0; i < missingDates.length; i += 3) batches.push(missingDates.slice(i, i + 3));
+    try {
+      await Promise.all(
+        batches.map((batch) =>
+          fetch(`/api/portfolio/time-machine/backfill?targets=${batch.join(",")}`, { method: "POST" })
+        )
+      );
+      // Refresh cached list
+      const json = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json()).catch(() => null);
+      if (json?.snapshots) setSnapshotList(json.snapshots);
+      setBackfillResult(`Backfilled ${missingDates.length} month${missingDates.length === 1 ? "" : "s"} in parallel`);
+    } catch (e) {
+      setBackfillResult(e instanceof Error ? e.message : "Batch backfill failed");
+    } finally {
+      setInProgressMonths(new Set());
+    }
+  }
+
+  // Auto-detect & auto-fire batch backfill on first load when stuff is missing.
+  // Bounded to last 12 months so we don't grind on years of pre-history.
+  useEffect(() => {
+    if (autoBatchKickedOff || snapshotList.length === 0) return;
+    const haveDates = new Set(snapshotList.map((s) => s.snapshotDate.slice(0, 7)));
+    // We assume last 12 months are expected (back to ~earliest activity).
+    // Bound: use snapshotList's oldest date as a floor too.
+    const today = new Date();
+    const expected: string[] = [];
+    let y = today.getUTCFullYear();
+    let m = today.getUTCMonth() - 1;
+    if (m < 0) { m = 11; y -= 1; }
+    for (let i = 0; i < 12; i++) {
+      const monthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
+      const lastDay = new Date(Date.UTC(y, m + 1, 0));
+      const dow = lastDay.getUTCDay();
+      if (dow === 0) lastDay.setUTCDate(lastDay.getUTCDate() - 2);
+      else if (dow === 6) lastDay.setUTCDate(lastDay.getUTCDate() - 1);
+      expected.push(lastDay.toISOString().slice(0, 10));
+      if (!haveDates.has(monthKey)) { /* track missing */ }
+      m -= 1;
+      if (m < 0) { m = 11; y -= 1; }
+    }
+    const missing = expected.filter((d) => !haveDates.has(d.slice(0, 7)));
+    if (missing.length > 0 && missing.length <= 12) {
+      setAutoBatchKickedOff(true);
+      runBatchBackfills(missing);
+    } else {
+      setAutoBatchKickedOff(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotList, autoBatchKickedOff]);
 
   async function loadCached(date: string) {
     setSelectedDate(date);
@@ -287,10 +379,25 @@ export default function TimeMachinePage() {
           <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
         </div>
 
-        {/* Monthly snapshot strip — intensity-scaled, flipped colors */}
-        {snapshotList.length > 0 && (() => {
-          const inline = snapshotList.slice(0, 6);
-          const overflow = snapshotList.slice(6);
+        {/* Monthly snapshot strip — expected months, grey/pulse for missing */}
+        {(snapshotList.length > 0 || inProgressMonths.size > 0) && (() => {
+          // Merge expected months with cached snapshots into a single timeline.
+          const earliestForStrip =
+            data?.earliestAvailable ??
+            (snapshotList.length > 0 ? snapshotList[snapshotList.length - 1].snapshotDate : "2025-01-01");
+          const expectedRaw = computeExpectedMonthEnds(earliestForStrip);
+          const byMonth = new Map(snapshotList.map((s) => [s.snapshotDate.slice(0, 7), s]));
+          // Combined view: each entry is either a SnapshotMeta or a placeholder.
+          type StripItem =
+            | { kind: "data"; meta: SnapshotMeta; monthKey: string }
+            | { kind: "missing"; date: string; monthKey: string; inProgress: boolean };
+          const items: StripItem[] = expectedRaw.map((e) => {
+            const meta = byMonth.get(e.monthKey);
+            if (meta) return { kind: "data" as const, meta, monthKey: e.monthKey };
+            return { kind: "missing" as const, date: e.date, monthKey: e.monthKey, inProgress: inProgressMonths.has(e.monthKey) };
+          });
+          const inline = items.slice(0, 6);
+          const overflow = items.slice(6, 12);  // detail page handles older months
           const monthLabel = (iso: string) => {
             const [y, m] = iso.split("-");
             return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
@@ -317,7 +424,27 @@ export default function TimeMachinePage() {
               ? "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100"
               : "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100";
           };
-          const renderBtn = (s: SnapshotMeta) => {
+          const renderItem = (it: StripItem) => {
+            if (it.kind === "missing") {
+              const greyClass = it.inProgress
+                ? "bg-stone-100 border-stone-300 text-stone-600 animate-pulse"
+                : "bg-stone-50 border-stone-200 text-stone-400 hover:bg-stone-100";
+              return (
+                <button
+                  key={it.monthKey}
+                  onClick={() => !it.inProgress && runBatchBackfills([it.date])}
+                  disabled={it.inProgress}
+                  className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-10 min-w-[60px] ${greyClass}`}
+                  title={it.inProgress ? "Backfilling…" : "Click to backfill this month"}
+                >
+                  <span className="font-bold leading-tight">{monthLabel(it.monthKey + "-01")}</span>
+                  <span className="text-[9px] opacity-70 leading-tight">
+                    {it.inProgress ? "…" : "no data"}
+                  </span>
+                </button>
+              );
+            }
+            const s = it.meta;
             const sel = selectedDate === s.snapshotDate;
             const ring = sel ? "ring-2 ring-stone-900 ring-offset-1" : "";
             return (
@@ -372,8 +499,8 @@ export default function TimeMachinePage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {inline.map(renderBtn)}
-                {showMoreMonths && overflow.map(renderBtn)}
+                {inline.map(renderItem)}
+                {showMoreMonths && overflow.map(renderItem)}
                 {overflow.length > 0 && (
                   <button
                     type="button"
@@ -384,13 +511,24 @@ export default function TimeMachinePage() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[9px] text-stone-400 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
-                </span>
+              <div className="flex items-center justify-between gap-3 text-[9px] text-stone-400 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-stone-300" /> not yet computed
+                  </span>
+                </div>
+                <Link
+                  href="/time-machine/detail"
+                  className="text-[10px] font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2"
+                >
+                  More → all snapshots & insights
+                </Link>
               </div>
               {backfillResult && (
                 <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>

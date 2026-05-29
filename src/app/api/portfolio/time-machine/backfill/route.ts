@@ -45,13 +45,29 @@ export async function POST(req: Request) {
   if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
+  const targetsParam = searchParams.get("targets");
   const fromISO = searchParams.get("from") ?? "2025-01-01";
-  const fromDate = new Date(fromISO);
   const today = new Date();
 
-  // Build the list of last-day-of-month dates to backfill.
-  const targets: string[] = [];
-  {
+  // Build the list of dates to backfill.
+  // Mode A: explicit ?targets=YYYY-MM-DD,YYYY-MM-DD (max 5) → process in parallel.
+  // Mode B: ?from=YYYY-MM-DD → walk last-business-day of every month (sequential).
+  let targets: string[] = [];
+  let mode: "explicit" | "range" = "range";
+  if (targetsParam) {
+    mode = "explicit";
+    targets = targetsParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s));
+    if (targets.length === 0) {
+      return NextResponse.json({ error: "targets must contain at least one YYYY-MM-DD date" }, { status: 400 });
+    }
+    if (targets.length > 5) {
+      return NextResponse.json({ error: "max 5 targets per request — split into multiple calls" }, { status: 400 });
+    }
+  } else {
+    const fromDate = new Date(fromISO);
     let y = fromDate.getUTCFullYear();
     let m = fromDate.getUTCMonth();
     while (y < today.getUTCFullYear() || (y === today.getUTCFullYear() && m < today.getUTCMonth())) {
@@ -59,10 +75,9 @@ export async function POST(req: Request) {
       m++;
       if (m > 11) { m = 0; y++; }
     }
-  }
-
-  if (!targets.length) {
-    return NextResponse.json({ error: "No targets in range" }, { status: 400 });
+    if (!targets.length) {
+      return NextResponse.json({ error: "No targets in range" }, { status: 400 });
+    }
   }
 
   try {
@@ -89,39 +104,45 @@ export async function POST(req: Request) {
     const cashTotal = portfolio.summary.cash;
     const actualTotal = stocksMV + optionsMV + cashTotal;
 
-    const results: Array<{ date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number }> = [];
+    type Outcome = { date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number };
+    const ownerEmail = user.email!;
 
-    for (const date of targets) {
+    async function processOne(date: string): Promise<Outcome> {
       if (earliestAvailable && date < earliestAvailable) {
-        results.push({ date, status: "skipped", reason: `before earliest activity (${earliestAvailable})` });
-        continue;
+        return { date, status: "skipped", reason: `before earliest activity (${earliestAvailable})` };
       }
       try {
         const sim = await simulateTimeMachine({ snapshotDate: date, txns, actualTotal });
         const payload = { ...sim, earliestAvailable };
-
         const { error: upErr } = await supabase
           .from("time_machine_snapshots")
           .upsert({
             snapshot_date: date,
-            owner_email: user.email!,
+            owner_email: ownerEmail,
             payload,
             delta_absolute: sim.delta.absolute,
             favorable_to_hold: sim.delta.favorableToHold,
             computed_at: new Date().toISOString(),
           }, { onConflict: "snapshot_date,owner_email" });
-
-        if (upErr) {
-          results.push({ date, status: "error", reason: upErr.message });
-        } else {
-          results.push({ date, status: "ok", delta: sim.delta.absolute });
-        }
+        if (upErr) return { date, status: "error", reason: upErr.message };
+        return { date, status: "ok", delta: sim.delta.absolute };
       } catch (e: any) {
-        results.push({ date, status: "error", reason: e?.message ?? String(e) });
+        return { date, status: "error", reason: e?.message ?? String(e) };
       }
     }
 
+    // Explicit-targets mode = small batch from a client doing parallel chunks.
+    // Range mode = full backfill — keep sequential to avoid Tradier rate limits.
+    const results: Outcome[] = mode === "explicit"
+      ? await Promise.all(targets.map(processOne))
+      : await (async () => {
+          const out: Outcome[] = [];
+          for (const d of targets) out.push(await processOne(d));
+          return out;
+        })();
+
     return NextResponse.json({
+      mode,
       targets: targets.length,
       ok: results.filter((r) => r.status === "ok").length,
       skipped: results.filter((r) => r.status === "skipped").length,
