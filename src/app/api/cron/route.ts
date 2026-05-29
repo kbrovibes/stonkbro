@@ -5,6 +5,7 @@ import { sendDailyBriefing, AlertItem } from "@/lib/notifications/email";
 import { supabaseAdmin } from "@/lib/supabase";
 import { scanForMovers } from "@/lib/analysis/movers";
 import { sendPushToAll } from "@/lib/notifications/push";
+import { runPortfolioManagerScan } from "@/lib/portfolio-manager/runner";
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -157,6 +158,11 @@ export async function GET(request: Request) {
         tag: "daily-alerts",
       });
     }
+
+    // Fire-and-forget portfolio manager scan (ride-along at market close)
+    runPortfolioManagerScan({ scan_type: "scheduled", trigger_source: "cron-close" })
+      .then((r) => console.log(`[portfolio-manager] ride-along complete: ${r.status} (${r.ticker_count} tickers, ${r.duration_ms}ms)`))
+      .catch((e) => console.error("[portfolio-manager] ride-along failed:", e));
 
     return NextResponse.json({
       success: true,
