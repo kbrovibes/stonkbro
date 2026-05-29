@@ -47,7 +47,7 @@ const portfolioTabs = [
     ),
   },
   {
-    name: "Time Machine",
+    name: "Hindsight",
     href: "/time-machine",
     icon: (active: boolean) => (
       // Clock face with hour-hand at 9 (pointing back) — "look back in time".

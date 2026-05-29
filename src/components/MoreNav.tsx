@@ -55,7 +55,7 @@ export const MORE_GROUPS: MoreGroup[] = [
     ),
     links: [
       { emoji: "📊", title: "Portfolio", description: "Live P&L tracking", href: "/portfolio" },
-      { emoji: "⏰", title: "Time Machine", description: "What-if portfolio simulator", href: "/time-machine" },
+      { emoji: "⏰", title: "Hindsight", description: "What-if portfolio simulator", href: "/time-machine" },
       { emoji: "💰", title: "Income", description: "Premium income & P&L", href: "/income" },
       { emoji: "⚠️", title: "Risk", description: "Greeks & concentration", href: "/risk" },
     ],

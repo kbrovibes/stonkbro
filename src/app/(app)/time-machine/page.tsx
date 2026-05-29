@@ -365,7 +365,7 @@ export default function TimeMachinePage() {
         {/* Header */}
         <div className="flex flex-col gap-0.5">
           <h1 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
-            <span>⏰</span> Time Machine
+            <span>⏰</span> Hindsight
           </h1>
           <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
         </div>
@@ -520,7 +520,7 @@ export default function TimeMachinePage() {
                 href="/time-machine/detail"
                 className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-800 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
               >
-                <span>⏰</span> Full Time Machine Snapshot
+                <span>⏰</span> Full Hindsight Snapshot
               </Link>
 
               {backfillResult && (

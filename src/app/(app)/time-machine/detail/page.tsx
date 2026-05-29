@@ -230,9 +230,9 @@ export default function TimeMachineDetailPage() {
 
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-2xl font-bold text-stone-900 flex items-center gap-2"><span>⏰</span> Time Machine · All Snapshots & Insights</h1>
+            <h1 className="text-2xl font-bold text-stone-900 flex items-center gap-2"><span>⏰</span> Hindsight · All Snapshots & Insights</h1>
             <p className="text-sm text-stone-500">Trade-by-trade trajectory of trading vs. holding</p>
-            <Link href="/time-machine" className="text-[11px] text-sky-600 hover:text-sky-800 mt-1 underline underline-offset-2">← Back to Time Machine</Link>
+            <Link href="/time-machine" className="text-[11px] text-sky-600 hover:text-sky-800 mt-1 underline underline-offset-2">← Back to Hindsight</Link>
           </div>
           <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
             <span className="text-[10px] text-stone-500">$</span>

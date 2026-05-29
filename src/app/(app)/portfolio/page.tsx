@@ -942,7 +942,7 @@ export default function PortfolioPage() {
                   className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-1.5 py-0.5 rounded transition-colors"
                   title="What if you'd stopped trading on a past date?"
                 >
-                  <span>⏰</span> Time Machine
+                  <span>⏰</span> Hindsight
                 </Link>
               </div>
               <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
