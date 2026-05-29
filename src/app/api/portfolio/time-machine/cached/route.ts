@@ -42,21 +42,28 @@ export async function GET(req: Request) {
     return NextResponse.json({ ...(data.payload as object), _computedAt: data.computed_at });
   }
 
-  // List mode: all snapshots, newest first, metadata only.
+  const expand = searchParams.get("expand") === "full";
+
+  // List mode: metadata only by default, full payloads if ?expand=full
+  const cols = expand
+    ? "snapshot_date, delta_absolute, favorable_to_hold, computed_at, payload"
+    : "snapshot_date, delta_absolute, favorable_to_hold, computed_at";
+
   const { data, error } = await supabase
     .from("time_machine_snapshots")
-    .select("snapshot_date, delta_absolute, favorable_to_hold, computed_at")
+    .select(cols)
     .eq("owner_email", user.email!)
     .order("snapshot_date", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
-    snapshots: (data ?? []).map((r) => ({
+    snapshots: (data ?? []).map((r: any) => ({
       snapshotDate: r.snapshot_date,
       deltaAbsolute: Number(r.delta_absolute ?? 0),
       favorableToHold: !!r.favorable_to_hold,
       computedAt: r.computed_at,
+      ...(expand ? { payload: r.payload } : {}),
     })),
   });
 }

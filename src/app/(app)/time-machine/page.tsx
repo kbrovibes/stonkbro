@@ -511,25 +511,26 @@ export default function TimeMachinePage() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-3 text-[9px] text-stone-400 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-stone-300" /> not yet computed
-                  </span>
-                </div>
-                <Link
-                  href="/time-machine/detail"
-                  className="text-[10px] font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2"
-                >
-                  More → all snapshots & insights
-                </Link>
+              <div className="flex items-center gap-3 text-[9px] text-stone-400 flex-wrap">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-stone-300" /> not yet computed
+                </span>
               </div>
+
+              {/* Center-aligned full-detail CTA, theme-aligned with portfolio buttons */}
+              <Link
+                href="/time-machine/detail"
+                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-800 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
+              >
+                <span>⏰</span> Full Time Machine Snapshot
+              </Link>
+
               {backfillResult && (
                 <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>
               )}
