@@ -34,13 +34,13 @@ export interface SimulationResult {
   todayDate: string;
   snapshot: {
     positions: { symbol: string; units: number; costBasis: number; snapshotPrice: number }[];
-    options: { ticker: string; underlying: string; type: "CALL" | "PUT"; strike: number; expiry: string; units: number }[];
+    options: { ticker: string; underlying: string; type: "CALL" | "PUT"; strike: number; expiry: string; units: number; premiumCollected: number }[];
     cash: number;
     total: number;
   };
   simulation: {
     stockValues: { symbol: string; units: number; todayPrice: number; value: number }[];
-    optionValues: { ticker: string; status: OptionStatus; value: number; note?: string }[];
+    optionValues: { ticker: string; status: OptionStatus; value: number; note?: string; premiumCollected: number }[];
     cashStart: number;
     deposits: { date: string; amount: number }[];
     withdrawals: { date: string; amount: number }[];
@@ -81,6 +81,8 @@ export interface SimulationResult {
       ltcgTax: number;
     };
     taxRateLabel: string;
+    optionsBreakdown: import("./reconstruct").OptionRealizationItem[];
+    stocksBreakdown: import("./reconstruct").StockRealizationItem[];
   };
   rsuVests: {
     items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
@@ -139,11 +141,15 @@ export async function simulateTimeMachine(args: {
   );
   const todayPrices = await getCurrentStockPrices(heldStockSymbols);
 
+  // Lookup contract premium by ticker — pulled forward from snapshot reconstruction.
+  const premiumByTicker = new Map(optionsAtSnapshot.map((o) => [o.ticker, o.premiumCollected]));
+
   // Resolve live options to current mid; ITM expired already mutated state above.
   const liveOptionValues = await Promise.all(
     replayRecords
       .filter((r) => r.status === "live")
-      .map(async (r): Promise<{ ticker: string; status: OptionStatus; value: number; note?: string }> => {
+      .map(async (r): Promise<{ ticker: string; status: OptionStatus; value: number; note?: string; premiumCollected: number }> => {
+        const premiumCollected = premiumByTicker.get(r.ticker) ?? 0;
         const mid = await getCurrentOptionMid({
           underlying: r.underlying,
           expiry: r.expiry,
@@ -151,24 +157,26 @@ export async function simulateTimeMachine(args: {
           optionType: r.optionType,
         });
         if (mid == null) {
-          return { ticker: r.ticker, status: "live", value: 0, note: "No live mid available; treated as $0" };
+          return { ticker: r.ticker, status: "live", value: 0, note: "No live mid available; treated as $0", premiumCollected };
         }
         return {
           ticker: r.ticker,
           status: "live",
-          value: mid * r.units * 100, // long positive, short negative (debit to close)
+          value: mid * r.units * 100,
           note: `Mid $${mid.toFixed(2)} × ${r.units} × 100`,
+          premiumCollected,
         };
       })
   );
 
   const resolvedOptionRows = replayRecords
     .filter((r) => r.status !== "live")
-    .map((r): { ticker: string; status: OptionStatus; value: number; note?: string } => ({
+    .map((r): { ticker: string; status: OptionStatus; value: number; note?: string; premiumCollected: number } => ({
       ticker: r.ticker,
       status: r.status,
       value: 0,        // post-resolution, value is folded into stock/cash deltas
       note: r.note,
+      premiumCollected: premiumByTicker.get(r.ticker) ?? 0,
     }));
 
   const optionValues = [...resolvedOptionRows, ...liveOptionValues];
@@ -231,6 +239,7 @@ export async function simulateTimeMachine(args: {
         strike: o.strike,
         expiry: o.expiry,
         units: o.units,
+        premiumCollected: o.premiumCollected,
       })),
       cash: cashAtSnapshot,
       total: snapshotTotal,

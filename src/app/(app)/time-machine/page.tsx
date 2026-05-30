@@ -20,6 +20,7 @@ interface SnapshotOption {
   strike: number;
   expiry: string;
   units: number;
+  premiumCollected: number;
 }
 interface SimStockValue {
   symbol: string;
@@ -33,6 +34,32 @@ interface SimOptionValue {
   status: OptionStatus;
   value: number;
   note?: string;
+  premiumCollected: number;
+}
+
+interface OptionRealizationItem {
+  date: string;
+  ticker: string;
+  underlying: string;
+  optionType: "CALL" | "PUT";
+  strike: number;
+  expiry: string;
+  side: "BUY" | "SELL";
+  units: number;
+  amount: number;
+}
+
+interface StockRealizationItem {
+  date: string;
+  symbol: string;
+  units: number;
+  proceeds: number;
+  avgCost: number;
+  costBasis: number;
+  gain: number;
+  earliestBuyDate: string | null;
+  holdDays: number | null;
+  term: "ST" | "LT" | "skipped";
 }
 interface CashFlowItem { date: string; amount: number }
 interface DividendItem { date: string; symbol: string; amount: number }
@@ -90,6 +117,8 @@ interface TimeMachineResult {
       ltcgTax: number;
     };
     taxRateLabel: string;
+    optionsBreakdown?: OptionRealizationItem[];
+    stocksBreakdown?: StockRealizationItem[];
   };
   rsuVests?: {
     items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
@@ -154,6 +183,8 @@ export default function TimeMachinePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  const [optionsRealizationOpen, setOptionsRealizationOpen] = useState(false);
+  const [stocksRealizationOpen, setStocksRealizationOpen] = useState(false);
   type SortCol = "symbol" | "units" | "snapshotPrice" | "todayPrice" | "snapshotValue" | "todayValue" | "returnPct" | "contribution";
   const DEFAULT_COL_ORDER: SortCol[] = ["symbol", "units", "snapshotPrice", "todayPrice", "snapshotValue", "todayValue", "returnPct", "contribution"];
   const COL_ORDER_KEY = "tm-col-order-v1";
@@ -999,18 +1030,45 @@ export default function TimeMachinePage() {
                   </span>
                 </div>
                 <p className="text-xs text-violet-900 mb-3 leading-snug">
-                  Your <em>actual</em> trading since {fmtDate(data.snapshotDate)} generated realized gains that
-                  trigger a tax bill. In the sim you didn&apos;t trade, so no tax — meaning some portion of the
-                  withdrawals above were likely real obligations.
+                  This section reflects your <em>actual</em> trading since {fmtDate(data.snapshotDate)} —
+                  what really happened in your account, not the simulated &ldquo;if you&rsquo;d stopped&rdquo;
+                  scenario. The sim has no trades, so it generates no tax — meaning some portion of the
+                  withdrawals above were likely real tax obligations from the activity below.
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-white border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Options (STCG)</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Options (STCG)</div>
+                      {(data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setOptionsRealizationOpen((v) => !v)}
+                          className="text-[9px] text-violet-400 hover:text-violet-700 transition"
+                          title="Show contributing trades"
+                        >
+                          {optionsRealizationOpen ? "hide" : "details"}
+                        </button>
+                      )}
+                    </div>
                     <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.options)}</div>
-                    <div className="text-[10px] text-stone-500 mt-1">All short-term</div>
+                    <div className="text-[10px] text-stone-500 mt-1">
+                      All short-term · net of {data.realizedGains.optionsBreakdown?.length ?? 0} legs
+                    </div>
                   </div>
                   <div className="bg-white border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks STCG</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Stocks STCG</div>
+                      {(data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setStocksRealizationOpen((v) => !v)}
+                          className="text-[9px] text-violet-400 hover:text-violet-700 transition"
+                          title="Show contributing trades"
+                        >
+                          {stocksRealizationOpen ? "hide" : "details"}
+                        </button>
+                      )}
+                    </div>
                     <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
                     <div className="text-[10px] text-stone-500 mt-1">Held &lt; 1 yr</div>
                   </div>
@@ -1020,6 +1078,101 @@ export default function TimeMachinePage() {
                     <div className="text-[10px] text-stone-500 mt-1">Held ≥ 1 yr</div>
                   </div>
                 </div>
+
+                {/* Options breakdown — per-leg detail */}
+                {optionsRealizationOpen && (data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
+                  <div className="mt-3 bg-white border border-violet-100 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
+                      Options legs since {fmtDate(data.snapshotDate)} · {data.realizedGains.optionsBreakdown!.length} rows
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      <table className="w-full text-[10px]">
+                        <thead className="text-stone-400 bg-stone-50">
+                          <tr>
+                            <th className="px-2 py-1 text-left font-medium">Date</th>
+                            <th className="px-2 py-1 text-left font-medium">Side</th>
+                            <th className="px-2 py-1 text-left font-medium">Contract</th>
+                            <th className="px-2 py-1 text-right font-medium">Units</th>
+                            <th className="px-2 py-1 text-right font-medium">Net cash</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.realizedGains.optionsBreakdown!.map((o, i) => (
+                            <tr key={i} className="border-t border-stone-50">
+                              <td className="px-2 py-1 text-stone-600 tabular-nums">{fmtDateShort(o.date)}</td>
+                              <td className="px-2 py-1">
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold ${o.side === "SELL" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                  {o.side}
+                                </span>
+                              </td>
+                              <td className="px-2 py-1 text-stone-700 truncate">
+                                {o.underlying} {o.optionType} ${o.strike} <span className="text-stone-400">· exp {fmtDateShort(o.expiry)}</span>
+                              </td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{o.units}</td>
+                              <td className={`px-2 py-1 text-right tabular-nums font-medium ${o.amount > 0 ? "text-emerald-700" : o.amount < 0 ? "text-rose-600" : "text-stone-500"}`}>
+                                {o.amount > 0 ? "+" : ""}{fmtCurrency(o.amount)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stocks breakdown — per-SELL detail */}
+                {stocksRealizationOpen && (data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
+                  <div className="mt-3 bg-white border border-violet-100 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
+                      Stock SELLs since {fmtDate(data.snapshotDate)} · {data.realizedGains.stocksBreakdown!.length} rows
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      <table className="w-full text-[10px]">
+                        <thead className="text-stone-400 bg-stone-50">
+                          <tr>
+                            <th className="px-2 py-1 text-left font-medium">Date</th>
+                            <th className="px-2 py-1 text-left font-medium">Symbol</th>
+                            <th className="px-2 py-1 text-right font-medium">Units</th>
+                            <th className="px-2 py-1 text-right font-medium">Proceeds</th>
+                            <th className="px-2 py-1 text-right font-medium">Avg cost</th>
+                            <th className="px-2 py-1 text-right font-medium">Gain</th>
+                            <th className="px-2 py-1 text-center font-medium">Term</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.realizedGains.stocksBreakdown!.map((s, i) => (
+                            <tr key={i} className="border-t border-stone-50">
+                              <td className="px-2 py-1 text-stone-600 tabular-nums">{fmtDateShort(s.date)}</td>
+                              <td className="px-2 py-1 font-semibold text-stone-900">{s.symbol}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{Math.round(s.units)}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{fmtCurrency0(s.proceeds)}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-500">
+                                {s.term === "skipped" ? "—" : fmtCurrency(s.avgCost)}
+                              </td>
+                              <td className={`px-2 py-1 text-right tabular-nums font-medium ${
+                                s.term === "skipped" ? "text-stone-400" : s.gain > 0 ? "text-emerald-700" : s.gain < 0 ? "text-rose-600" : "text-stone-500"
+                              }`}>
+                                {s.term === "skipped" ? "skipped" : `${s.gain > 0 ? "+" : ""}${fmtCurrency0(s.gain)}`}
+                              </td>
+                              <td className="px-2 py-1 text-center">
+                                <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                                  s.term === "LT" ? "bg-emerald-50 text-emerald-700" :
+                                  s.term === "ST" ? "bg-amber-50 text-amber-700" :
+                                  "bg-stone-100 text-stone-500"
+                                }`} title={s.term === "skipped" ? "No in-window BUY — gain not tallied" : `Held ${s.holdDays}d from ${s.earliestBuyDate}`}>
+                                  {s.term}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="px-3 py-2 border-t border-stone-100 text-[9px] text-stone-500 italic">
+                        &ldquo;skipped&rdquo; = SELL with no in-window BUY (cost basis pre-dates the activity history) — proceeds shown for context, gain not tallied.
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2 text-xs mt-3">
                   <div className="bg-white border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
@@ -1065,6 +1218,13 @@ export default function TimeMachinePage() {
                   {data.simulation.optionValues.map((opt, i) => {
                     const snap = data.snapshot.options.find((o) => o.ticker === opt.ticker);
                     const style = STATUS_STYLES[opt.status];
+                    const premium = opt.premiumCollected ?? snap?.premiumCollected ?? 0;
+                    const premiumLabel =
+                      premium > 0
+                        ? `Premium received +${fmtCurrency(premium)}`
+                        : premium < 0
+                          ? `Premium paid −${fmtCurrency(Math.abs(premium))}`
+                          : "Premium —";
                     return (
                       <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50" : ""}`}>
                         <div className="flex items-center justify-between gap-2">
@@ -1087,9 +1247,12 @@ export default function TimeMachinePage() {
                             {opt.value > 0 ? "+" : ""}{fmtCurrency(opt.value)}
                           </span>
                         </div>
-                        {opt.note && (
-                          <p className="text-[10px] text-stone-500 mt-1 ml-1">{opt.note}</p>
-                        )}
+                        <div className="flex items-center gap-2 mt-1 ml-1 flex-wrap">
+                          <span className="text-[10px] text-stone-400">{premiumLabel}</span>
+                          {opt.note && (
+                            <span className="text-[10px] text-stone-500">· {opt.note}</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

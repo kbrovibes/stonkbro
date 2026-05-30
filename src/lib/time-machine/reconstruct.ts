@@ -544,6 +544,33 @@ export function getAllRsuVests(txns: SnapTradeTxn[]): RsuVestEntry[] {
 // Realized gains since snapshot — for tax-context disclosure
 // ─────────────────────────────────────────────────────────────────────────
 
+/** One option BUY or SELL leg that contributed to options STCG. */
+export interface OptionRealizationItem {
+  date: string;             // YYYY-MM-DD
+  ticker: string;
+  underlying: string;
+  optionType: "CALL" | "PUT";
+  strike: number;
+  expiry: string;
+  side: "BUY" | "SELL";
+  units: number;            // positive
+  amount: number;           // signed: SELL credit (+), BUY debit (−)
+}
+
+/** One stock SELL that contributed to stocks STCG/LTCG. */
+export interface StockRealizationItem {
+  date: string;
+  symbol: string;
+  units: number;            // shares sold
+  proceeds: number;         // gross cash received
+  avgCost: number;          // running average cost per share at time of sale
+  costBasis: number;        // avgCost * units consumed
+  gain: number;             // proceeds − costBasis
+  earliestBuyDate: string | null;
+  holdDays: number | null;
+  term: "ST" | "LT" | "skipped";
+}
+
 export interface RealizedGainsSummary {
   options: number;          // all STCG (almost all of this user's options are <45 DTE)
   stocksShortTerm: number;  // held < 365d
@@ -559,6 +586,8 @@ export interface RealizedGainsSummary {
     ltcgTax: number;
   };
   taxRateLabel: string;
+  optionsBreakdown: OptionRealizationItem[];
+  stocksBreakdown: StockRealizationItem[];
 }
 
 /**
@@ -585,6 +614,8 @@ export function computeRealizedGainsSinceSnapshot(
   let optionsRealized = 0;
   let stocksShortTerm = 0;
   let stocksLongTerm = 0;
+  const optionsBreakdown: OptionRealizationItem[] = [];
+  const stocksBreakdown: StockRealizationItem[] = [];
 
   // Per-symbol running avg cost + earliest BUY date (used for hold-period bucket).
   const stockLots = new Map<string, { units: number; totalCost: number; earliestBuy: string }>();
@@ -597,6 +628,18 @@ export function computeRealizedGainsSinceSnapshot(
       if (date <= snapshotDate) continue;
       if (tx.type === "BUY" || tx.type === "SELL") {
         optionsRealized += tx.amount;  // signed
+        const os = tx.option_symbol!;
+        optionsBreakdown.push({
+          date,
+          ticker: (os.ticker ?? "").trim(),
+          underlying: os.underlying_symbol?.symbol ?? "UNKNOWN",
+          optionType: ((os.option_type ?? "").toUpperCase() === "PUT" ? "PUT" : "CALL"),
+          strike: Number(os.strike_price ?? 0),
+          expiry: (os.expiration_date ?? "").slice(0, 10),
+          side: tx.type === "BUY" ? "BUY" : "SELL",
+          units: Math.abs(tx.units),
+          amount: tx.amount,
+        });
       }
       continue;
     }
@@ -611,7 +654,6 @@ export function computeRealizedGainsSinceSnapshot(
       if (cur) {
         cur.units += units;
         cur.totalCost += cost;
-        // earliestBuy is the earliest known BUY; don't overwrite.
       } else {
         stockLots.set(sym, { units, totalCost: cost, earliestBuy: date });
       }
@@ -625,15 +667,29 @@ export function computeRealizedGainsSinceSnapshot(
       if (cur && cur.units > 0) {
         const avgCost = cur.totalCost / cur.units;
         const consumed = Math.min(units, cur.units);
-        const gain = proceeds - avgCost * consumed;
+        const costBasis = avgCost * consumed;
+        const gain = proceeds - costBasis;
         const holdDays = (Date.parse(date) - Date.parse(cur.earliestBuy)) / 86400_000;
-        if (holdDays >= 365) stocksLongTerm += gain;
+        const term: "ST" | "LT" = holdDays >= 365 ? "LT" : "ST";
+        if (term === "LT") stocksLongTerm += gain;
         else stocksShortTerm += gain;
+        stocksBreakdown.push({
+          date, symbol: sym, units: consumed,
+          proceeds, avgCost, costBasis, gain,
+          earliestBuyDate: cur.earliestBuy,
+          holdDays: Math.round(holdDays),
+          term,
+        });
         cur.units -= consumed;
-        cur.totalCost -= avgCost * consumed;
+        cur.totalCost -= costBasis;
       } else {
-        // No in-window BUY — assume STCG (conservative). Use proceeds as gain
-        // proxy? No — that would overcount. Skip this SELL from the tally.
+        // No in-window BUY — surface as "skipped" so the user can see why a
+        // SELL they expected isn't in the tally.
+        stocksBreakdown.push({
+          date, symbol: sym, units, proceeds,
+          avgCost: 0, costBasis: 0, gain: 0,
+          earliestBuyDate: null, holdDays: null, term: "skipped",
+        });
       }
     }
   }
@@ -656,5 +712,7 @@ export function computeRealizedGainsSinceSnapshot(
     estimatedTax,
     taxBreakdown: { stcgRate, ltcgRate, stcgBase, ltcgBase, stcgTax, ltcgTax },
     taxRateLabel,
+    optionsBreakdown,
+    stocksBreakdown,
   };
 }
