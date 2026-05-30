@@ -6,7 +6,7 @@ import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
 import { getUpcomingIPOs } from "@/lib/market/ipos";
 import WatchlistWidget from "../WatchlistWidget";
-import IPOWidget from "../IPOWidget";
+import UpcomingCatalysts from "../UpcomingCatalysts";
 
 export const dynamic = "force-dynamic";
 
@@ -66,13 +66,6 @@ export default async function DiscoverPage() {
 
   const upcomingIPOs = await getUpcomingIPOs();
 
-  const ipoShouldExpand = upcomingIPOs.some(
-    (ipo) =>
-      ipo.status === "roadshow" ||
-      ipo.status === "priced" ||
-      (ipo.isLive && ipo.status === "upcoming")
-  );
-
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,
     name: wl.name,
@@ -85,38 +78,7 @@ export default async function DiscoverPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      {upcomingEarnings.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-stone-800">Upcoming Earnings</span>
-            <Link href="/earnings" className="text-[10px] font-medium text-sky-600 hover:text-sky-700">
-              Full Calendar
-            </Link>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {upcomingEarnings.map((e) => (
-              <Link
-                key={e.symbol}
-                href={`/suggestions/${e.symbol}`}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:opacity-80 ${
-                  e.category === "this_week"
-                    ? "bg-red-50 text-red-700"
-                    : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                <span className="font-bold">{e.symbol}</span>
-                <span className="opacity-70">
-                  {e.daysUntil === 0 ? "today" : e.daysUntil === 1 ? "tmrw" : `${e.daysUntil}d`}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {upcomingIPOs.length > 0 && (
-        <IPOWidget ipos={upcomingIPOs} defaultExpanded={ipoShouldExpand} />
-      )}
+      <UpcomingCatalysts earnings={upcomingEarnings} ipos={upcomingIPOs} />
 
       {watchlistWidgetData.length > 0 ? (
         <>
