@@ -353,33 +353,34 @@ export function PortfolioManagerView() {
       {/* Table */}
       {scan && scan.ticker_count > 0 && (
         <div className="rounded-xl border border-stone-200 bg-white overflow-x-auto">
-          <div className="min-w-[820px]">
-            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
-              <SortHeader label="Symbol"   className="col-span-2"               sortKey="symbol"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="Price"    className="col-span-2 justify-end"   sortKey="price"       currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="1d"       className="col-span-1 justify-end"   sortKey="change_1d"   currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="30d"      className="col-span-1 justify-end"   sortKey="change_30d"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="RSI"      className="col-span-1 justify-end"   sortKey="rsi"         currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="Rating"   className="col-span-2"               sortKey="rating"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="Conf."    className="col-span-2"               sortKey="confidence"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-              <SortHeader label="Action"   className="col-span-1 justify-end"   sortKey="action"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            </div>
-
-            {filteredAnalyses.length === 0 ? (
-              <div className="px-3 py-6 text-center text-sm text-stone-500">
-                No tickers match the current filter.
-              </div>
-            ) : (
-              filteredAnalyses.map((a) => (
-                <Row
-                  key={a.symbol}
-                  analysis={a}
-                  expanded={expanded.has(a.symbol)}
-                  onToggle={() => toggleRow(a.symbol)}
-                />
-              ))
-            )}
-          </div>
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-stone-50 border-b border-stone-200">
+              <tr className="text-[10px] font-bold uppercase text-stone-500">
+                <th className="px-3 py-2 text-left whitespace-nowrap"><SortHeader label="Symbol"  sortKey="symbol"     currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="Price"  align="right" sortKey="price" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="1d"     align="right" sortKey="change_1d" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="30d"    align="right" sortKey="change_30d" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="RSI"    align="right" sortKey="rsi" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-left whitespace-nowrap"><SortHeader label="Rating"  sortKey="rating"     currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-left whitespace-nowrap"><SortHeader label="Conf."   sortKey="confidence" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+                <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="Action" align="right" sortKey="action" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAnalyses.length === 0 ? (
+                <tr><td colSpan={8} className="px-3 py-6 text-center text-sm text-stone-500">No tickers match the current filter.</td></tr>
+              ) : (
+                filteredAnalyses.map((a) => (
+                  <Row
+                    key={a.symbol}
+                    analysis={a}
+                    expanded={expanded.has(a.symbol)}
+                    onToggle={() => toggleRow(a.symbol)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -416,37 +417,30 @@ function Row({
 }) {
   const e = analysis.enrichment;
   return (
-    <div className="border-b border-stone-100 last:border-b-0">
-      <button
+    <>
+      <tr
         onClick={onToggle}
-        className="w-full grid grid-cols-12 gap-2 px-3 py-2.5 items-center text-sm hover:bg-stone-50 transition-colors text-left"
+        className="border-b border-stone-100 last:border-b-0 hover:bg-stone-50 transition-colors cursor-pointer"
       >
-        <div className="col-span-2 font-bold text-stone-900">{analysis.symbol}</div>
-        <div className="col-span-2 text-right tabular-nums text-stone-700">
-          ${e.price.toFixed(2)}
-        </div>
-        <div className={`col-span-1 text-right tabular-nums text-xs ${e.change_1d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <td className="px-3 py-2.5 font-bold text-stone-900 whitespace-nowrap">{analysis.symbol}</td>
+        <td className="px-3 py-2.5 text-right tabular-nums text-stone-700 whitespace-nowrap">${e.price.toFixed(2)}</td>
+        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_1d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
           {signed(e.change_1d_pct)}%
-        </div>
-        <div className={`col-span-1 text-right tabular-nums text-xs ${e.change_30d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        </td>
+        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_30d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
           {signed(e.change_30d_pct)}%
-        </div>
-        <div className={`col-span-1 text-right tabular-nums text-xs ${rsiColor(e.rsi_14)}`}>
+        </td>
+        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${rsiColor(e.rsi_14)}`}>
           {e.rsi_14 ?? "—"}
-        </div>
-        <div className="col-span-2">
-          <RatingPill rating={analysis.rating} />
-        </div>
-        <div className="col-span-2">
-          <ConfidenceBar value={analysis.confidence} />
-        </div>
-        <div className="col-span-1 text-right">
-          <ActionBadge type={analysis.suggested_action.type} />
-        </div>
-      </button>
+        </td>
+        <td className="px-3 py-2.5 whitespace-nowrap"><RatingPill rating={analysis.rating} /></td>
+        <td className="px-3 py-2.5 min-w-[90px]"><ConfidenceBar value={analysis.confidence} /></td>
+        <td className="px-3 py-2.5 text-right whitespace-nowrap"><ActionBadge type={analysis.suggested_action.type} /></td>
+      </tr>
 
       {expanded && (
-        <div className="px-3 pb-3 pt-1 text-sm bg-stone-50 border-t border-stone-100 sticky left-0 w-screen md:static md:w-auto">
+        <tr>
+          <td colSpan={8} className="px-3 pb-3 pt-1 text-sm bg-stone-50 border-t border-stone-100 sticky left-0 w-screen md:static md:w-auto">
           {analysis.thesis && (
             <p className="text-stone-800 mb-3 leading-snug">{analysis.thesis}</p>
           )}
@@ -504,9 +498,10 @@ function Row({
           {e.news_headlines.length === 0 && (
             <div className="text-xs text-stone-400 italic">No recent headlines available.</div>
           )}
-        </div>
+          </td>
+        </tr>
       )}
-    </div>
+    </>
   );
 }
 
@@ -783,14 +778,14 @@ function ScanHistoryPanel({
 
 function SortHeader({
   label,
-  className,
+  align = "left",
   sortKey,
   currentKey,
   currentDir,
   onToggle,
 }: {
   label: string;
-  className: string;
+  align?: "left" | "right";
   sortKey: SortKey;
   currentKey: SortKey;
   currentDir: SortDir;
@@ -802,7 +797,7 @@ function SortHeader({
     <button
       type="button"
       onClick={() => onToggle(sortKey)}
-      className={`flex items-center gap-1 hover:text-stone-700 transition-colors ${active ? "text-sky-700" : "text-stone-500"} ${className}`}
+      className={`inline-flex items-center gap-1 hover:text-stone-700 transition-colors ${active ? "text-sky-700" : "text-stone-500"} ${align === "right" ? "justify-end" : ""}`}
     >
       <span>{label}</span>
       <span className={`text-[8px] ${active ? "opacity-100" : "opacity-40"}`}>{arrow}</span>
