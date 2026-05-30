@@ -557,6 +557,23 @@ export interface OptionRealizationItem {
   amount: number;           // signed: SELL credit (+), BUY debit (−)
 }
 
+/**
+ * Per-symbol aggregate of stock exits after the snapshot date.
+ * `totalDiff > 0` = today's price exceeds avg exit (missed gain).
+ * `totalDiff < 0` = today's price is below avg exit (avoided loss).
+ */
+export interface ExitAnalysisItem {
+  symbol: string;
+  unitsSold: number;          // capped at units held at snapshot (rollers don't double-count)
+  avgExitPrice: number;       // proceeds-weighted average over post-snapshot SELLs
+  exitProceeds: number;       // avgExitPrice * unitsSold
+  todayPrice: number;
+  todayValueIfHeld: number;   // unitsSold * todayPrice
+  diffPerShare: number;       // todayPrice − avgExitPrice
+  totalDiff: number;          // diffPerShare * unitsSold
+  changePct: number;          // % change from avg exit to today
+}
+
 /** One stock SELL that contributed to stocks STCG/LTCG. */
 export interface StockRealizationItem {
   date: string;
@@ -606,6 +623,68 @@ export interface RealizedGainsSummary {
  * otherwise STCG. When no in-window BUY exists (incomplete history),
  * default to STCG — conservative (overstates tax slightly).
  */
+/**
+ * For each symbol the user HELD at the snapshot, sum the SELL units +
+ * proceeds that occurred after the snapshot, and compare the proceeds-
+ * weighted avg exit price to today's price. Caller supplies today's prices
+ * via the `todayPrices` map (already fetched in the simulator).
+ *
+ * Symbols with no in-window SELLs, or with no today price, are omitted.
+ */
+export function computeExitAnalysisSinceSnapshot(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  unitsAtSnapshot: Map<string, number>,
+  todayPrices: Map<string, number>
+): ExitAnalysisItem[] {
+  const sellsBySymbol = new Map<string, { units: number; proceeds: number }>();
+  for (const tx of txns) {
+    const date = txnDate(tx);
+    if (date <= snapshotDate) continue;
+    if (tx.type !== "SELL") continue;
+    if (isOptionTxn(tx)) continue;
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+    const units = Math.abs(tx.units);
+    const proceeds = Math.abs(tx.amount);
+    if (units <= 0 || proceeds <= 0) continue;
+    const cur = sellsBySymbol.get(sym) ?? { units: 0, proceeds: 0 };
+    cur.units += units;
+    cur.proceeds += proceeds;
+    sellsBySymbol.set(sym, cur);
+  }
+
+  const items: ExitAnalysisItem[] = [];
+  for (const [sym, sells] of sellsBySymbol) {
+    const heldUnits = unitsAtSnapshot.get(sym) ?? 0;
+    if (heldUnits <= 0) continue;
+    // Cap units sold at what was held at snapshot — don't double-count
+    // round-trip rolls that bought + sold the same name after the snapshot.
+    const unitsSold = Math.min(sells.units, heldUnits);
+    const todayPrice = todayPrices.get(sym) ?? 0;
+    if (todayPrice <= 0) continue;
+    const avgExitPrice = sells.units > 0 ? sells.proceeds / sells.units : 0;
+    if (avgExitPrice <= 0) continue;
+    const diffPerShare = todayPrice - avgExitPrice;
+    const totalDiff = diffPerShare * unitsSold;
+    const changePct = (diffPerShare / avgExitPrice) * 100;
+    items.push({
+      symbol: sym,
+      unitsSold,
+      avgExitPrice,
+      exitProceeds: avgExitPrice * unitsSold,
+      todayPrice,
+      todayValueIfHeld: unitsSold * todayPrice,
+      diffPerShare,
+      totalDiff,
+      changePct,
+    });
+  }
+
+  // Sort by absolute impact (biggest signal first); callers split by sign.
+  return items.sort((a, b) => Math.abs(b.totalDiff) - Math.abs(a.totalDiff));
+}
+
 export function computeRealizedGainsSinceSnapshot(
   snapshotDate: string,
   txns: SnapTradeTxn[]

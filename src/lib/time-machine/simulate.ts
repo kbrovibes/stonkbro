@@ -16,6 +16,7 @@ import {
   reconstructCashAt,
   categorizePostSnapshotCashFlows,
   computeRealizedGainsSinceSnapshot,
+  computeExitAnalysisSinceSnapshot,
   getRsuVestsAfter,
 } from "./reconstruct";
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
@@ -95,6 +96,7 @@ export interface SimulationResult {
     optionsBreakdown: import("./reconstruct").OptionRealizationItem[];
     stocksBreakdown: import("./reconstruct").StockRealizationItem[];
   };
+  exitAnalysis: import("./reconstruct").ExitAnalysisItem[];
   rsuVests: {
     items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
     totalUnitsBySymbol: Record<string, number>;
@@ -155,7 +157,16 @@ export async function simulateTimeMachine(args: {
   const heldStockSymbols = [...simStockUnits.keys()].filter(
     (sym) => Math.abs(simStockUnits.get(sym) ?? 0) > 1e-6
   );
-  const todayPrices = await getCurrentStockPrices(heldStockSymbols);
+  // Also fetch today's price for every symbol the user FULLY exited after
+  // the snapshot — needed for the missed-winners / smart-exits cards.
+  const exitedSymbols: string[] = [];
+  for (const sym of stockUnitsAtSnapshot.keys()) {
+    if (!simStockUnits.has(sym) || Math.abs(simStockUnits.get(sym) ?? 0) < 1e-6) {
+      exitedSymbols.push(sym);
+    }
+  }
+  const priceSymbols = [...new Set([...heldStockSymbols, ...exitedSymbols])];
+  const todayPrices = await getCurrentStockPrices(priceSymbols);
 
   // Lookup contract premium by ticker — pulled forward from snapshot reconstruction.
   const premiumByTicker = new Map(optionsAtSnapshot.map((o) => [o.ticker, o.premiumCollected]));
@@ -284,6 +295,12 @@ export async function simulateTimeMachine(args: {
     actual: { total: actualTotal },
     delta: { absolute: delta, pct, favorableToHold: delta > 0 },
     realizedGains: computeRealizedGainsSinceSnapshot(snapshotDate, txns),
+    exitAnalysis: computeExitAnalysisSinceSnapshot(
+      snapshotDate,
+      txns,
+      stockUnitsAtSnapshot,
+      todayPrices,
+    ),
     rsuVests: (() => {
       const totalUnitsBySymbol: Record<string, number> = {};
       const monthSet = new Set<string>();

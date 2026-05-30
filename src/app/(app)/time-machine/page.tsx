@@ -49,6 +49,18 @@ interface OptionRealizationItem {
   amount: number;
 }
 
+interface ExitAnalysisItem {
+  symbol: string;
+  unitsSold: number;
+  avgExitPrice: number;
+  exitProceeds: number;
+  todayPrice: number;
+  todayValueIfHeld: number;
+  diffPerShare: number;
+  totalDiff: number;
+  changePct: number;
+}
+
 interface StockRealizationItem {
   date: string;
   symbol: string;
@@ -129,6 +141,7 @@ interface TimeMachineResult {
     optionsBreakdown?: OptionRealizationItem[];
     stocksBreakdown?: StockRealizationItem[];
   };
+  exitAnalysis?: ExitAnalysisItem[];
   rsuVests?: {
     items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
     totalUnitsBySymbol: Record<string, number>;
@@ -795,6 +808,116 @@ export default function TimeMachinePage() {
                 })()}
               </div>
             </div>
+
+            {/* ─── Exit analysis: missed winners + smart exits ────── */}
+            {data.exitAnalysis && data.exitAnalysis.length > 0 && (() => {
+              const missed = data.exitAnalysis
+                .filter((e) => e.totalDiff > 0)
+                .sort((a, b) => b.totalDiff - a.totalDiff);
+              const avoided = data.exitAnalysis
+                .filter((e) => e.totalDiff < 0)
+                .sort((a, b) => a.totalDiff - b.totalDiff); // most negative first
+              const TOP = 5;
+              const fmtSh = (n: number) => Math.round(n).toLocaleString("en-US");
+
+              // Per-accent class literals — Tailwind's purge won't accept dynamic strings.
+              const PALETTE = {
+                emerald: {
+                  card: "rounded-xl border border-emerald-200 bg-emerald-50/40 overflow-hidden",
+                  title: "text-[11px] uppercase tracking-wider text-emerald-700 font-semibold",
+                  totalLabel: "text-[10px] text-emerald-700/80 uppercase tracking-wider font-semibold",
+                  totalValue: "text-base font-bold text-emerald-700 tabular-nums",
+                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-emerald-700",
+                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700",
+                },
+                rose: {
+                  card: "rounded-xl border border-rose-200 bg-rose-50/40 overflow-hidden",
+                  title: "text-[11px] uppercase tracking-wider text-rose-700 font-semibold",
+                  totalLabel: "text-[10px] text-rose-700/80 uppercase tracking-wider font-semibold",
+                  totalValue: "text-base font-bold text-rose-700 tabular-nums",
+                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700",
+                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700",
+                },
+              } as const;
+              const renderRow = (e: ExitAnalysisItem, accent: "emerald" | "rose") => {
+                const p = PALETTE[accent];
+                return (
+                  <tr key={e.symbol} className="border-t border-stone-50">
+                    <td className="px-2 py-1.5 font-semibold text-stone-900">{e.symbol}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700">{fmtSh(e.unitsSold)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-500">{fmtCurrency(e.avgExitPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700">{fmtCurrency(e.todayPrice)}</td>
+                    <td className={p.rowPct}>{e.changePct >= 0 ? "+" : ""}{e.changePct.toFixed(1)}%</td>
+                    <td className={p.rowImpact}>{e.totalDiff >= 0 ? "+" : ""}{fmtCurrency0(e.totalDiff)}</td>
+                  </tr>
+                );
+              };
+              const renderCard = (
+                items: ExitAnalysisItem[],
+                title: string, subtitle: string,
+                accent: "emerald" | "rose", totalLabel: string,
+              ) => {
+                const p = PALETTE[accent];
+                const total = items.reduce((s, e) => s + e.totalDiff, 0);
+                const shown = items.slice(0, TOP);
+                return (
+                  <div className={p.card}>
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+                      <div>
+                        <p className={p.title}>{title}</p>
+                        <p className="text-[10px] text-stone-500 mt-0.5">{subtitle}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={p.totalLabel}>{totalLabel}</p>
+                        <p className={p.totalValue}>{total >= 0 ? "+" : ""}{fmtCurrency0(total)}</p>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-[11px]">
+                        <thead className="text-stone-400 bg-white/60">
+                          <tr>
+                            <th className="px-2 py-1 text-left font-medium">Symbol</th>
+                            <th className="px-2 py-1 text-right font-medium">Sold</th>
+                            <th className="px-2 py-1 text-right font-medium">Avg exit</th>
+                            <th className="px-2 py-1 text-right font-medium">Today</th>
+                            <th className="px-2 py-1 text-right font-medium">Δ%</th>
+                            <th className="px-2 py-1 text-right font-medium">Impact</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {shown.map((e) => renderRow(e, accent))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {items.length > TOP && (
+                      <div className="px-4 py-1.5 text-[10px] text-stone-500 italic bg-white/40 border-t border-stone-100">
+                        + {items.length - TOP} more · top {TOP} by impact
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
+              if (missed.length === 0 && avoided.length === 0) return null;
+              return (
+                <>
+                  {missed.length > 0 && renderCard(
+                    missed,
+                    "Missed winners",
+                    "Tickers you sold after the snapshot that ran up since",
+                    "emerald",
+                    "Gain left on the table",
+                  )}
+                  {avoided.length > 0 && renderCard(
+                    avoided,
+                    "Smart exits",
+                    "Tickers you sold after the snapshot that have since dropped",
+                    "rose",
+                    "Loss avoided by exiting",
+                  )}
+                </>
+              );
+            })()}
 
             {/* Holdings table — sortable, includes CASH */}
             {(() => {
