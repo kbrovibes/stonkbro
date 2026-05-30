@@ -15,6 +15,23 @@ type LatestResponse = {
   refreshing: { scan_id: string; started_at: string } | null;
 };
 
+type ScanHistoryItem = {
+  id: string;
+  created_at: string;
+  completed_at: string | null;
+  scan_type: "scheduled" | "manual";
+  trigger_source: string | null;
+  status: "running" | "completed" | "failed";
+  error: string | null;
+  ticker_count: number;
+  ai_provider: string | null;
+  ai_model: string | null;
+  ai_fallback: boolean;
+  input_tokens: number;
+  output_tokens: number;
+  duration_ms: number;
+};
+
 type RatingFilter = "ALL" | "BUYS" | "HOLDS" | "SELLS";
 
 export function PortfolioManagerView() {
@@ -25,6 +42,10 @@ export function PortfolioManagerView() {
   const [filter, setFilter] = useState<RatingFilter>("ALL");
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
+  const [selectedScan, setSelectedScan] = useState<PortfolioScanRow | null>(null);
+  const [loadingSelected, setLoadingSelected] = useState(false);
 
   const loadLatest = useCallback(async () => {
     try {
@@ -43,9 +64,49 @@ export function PortfolioManagerView() {
     }
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch("/api/portfolio-manager/history?limit=20", { cache: "no-store" });
+      if (!res.ok) return;
+      const json = (await res.json()) as { history: ScanHistoryItem[] };
+      setHistory(json.history);
+    } catch {
+      // non-blocking
+    }
+  }, []);
+
+  const loadSelected = useCallback(async (id: string) => {
+    setLoadingSelected(true);
+    try {
+      const res = await fetch(`/api/portfolio-manager/scan/${id}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const json = (await res.json()) as { scan: PortfolioScanRow };
+      setSelectedScan(json.scan);
+    } catch {
+      // ignore — fall back to latest
+    } finally {
+      setLoadingSelected(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadLatest();
-  }, [loadLatest]);
+    loadHistory();
+  }, [loadLatest, loadHistory]);
+
+  // When user picks a historical scan, fetch its full payload
+  useEffect(() => {
+    if (!selectedScanId) {
+      setSelectedScan(null);
+      return;
+    }
+    // If the selected id matches the current latest, just use that — no extra fetch
+    if (data?.scan && data.scan.id === selectedScanId) {
+      setSelectedScan(data.scan);
+      return;
+    }
+    loadSelected(selectedScanId);
+  }, [selectedScanId, data?.scan, loadSelected]);
 
   // Track the scan id we kicked off so we can detect completion correctly
   const [activeScanId, setActiveScanId] = useState<string | null>(null);
@@ -55,9 +116,10 @@ export function PortfolioManagerView() {
     if (!data?.refreshing && !scanning && !activeScanId) return;
     const id = setInterval(() => {
       loadLatest();
+      loadHistory();
     }, 4000);
     return () => clearInterval(id);
-  }, [data?.refreshing, scanning, activeScanId, loadLatest]);
+  }, [data?.refreshing, scanning, activeScanId, loadLatest, loadHistory]);
 
   // Clear the local spinner once /latest reports our scan is no longer running
   // AND the latest completed row is newer than our scan id
@@ -94,8 +156,8 @@ export function PortfolioManagerView() {
       }
       const j = (await res.json()) as { scan_id?: string; queued?: boolean };
       if (j.scan_id) setActiveScanId(j.scan_id);
-      // Trigger an immediate refresh so /latest sees the running row
-      await loadLatest();
+      // Trigger an immediate refresh so /latest + history see the running row
+      await Promise.all([loadLatest(), loadHistory()]);
     } catch (e) {
       setScanError(e instanceof Error ? e.message : "Network error");
       setScanning(false);
@@ -111,13 +173,15 @@ export function PortfolioManagerView() {
     });
   };
 
+  const displayedScan = selectedScanId && selectedScanId !== data?.scan?.id ? selectedScan : data?.scan ?? null;
+
   const filteredAnalyses = useMemo<TickerAnalysis[]>(() => {
-    const all = data?.scan?.analyses ?? [];
+    const all = displayedScan?.analyses ?? [];
     if (filter === "ALL") return all;
     if (filter === "BUYS") return all.filter((a) => a.rating === "BUY" || a.rating === "STRONG_BUY");
     if (filter === "HOLDS") return all.filter((a) => a.rating === "HOLD");
     return all.filter((a) => a.rating === "SELL" || a.rating === "STRONG_SELL");
-  }, [data, filter]);
+  }, [displayedScan, filter]);
 
   if (loading) {
     return (
@@ -129,7 +193,9 @@ export function PortfolioManagerView() {
     return <div className="p-6 text-red-600 text-sm">Error: {error}</div>;
   }
 
-  const scan = data?.scan;
+  // Top view shows either the selected historical scan or the latest completed
+  const isViewingHistory = !!selectedScanId && selectedScanId !== data?.scan?.id;
+  const scan = isViewingHistory ? selectedScan : data?.scan;
   const refreshing = !!data?.refreshing || scanning;
 
   return (
@@ -165,6 +231,24 @@ export function PortfolioManagerView() {
       {refreshing && (
         <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
           Scan in progress — page will refresh automatically.
+        </div>
+      )}
+
+      {isViewingHistory && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 flex items-center justify-between gap-2">
+          <span>
+            Viewing previous scan from{" "}
+            <span className="font-semibold">
+              {scan ? formatRelative(scan.completed_at ?? scan.created_at) : ""}
+            </span>
+            .
+          </span>
+          <button
+            onClick={() => setSelectedScanId(null)}
+            className="text-xs font-bold text-amber-900 underline hover:no-underline"
+          >
+            Show latest →
+          </button>
         </div>
       )}
 
@@ -248,6 +332,20 @@ export function PortfolioManagerView() {
       {scan?.allocation && (
         <AllocationCard allocation={scan.allocation} />
       )}
+
+      {/* Loading historical scan */}
+      {loadingSelected && (
+        <div className="mt-3 text-xs text-stone-500">Loading scan…</div>
+      )}
+
+      {/* Scan history */}
+      <ScanHistoryPanel
+        history={history}
+        selectedScanId={selectedScanId}
+        latestScanId={data?.scan?.id ?? null}
+        onSelect={(id) => setSelectedScanId(id)}
+        onShowLatest={() => setSelectedScanId(null)}
+      />
     </div>
   );
 }
@@ -532,4 +630,108 @@ function formatRelative(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   return `${days}d ago`;
+}
+
+function formatDuration(ms: number): string {
+  if (!ms || ms < 1000) return `${ms}ms`;
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rs = s % 60;
+  return `${m}m ${rs}s`;
+}
+
+function formatAbsolute(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function ScanHistoryPanel({
+  history,
+  selectedScanId,
+  latestScanId,
+  onSelect,
+  onShowLatest,
+}: {
+  history: ScanHistoryItem[];
+  selectedScanId: string | null;
+  latestScanId: string | null;
+  onSelect: (id: string) => void;
+  onShowLatest: () => void;
+}) {
+  if (history.length === 0) return null;
+  const activeId = selectedScanId ?? latestScanId;
+  return (
+    <div className="mt-6 rounded-xl border border-stone-200 bg-white overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-stone-200 bg-stone-50">
+        <h2 className="text-xs font-bold uppercase text-stone-500 tracking-wide">Scan history</h2>
+        {selectedScanId && (
+          <button
+            onClick={onShowLatest}
+            className="text-[11px] font-semibold text-sky-700 hover:underline"
+          >
+            Show latest →
+          </button>
+        )}
+      </div>
+      <ul>
+        {history.map((h) => {
+          const isActive = h.id === activeId;
+          const isLatest = h.id === latestScanId;
+          return (
+            <li key={h.id} className="border-b border-stone-100 last:border-b-0">
+              <button
+                onClick={() => onSelect(h.id)}
+                disabled={h.status === "running"}
+                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 transition-colors text-left ${isActive ? "bg-sky-50/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
+              >
+                <div className="col-span-2 flex items-center gap-1.5">
+                  <StatusDot status={h.status} />
+                  <span className="text-stone-700 font-medium capitalize">{h.status}</span>
+                </div>
+                <div className="col-span-3 text-stone-700" title={formatAbsolute(h.created_at)}>
+                  {formatRelative(h.created_at)}
+                  {isLatest && <span className="ml-1.5 text-[9px] font-bold text-sky-700">LATEST</span>}
+                </div>
+                <div className="col-span-2 text-stone-500 truncate" title={h.trigger_source ?? h.scan_type}>
+                  {h.trigger_source ?? h.scan_type}
+                </div>
+                <div className="col-span-1 text-right text-stone-600 tabular-nums">
+                  {h.ticker_count || "—"}
+                </div>
+                <div className="col-span-2 text-right text-stone-600 tabular-nums">
+                  {h.duration_ms ? formatDuration(h.duration_ms) : (h.status === "running" ? "…" : "—")}
+                </div>
+                <div className="col-span-2 text-right text-stone-500 truncate text-[10px]">
+                  {h.ai_model
+                    ? `${h.ai_model.replace(/^(claude-|gemini-)/, "")} · ${(h.input_tokens + h.output_tokens).toLocaleString()}tok`
+                    : h.status === "running" ? "" : "—"}
+                </div>
+              </button>
+              {h.status === "failed" && h.error && (
+                <div className="px-3 pb-2 text-[11px] text-red-600 truncate" title={h.error}>
+                  Error: {h.error}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function StatusDot({ status }: { status: "running" | "completed" | "failed" }) {
+  if (status === "running") {
+    return <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse shrink-0" />;
+  }
+  if (status === "completed") {
+    return <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />;
+  }
+  return <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" />;
 }

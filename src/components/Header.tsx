@@ -22,7 +22,7 @@ export default async function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-100">
       <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-center relative">
         <Link href="/" className="flex items-baseline gap-0.5">
-          <span className="text-3xl font-extrabold tracking-tight text-stone-900">stonk</span>
+          <span className="text-5xl font-extrabold tracking-tight text-stone-900 leading-none">stonk</span>
           <span className="text-4xl font-black text-[#00C805] -tracking-wide leading-none">BRO</span>
         </Link>
         <div className="absolute right-4">
