@@ -121,9 +121,13 @@ export default function BottomNav({
             onClick={() => setMoreOpen(false)}
             className="fixed inset-0 z-40 bg-stone-900/40"
           />
-          {/* Drop-up: anchored above the More button, width = longest entry */}
-          <div className="fixed bottom-[60px] right-2 z-50 bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-fit max-w-[88vw] flex flex-col">
-            <div className="overflow-y-auto py-1.5 px-2 min-h-0">
+          {/* Drop-up: anchored above the More button — wraps in the same
+              max-w-2xl container as the nav itself so the popup stays
+              glued to the More tab on screens wider than the nav. */}
+          <div className="fixed bottom-[60px] left-0 right-0 z-50 pointer-events-none">
+            <div className="max-w-2xl mx-auto px-2 flex justify-end">
+              <div className="pointer-events-auto bg-white border border-stone-200 rounded-xl shadow-2xl max-h-[75vh] w-fit max-w-[88vw] flex flex-col">
+                <div className="overflow-y-auto py-1.5 px-2 min-h-0">
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-1 last:mb-0">
                   <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
@@ -148,15 +152,17 @@ export default function BottomNav({
               ))}
             </div>
 
-            {/* Sticky footer — sits below the scroll area in flex flow */}
-            <div className="border-t border-stone-200 p-1 shrink-0">
-              <Link
-                href="/more"
-                onClick={() => setMoreOpen(false)}
-                className="block text-center text-[12px] font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 py-2 rounded-md whitespace-nowrap"
-              >
-                View All &rarr;
-              </Link>
+                {/* Sticky footer — sits below the scroll area in flex flow */}
+                <div className="border-t border-stone-200 p-1 shrink-0">
+                  <Link
+                    href="/more"
+                    onClick={() => setMoreOpen(false)}
+                    className="block text-center text-[12px] font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 py-2 rounded-md whitespace-nowrap"
+                  >
+                    View All &rarr;
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </>
