@@ -1083,10 +1083,32 @@ export default function PortfolioPage() {
 }
 
 function LeapsView({ leaps }: { leaps: OptionChain[] }) {
+  // Always call hooks unconditionally — bail-out render must come after.
+  const today = new Date().toISOString().slice(0, 10);
+  const [entryPrices, setEntryPrices] = useState<Record<string, number | null>>({});
+
+  useEffect(() => {
+    if (leaps.length === 0) return;
+    const pairs = leaps
+      .filter((c) => c.start_date && c.underlying)
+      .map((c) => ({ symbol: c.underlying, date: c.start_date }));
+    if (pairs.length === 0) return;
+    fetch("/api/portfolio/leaps-entry-prices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pairs }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.prices) setEntryPrices(j.prices);
+      })
+      .catch(() => {});
+  }, [leaps]);
+
   if (leaps.length === 0) {
     return <p className="text-sm text-stone-400 text-center py-8">No LEAPS positions yet (long calls/puts opened ≥9 months from expiry).</p>;
   }
-  const today = new Date().toISOString().slice(0, 10);
+
   const totalPnl = leaps.reduce((s, c) => s + c.net_pnl, 0);
   const openCount = leaps.filter((c) => c.status === "OPEN").length;
 
@@ -1116,10 +1138,11 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
           <div className="col-span-2">Symbol</div>
           <div className="col-span-1">Type</div>
           <div className="col-span-1 text-right">Strike</div>
+          <div className="col-span-2 text-right">Stock @ Open</div>
           <div className="col-span-2">Expiry</div>
           <div className="col-span-1 text-right">DTE</div>
-          <div className="col-span-2">Status</div>
-          <div className="col-span-3 text-right">P&L</div>
+          <div className="col-span-1">Status</div>
+          <div className="col-span-2 text-right">P&L</div>
         </div>
         {leaps.map((c, i) => {
           const exp = c.legs[0]?.expiry ?? "";
@@ -1127,6 +1150,12 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
           const origDte = exp && opened ? daysBetween(opened, exp) : 0;
           const dteRemaining = exp ? daysBetween(today, exp) : 0;
           const closed = c.status !== "OPEN";
+          const strike = c.legs[0]?.strike ?? 0;
+          const isCall = c.option_type.toUpperCase() === "CALL";
+          const entryKey = `${c.underlying.toUpperCase()}|${opened}`;
+          const entryPrice = entryPrices[entryKey];
+          const moneyness = entryPrice != null && strike > 0 ? moneynessFor(isCall, entryPrice, strike) : null;
+
           return (
             <div
               key={i}
@@ -1134,11 +1163,25 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
             >
               <div className="col-span-2 font-bold text-stone-900">{c.underlying}</div>
               <div className="col-span-1">
-                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${c.option_type.toUpperCase() === "CALL" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${isCall ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
                   {c.option_type.toUpperCase()}
                 </span>
               </div>
-              <div className="col-span-1 text-right tabular-nums text-stone-700">${c.legs[0]?.strike?.toFixed(0) ?? "—"}</div>
+              <div className="col-span-1 text-right tabular-nums text-stone-700">${strike.toFixed(0)}</div>
+              <div className="col-span-2 text-right">
+                {entryPrice == null ? (
+                  <span className="text-stone-300">—</span>
+                ) : (
+                  <div>
+                    <div className="tabular-nums text-stone-700">${entryPrice.toFixed(2)}</div>
+                    {moneyness && (
+                      <div className={`text-[10px] font-bold ${moneyness.color}`}>
+                        {moneyness.label}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="col-span-2 text-stone-600">
                 {fmtDate(exp)}
                 <div className="text-[10px] text-stone-400">opened {fmtDate(opened)} · {origDte}d orig</div>
@@ -1146,13 +1189,13 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
               <div className={`col-span-1 text-right tabular-nums ${dteRemaining < 30 ? "text-rose-600" : dteRemaining < 90 ? "text-amber-600" : "text-stone-600"}`}>
                 {closed ? "—" : `${dteRemaining}d`}
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1">
                 <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${STATUS_BADGE[c.status] ?? "bg-stone-100 text-stone-600"}`}>
                   {c.status}
                 </span>
                 {c.roll_count > 0 && <span className="ml-1 text-[10px] text-stone-500">×{c.roll_count + 1}</span>}
               </div>
-              <div className={`col-span-3 text-right tabular-nums font-semibold ${c.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <div className={`col-span-2 text-right tabular-nums font-semibold ${c.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {c.net_pnl >= 0 ? "+" : ""}{fmtCurrency(c.net_pnl)}
               </div>
             </div>
@@ -1161,4 +1204,22 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Classify moneyness at entry. For a CALL: ITM if stock > strike. For a PUT: ITM if stock < strike.
+ * "Deep" when ≥20% away from strike in the favorable direction.
+ */
+function moneynessFor(isCall: boolean, stock: number, strike: number): { label: string; color: string } {
+  const pct = ((stock - strike) / strike) * 100; // positive = stock above strike
+  const sign = isCall ? 1 : -1;
+  const inTheMoneyPct = pct * sign; // positive when ITM, negative when OTM
+  const absPct = Math.abs(inTheMoneyPct);
+  const direction = inTheMoneyPct >= 0 ? "ITM" : "OTM";
+  const depth = absPct >= 20 ? "Deep " : absPct >= 5 ? "" : "ATM";
+  const label = depth === "ATM"
+    ? `ATM ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`
+    : `${depth}${direction} ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
+  const color = direction === "ITM" ? "text-emerald-600" : "text-rose-600";
+  return { label, color };
 }

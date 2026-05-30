@@ -80,6 +80,34 @@ function mockHistory(symbol: string, days: number): DailyBar[] {
   return bars.slice(-days);
 }
 
+/** Return the close price on a specific date (or the first trading day on/after it). */
+export async function getHistoricalClose(symbol: string, date: string): Promise<number | null> {
+  if (!process.env.TRADIER_API_TOKEN) return null;
+  try {
+    const start = date;
+    // Look up to 7 days forward in case `date` is a weekend/holiday
+    const endDt = new Date(date);
+    endDt.setDate(endDt.getDate() + 7);
+    const end = endDt.toISOString().split("T")[0];
+
+    const res = await tradierFetch(
+      `/markets/history?symbol=${symbol}&interval=daily&start=${start}&end=${end}`
+    );
+    if (!res) return null;
+    const data = await res.json();
+    const history = data.history?.day;
+    if (!history) return null;
+    const bars = Array.isArray(history) ? history : [history];
+    // First bar with date >= requested
+    for (const b of bars) {
+      if (b?.date && b.date >= date && typeof b.close === "number") return b.close;
+    }
+    return bars[0]?.close ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getHistory(symbol: string, days = 200): Promise<DailyBar[]> {
   return tradierHistory(symbol, days);
 }

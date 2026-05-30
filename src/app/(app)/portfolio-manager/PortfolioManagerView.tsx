@@ -33,6 +33,23 @@ type ScanHistoryItem = {
 };
 
 type RatingFilter = "ALL" | "BUYS" | "HOLDS" | "SELLS";
+type SortKey = "symbol" | "price" | "change_1d" | "change_30d" | "rsi" | "rating" | "confidence" | "action";
+type SortDir = "asc" | "desc";
+
+const RATING_RANK: Record<Rating, number> = {
+  STRONG_BUY: 5,
+  BUY: 4,
+  HOLD: 3,
+  SELL: 2,
+  STRONG_SELL: 1,
+};
+
+const ACTION_RANK: Record<string, number> = {
+  ADD: 4,
+  HOLD: 3,
+  TRIM: 2,
+  EXIT: 1,
+};
 
 export function PortfolioManagerView() {
   const [data, setData] = useState<LatestResponse | null>(null);
@@ -46,6 +63,18 @@ export function PortfolioManagerView() {
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedScan, setSelectedScan] = useState<PortfolioScanRow | null>(null);
   const [loadingSelected, setLoadingSelected] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("rating");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      // Default to a sensible direction per column (descending for numeric/ranked)
+      setSortDir(key === "symbol" ? "asc" : "desc");
+    }
+  };
 
   const loadLatest = useCallback(async () => {
     try {
@@ -177,11 +206,35 @@ export function PortfolioManagerView() {
 
   const filteredAnalyses = useMemo<TickerAnalysis[]>(() => {
     const all = displayedScan?.analyses ?? [];
-    if (filter === "ALL") return all;
-    if (filter === "BUYS") return all.filter((a) => a.rating === "BUY" || a.rating === "STRONG_BUY");
-    if (filter === "HOLDS") return all.filter((a) => a.rating === "HOLD");
-    return all.filter((a) => a.rating === "SELL" || a.rating === "STRONG_SELL");
-  }, [displayedScan, filter]);
+    const filtered =
+      filter === "ALL"
+        ? all
+        : filter === "BUYS"
+          ? all.filter((a) => a.rating === "BUY" || a.rating === "STRONG_BUY")
+          : filter === "HOLDS"
+            ? all.filter((a) => a.rating === "HOLD")
+            : all.filter((a) => a.rating === "SELL" || a.rating === "STRONG_SELL");
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortKey) {
+        case "symbol": return a.symbol.localeCompare(b.symbol) * dir;
+        case "price": return (a.enrichment.price - b.enrichment.price) * dir;
+        case "change_1d": return (a.enrichment.change_1d_pct - b.enrichment.change_1d_pct) * dir;
+        case "change_30d": return (a.enrichment.change_30d_pct - b.enrichment.change_30d_pct) * dir;
+        case "rsi": {
+          const ra = a.enrichment.rsi_14 ?? -1;
+          const rb = b.enrichment.rsi_14 ?? -1;
+          return (ra - rb) * dir;
+        }
+        case "rating": return (RATING_RANK[a.rating] - RATING_RANK[b.rating]) * dir;
+        case "confidence": return (a.confidence - b.confidence) * dir;
+        case "action": return ((ACTION_RANK[a.suggested_action.type] ?? 0) - (ACTION_RANK[b.suggested_action.type] ?? 0)) * dir;
+        default: return 0;
+      }
+    });
+    return sorted;
+  }, [displayedScan, filter, sortKey, sortDir]);
 
   if (loading) {
     return (
@@ -301,14 +354,14 @@ export function PortfolioManagerView() {
       {scan && scan.ticker_count > 0 && (
         <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
           <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
-            <div className="col-span-2">Symbol</div>
-            <div className="col-span-2 text-right">Price</div>
-            <div className="col-span-1 text-right">1d</div>
-            <div className="col-span-1 text-right">30d</div>
-            <div className="col-span-1 text-right">RSI</div>
-            <div className="col-span-2">Rating</div>
-            <div className="col-span-2">Conf.</div>
-            <div className="col-span-1 text-right">Action</div>
+            <SortHeader label="Symbol"   className="col-span-2"               sortKey="symbol"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="Price"    className="col-span-2 justify-end"   sortKey="price"       currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="1d"       className="col-span-1 justify-end"   sortKey="change_1d"   currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="30d"      className="col-span-1 justify-end"   sortKey="change_30d"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="RSI"      className="col-span-1 justify-end"   sortKey="rsi"         currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="Rating"   className="col-span-2"               sortKey="rating"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="Conf."    className="col-span-2"               sortKey="confidence"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+            <SortHeader label="Action"   className="col-span-1 justify-end"   sortKey="action"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
           </div>
 
           {filteredAnalyses.length === 0 ? (
@@ -723,6 +776,35 @@ function ScanHistoryPanel({
         })}
       </ul>
     </div>
+  );
+}
+
+function SortHeader({
+  label,
+  className,
+  sortKey,
+  currentKey,
+  currentDir,
+  onToggle,
+}: {
+  label: string;
+  className: string;
+  sortKey: SortKey;
+  currentKey: SortKey;
+  currentDir: SortDir;
+  onToggle: (k: SortKey) => void;
+}) {
+  const active = currentKey === sortKey;
+  const arrow = !active ? "↕" : currentDir === "asc" ? "↑" : "↓";
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sortKey)}
+      className={`flex items-center gap-1 hover:text-stone-700 transition-colors ${active ? "text-sky-700" : "text-stone-500"} ${className}`}
+    >
+      <span>{label}</span>
+      <span className={`text-[8px] ${active ? "opacity-100" : "opacity-40"}`}>{arrow}</span>
+    </button>
   );
 }
 
