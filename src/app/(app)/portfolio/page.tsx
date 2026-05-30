@@ -120,7 +120,22 @@ function fmtMonthShort(m: string) {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-type FilterTab = "Monthly" | "Open" | "Closed" | "Assigned" | "Archive";
+type FilterTab = "Monthly" | "Open" | "Closed" | "Assigned" | "LEAPS" | "Archive";
+
+/** True when a chain started as a long option (BUY) with ≥9 months to expiry — i.e. a LEAPS. */
+function isLeaps(chain: OptionChain): boolean {
+  if (chain.direction !== "BUY") return false;
+  if (!chain.start_date || !chain.legs.length) return false;
+  const firstLeg = chain.legs[0];
+  const expiry = firstLeg.expiry || chain.legs[0].expiry;
+  if (!expiry) return false;
+  const days = (new Date(expiry).getTime() - new Date(chain.start_date).getTime()) / 86400000;
+  return days >= 270;
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
+}
 
 // Annualized return on collateral for closed PUT chains
 function annualizedReturnPct(chain: OptionChain): number | null {
@@ -881,7 +896,15 @@ export default function PortfolioPage() {
     return sum + leg.strike * 100 * Math.abs(c.open_units);
   }, 0);
 
-  const TABS: FilterTab[] = ["Monthly", "Open", "Closed", "Assigned", "Archive"];
+  const TABS: FilterTab[] = ["Monthly", "Open", "Closed", "Assigned", "LEAPS", "Archive"];
+  const leaps = chains.filter(isLeaps).sort((a, b) => {
+    // Open first, then by expiry ascending
+    if (a.status === "OPEN" && b.status !== "OPEN") return -1;
+    if (b.status === "OPEN" && a.status !== "OPEN") return 1;
+    const ea = a.legs[0]?.expiry ?? "9999";
+    const eb = b.legs[0]?.expiry ?? "9999";
+    return ea.localeCompare(eb);
+  });
 
   const sortedOpen = [...open].sort((a, b) => {
     switch (openSort) {
@@ -1047,11 +1070,94 @@ export default function PortfolioPage() {
           <MonthlyView chains={chains} yearFilter={new Date().getFullYear().toString()} />
         ) : filter === "Archive" ? (
           <MonthlyView chains={chains} yearFilter={null} />
+        ) : filter === "LEAPS" ? (
+          <LeapsView leaps={leaps} />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">No {filter.toLowerCase()} positions</p>
         ) : (
           filtered.map((c, i) => <ChainCard key={i} chain={c} />)
         )}
+      </div>
+    </div>
+  );
+}
+
+function LeapsView({ leaps }: { leaps: OptionChain[] }) {
+  if (leaps.length === 0) {
+    return <p className="text-sm text-stone-400 text-center py-8">No LEAPS positions yet (long calls/puts opened ≥9 months from expiry).</p>;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const totalPnl = leaps.reduce((s, c) => s + c.net_pnl, 0);
+  const openCount = leaps.filter((c) => c.status === "OPEN").length;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="bg-white border border-stone-100 rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs">
+          <div>
+            <div className="text-stone-400 font-medium uppercase tracking-wider">Total</div>
+            <div className="text-stone-700 font-semibold text-sm">{leaps.length}</div>
+          </div>
+          <div>
+            <div className="text-stone-400 font-medium uppercase tracking-wider">Open</div>
+            <div className="text-stone-700 font-semibold text-sm">{openCount}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Net P&L</div>
+          <div className={`text-base font-bold ${totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-stone-100 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
+          <div className="col-span-2">Symbol</div>
+          <div className="col-span-1">Type</div>
+          <div className="col-span-1 text-right">Strike</div>
+          <div className="col-span-2">Expiry</div>
+          <div className="col-span-1 text-right">DTE</div>
+          <div className="col-span-2">Status</div>
+          <div className="col-span-3 text-right">P&L</div>
+        </div>
+        {leaps.map((c, i) => {
+          const exp = c.legs[0]?.expiry ?? "";
+          const opened = c.start_date;
+          const origDte = exp && opened ? daysBetween(opened, exp) : 0;
+          const dteRemaining = exp ? daysBetween(today, exp) : 0;
+          const closed = c.status !== "OPEN";
+          return (
+            <div
+              key={i}
+              className="grid grid-cols-12 gap-2 px-3 py-2 text-xs items-center border-b border-stone-100 last:border-b-0"
+            >
+              <div className="col-span-2 font-bold text-stone-900">{c.underlying}</div>
+              <div className="col-span-1">
+                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${c.option_type.toUpperCase() === "CALL" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                  {c.option_type.toUpperCase()}
+                </span>
+              </div>
+              <div className="col-span-1 text-right tabular-nums text-stone-700">${c.legs[0]?.strike?.toFixed(0) ?? "—"}</div>
+              <div className="col-span-2 text-stone-600">
+                {fmtDate(exp)}
+                <div className="text-[10px] text-stone-400">opened {fmtDate(opened)} · {origDte}d orig</div>
+              </div>
+              <div className={`col-span-1 text-right tabular-nums ${dteRemaining < 30 ? "text-rose-600" : dteRemaining < 90 ? "text-amber-600" : "text-stone-600"}`}>
+                {closed ? "—" : `${dteRemaining}d`}
+              </div>
+              <div className="col-span-2">
+                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${STATUS_BADGE[c.status] ?? "bg-stone-100 text-stone-600"}`}>
+                  {c.status}
+                </span>
+                {c.roll_count > 0 && <span className="ml-1 text-[10px] text-stone-500">×{c.roll_count + 1}</span>}
+              </div>
+              <div className={`col-span-3 text-right tabular-nums font-semibold ${c.net_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {c.net_pnl >= 0 ? "+" : ""}{fmtCurrency(c.net_pnl)}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
