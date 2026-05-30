@@ -352,32 +352,34 @@ export function PortfolioManagerView() {
 
       {/* Table */}
       {scan && scan.ticker_count > 0 && (
-        <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
-            <SortHeader label="Symbol"   className="col-span-2"               sortKey="symbol"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="Price"    className="col-span-2 justify-end"   sortKey="price"       currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="1d"       className="col-span-1 justify-end"   sortKey="change_1d"   currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="30d"      className="col-span-1 justify-end"   sortKey="change_30d"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="RSI"      className="col-span-1 justify-end"   sortKey="rsi"         currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="Rating"   className="col-span-2"               sortKey="rating"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="Conf."    className="col-span-2"               sortKey="confidence"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-            <SortHeader label="Action"   className="col-span-1 justify-end"   sortKey="action"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
-          </div>
-
-          {filteredAnalyses.length === 0 ? (
-            <div className="px-3 py-6 text-center text-sm text-stone-500">
-              No tickers match the current filter.
+        <div className="rounded-xl border border-stone-200 bg-white overflow-x-auto">
+          <div className="min-w-[820px]">
+            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
+              <SortHeader label="Symbol"   className="col-span-2"               sortKey="symbol"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="Price"    className="col-span-2 justify-end"   sortKey="price"       currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="1d"       className="col-span-1 justify-end"   sortKey="change_1d"   currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="30d"      className="col-span-1 justify-end"   sortKey="change_30d"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="RSI"      className="col-span-1 justify-end"   sortKey="rsi"         currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="Rating"   className="col-span-2"               sortKey="rating"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="Conf."    className="col-span-2"               sortKey="confidence"  currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="Action"   className="col-span-1 justify-end"   sortKey="action"      currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} />
             </div>
-          ) : (
-            filteredAnalyses.map((a) => (
-              <Row
-                key={a.symbol}
-                analysis={a}
-                expanded={expanded.has(a.symbol)}
-                onToggle={() => toggleRow(a.symbol)}
-              />
-            ))
-          )}
+
+            {filteredAnalyses.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm text-stone-500">
+                No tickers match the current filter.
+              </div>
+            ) : (
+              filteredAnalyses.map((a) => (
+                <Row
+                  key={a.symbol}
+                  analysis={a}
+                  expanded={expanded.has(a.symbol)}
+                  onToggle={() => toggleRow(a.symbol)}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
 
@@ -444,7 +446,7 @@ function Row({
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 pt-1 text-sm bg-stone-50 border-t border-stone-100">
+        <div className="px-3 pb-3 pt-1 text-sm bg-stone-50 border-t border-stone-100 sticky left-0 w-screen md:static md:w-auto">
           {analysis.thesis && (
             <p className="text-stone-800 mb-3 leading-snug">{analysis.thesis}</p>
           )}
