@@ -136,6 +136,8 @@ interface TimeMachineResult {
     monthsWithVests: string[];
   };
   assumptions: string[];
+  /** ISO timestamp injected by the cached route; absent on live ?date= simulation. */
+  _computedAt?: string;
 }
 
 // =========================================================================
@@ -204,6 +206,7 @@ export default function TimeMachinePage() {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [simBreakdownOpen, setSimBreakdownOpen] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   // Backfilled monthly snapshots — drives the colored month-button strip.
   type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
@@ -361,6 +364,25 @@ export default function TimeMachinePage() {
       setError(e instanceof Error ? e.message : "Failed to load cached snapshot");
     } finally {
       setLoading(false);
+    }
+  }
+
+  /** Force-recompute a single cached snapshot with the latest simulator code. */
+  async function regenerateSnapshot(date: string) {
+    setRegenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/portfolio/time-machine/backfill?targets=${date}`, { method: "POST" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || `Regen failed (${res.status})`);
+      // Reload the snapshot detail AND the strip metadata so the colored tile updates.
+      await loadCached(date);
+      const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json()).catch(() => null);
+      if (list?.snapshots) setSnapshotList(list.snapshots);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Regen failed");
+    } finally {
+      setRegenerating(false);
     }
   }
 
@@ -657,14 +679,36 @@ export default function TimeMachinePage() {
 
             {/* Snapshot summary card */}
             <div className="bg-white border border-stone-200 rounded-xl p-4">
-              <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Snapshot</p>
-              <p className="text-sm text-stone-700 mt-1">
-                On <span className="font-semibold text-stone-900">{fmtDate(data.snapshotDate)}</span>:
-                held <span className="font-semibold text-stone-900">{data.snapshot.positions.length}</span> stocks,{" "}
-                <span className="font-semibold text-stone-900">{data.snapshot.options.length}</span> options,{" "}
-                <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.cash)}</span> cash,
-                total <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.total)}</span>
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Snapshot</p>
+                  <p className="text-sm text-stone-700 mt-1">
+                    On <span className="font-semibold text-stone-900">{fmtDate(data.snapshotDate)}</span>:
+                    held <span className="font-semibold text-stone-900">{data.snapshot.positions.length}</span> stocks,{" "}
+                    <span className="font-semibold text-stone-900">{data.snapshot.options.length}</span> options,{" "}
+                    <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.cash)}</span> cash,
+                    total <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.total)}</span>
+                  </p>
+                  {data._computedAt && (
+                    <p className="text-[10px] text-stone-400 mt-1.5">
+                      Generated {new Date(data._computedAt).toLocaleString("en-US", {
+                        month: "short", day: "numeric", year: "numeric",
+                        hour: "numeric", minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => regenerateSnapshot(data.snapshotDate)}
+                  disabled={regenerating}
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white text-[11px] font-semibold text-stone-700 hover:bg-stone-50 active:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Re-run this snapshot with the latest simulator logic"
+                >
+                  <span aria-hidden>↻</span>
+                  {regenerating ? "Regenerating…" : "Re-run"}
+                </button>
+              </div>
             </div>
 
             {/* Today comparison */}
