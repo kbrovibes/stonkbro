@@ -300,16 +300,14 @@ export interface OptionChain {
 
 export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionChain[]> {
   const end = new Date().toISOString().split("T")[0];
-  const start = startDate;
   const accounts = await getAccounts();
 
+  // SnapTrade caps each getAccountActivities call at 1000 records, so use the
+  // recursive window-splitter to make sure no option transactions are dropped
+  // (especially old LEAPS opens that would otherwise fall off the back of a
+  // single overflowing page).
   const allRaw = await Promise.all(
-    accounts.map(async (acct) => {
-      const res = await accountApi.getAccountActivities({
-        userId: UID, userSecret: USEC, accountId: acct.id, startDate: start, endDate: end,
-      });
-      return ((res.data as any)?.data ?? res.data ?? []) as any[];
-    })
+    accounts.map((acct) => fetchActivitiesWindow(acct.id, startDate, end))
   );
 
   type ParsedTx = {
