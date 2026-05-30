@@ -48,6 +48,17 @@ export interface SimulationResult {
     interest: { date: string; amount: number }[];
     totalDepositsAdded: number;
     totalWithdrawalsFunded: number;
+    /** Final simulated cash balance — what's actually in the sim's cash bucket today. */
+    cashFinal: number;
+    /** Audit trail for how cashFinal was derived. */
+    cashBreakdown: {
+      atSnapshot: number;
+      fromOptionReplay: number;
+      fromDeposits: number;
+      fromDividends: number;
+      fromInterest: number;
+      final: number;
+    };
     total: number;
   };
   actual: {
@@ -120,6 +131,11 @@ export async function simulateTimeMachine(args: {
     simStockUnits,
     cashRef
   );
+
+  // Snapshot cashRef AFTER option replay but BEFORE deposit/div/interest fold
+  // so we can audit how much came from each source.
+  const cashAfterOptionReplay = cashRef.value;
+  const cashFromOptionReplay = cashAfterOptionReplay - cashAtSnapshot;
 
   // Fold in non-trade cash flows (deposits + dividends-on-held + interest).
   // Withdrawals are tracked but NEVER subtracted from sim total.
@@ -254,6 +270,15 @@ export async function simulateTimeMachine(args: {
       interest: cashFlows.interest.map((i) => ({ date: i.date, amount: i.amount })),
       totalDepositsAdded: cashFlows.totalDeposits,
       totalWithdrawalsFunded: cashFlows.totalWithdrawalsFunded,
+      cashFinal: simulatedCashTotal,
+      cashBreakdown: {
+        atSnapshot: cashAtSnapshot,
+        fromOptionReplay: cashFromOptionReplay,
+        fromDeposits: cashFlows.totalDeposits,
+        fromDividends: cashFlows.totalDividends,
+        fromInterest: cashFlows.totalInterest,
+        final: simulatedCashTotal,
+      },
       total: simulatedTotal,
     },
     actual: { total: actualTotal },

@@ -84,6 +84,15 @@ interface TimeMachineResult {
     interest: CashFlowItem[];
     totalDepositsAdded: number;
     totalWithdrawalsFunded: number;
+    cashFinal?: number;
+    cashBreakdown?: {
+      atSnapshot: number;
+      fromOptionReplay: number;
+      fromDeposits: number;
+      fromDividends: number;
+      fromInterest: number;
+      final: number;
+    };
     total: number;
   };
   actual: {
@@ -194,6 +203,7 @@ export default function TimeMachinePage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [simBreakdownOpen, setSimBreakdownOpen] = useState(false);
 
   // Backfilled monthly snapshots — drives the colored month-button strip.
   type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
@@ -696,8 +706,49 @@ export default function TimeMachinePage() {
                 )}
               </div>
               <div className="rounded-xl border border-stone-200 bg-white p-3">
-                <p className="text-[10px] text-stone-400 uppercase tracking-wider">Simulated today</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wider">Simulated today</p>
+                  <button
+                    type="button"
+                    onClick={() => setSimBreakdownOpen((v) => !v)}
+                    className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                  >
+                    {simBreakdownOpen ? "hide" : "details"}
+                  </button>
+                </div>
                 <p className="text-xl font-bold text-stone-900 mt-1">{fmtCurrency0(data.simulation.total)}</p>
+                {simBreakdownOpen && (() => {
+                  const stockSum = data.simulation.stockValues.reduce((a, v) => a + v.value, 0);
+                  const optionSum = data.simulation.optionValues.reduce((a, v) => a + v.value, 0);
+                  const cashFinal = data.simulation.cashFinal
+                    ?? (data.simulation.total - stockSum - optionSum);
+                  const cb = data.simulation.cashBreakdown;
+                  return (
+                    <div className="mt-2 pt-2 border-t border-stone-100 text-[10px] text-stone-500 space-y-0.5 tabular-nums">
+                      <div className="flex justify-between"><span>Stocks ({data.simulation.stockValues.length})</span><span>{fmtCurrency0(stockSum)}</span></div>
+                      <div className="flex justify-between">
+                        <span>Live options MTM ({data.simulation.optionValues.filter((o) => o.status === "live").length})</span>
+                        <span className={optionSum < 0 ? "text-rose-600" : ""}>{fmtCurrency0(optionSum)}</span>
+                      </div>
+                      <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(cashFinal)}</span></div>
+                      {cb && (
+                        <div className="pt-1.5 mt-1.5 border-t border-stone-100 text-[9px] text-stone-400 space-y-0.5">
+                          <div className="text-stone-500 mb-0.5">Cash chain</div>
+                          <div className="flex justify-between"><span>· at snapshot</span><span>{fmtCurrency0(cb.atSnapshot)}</span></div>
+                          <div className="flex justify-between">
+                            <span>· from option replay</span>
+                            <span className={cb.fromOptionReplay < 0 ? "text-rose-600" : cb.fromOptionReplay > 0 ? "text-emerald-700" : ""}>
+                              {cb.fromOptionReplay >= 0 ? "+" : ""}{fmtCurrency0(cb.fromOptionReplay)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between"><span>· + deposits</span><span>+{fmtCurrency0(cb.fromDeposits)}</span></div>
+                          <div className="flex justify-between"><span>· + dividends</span><span>+{fmtCurrency0(cb.fromDividends)}</span></div>
+                          <div className="flex justify-between"><span>· + interest</span><span>+{fmtCurrency0(cb.fromInterest)}</span></div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -1225,6 +1276,14 @@ export default function TimeMachinePage() {
                         : premium < 0
                           ? `Premium paid −${fmtCurrency(Math.abs(premium))}`
                           : "Premium —";
+                    // Direction: snap.units is signed (+long, −short). If snap missing,
+                    // fall back to premium sign (credit ≈ short, debit ≈ long).
+                    const isLong = snap ? snap.units > 0 : premium < 0;
+                    const sideLabel = isLong ? "LONG" : "SHORT";
+                    const sideClass = isLong
+                      ? "bg-sky-50 text-sky-700"
+                      : "bg-amber-50 text-amber-700";
+                    const qty = snap ? Math.abs(snap.units) : null;
                     return (
                       <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50" : ""}`}>
                         <div className="flex items-center justify-between gap-2">
@@ -1232,9 +1291,13 @@ export default function TimeMachinePage() {
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${style.bg}`}>
                               {style.label}
                             </span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${sideClass}`}>
+                              {sideLabel}
+                            </span>
                             <span className="text-xs font-medium text-stone-900 truncate">
                               {snap ? (
                                 <>
+                                  {qty != null && qty !== 1 && <span className="text-stone-500">{qty}× </span>}
                                   {snap.underlying} · {snap.type} ${snap.strike} ·{" "}
                                   <span className="text-stone-500">exp {fmtDateShort(snap.expiry)}</span>
                                 </>
