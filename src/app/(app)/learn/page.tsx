@@ -8,21 +8,21 @@ export const dynamic = "force-dynamic";
 
 const COLOR_MAP: Record<string, string> = {
   "stone-500": "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default",
-  "blue-500": "bg-blue-50 text-blue-600 border-blue-200",
-  "amber-500": "bg-amber-50 text-amber-600 border-amber-200",
+  "blue-500": "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
+  "amber-500": "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
   "emerald-500": "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain border-emerald-200 dark:border-gain-border",
-  "purple-500": "bg-purple-50 text-purple-600 border-purple-200",
-  "rose-500": "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss border-rose-200",
+  "purple-500": "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-800/50",
+  "rose-500": "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss border-rose-200 dark:border-rose-800/50",
   "cyan-500": "bg-cyan-50 text-cyan-600 border-cyan-200",
-  "yellow-500": "bg-yellow-50 text-yellow-600 border-yellow-200",
-  "indigo-500": "bg-indigo-50 text-indigo-600 border-indigo-200",
-  "teal-500": "bg-teal-50 text-teal-600 border-teal-200",
-  "orange-500": "bg-orange-50 text-orange-600 border-orange-200",
-  "lime-500": "bg-lime-50 text-lime-600 border-lime-200",
+  "yellow-500": "bg-yellow-50 dark:bg-yellow-950/40 text-yellow-600 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/50",
+  "indigo-500": "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/50",
+  "teal-500": "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-300 border-teal-200 dark:border-teal-800/50",
+  "orange-500": "bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-300 border-orange-200 dark:border-orange-800/50",
+  "lime-500": "bg-lime-50 dark:bg-lime-950/40 text-lime-600 dark:text-lime-300 border-lime-200 dark:border-lime-800/50",
   "sky-500": "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent border-sky-200 dark:border-accent-border",
-  "violet-500": "bg-violet-50 text-violet-600 border-violet-200",
+  "violet-500": "bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 border-violet-200 dark:border-violet-800/50",
   "fuchsia-500": "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200",
-  "pink-500": "bg-pink-50 text-pink-600 border-pink-200",
+  "pink-500": "bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-300 border-pink-200 dark:border-pink-800/50",
   "green-500": "bg-green-50 dark:bg-gain-bg text-green-600 dark:text-gain border-green-200",
   "red-500": "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss border-red-200 dark:border-loss-border",
 };
@@ -52,13 +52,13 @@ const LEVEL_CONFIG = {
   1: {
     label: "Level 1 — Foundations",
     badge: "L1",
-    badgeColor: "bg-blue-100 text-blue-700 border-blue-200",
+    badgeColor: "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
     description: "Options Greeks, time decay, volatility, and technical analysis basics",
   },
   2: {
     label: "Level 2 — Strategy & Selection",
     badge: "L2",
-    badgeColor: "bg-violet-100 text-violet-700 border-violet-200",
+    badgeColor: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/50",
     description: "Moving averages, momentum indicators, IV rank, and the complete options entry framework",
   },
 };
@@ -170,7 +170,7 @@ export default async function LearnPage() {
       {level1Modules.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50">
               {LEVEL_CONFIG[1].badge}
             </span>
             <h2 className="text-sm font-semibold text-stone-700 dark:text-text-muted">{LEVEL_CONFIG[1].label}</h2>
@@ -189,7 +189,7 @@ export default async function LearnPage() {
       {level2Modules.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-violet-100 text-violet-700 border-violet-200">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/50">
               {LEVEL_CONFIG[2].badge}
             </span>
             <h2 className="text-sm font-semibold text-stone-700 dark:text-text-muted">{LEVEL_CONFIG[2].label}</h2>

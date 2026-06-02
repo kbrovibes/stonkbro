@@ -101,7 +101,7 @@ export default function AdminDashboard() {
             </svg>
           </Link>
           <h2 className="text-lg font-bold text-stone-900 dark:text-text">Admin</h2>
-          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-full">
             Admin only
           </span>
         </div>
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
                           <td className="px-3 py-2 text-stone-700 dark:text-text-muted truncate max-w-[100px]">{row.email}</td>
                           <td className="px-3 py-2">
                             <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                              row.provider === "claude" ? "bg-violet-50 text-violet-600" : "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent"
+                              row.provider === "claude" ? "bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300" : "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent"
                             }`}>
                               {row.provider}
                             </span>

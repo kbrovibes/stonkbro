@@ -47,7 +47,7 @@ type Report = {
 function strategyColor(strategy: string) {
   switch (strategy) {
     case "CSP": return "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover";
-    case "CC": return "bg-amber-50 text-amber-700";
+    case "CC": return "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300";
     case "PMCC": return "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong";
     case "AVOID": return "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong";
     default: return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
@@ -131,7 +131,7 @@ export default function ResearchHistoryPage() {
                   </span>
                   <span className="text-[10px] text-stone-400 dark:text-text-faint">{timeAgo(report.createdAt)}</span>
                   {report.trigger === "cron" && (
-                    <span className="text-[10px] bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full">auto</span>
+                    <span className="text-[10px] bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 px-1.5 py-0.5 rounded-full">auto</span>
                   )}
                 </div>
                 {report.suggestions.length > 0 && (

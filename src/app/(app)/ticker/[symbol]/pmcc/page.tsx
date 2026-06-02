@@ -28,7 +28,7 @@ function BackLink({ symbol }: { symbol: string }) {
 function GradeBadge({ grade }: { grade: "A" | "B" | "C" }) {
   const styles = {
     A: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
-    B: "bg-amber-50 text-amber-700 border-amber-200",
+    B: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
     C: "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle border-stone-200 dark:border-border-default",
   };
   return (
@@ -54,7 +54,7 @@ function OptionLegCard({ label, leg, side, delta }: { label: string; leg: Option
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-bold text-stone-900 dark:text-text">{label}</h4>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-          side === "long" ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "bg-amber-50 text-amber-700"
+          side === "long" ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
         }`}>
           {side === "long" ? "BUY" : "SELL"}
         </span>

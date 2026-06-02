@@ -36,7 +36,7 @@ function arcPath(fromVal: number, toVal: number): string {
 
 function zoneLabel(ivRank: number): { zone: string; color: string; bg: string } {
   if (ivRank <= 25) return { zone: "LOW", color: "text-green-600 dark:text-gain", bg: "bg-green-50 dark:bg-gain-bg border-green-200" };
-  if (ivRank <= 74) return { zone: "MODERATE", color: "text-yellow-600", bg: "bg-yellow-50 border-yellow-200" };
+  if (ivRank <= 74) return { zone: "MODERATE", color: "text-yellow-600 dark:text-yellow-300", bg: "bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800/50" };
   return { zone: "HIGH", color: "text-red-600 dark:text-loss", bg: "bg-red-50 dark:bg-loss-bg border-red-200 dark:border-loss-border" };
 }
 

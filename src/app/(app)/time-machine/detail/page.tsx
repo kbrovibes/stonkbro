@@ -249,7 +249,7 @@ export default function TimeMachineDetailPage() {
           </div>
         )}
         {error && !loading && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">{error}</div>
+          <div className="rounded-lg border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">{error}</div>
         )}
         {!loading && !error && snapshots.length === 0 && (
           <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-6 text-center text-sm text-stone-500 dark:text-text-subtle">No snapshots yet — head back and run a backfill.</div>
@@ -335,7 +335,7 @@ export default function TimeMachineDetailPage() {
                       const cell = "px-2 py-2 text-right tabular-nums";
                       const sign = showDollars && r.deltaAbsolute >= 0 ? "+" : "";
                       return (
-                        <tr key={r.snapshotDate} className="border-t border-stone-50 dark:border-border-subtle hover:bg-stone-50/60 transition">
+                        <tr key={r.snapshotDate} className="border-t border-stone-50 dark:border-border-subtle hover:bg-stone-50/60 dark:hover:bg-surface-muted/60 transition">
                           <td className="px-2 py-2">
                             <Link href={`/time-machine?date=${r.snapshotDate}`} className="font-semibold text-stone-900 dark:text-text hover:text-sky-700 transition">
                               {monthLabel(r.snapshotDate)}
@@ -346,15 +346,15 @@ export default function TimeMachineDetailPage() {
                           <td className={`${cell} text-stone-700 dark:text-text-muted`}>{fmt(r.actualTotal)}</td>
                           <td className={`${cell} font-medium ${isRed ? "text-rose-600 dark:text-loss" : "text-emerald-600 dark:text-gain"}`}>{sign}{fmt(r.deltaAbsolute)}</td>
                           <td className="px-2 py-2 text-center">
-                            <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${isRed ? "bg-rose-100 text-rose-700 dark:text-loss-strong" : "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"}`}>
+                            <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${isRed ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-loss-strong" : "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"}`}>
                               {isRed ? "Should've stopped" : "Trading worked"}
                             </span>
                           </td>
                           <td className={`${cell} text-emerald-700 dark:text-gain-strong`}>{fmt(r.realizedGains)}</td>
                           <td className={`${cell} text-rose-600 dark:text-loss`}>{fmt(r.estimatedTax)}</td>
-                          <td className={`${cell} text-teal-700`}>{fmt(r.rsuVests)}</td>
-                          <td className={`${cell} text-amber-700`}>{fmt(r.deposits)}</td>
-                          <td className={`${cell} text-orange-700`}>{fmt(r.withdrawals)}</td>
+                          <td className={`${cell} text-teal-700 dark:text-teal-300`}>{fmt(r.rsuVests)}</td>
+                          <td className={`${cell} text-amber-700 dark:text-amber-300`}>{fmt(r.deposits)}</td>
+                          <td className={`${cell} text-orange-700 dark:text-orange-300`}>{fmt(r.withdrawals)}</td>
                           <td className="px-2 py-2 text-right text-stone-400 dark:text-text-faint text-[10px]">{fmtComputed(r.computedAt)}</td>
                         </tr>
                       );

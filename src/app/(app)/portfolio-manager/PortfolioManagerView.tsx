@@ -288,7 +288,7 @@ export function PortfolioManagerView() {
       )}
 
       {isViewingHistory && (
-        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 flex items-center justify-between gap-2">
+        <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-800 dark:text-amber-200 flex items-center justify-between gap-2">
           <span>
             Viewing previous scan from{" "}
             <span className="font-semibold">
@@ -534,9 +534,9 @@ function BulletBlock({ title, items, dotColor }: { title: string; items: string[
 function RatingPill({ rating }: { rating: Rating }) {
   const styles: Record<Rating, string> = {
     STRONG_BUY: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
-    BUY: "bg-green-100 text-green-800 border-green-200",
+    BUY: "bg-green-100 dark:bg-green-950/40 text-green-800 border-green-200",
     HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted border-stone-200 dark:border-border-default",
-    SELL: "bg-amber-100 text-amber-800 border-amber-200",
+    SELL: "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/50",
     STRONG_SELL: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong border-red-200 dark:border-loss-border",
   };
   const labels: Record<Rating, string> = {
@@ -569,7 +569,7 @@ function ConfidenceBar({ value }: { value: number }) {
 function ActionBadge({ type }: { type: "HOLD" | "TRIM" | "ADD" | "EXIT" }) {
   const styles: Record<typeof type, string> = {
     HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted",
-    TRIM: "bg-amber-100 text-amber-800",
+    TRIM: "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200",
     ADD: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong",
     EXIT: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong",
   };
@@ -604,7 +604,7 @@ function AllocationCard({ allocation }: { allocation: PortfolioAllocation }) {
       </div>
 
       <div className="flex flex-wrap gap-3 text-xs mb-3">
-        <Pill label="Capital released" value={`$${allocation.capital_released.toLocaleString()}`} color="bg-amber-100 text-amber-800" />
+        <Pill label="Capital released" value={`$${allocation.capital_released.toLocaleString()}`} color="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200" />
         <Pill label="Capital deployed" value={`$${allocation.capital_deployed.toLocaleString()}`} color="bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong" />
         <Pill label="Cash remaining" value={`$${allocation.cash_remaining.toLocaleString()}`} color="bg-sky-100 dark:bg-accent-bg text-sky-800 dark:text-accent-hover" />
       </div>
@@ -629,7 +629,7 @@ function AllocationCard({ allocation }: { allocation: PortfolioAllocation }) {
 function AllocationRow({ action }: { action: AllocationAction }) {
   const styles: Record<AllocationAction["action"], string> = {
     SELL: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong",
-    TRIM: "bg-amber-100 text-amber-800",
+    TRIM: "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200",
     HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted",
     ADD: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong",
     BUY: "bg-sky-100 dark:bg-accent-bg text-sky-800 dark:text-accent-hover",
@@ -738,7 +738,7 @@ function ScanHistoryPanel({
               <button
                 onClick={() => onSelect(h.id)}
                 disabled={h.status === "running"}
-                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors text-left ${isActive ? "bg-sky-50/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
+                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors text-left ${isActive ? "bg-sky-50 dark:bg-sky-950/40/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
               >
                 <div className="col-span-2 flex items-center gap-1.5">
                   <StatusDot status={h.status} />

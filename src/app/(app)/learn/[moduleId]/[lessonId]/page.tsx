@@ -107,7 +107,7 @@ export default function LessonPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-surface-elevated">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-stone-100 dark:border-border-subtle">
+      <div className="sticky top-0 z-40 bg-white/95 dark:bg-surface-elevated/95 backdrop-blur border-b border-stone-100 dark:border-border-subtle">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => router.push(`/learn/${moduleId}`)}

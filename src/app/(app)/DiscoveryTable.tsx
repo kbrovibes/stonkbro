@@ -30,7 +30,7 @@ export default function DiscoveryTable({ stocks }: { stocks: Stock[] }) {
               s.score >= 70
                 ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"
                 : s.score >= 45
-                ? "bg-amber-50 text-amber-700"
+                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
                 : "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"
             }`}
           >
@@ -57,7 +57,7 @@ export default function DiscoveryTable({ stocks }: { stocks: Stock[] }) {
           {/* Volume + SMA indicators */}
           <div className="flex items-center gap-1 flex-wrap justify-center mt-0.5">
             {s.volumeRatio >= 2 && (
-              <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+              <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-full">
                 {s.volumeRatio.toFixed(1)}x vol
               </span>
             )}

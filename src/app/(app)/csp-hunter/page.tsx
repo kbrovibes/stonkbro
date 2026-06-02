@@ -214,7 +214,7 @@ export default function OptionsScannerPage() {
   return (
     <div className="flex flex-col flex-1">
       {/* Header — slim */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-stone-200 dark:border-border-default">
+      <div className="sticky top-0 z-10 bg-white/90 dark:bg-surface-elevated/90 backdrop-blur border-b border-stone-200 dark:border-border-default">
         <div className="px-3 py-1.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <h1 className="text-sm font-bold text-stone-900 dark:text-text truncate">Options Scanner</h1>
@@ -303,7 +303,7 @@ export default function OptionsScannerPage() {
               onClick={() => setTab("leaps")}
               className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "leaps"
-                  ? "text-violet-600 border-b-2 border-violet-600"
+                  ? "text-violet-600 dark:text-violet-300 border-b-2 border-violet-600"
                   : "text-stone-400 dark:text-text-faint hover:text-stone-600"
               }`}
             >
@@ -313,7 +313,7 @@ export default function OptionsScannerPage() {
               onClick={() => setTab("weekly")}
               className={`flex-1 py-1.5 text-xs font-semibold transition ${
                 tab === "weekly"
-                  ? "text-amber-600 border-b-2 border-amber-600"
+                  ? "text-amber-600 dark:text-amber-300 border-b-2 border-amber-600"
                   : "text-stone-400 dark:text-text-faint hover:text-stone-600"
               }`}
             >
@@ -340,15 +340,15 @@ export default function OptionsScannerPage() {
 
               {/* Delta section — collapsed by default */}
               {delta && totalDeltaChanges > 0 && (
-                <div className="border-b border-stone-200 dark:border-border-default bg-amber-50/50">
+                <div className="border-b border-stone-200 dark:border-border-default bg-amber-50 dark:bg-amber-950/40/50">
                   <button
                     onClick={() => setShowDelta(!showDelta)}
                     className="w-full px-3 py-1.5 flex items-center justify-between text-left hover:bg-amber-50 transition"
                   >
-                    <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                       Changes Since Last Scan ({totalDeltaChanges})
                     </span>
-                    <span className="text-amber-600 text-[10px]">{showDelta ? "hide" : "show"}</span>
+                    <span className="text-amber-600 dark:text-amber-300 text-[10px]">{showDelta ? "hide" : "show"}</span>
                   </button>
                   {showDelta && (
                     <div className="px-3 pb-2 space-y-1 max-h-32 overflow-y-auto">
@@ -376,13 +376,13 @@ export default function OptionsScannerPage() {
                     onClick={() => setShowAnalysis(!showAnalysis)}
                     className="w-full px-3 py-1.5 flex items-center justify-between text-left hover:bg-stone-50 dark:hover:bg-surface-muted transition"
                   >
-                    <span className="text-[10px] font-semibold text-violet-600 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-300 uppercase tracking-wider">
                       Claude Risk Analysis
                     </span>
                     <span className="text-stone-400 dark:text-text-faint text-[10px]">{showAnalysis ? "hide" : "show"}</span>
                   </button>
                   {showAnalysis && (
-                    <div className="px-3 pb-3 text-xs text-stone-700 dark:text-text-muted leading-relaxed whitespace-pre-wrap bg-violet-50/30">
+                    <div className="px-3 pb-3 text-xs text-stone-700 dark:text-text-muted leading-relaxed whitespace-pre-wrap bg-violet-50 dark:bg-violet-950/40/30">
                       {selectedScan.claudeAnalysis}
                     </div>
                   )}
@@ -421,7 +421,7 @@ export default function OptionsScannerPage() {
                 ))}
               </div>
 
-              <div className="px-3 py-1 bg-sky-50/50 border-b border-stone-200 dark:border-border-default">
+              <div className="px-3 py-1 bg-sky-50 dark:bg-sky-950/40/50 border-b border-stone-200 dark:border-border-default">
                 <p className="text-[10px] text-sky-700 dark:text-accent-hover">
                   60-120 DTE · slightly OTM · $100K · 1 pick/ticker
                 </p>
@@ -448,7 +448,7 @@ export default function OptionsScannerPage() {
               <div className="grid grid-cols-3 gap-px bg-stone-200 dark:bg-surface-sunken border-b border-stone-200 dark:border-border-default">
                 {[
                   { label: "Picks", value: leapsCandidates.length, color: "text-stone-900 dark:text-text" },
-                  { label: "Best Score", value: `${leapsCandidates[0]?.score ?? 0}/100`, color: "text-violet-600" },
+                  { label: "Best Score", value: `${leapsCandidates[0]?.score ?? 0}/100`, color: "text-violet-600 dark:text-violet-300" },
                   { label: "Best +10%", value: leapsCandidates[0] ? `${leapsCandidates[0].outcome100pct.returnPct > 0 ? "+" : ""}${leapsCandidates[0].outcome100pct.returnPct}%` : "—", color: "text-emerald-600 dark:text-gain" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white dark:bg-surface-elevated px-2 py-1 text-center flex items-baseline justify-center gap-1.5">
@@ -458,8 +458,8 @@ export default function OptionsScannerPage() {
                 ))}
               </div>
 
-              <div className="px-3 py-1 bg-violet-50/50 border-b border-stone-200 dark:border-border-default">
-                <p className="text-[10px] text-violet-700">
+              <div className="px-3 py-1 bg-violet-50 dark:bg-violet-950/40/50 border-b border-stone-200 dark:border-border-default">
+                <p className="text-[10px] text-violet-700 dark:text-violet-300">
                   6-18mo LEAPS · slightly OTM · $100K · 1 pick/ticker
                 </p>
               </div>
@@ -533,7 +533,7 @@ function WeeklyRecapTab({
       <div className="grid grid-cols-3 gap-px bg-stone-200 dark:bg-surface-sunken border-b border-stone-200 dark:border-border-default">
         {[
           { label: "Scans This Week", value: scanCount, color: "text-stone-900 dark:text-text" },
-          { label: "Unique Tickers", value: new Set(picks.map((p) => p.symbol)).size, color: "text-amber-600" },
+          { label: "Unique Tickers", value: new Set(picks.map((p) => p.symbol)).size, color: "text-amber-600 dark:text-amber-300" },
           { label: "Since", value: weekStartLabel, color: "text-stone-500 dark:text-text-subtle" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-surface-elevated px-3 py-2 text-center">
@@ -543,8 +543,8 @@ function WeeklyRecapTab({
         ))}
       </div>
 
-      <div className="px-4 py-2 bg-amber-50/50 border-b border-stone-200 dark:border-border-default flex items-center justify-between">
-        <p className="text-[11px] text-amber-700">
+      <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/40/50 border-b border-stone-200 dark:border-border-default flex items-center justify-between">
+        <p className="text-[11px] text-amber-700 dark:text-amber-300">
           All picks since Monday · price move is stock price, not P&amp;L
         </p>
         <button onClick={onRefresh} className="text-[11px] text-stone-400 dark:text-text-faint hover:text-stone-600 transition">
@@ -555,7 +555,7 @@ function WeeklyRecapTab({
       {/* CSPs */}
       {cspPicks.length > 0 && (
         <>
-          <div className="px-4 py-2 bg-emerald-50/60 border-b border-stone-100 dark:border-border-subtle">
+          <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40/60 border-b border-stone-100 dark:border-border-subtle">
             <span className="text-[11px] font-semibold text-emerald-700 dark:text-gain-strong uppercase tracking-wider">
               Cash-Secured Puts ({cspPicks.length})
             </span>
@@ -571,7 +571,7 @@ function WeeklyRecapTab({
       {/* Calls */}
       {callPicks.length > 0 && (
         <>
-          <div className="px-4 py-2 bg-sky-50/60 border-b border-stone-100 dark:border-border-subtle">
+          <div className="px-4 py-2 bg-sky-50 dark:bg-sky-950/40/60 border-b border-stone-100 dark:border-border-subtle">
             <span className="text-[11px] font-semibold text-sky-700 dark:text-accent-hover uppercase tracking-wider">
               Call Buys ({callPicks.length})
             </span>
@@ -587,8 +587,8 @@ function WeeklyRecapTab({
       {/* LEAPS */}
       {leapsPicks.length > 0 && (
         <>
-          <div className="px-4 py-2 bg-violet-50/60 border-b border-stone-100 dark:border-border-subtle">
-            <span className="text-[11px] font-semibold text-violet-700 uppercase tracking-wider">
+          <div className="px-4 py-2 bg-violet-50 dark:bg-violet-950/40/60 border-b border-stone-100 dark:border-border-subtle">
+            <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
               LEAPS ({leapsPicks.length})
             </span>
           </div>
@@ -604,7 +604,7 @@ function WeeklyRecapTab({
 }
 
 function WeeklyPickRow({ pick: p }: { pick: WeeklyPick }) {
-  const typeColors = { csp: "text-emerald-600 dark:text-gain", call: "text-sky-600 dark:text-accent", leaps: "text-violet-600" };
+  const typeColors = { csp: "text-emerald-600 dark:text-gain", call: "text-sky-600 dark:text-accent", leaps: "text-violet-600 dark:text-violet-300" };
   const typeLabel = { csp: "P", call: "C", leaps: "C" };
 
   const moveColor =
@@ -691,7 +691,7 @@ function CSPCard({ candidate: c, rank }: { candidate: Candidate; rank: number })
 
   return (
     <div
-      className="px-3 py-1.5 hover:bg-stone-50/50 transition cursor-pointer"
+      className="px-3 py-1.5 hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-center justify-between gap-2">
@@ -759,7 +759,7 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
 
   return (
     <div
-      className="px-3 py-1.5 hover:bg-stone-50/50 transition cursor-pointer"
+      className="px-3 py-1.5 hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
       {/* Top row — all the essentials inline */}
@@ -798,7 +798,7 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
         <span className={`px-1.5 py-0.5 rounded ${c.outcome100pct.profit >= 0 ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss"}`}>
           +10%: {c.outcome100pct.profit >= 0 ? "+" : ""}${(Math.abs(c.outcome100pct.profit) / 1000).toFixed(1)}k ({c.outcome100pct.returnPct >= 0 ? "+" : ""}{c.outcome100pct.returnPct}%)
         </span>
-        <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+        <span className="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300">
           +20%: +${(c.outcomeHomeRun.profit / 1000).toFixed(1)}k (+{c.outcomeHomeRun.returnPct}%)
         </span>
       </div>

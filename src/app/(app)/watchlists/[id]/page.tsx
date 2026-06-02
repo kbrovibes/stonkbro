@@ -131,7 +131,7 @@ export default async function WatchlistDetailPage({
                     {item.symbol}
                   </span>
                   {daysUntil !== undefined && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 shrink-0">
                       {daysUntil === 0 ? "Earnings today" : daysUntil === 1 ? "Earnings tomorrow" : `Earnings in ${daysUntil}d`}
                     </span>
                   )}

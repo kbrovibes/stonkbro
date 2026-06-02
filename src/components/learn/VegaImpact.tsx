@@ -72,15 +72,15 @@ export default function VegaImpact() {
       </div>
 
       {showCrush && (
-        <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mb-3 text-xs">
+        <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 rounded-lg px-3 py-2 mb-3 text-xs">
           <div>
-            <span className="text-purple-700 font-medium">IV Crush: </span>
+            <span className="text-purple-700 dark:text-purple-300 font-medium">IV Crush: </span>
             <span className="text-purple-900 font-bold">{crushBefore}%</span>
             <span className="text-purple-500 mx-1">&rarr;</span>
             <span className="text-purple-900 font-bold">{crushAfter}%</span>
           </div>
           <div>
-            <span className="text-purple-700 font-medium">Price: </span>
+            <span className="text-purple-700 dark:text-purple-300 font-medium">Price: </span>
             <span className="text-red-600 dark:text-loss font-bold">
               -${(priceBefore - priceAfter).toFixed(2)}
             </span>

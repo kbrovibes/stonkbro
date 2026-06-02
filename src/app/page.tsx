@@ -147,7 +147,7 @@ function PhoneMockup({ variant, tilt = 0, className = "" }: {
           </div>
         </div>
         <div className="flex justify-center pt-1.5 pb-0.5">
-          <div className="w-14 h-[3px] bg-white/20 rounded-full" />
+          <div className="w-14 h-[3px] bg-white/20 dark:bg-surface-elevated/20 rounded-full" />
         </div>
       </div>
     </div>
@@ -178,7 +178,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-surface-elevated">
       {/* Top nav */}
-      <nav className="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur-sm border-b border-stone-100 dark:border-border-subtle">
+      <nav className="fixed top-0 inset-x-0 z-50 bg-white/90 dark:bg-surface-elevated/90 backdrop-blur-sm border-b border-stone-100 dark:border-border-subtle">
         <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-baseline gap-0.5">
             <span className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-text">stonk</span>

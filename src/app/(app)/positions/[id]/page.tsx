@@ -19,9 +19,9 @@ function legLabel(type: string) {
 
 function legTypeBadge(type: string) {
   const map: Record<string, string> = {
-    leaps_call: "bg-violet-50 text-violet-700",
+    leaps_call: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
     short_call: "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss",
-    short_put: "bg-amber-50 text-amber-700",
+    short_put: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
     shares: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
     long_put: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
@@ -30,9 +30,9 @@ function legTypeBadge(type: string) {
 
 function strategyBadgeClass(strategy: string) {
   const map: Record<string, string> = {
-    PMCC: "bg-violet-50 text-violet-700",
+    PMCC: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
     "Covered Call": "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
-    "Cash-Secured Put": "bg-amber-50 text-amber-700",
+    "Cash-Secured Put": "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
     "The Wheel": "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
   return map[strategy] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
@@ -222,7 +222,7 @@ export default async function PositionDetailPage({
                             isExpired
                               ? "bg-red-50 dark:bg-loss-bg text-red-500 dark:text-loss"
                               : daysToExpiry <= 7
-                                ? "bg-amber-50 text-amber-600"
+                                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300"
                                 : "bg-stone-50 dark:bg-surface text-stone-400 dark:text-text-faint"
                           }`}
                         >

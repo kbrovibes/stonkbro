@@ -10,7 +10,7 @@ const HYPE_LABEL = ["", "Low", "Mild", "Notable", "High", "🔥 Max"];
 const STATUS_TEXT: Record<string, string> = {
   filed: "text-emerald-600 dark:text-gain",
   roadshow: "text-red-600 dark:text-loss",
-  priced: "text-purple-600",
+  priced: "text-purple-600 dark:text-purple-300",
   upcoming: "text-sky-600 dark:text-accent",
   rumored: "text-stone-400 dark:text-text-faint",
 };
@@ -19,7 +19,7 @@ const STATUS_TEXT: Record<string, string> = {
 const STATUS_PILL: Record<string, string> = {
   filed:    "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   roadshow: "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong",
-  priced:   "bg-purple-50 text-purple-700",
+  priced:   "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300",
   upcoming: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
   rumored:  "bg-stone-50 dark:bg-surface text-stone-500 dark:text-text-subtle",
 };
@@ -90,7 +90,7 @@ export default function UpcomingCatalysts({ earnings, ipos }: Props) {
             className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:opacity-80 ${
               e.category === "this_week"
                 ? "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong"
-                : "bg-amber-50 text-amber-700"
+                : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
             }`}
           >
             <span className="font-bold">{e.symbol}</span>

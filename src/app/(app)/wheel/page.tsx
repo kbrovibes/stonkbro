@@ -5,10 +5,10 @@ import { getPositions } from "@/lib/db/positions";
 export const dynamic = "force-dynamic";
 
 const stepIcons: Record<string, { emoji: string; color: string }> = {
-  sell_put: { emoji: "P", color: "bg-amber-100 text-amber-700" },
+  sell_put: { emoji: "P", color: "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300" },
   assigned: { emoji: "A", color: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" },
   sell_call: { emoji: "C", color: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" },
-  called_away: { emoji: "X", color: "bg-violet-100 text-violet-700" },
+  called_away: { emoji: "X", color: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300" },
 };
 
 type TimelineEvent = {

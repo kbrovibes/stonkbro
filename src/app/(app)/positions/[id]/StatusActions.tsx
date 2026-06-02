@@ -41,8 +41,8 @@ export default function StatusActions({
   return (
     <div className="flex flex-col gap-2">
       {showConfirm && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-1">
-          <p className="text-xs text-amber-700 mb-3">
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4 mb-1">
+          <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
             {showConfirm === "closed"
               ? "Close this position? This marks it as completed."
               : "Mark this position as rolled?"}

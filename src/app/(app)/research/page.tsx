@@ -47,7 +47,7 @@ type ResearchEntry = {
 function strategyColor(strategy: string) {
   switch (strategy) {
     case "CSP": return "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border";
-    case "CC": return "bg-amber-50 text-amber-700 border-amber-200";
+    case "CC": return "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50";
     case "PMCC": return "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
     case "AVOID": return "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong border-red-200 dark:border-loss-border";
     default: return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
@@ -348,7 +348,7 @@ function EntryCard({
                       key={idx}
                       className={`rounded-xl border bg-white dark:bg-surface-elevated p-3 transition-opacity ${
                         isDismissed ? "opacity-40 border-stone-100 dark:border-border-subtle"
-                          : isAccepted ? "border-emerald-300 bg-emerald-50/30"
+                          : isAccepted ? "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40/30"
                           : "border-stone-200 dark:border-border-default"
                       }`}
                     >

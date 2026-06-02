@@ -198,8 +198,8 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
       </div>
 
       {/* Key insight callout */}
-      <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
-        <p className="text-xs text-blue-700 font-medium text-center">
+      <div className="mt-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 px-3 py-2">
+        <p className="text-xs text-blue-700 dark:text-blue-300 font-medium text-center">
           Key insight: Long = you want it to go up. Short = you want it to go down.
         </p>
       </div>

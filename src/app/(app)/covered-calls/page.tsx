@@ -210,8 +210,8 @@ export default async function CoveredCallsPage() {
       </div>
 
       {fetchError && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs text-amber-700">Could not load positions. The database may not be set up yet.</p>
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4">
+          <p className="text-xs text-amber-700 dark:text-amber-300">Could not load positions. The database may not be set up yet.</p>
         </div>
       )}
 
@@ -251,8 +251,8 @@ export default async function CoveredCallsPage() {
           </div>
 
           {analysis.error && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-              <p className="text-xs text-amber-700">{analysis.error}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-3">
+              <p className="text-xs text-amber-700 dark:text-amber-300">{analysis.error}</p>
             </div>
           )}
 
@@ -297,7 +297,7 @@ function CandidateGrid({ candidates }: { candidates: CoveredCallCandidate[] }) {
         return (
           <div key={`${opt.strike}-${opt.expiry}`}>
             {showDivider && <div className="border-t-2 border-stone-200 dark:border-border-default" />}
-            <div className="grid grid-cols-5 gap-1 px-3 py-2.5 border-b border-stone-50 dark:border-border-subtle hover:bg-stone-50/50 transition-colors items-center">
+            <div className="grid grid-cols-5 gap-1 px-3 py-2.5 border-b border-stone-50 dark:border-border-subtle hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors items-center">
               <div>
                 <span className="text-xs font-bold text-stone-900 dark:text-text">${opt.strike}</span>
                 <span className="text-[10px] text-stone-400 dark:text-text-faint block">{opt.expiry} · {opt.dte}d</span>
@@ -312,7 +312,7 @@ function CandidateGrid({ candidates }: { candidates: CoveredCallCandidate[] }) {
                 </div>
                 <span className="text-[10px] text-stone-500 dark:text-text-subtle">{opt.probOTM}%</span>
               </div>
-              <span className={`text-xs font-semibold ${opt.annualizedReturn >= 20 ? "text-emerald-700 dark:text-gain-strong" : opt.annualizedReturn >= 10 ? "text-amber-600" : "text-stone-500 dark:text-text-subtle"}`}>
+              <span className={`text-xs font-semibold ${opt.annualizedReturn >= 20 ? "text-emerald-700 dark:text-gain-strong" : opt.annualizedReturn >= 10 ? "text-amber-600 dark:text-amber-300" : "text-stone-500 dark:text-text-subtle"}`}>
                 {opt.annualizedReturn.toFixed(1)}%
               </span>
               <span className="text-xs text-stone-700 dark:text-text-muted">{formatDollar(opt.maxProfit)}</span>

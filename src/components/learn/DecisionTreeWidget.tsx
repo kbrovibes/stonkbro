@@ -26,15 +26,15 @@ function getRecommendation(answers: Answers): Recommendation | null {
   if (outlook === "bullish" && rsi === "neutral" && iv === "low")
     return { trade: "Buy a Bull Call Spread", rationale: "Defined risk, benefits from an upward move. Low IV makes buying spreads attractive.", example: "Buy SPY $480/$490 call spread — pay less premium, cap the upside.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bullish" && rsi === "overbought" && iv === "high")
-    return { trade: "Sell a Cash-Secured Put", rationale: "Collect rich premium from high IV. Bullish bias means you are comfortable owning the stock at the strike.", example: "Sell NVDA $420 put with IV Rank=82 — premium is thick, bullish long-term.", color: "bg-blue-50 border-blue-300" };
+    return { trade: "Sell a Cash-Secured Put", rationale: "Collect rich premium from high IV. Bullish bias means you are comfortable owning the stock at the strike.", example: "Sell NVDA $420 put with IV Rank=82 — premium is thick, bullish long-term.", color: "bg-blue-50 dark:bg-blue-950/40 border-blue-300" };
   if (outlook === "bearish" && rsi === "overbought" && iv === "low")
     return { trade: "Buy a Put Option", rationale: "Overbought RSI signals a peak. Low IV means puts are cheap to buy.", example: "Buy TSLA $200 put 30 DTE when RSI=75 and IV Rank=15.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bearish" && rsi === "neutral" && iv === "high")
-    return { trade: "Sell a Bear Call Spread", rationale: "Collect premium in a high-IV environment. Bearish bias gives the short call side the statistical edge.", example: "Sell SPY $505/$515 call spread — defined risk, high premium collected.", color: "bg-blue-50 border-blue-300" };
+    return { trade: "Sell a Bear Call Spread", rationale: "Collect premium in a high-IV environment. Bearish bias gives the short call side the statistical edge.", example: "Sell SPY $505/$515 call spread — defined risk, high premium collected.", color: "bg-blue-50 dark:bg-blue-950/40 border-blue-300" };
   if (outlook === "neutral" && iv === "high")
-    return { trade: "Sell an Iron Condor", rationale: "High IV inflates option prices. A neutral stock + expensive premium is the ideal iron condor setup.", example: "AAPL iron condor with IV Rank=78 — sell the $170/$175 put spread and $190/$195 call spread.", color: "bg-blue-50 border-blue-300" };
+    return { trade: "Sell an Iron Condor", rationale: "High IV inflates option prices. A neutral stock + expensive premium is the ideal iron condor setup.", example: "AAPL iron condor with IV Rank=78 — sell the $170/$175 put spread and $190/$195 call spread.", color: "bg-blue-50 dark:bg-blue-950/40 border-blue-300" };
   if (outlook === "neutral" && iv === "low")
-    return { trade: "Buy a Straddle — or wait", rationale: "Low IV + no directional conviction = few great setups. A straddle works if you expect a big move but do not know which way.", example: "Consider waiting for a catalyst (earnings, FDA event) to push IV higher before entering.", color: "bg-yellow-50 border-yellow-300" };
+    return { trade: "Buy a Straddle — or wait", rationale: "Low IV + no directional conviction = few great setups. A straddle works if you expect a big move but do not know which way.", example: "Consider waiting for a catalyst (earnings, FDA event) to push IV higher before entering.", color: "bg-yellow-50 dark:bg-yellow-950/40 border-yellow-300" };
   if (outlook === "bullish")
     return { trade: "Bull Call Spread or Long Call", rationale: "Mid IV: a spread reduces premium risk. A long call works if you expect a strong move.", example: "Buy SPY $480/$490 call spread with IV Rank=50 — balanced risk/reward.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bearish")
@@ -137,7 +137,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-gray-900 dark:text-text">Trade Decision Framework</h3>
         {isResult
-          ? <button onClick={reset} className="text-xs text-blue-600 font-medium px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">Start over</button>
+          ? <button onClick={reset} className="text-xs text-blue-600 dark:text-blue-300 font-medium px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">Start over</button>
           : Object.keys(answers).length > 0 && (
             <button onClick={back} className="text-xs text-gray-500 dark:text-text-subtle hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">← Back</button>
           )
@@ -220,7 +220,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       {isResult && !rec && (
         <div className="text-center py-6">
           <p className="text-sm text-gray-500 dark:text-text-subtle">No recommendation found for this combination.</p>
-          <button onClick={reset} className="mt-2 text-xs text-blue-600 underline">Start over</button>
+          <button onClick={reset} className="mt-2 text-xs text-blue-600 dark:text-blue-300 underline">Start over</button>
         </div>
       )}
     </div>

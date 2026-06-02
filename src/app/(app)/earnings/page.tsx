@@ -230,12 +230,12 @@ export default function EarningsCalendarPage() {
                     </div>
                     <span className="text-[11px] text-stone-600 dark:text-text-muted tabular-nums">{dateShort}</span>
                     <span className={`text-[10px] font-semibold text-center ${
-                      e.timing === "before_market" ? "text-amber-600" : e.timing === "after_market" ? "text-violet-600" : "text-stone-400 dark:text-text-faint"
+                      e.timing === "before_market" ? "text-amber-600 dark:text-amber-300" : e.timing === "after_market" ? "text-violet-600 dark:text-violet-300" : "text-stone-400 dark:text-text-faint"
                     }`}>
                       {e.timing === "before_market" ? "BMO" : e.timing === "after_market" ? "AMC" : "TBD"}
                     </span>
                     <span className={`text-[11px] font-bold tabular-nums text-right ${
-                      isUrgent ? "text-red-600 dark:text-loss" : e.daysUntil <= 7 ? "text-amber-600" : "text-stone-500 dark:text-text-subtle"
+                      isUrgent ? "text-red-600 dark:text-loss" : e.daysUntil <= 7 ? "text-amber-600 dark:text-amber-300" : "text-stone-500 dark:text-text-subtle"
                     }`}>
                       {e.daysUntil === 0 ? "Today" : e.daysUntil === 1 ? "Tmrw" : `${e.daysUntil}d`}
                     </span>

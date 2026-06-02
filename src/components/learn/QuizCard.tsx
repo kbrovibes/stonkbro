@@ -116,7 +116,7 @@ export default function QuizCard({ questions, onComplete }: QuizCardProps) {
       {isAnswered && (
         <div
           className={`text-sm p-3 rounded-lg mb-4 ${
-            isCorrect ? "bg-green-50 dark:bg-gain-bg text-green-800" : "bg-amber-50 text-amber-800"
+            isCorrect ? "bg-green-50 dark:bg-gain-bg text-green-800" : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200"
           }`}
         >
           {isCorrect ? "Correct! " : "Not quite. "}

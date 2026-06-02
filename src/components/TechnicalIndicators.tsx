@@ -27,7 +27,7 @@ function VolumeBar({ ratio }: { ratio: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`text-xs font-semibold ${ratio >= 2 ? "text-amber-600" : "text-stone-500 dark:text-text-subtle"}`}>
+      <span className={`text-xs font-semibold ${ratio >= 2 ? "text-amber-600 dark:text-amber-300" : "text-stone-500 dark:text-text-subtle"}`}>
         {ratio.toFixed(1)}x
       </span>
     </div>

@@ -114,7 +114,7 @@ function CSPPickCard({ pick: p }: { pick: CSPPick }) {
             <div>RSI: <span className="text-stone-900 dark:text-text font-medium">{p.rsi}</span></div>
             <div>Juiciness: <span className="text-stone-900 dark:text-text font-medium">{p.juiciness}/100</span></div>
             {p.nearSupport && <div className="col-span-2 text-emerald-600 dark:text-gain">Strike near support at ${p.supportLevel.toFixed(2)}</div>}
-            {p.earningsWithinDTE && <div className="col-span-2 text-amber-600">⚠ Earnings in {p.daysToEarnings}d — within DTE window</div>}
+            {p.earningsWithinDTE && <div className="col-span-2 text-amber-600 dark:text-amber-300">⚠ Earnings in {p.daysToEarnings}d — within DTE window</div>}
           </div>
 
           {/* Technical reasoning */}

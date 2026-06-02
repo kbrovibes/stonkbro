@@ -88,7 +88,7 @@ type Tab = "csp" | "calls" | "leaps";
 
 const PRIORITY_COLORS: Record<string, string> = {
   high: "text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg",
-  medium: "text-amber-600 bg-amber-50",
+  medium: "text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40",
   low: "text-stone-500 dark:text-text-subtle bg-stone-100 dark:bg-surface-muted",
 };
 
@@ -210,7 +210,7 @@ export default function OptionsPage() {
 
       {/* Alerts */}
       {loginRequired && (
-        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 font-medium">
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/50 rounded-lg text-xs text-amber-700 dark:text-amber-300 font-medium">
           Login to run a scan
         </div>
       )}
@@ -228,7 +228,7 @@ export default function OptionsPage() {
               Scanned: {new Date(scan.createdAt).toLocaleString()}
             </span>
             {isStale(scan.createdAt) && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 uppercase tracking-wide">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 uppercase tracking-wide">
                 Stale — data from {formatAge(scan.createdAt)}
               </span>
             )}
@@ -297,7 +297,7 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
-                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
+                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
                       <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>
@@ -368,7 +368,7 @@ function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
-                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
+                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
                       <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>
@@ -432,7 +432,7 @@ function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
-                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
+                <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
                       <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>

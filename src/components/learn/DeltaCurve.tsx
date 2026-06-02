@@ -93,7 +93,7 @@ export default function DeltaCurve() {
       {/* ATM delta callout */}
       <div className="text-center mb-2">
         <span className="text-xs text-gray-500 dark:text-text-subtle">ATM Delta: </span>
-        <span className={`text-lg font-bold ${isCall ? "text-blue-600" : "text-red-600 dark:text-loss"}`}>
+        <span className={`text-lg font-bold ${isCall ? "text-blue-600 dark:text-blue-300" : "text-red-600 dark:text-loss"}`}>
           {atmDelta.toFixed(2)}
         </span>
       </div>

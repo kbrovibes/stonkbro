@@ -337,7 +337,7 @@ export default function SettingsPage() {
                   }}
                   className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
                     preferredProvider === "claude"
-                      ? "border-purple-600 bg-purple-50 text-purple-700"
+                      ? "border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300"
                       : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-600 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted"
                   }`}
                 >
@@ -407,7 +407,7 @@ export default function SettingsPage() {
               const isGemini = GEMINI_MODELS.some(m => m.id === model.id);
               
               return (
-                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 dark:border-border-subtle bg-stone-50/30">
+                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 dark:border-border-subtle bg-stone-50/30 dark:bg-surface-muted/30">
                   <div className="flex items-center gap-2.5">
                     <div className={`w-2 h-2 rounded-full ${isGemini ? "bg-sky-500" : "bg-purple-500"}`} />
                     <div className="flex flex-col">

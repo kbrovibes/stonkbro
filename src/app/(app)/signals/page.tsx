@@ -14,9 +14,9 @@ type Alert = {
 
 const actionColors: Record<string, string> = {
   CLOSE: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
-  ROLL: "bg-amber-50 text-amber-700 border-amber-200",
+  ROLL: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
   SELL: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border",
-  BUY: "bg-violet-50 text-violet-700 border-violet-200",
+  BUY: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/50",
   WARNING: "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss border-red-200 dark:border-loss-border",
 };
 
@@ -117,7 +117,7 @@ export default function SignalsPage() {
 
       {!loading && medAlerts.length > 0 && (
         <div>
-          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-amber-600 mb-2">Opportunities</h3>
+          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-amber-600 dark:text-amber-300 mb-2">Opportunities</h3>
           <div className="flex flex-col gap-2">
             {medAlerts.map((alert, i) => (
               <AlertCard key={i} alert={alert} />

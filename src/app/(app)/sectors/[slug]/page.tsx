@@ -6,13 +6,13 @@ import { getQuotes } from "@/lib/market/yahoo";
 export const dynamic = "force-dynamic";
 
 const colorMap: Record<string, { bg: string; border: string; text: string; tag: string }> = {
-  violet: { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", tag: "bg-violet-100 text-violet-700" },
+  violet: { bg: "bg-violet-50 dark:bg-violet-950/40", border: "border-violet-200 dark:border-violet-800/50", text: "text-violet-700 dark:text-violet-300", tag: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300" },
   sky: { bg: "bg-sky-50 dark:bg-accent-bg", border: "border-sky-200 dark:border-accent-border", text: "text-sky-700 dark:text-accent-hover", tag: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" },
-  indigo: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700", tag: "bg-indigo-100 text-indigo-700" },
+  indigo: { bg: "bg-indigo-50 dark:bg-indigo-950/40", border: "border-indigo-200 dark:border-indigo-800/50", text: "text-indigo-700 dark:text-indigo-300", tag: "bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300" },
   emerald: { bg: "bg-emerald-50 dark:bg-gain-bg", border: "border-emerald-200 dark:border-gain-border", text: "text-emerald-700 dark:text-gain-strong", tag: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" },
-  amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", tag: "bg-amber-100 text-amber-700" },
-  rose: { bg: "bg-rose-50 dark:bg-loss-bg", border: "border-rose-200", text: "text-rose-700 dark:text-loss-strong", tag: "bg-rose-100 text-rose-700 dark:text-loss-strong" },
-  lime: { bg: "bg-lime-50", border: "border-lime-200", text: "text-lime-700", tag: "bg-lime-100 text-lime-700" },
+  amber: { bg: "bg-amber-50 dark:bg-amber-950/40", border: "border-amber-200 dark:border-amber-800/50", text: "text-amber-700 dark:text-amber-300", tag: "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300" },
+  rose: { bg: "bg-rose-50 dark:bg-loss-bg", border: "border-rose-200 dark:border-rose-800/50", text: "text-rose-700 dark:text-loss-strong", tag: "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-loss-strong" },
+  lime: { bg: "bg-lime-50 dark:bg-lime-950/40", border: "border-lime-200 dark:border-lime-800/50", text: "text-lime-700 dark:text-lime-300", tag: "bg-lime-100 dark:bg-lime-950/40 text-lime-700 dark:text-lime-300" },
 };
 
 function formatVolume(v: number): string {

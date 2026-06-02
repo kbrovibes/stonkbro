@@ -155,7 +155,7 @@ const STATUS_BADGE: Record<string, string> = {
   OPEN:     "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
   CLOSED:   "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",
   EXPIRED:  "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
-  ASSIGNED: "bg-violet-100 text-violet-700",
+  ASSIGNED: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
 };
 
 function legColor(leg: OptionLeg): string {
@@ -435,21 +435,21 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             <span className="font-bold text-stone-900 dark:text-text text-sm">
               {chain.underlying} {chain.option_type}
             </span>
-            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chain.direction === "SELL" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" : "bg-blue-50 text-blue-700"}`}>
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chain.direction === "SELL" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"}`}>
               {chain.direction === "SELL" ? "SHORT" : "LONG"}
             </span>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[chain.status] ?? "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"}`}>
               {chain.status}
             </span>
             {chain.roll_count > 0 && (
-              <span className="text-xs bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-medium">
+              <span className="text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded font-medium">
                 {chain.roll_count} roll{chain.roll_count !== 1 ? "s" : ""}
               </span>
             )}
           </div>
           <div className="text-xs text-stone-400 dark:text-text-faint mt-0.5">{dateRange}</div>
           {capitalLocked != null && (
-            <div className="text-[11px] text-amber-600 mt-0.5">
+            <div className="text-[11px] text-amber-600 dark:text-amber-300 mt-0.5">
               {fmtCurrency(capitalLocked)} collateral · {Math.abs(chain.open_units)} contract{Math.abs(chain.open_units) !== 1 ? "s" : ""}
             </div>
           )}
@@ -502,7 +502,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
                   <td className={`py-1.5 font-semibold ${legColor(leg)}`}>
                     {leg.type}
                     {isRoll(chain.legs, i) && (
-                      <span className="ml-1 bg-amber-100 text-amber-600 px-1 py-0.5 rounded text-[10px] font-bold">ROLL</span>
+                      <span className="ml-1 bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 px-1 py-0.5 rounded text-[10px] font-bold">ROLL</span>
                     )}
                   </td>
                   <td className="py-1.5 text-right text-stone-700 dark:text-text-muted">${leg.strike}</td>
@@ -642,22 +642,22 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
             const isThisMonth = month === currentMonthStr;
             const isExpanded = expandedFuture.has(month);
             return (
-              <div key={month} className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              <div key={month} className="bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/50 rounded-xl px-4 py-3">
                 <button
                   className="w-full flex items-center justify-between"
                   onClick={() => { if (!isThisMonth) toggleSet(setExpandedFuture, month); }}
                 >
                   <div className="text-left">
                     <div className="font-semibold text-sm text-stone-900 dark:text-text">{fmtMonth(month)}</div>
-                    <div className="text-xs text-amber-600">{data.chains.length} open · best case</div>
+                    <div className="text-xs text-amber-600 dark:text-amber-300">{data.chains.length} open · best case</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-base text-amber-700">+{fmtCurrency(data.gain)}</span>
+                    <span className="font-bold text-base text-amber-700 dark:text-amber-300">+{fmtCurrency(data.gain)}</span>
                     {!isThisMonth && <span className="text-stone-400 dark:text-text-faint text-xs">{isExpanded ? "▲" : "▼"}</span>}
                   </div>
                 </button>
                 {(isThisMonth || isExpanded) && (
-                  <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-amber-100">
+                  <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-amber-100 dark:border-amber-800/50">
                     {data.chains.map((c, i) => {
                       const leg = findOpenLeg(c);
                       return (
@@ -667,7 +667,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                             {Math.abs(c.open_units) > 1 && <span className="text-stone-400 dark:text-text-faint"> ×{Math.abs(c.open_units)}</span>}
                             {" "}exp {fmtDate(leg?.expiry ?? null)}
                           </span>
-                          <span className="font-medium text-amber-700">+{fmtCurrency(c.net_pnl)}</span>
+                          <span className="font-medium text-amber-700 dark:text-amber-300">+{fmtCurrency(c.net_pnl)}</span>
                         </div>
                       );
                     })}
@@ -779,11 +779,11 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                         className="w-full flex items-center justify-between"
                         onClick={() => toggleSet(setExpandedCollateral, month)}
                       >
-                        <span className="text-[11px] font-medium text-amber-600">
+                        <span className="text-[11px] font-medium text-amber-600 dark:text-amber-300">
                           Peak PUT collateral · {fmtDate(capData.peakDate)}
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-bold text-amber-700">{fmtCurrency(capData.peak)}</span>
+                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{fmtCurrency(capData.peak)}</span>
                           <span className="text-stone-300 dark:text-text-faint text-xs">{isCollOpen ? "▲" : "▼"}</span>
                         </div>
                       </button>
@@ -797,13 +797,13 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                               <span className="text-stone-400 dark:text-text-faint">
                                 {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
                               </span>
-                              <span className="text-amber-600 font-medium">{fmtCurrency(pos.collateral)}</span>
+                              <span className="text-amber-600 dark:text-amber-300 font-medium">{fmtCurrency(pos.collateral)}</span>
                             </div>
                           ))}
                           {peakPositions.length > 1 && (
                             <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 dark:border-border-subtle mt-0.5">
                               <span className="text-stone-400 dark:text-text-faint">Total</span>
-                              <span className="text-amber-700 font-semibold">
+                              <span className="text-amber-700 dark:text-amber-300 font-semibold">
                                 {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
                               </span>
                             </div>
@@ -962,7 +962,7 @@ export default function PortfolioPage() {
                 <div className="text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Year so far</div>
                 <Link
                   href="/time-machine"
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-1.5 py-0.5 rounded transition-colors"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 border border-violet-200 dark:border-violet-800/50 px-1.5 py-0.5 rounded transition-colors"
                   title="What if you'd stopped trading on a past date?"
                 >
                   <span>⏰</span> Hindsight
@@ -990,10 +990,10 @@ export default function PortfolioPage() {
           {capitalLocked > 0 && (
             <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle flex items-center justify-between">
               <div>
-                <div className="text-xs text-amber-600 font-medium">PUT Collateral Locked</div>
+                <div className="text-xs text-amber-600 dark:text-amber-300 font-medium">PUT Collateral Locked</div>
                 <div className="text-[11px] text-stone-400 dark:text-text-faint">{openPuts.length} open put{openPuts.length !== 1 ? "s" : ""}</div>
               </div>
-              <div className="text-base font-bold text-amber-700">{fmtCurrency(capitalLocked)}</div>
+              <div className="text-base font-bold text-amber-700 dark:text-amber-300">{fmtCurrency(capitalLocked)}</div>
             </div>
           )}
         </div>
@@ -1163,7 +1163,7 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
             >
               <div className="col-span-2 font-bold text-stone-900 dark:text-text">{c.underlying}</div>
               <div className="col-span-1">
-                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${isCall ? "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong" : "bg-rose-100 text-rose-800"}`}>
+                <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${isCall ? "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong" : "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200"}`}>
                   {c.option_type.toUpperCase()}
                 </span>
               </div>
@@ -1186,7 +1186,7 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
                 {fmtDate(exp)}
                 <div className="text-[10px] text-stone-400 dark:text-text-faint">opened {fmtDate(opened)} · {origDte}d orig</div>
               </div>
-              <div className={`col-span-1 text-right tabular-nums ${dteRemaining < 30 ? "text-rose-600 dark:text-loss" : dteRemaining < 90 ? "text-amber-600" : "text-stone-600 dark:text-text-muted"}`}>
+              <div className={`col-span-1 text-right tabular-nums ${dteRemaining < 30 ? "text-rose-600 dark:text-loss" : dteRemaining < 90 ? "text-amber-600 dark:text-amber-300" : "text-stone-600 dark:text-text-muted"}`}>
                 {closed ? "—" : `${dteRemaining}d`}
               </div>
               <div className="col-span-1">

@@ -39,7 +39,7 @@ type SortMode = "return" | "capital" | "grade";
 function GradeBadge({ grade }: { grade: string }) {
   const colors: Record<string, string> = {
     A: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
-    B: "bg-amber-50 text-amber-700 border-amber-200",
+    B: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
     C: "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle border-stone-200 dark:border-border-default",
   };
   return (
@@ -216,7 +216,7 @@ export default function PMCCPicksPage() {
         <div className="flex flex-col gap-3">
           {sorted.map((setup, i) => {
             const rank = i + 1;
-            const gradeColor = setup.grade === "A" ? "border-emerald-200 dark:border-gain-border" : setup.grade === "B" ? "border-amber-200" : "border-stone-200 dark:border-border-default";
+            const gradeColor = setup.grade === "A" ? "border-emerald-200 dark:border-gain-border" : setup.grade === "B" ? "border-amber-200 dark:border-amber-800/50" : "border-stone-200 dark:border-border-default";
             const posParams = new URLSearchParams({
               symbol: setup.symbol,
               strategy: "pmcc",
@@ -250,8 +250,8 @@ export default function PMCCPicksPage() {
                     <p className="text-[10px] text-stone-500 dark:text-text-subtle">{setup.leaps.expiry} &middot; {setup.leaps.dte}d</p>
                     <p className="text-xs font-semibold text-stone-700 dark:text-text-muted mt-1">{fmtDec(setup.leaps.mid)} &middot; &delta; {setup.leapsDelta.toFixed(2)}</p>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-                    <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">Sell Call</p>
+                  <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/50">
+                    <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide">Sell Call</p>
                     <p className="text-sm font-bold text-stone-900 dark:text-text mt-1">${setup.shortCall.strike} Call</p>
                     <p className="text-[10px] text-stone-500 dark:text-text-subtle">{setup.shortCall.expiry} &middot; {setup.shortCall.dte}d</p>
                     <p className="text-xs font-semibold text-emerald-700 dark:text-gain-strong mt-1">{fmtDec(setup.shortCall.mid)} &middot; &delta; {setup.shortDelta.toFixed(2)}</p>

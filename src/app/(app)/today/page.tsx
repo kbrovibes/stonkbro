@@ -475,7 +475,7 @@ export default function TodayPage() {
                     </div>
                     <span className={`text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0 ${
                       isStale(rec.generatedAt)
-                        ? "text-amber-700 bg-amber-50"
+                        ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40"
                         : "text-stone-400 dark:text-text-faint"
                     }`}>
                       {formatTimeAgo(rec.generatedAt)}
@@ -580,7 +580,7 @@ export default function TodayPage() {
         title="Options Flow"
         badge={
           flow.length > 0 ? (
-            <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 px-1.5 py-0.5 rounded-full">
               {flow.length} active
             </span>
           ) : null
@@ -675,7 +675,7 @@ export default function TodayPage() {
                         return (
                           <div key={i} className="rounded-lg bg-stone-50 dark:bg-surface px-2 py-1">
                             <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                              <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1 py-0.5 rounded">
+                              <span className="text-[9px] font-bold text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 px-1 py-0.5 rounded">
                                 {FLOW_TYPE_LABELS[sig.type] || sig.type}
                               </span>
                               <span className={`text-[9px] font-semibold ${dirColor}`}>

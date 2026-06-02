@@ -130,16 +130,16 @@ function renderTextContent(content: string): React.ReactNode {
 
 const calloutStyles = {
   tip: {
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-800",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+    border: "border-blue-200 dark:border-blue-800/50",
+    text: "text-blue-800 dark:text-blue-200",
     icon: "\u{1F4A1}",
     label: "Tip",
   },
   warning: {
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    text: "text-amber-800",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-800/50",
+    text: "text-amber-800 dark:text-amber-200",
     icon: "\u26A0\uFE0F",
     label: "Warning",
   },

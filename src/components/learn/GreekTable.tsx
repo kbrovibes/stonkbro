@@ -59,10 +59,10 @@ function calcGreeks(S: number, K: number, T: number, sigma: number, r: number = 
 }
 
 const greekConfig = [
-  { key: "delta" as const, label: "Delta", color: "text-blue-600", bg: "bg-blue-50", desc: "Price sensitivity" },
-  { key: "gamma" as const, label: "Gamma", color: "text-amber-600", bg: "bg-amber-50", desc: "Delta sensitivity" },
+  { key: "delta" as const, label: "Delta", color: "text-blue-600 dark:text-blue-300", bg: "bg-blue-50 dark:bg-blue-950/40", desc: "Price sensitivity" },
+  { key: "gamma" as const, label: "Gamma", color: "text-amber-600 dark:text-amber-300", bg: "bg-amber-50 dark:bg-amber-950/40", desc: "Delta sensitivity" },
   { key: "theta" as const, label: "Theta", color: "text-emerald-600 dark:text-gain", bg: "bg-emerald-50 dark:bg-gain-bg", desc: "Time decay/day" },
-  { key: "vega" as const, label: "Vega", color: "text-purple-600", bg: "bg-purple-50", desc: "IV sensitivity/1%" },
+  { key: "vega" as const, label: "Vega", color: "text-purple-600 dark:text-purple-300", bg: "bg-purple-50 dark:bg-purple-950/40", desc: "IV sensitivity/1%" },
   { key: "rho" as const, label: "Rho", color: "text-rose-600 dark:text-loss", bg: "bg-rose-50 dark:bg-loss-bg", desc: "Rate sensitivity/1%" },
 ];
 

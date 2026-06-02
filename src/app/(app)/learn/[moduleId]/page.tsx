@@ -8,17 +8,17 @@ export const dynamic = "force-dynamic";
 
 const COLOR_MAP: Record<string, string> = {
   "stone-500": "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",
-  "blue-500": "bg-blue-50 text-blue-600",
-  "amber-500": "bg-amber-50 text-amber-600",
+  "blue-500": "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300",
+  "amber-500": "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300",
   "emerald-500": "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain",
-  "purple-500": "bg-purple-50 text-purple-600",
+  "purple-500": "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300",
   "rose-500": "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss",
   "cyan-500": "bg-cyan-50 text-cyan-600",
-  "yellow-500": "bg-yellow-50 text-yellow-600",
-  "indigo-500": "bg-indigo-50 text-indigo-600",
-  "teal-500": "bg-teal-50 text-teal-600",
-  "orange-500": "bg-orange-50 text-orange-600",
-  "lime-500": "bg-lime-50 text-lime-600",
+  "yellow-500": "bg-yellow-50 dark:bg-yellow-950/40 text-yellow-600 dark:text-yellow-300",
+  "indigo-500": "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300",
+  "teal-500": "bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-300",
+  "orange-500": "bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-300",
+  "lime-500": "bg-lime-50 dark:bg-lime-950/40 text-lime-600 dark:text-lime-300",
 };
 
 export default async function ModulePage({

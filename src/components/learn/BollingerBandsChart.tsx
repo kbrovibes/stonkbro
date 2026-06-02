@@ -303,7 +303,7 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
             </p>
           </div>
           <div className="flex items-start gap-2">
-            <span className="text-yellow-600 font-bold text-xs shrink-0">Squeeze</span>
+            <span className="text-yellow-600 dark:text-yellow-300 font-bold text-xs shrink-0">Squeeze</span>
             <p className="text-[10px] text-gray-600 dark:text-text-muted leading-snug">
               Low IV = Narrow bands = Options are <span className="font-semibold text-emerald-600 dark:text-gain">cheap</span> →
               better to <span className="font-semibold text-emerald-600 dark:text-gain">BUY</span> options (calls/puts before the breakout)

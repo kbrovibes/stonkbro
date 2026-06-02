@@ -193,7 +193,7 @@ function isoNDaysAgo(days: number): string {
 const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
   "live":         { bg: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",         label: "Live" },
   "exercised":    { bg: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong", label: "Exercised" },
-  "assigned":     { bg: "bg-violet-100 text-violet-700",   label: "Assigned" },
+  "assigned":     { bg: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",   label: "Assigned" },
   "expired-otm":  { bg: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",     label: "Expired OTM" },
 };
 
@@ -486,10 +486,10 @@ export default function TimeMachinePage() {
               ? "bg-rose-200 border-rose-300 text-rose-900 hover:bg-rose-300"
               : "bg-emerald-200 border-emerald-300 text-emerald-900 hover:bg-emerald-300";
             if (tier >= 0.25) return isRed
-              ? "bg-rose-100 border-rose-200 text-rose-800 hover:bg-rose-200"
+              ? "bg-rose-100 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 hover:bg-rose-200"
               : "bg-emerald-100 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-200";
             return isRed
-              ? "bg-rose-50 dark:bg-loss-bg border-rose-200 text-rose-800 hover:bg-rose-100"
+              ? "bg-rose-50 dark:bg-loss-bg border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 hover:bg-rose-100"
               : "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-100";
           };
           const renderItem = (it: StripItem) => {
@@ -594,7 +594,7 @@ export default function TimeMachinePage() {
               {/* Center-aligned full-detail CTA, theme-aligned with portfolio buttons */}
               <Link
                 href="/time-machine/detail"
-                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-800 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
+                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/50 text-violet-800 dark:text-violet-200 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
               >
                 <span>⏰</span> Full Hindsight Snapshot
               </Link>
@@ -647,7 +647,7 @@ export default function TimeMachinePage() {
             History available back to {fmtDate(earliestAvailable)}
           </p>
           {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
+            <div className="rounded-lg border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
               {error} — showing sample data
             </div>
           )}
@@ -666,7 +666,7 @@ export default function TimeMachinePage() {
               className={`rounded-xl border p-5 ${
                 data.delta.favorableToHold
                   ? "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border"
-                  : "bg-rose-50 dark:bg-loss-bg border-rose-200"
+                  : "bg-rose-50 dark:bg-loss-bg border-rose-200 dark:border-rose-800/50"
               }`}
             >
               <p className="text-[10px] uppercase tracking-wider text-stone-500 dark:text-text-subtle font-semibold">
@@ -823,7 +823,7 @@ export default function TimeMachinePage() {
               // Per-accent class literals — Tailwind's purge won't accept dynamic strings.
               const PALETTE = {
                 emerald: {
-                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50/40 overflow-hidden",
+                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50 dark:bg-emerald-950/40/40 overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-emerald-700 dark:text-gain-strong font-semibold",
                   totalLabel: "text-[10px] text-emerald-700/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-emerald-700 dark:text-gain-strong tabular-nums",
@@ -831,9 +831,9 @@ export default function TimeMachinePage() {
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700 dark:text-gain-strong",
                 },
                 rose: {
-                  card: "rounded-xl border border-rose-200 bg-rose-50/40 overflow-hidden",
+                  card: "rounded-xl border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/40/40 overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-rose-700 dark:text-loss-strong font-semibold",
-                  totalLabel: "text-[10px] text-rose-700/80 uppercase tracking-wider font-semibold",
+                  totalLabel: "text-[10px] text-rose-700 dark:text-rose-300/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-rose-700 dark:text-loss-strong tabular-nums",
                   rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700 dark:text-loss-strong",
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700 dark:text-loss-strong",
@@ -874,7 +874,7 @@ export default function TimeMachinePage() {
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-[11px]">
-                        <thead className="text-stone-400 dark:text-text-faint bg-white/60">
+                        <thead className="text-stone-400 dark:text-text-faint bg-white/60 dark:bg-surface-elevated/60">
                           <tr>
                             <th className="px-2 py-1 text-left font-medium">Symbol</th>
                             <th className="px-2 py-1 text-right font-medium">Sold</th>
@@ -890,7 +890,7 @@ export default function TimeMachinePage() {
                       </table>
                     </div>
                     {items.length > TOP && (
-                      <div className="px-4 py-1.5 text-[10px] text-stone-500 dark:text-text-subtle italic bg-white/40 border-t border-stone-100 dark:border-border-subtle">
+                      <div className="px-4 py-1.5 text-[10px] text-stone-500 dark:text-text-subtle italic bg-white/40 dark:bg-surface-elevated/40 border-t border-stone-100 dark:border-border-subtle">
                         + {items.length - TOP} more · top {TOP} by impact
                       </div>
                     )}
@@ -1074,7 +1074,7 @@ export default function TimeMachinePage() {
                       </thead>
                       <tbody>
                         {sorted.map((r) => (
-                          <tr key={r.symbol} className={`border-t border-stone-50 dark:border-border-subtle ${r.isCash ? "bg-amber-50/30" : ""}`}>
+                          <tr key={r.symbol} className={`border-t border-stone-50 dark:border-border-subtle ${r.isCash ? "bg-amber-50 dark:bg-amber-950/40/30" : ""}`}>
                             {colOrder.map((col) => {
                               const def = COL_DEFS[col];
                               return (
@@ -1109,7 +1109,7 @@ export default function TimeMachinePage() {
 
             {/* Stale-data nudge — cached snapshot pre-dates RSU detection */}
             {!data.rsuVests && (
-              <div className="rounded-xl border border-amber-300 bg-amber-100/60 px-3 py-2 flex items-center justify-between gap-2">
+              <div className="rounded-xl border border-amber-300 bg-amber-100 dark:bg-amber-950/40/60 px-3 py-2 flex items-center justify-between gap-2">
                 <p className="text-[11px] text-amber-900">
                   This cached snapshot was computed before RSU detection landed. AMZN vests are missing from it.
                 </p>
@@ -1130,11 +1130,11 @@ export default function TimeMachinePage() {
               const hasRsu = !!data.rsuVests && data.rsuVests.items.length > 0;
               if (!hasCash && !hasRsu) {
                 return (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 font-semibold">
                       New deposits added since {fmtDate(data.snapshotDate)}
                     </p>
-                    <p className="text-xs text-amber-700/60 mt-2">No inflows in this window.</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300/60 mt-2">No inflows in this window.</p>
                   </div>
                 );
               }
@@ -1142,25 +1142,25 @@ export default function TimeMachinePage() {
                 data.simulation.totalDepositsAdded +
                 (data.rsuVests?.totalValueAtVest ?? 0);
               return (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 font-semibold">
                       New deposits added since {fmtDate(data.snapshotDate)}
                     </p>
-                    <p className="text-[10px] text-amber-700/70">kept in sim</p>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-300/70">kept in sim</p>
                   </div>
 
                   {/* Cash deposits */}
                   {hasCash && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
+                      <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide mb-1">
                         Cash deposits · +{fmtCurrency(data.simulation.totalDepositsAdded)}
                       </p>
                       <div className="flex flex-col gap-0.5">
                         {data.simulation.deposits.map((d, i) => (
                           <div key={i} className="flex justify-between text-[11px]">
                             <span className="text-amber-900/80">{fmtDateShort(d.date)}</span>
-                            <span className="font-medium text-amber-800">+{fmtCurrency(d.amount)}</span>
+                            <span className="font-medium text-amber-800 dark:text-amber-200">+{fmtCurrency(d.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -1170,7 +1170,7 @@ export default function TimeMachinePage() {
                   {/* RSU vests */}
                   {hasRsu && data.rsuVests && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
+                      <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide mb-1">
                         RSU vests · +{fmtCurrency(data.rsuVests.totalValueAtVest)}
                       </p>
                       <p className="text-[10px] text-amber-900/70 mb-1.5">
@@ -1192,17 +1192,17 @@ export default function TimeMachinePage() {
                             <span className="text-amber-900/80">
                               {fmtDateShort(v.date)} · {v.symbol} × {Math.round(v.units)}
                             </span>
-                            <span className="font-medium text-amber-800">+{fmtCurrency(v.valueAtVest)}</span>
+                            <span className="font-medium text-amber-800 dark:text-amber-200">+{fmtCurrency(v.valueAtVest)}</span>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-amber-800/60 mt-1.5 italic">
+                      <p className="text-[10px] text-amber-800 dark:text-amber-200/60 mt-1.5 italic">
                         Vested shares accrue without cash debit (income event).
                       </p>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200">
+                  <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200 dark:border-amber-800/50">
                     <span className="font-semibold text-amber-900">Total added</span>
                     <span className="font-bold text-amber-900">+{fmtCurrency(totalInflows)}</span>
                   </div>
@@ -1211,28 +1211,28 @@ export default function TimeMachinePage() {
             })()}
 
             {/* Withdrawals — warm orange */}
-            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <div className="rounded-xl border border-orange-200 dark:border-orange-800/50 bg-orange-50 dark:bg-orange-950/40 p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-orange-700 font-semibold">
+                <p className="text-[10px] uppercase tracking-wider text-orange-700 dark:text-orange-300 font-semibold">
                   Would need to fund elsewhere
                 </p>
-                <p className="text-[10px] text-orange-700/70">not subtracted</p>
+                <p className="text-[10px] text-orange-700 dark:text-orange-300/70">not subtracted</p>
               </div>
               {data.simulation.withdrawals.length === 0 ? (
-                <p className="text-xs text-orange-700/60 mt-2">No withdrawals in this window.</p>
+                <p className="text-xs text-orange-700 dark:text-orange-300/60 mt-2">No withdrawals in this window.</p>
               ) : (
                 <div className="flex flex-col gap-0.5 mt-2">
                   {data.simulation.withdrawals.map((w, i) => (
                     <div key={i} className="flex justify-between text-[11px]">
                       <span className="text-orange-900/80">{fmtDateShort(w.date)}</span>
-                      <span className="font-medium text-orange-800">−{fmtCurrency(w.amount)}</span>
+                      <span className="font-medium text-orange-800 dark:text-orange-200">−{fmtCurrency(w.amount)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-orange-200">
+                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-orange-200 dark:border-orange-800/50">
                     <span className="font-semibold text-orange-900">Total to fund</span>
                     <span className="font-bold text-orange-900">−{fmtCurrency(data.simulation.totalWithdrawalsFunded)}</span>
                   </div>
-                  <p className="text-[10px] text-orange-700/70 mt-2 italic">
+                  <p className="text-[10px] text-orange-700 dark:text-orange-300/70 mt-2 italic">
                     Note: not subtracted from simulation.
                   </p>
                 </div>
@@ -1241,9 +1241,9 @@ export default function TimeMachinePage() {
 
             {/* Realized gains + tax context (WA-specific) */}
             {data.realizedGains && data.realizedGains.total !== 0 && (
-              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+              <div className="rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50 dark:bg-violet-950/40 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] uppercase tracking-wider text-violet-700 font-semibold">
+                  <span className="text-[11px] uppercase tracking-wider text-violet-700 dark:text-violet-300 font-semibold">
                     Why you may have withdrawn cash
                   </span>
                 </div>
@@ -1254,9 +1254,9 @@ export default function TimeMachinePage() {
                   withdrawals above were likely real tax obligations from the activity below.
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Options (STCG)</div>
+                      <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold">Options (STCG)</div>
                       {(data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
                         <button
                           type="button"
@@ -1273,9 +1273,9 @@ export default function TimeMachinePage() {
                       All short-term · net of {data.realizedGains.optionsBreakdown?.length ?? 0} legs
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Stocks STCG</div>
+                      <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold">Stocks STCG</div>
                       {(data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
                         <button
                           type="button"
@@ -1290,8 +1290,8 @@ export default function TimeMachinePage() {
                     <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held &lt; 1 yr</div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks LTCG</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">Stocks LTCG</div>
                     <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held ≥ 1 yr</div>
                   </div>
@@ -1299,8 +1299,8 @@ export default function TimeMachinePage() {
 
                 {/* Options breakdown — per-leg detail */}
                 {optionsRealizationOpen && (data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 dark:border-violet-800/50 text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-300 font-semibold">
                       Options legs since {fmtDate(data.snapshotDate)} · {data.realizedGains.optionsBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
@@ -1340,8 +1340,8 @@ export default function TimeMachinePage() {
 
                 {/* Stocks breakdown — per-SELL detail */}
                 {stocksRealizationOpen && (data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 dark:border-violet-800/50 text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-300 font-semibold">
                       Stock SELLs since {fmtDate(data.snapshotDate)} · {data.realizedGains.stocksBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
@@ -1375,7 +1375,7 @@ export default function TimeMachinePage() {
                               <td className="px-2 py-1 text-center">
                                 <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${
                                   s.term === "LT" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" :
-                                  s.term === "ST" ? "bg-amber-50 text-amber-700" :
+                                  s.term === "ST" ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300" :
                                   "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"
                                 }`} title={s.term === "skipped" ? "No in-window BUY — gain not tallied" : `Held ${s.holdDays}d from ${s.earliestBuyDate}`}>
                                   {s.term}
@@ -1392,8 +1392,8 @@ export default function TimeMachinePage() {
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2 text-xs mt-3">
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">STCG tax @ 40.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.stcgTax)}
                     </div>
@@ -1401,8 +1401,8 @@ export default function TimeMachinePage() {
                       on {fmtCurrency0(data.realizedGains.taxBreakdown.stcgBase)}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.ltcgTax)}
                     </div>
@@ -1411,11 +1411,11 @@ export default function TimeMachinePage() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-white dark:bg-surface-elevated border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
-                  <span className="text-[11px] text-violet-700 font-semibold uppercase tracking-wider">Total est. tax</span>
+                <div className="bg-white dark:bg-surface-elevated border border-violet-200 dark:border-violet-800/50 rounded-lg p-2.5 mt-3 flex items-center justify-between">
+                  <span className="text-[11px] text-violet-700 dark:text-violet-300 font-semibold uppercase tracking-wider">Total est. tax</span>
                   <span className="text-base font-bold text-rose-600 dark:text-loss">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
                 </div>
-                <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
+                <p className="text-[10px] text-violet-700 dark:text-violet-300/80 mt-3 italic leading-snug">
                   {data.realizedGains.taxRateLabel}. Stock hold-period uses earliest in-window
                   BUY date; SELLs without an in-window BUY are skipped (incomplete history).
                 </p>
@@ -1449,7 +1449,7 @@ export default function TimeMachinePage() {
                     const sideLabel = isLong ? "LONG" : "SHORT";
                     const sideClass = isLong
                       ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
-                      : "bg-amber-50 text-amber-700";
+                      : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300";
                     const qty = snap ? Math.abs(snap.units) : null;
                     return (
                       <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50 dark:border-border-subtle" : ""}`}>

@@ -52,13 +52,13 @@ export default function GammaCurve() {
     <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-gray-900 dark:text-text">Gamma vs Stock Price</h3>
-        <span className="text-xs font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+        <span className="text-xs font-mono text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
           {dte} DTE
         </span>
       </div>
 
       {isGammaZone && (
-        <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs text-amber-800 font-medium">
+        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 mb-3 text-xs text-amber-800 dark:text-amber-200 font-medium">
           <span>&#9888;&#65039;</span> Gamma risk zone — extreme sensitivity near expiry
         </div>
       )}

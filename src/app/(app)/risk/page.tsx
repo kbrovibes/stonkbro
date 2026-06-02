@@ -142,12 +142,12 @@ export default async function RiskDashboardPage() {
   };
   const statusBg = {
     triggered: "bg-red-50 dark:bg-loss-bg",
-    warning: "bg-amber-50",
+    warning: "bg-amber-50 dark:bg-amber-950/40",
     safe: "bg-white dark:bg-surface-elevated",
   };
   const statusBadge = {
     triggered: "bg-red-100 dark:bg-loss-bg text-red-700 dark:text-loss-strong",
-    warning: "bg-amber-100 text-amber-700",
+    warning: "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
     safe: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
   const statusLabel = {
@@ -187,7 +187,7 @@ export default async function RiskDashboardPage() {
               largestDrawdown > 10
                 ? "text-red-600 dark:text-loss"
                 : largestDrawdown > 5
-                  ? "text-amber-600"
+                  ? "text-amber-600 dark:text-amber-300"
                   : "text-stone-900 dark:text-text"
             }`}
           >
@@ -273,7 +273,7 @@ export default async function RiskDashboardPage() {
                   p.status === "triggered"
                     ? "text-red-600 dark:text-loss font-semibold"
                     : p.status === "warning"
-                      ? "text-amber-600 font-semibold"
+                      ? "text-amber-600 dark:text-amber-300 font-semibold"
                       : "text-stone-400 dark:text-text-faint"
                 }
               >

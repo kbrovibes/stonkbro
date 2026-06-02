@@ -73,7 +73,7 @@ export default function TrailingStopConfig({
           isTriggered
             ? "border-red-300 bg-red-50 dark:bg-loss-bg"
             : isWarning
-              ? "border-amber-300 bg-amber-50"
+              ? "border-amber-300 bg-amber-50 dark:bg-amber-950/40"
               : "border-emerald-200 dark:border-gain-border bg-emerald-50 dark:bg-gain-bg"
         }`}
       >
@@ -86,7 +86,7 @@ export default function TrailingStopConfig({
               isTriggered
                 ? "bg-red-100 dark:bg-loss-bg text-red-700 dark:text-loss-strong"
                 : isWarning
-                  ? "bg-amber-100 text-amber-700"
+                  ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
                   : "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"
             }`}
           >
@@ -134,7 +134,7 @@ export default function TrailingStopConfig({
                 isTriggered
                   ? "text-red-600 dark:text-loss"
                   : isWarning
-                    ? "text-amber-600"
+                    ? "text-amber-600 dark:text-amber-300"
                     : "text-stone-600 dark:text-text-muted"
               }`}
             >
@@ -143,7 +143,7 @@ export default function TrailingStopConfig({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs border-t border-stone-200/50 pt-3 mb-3">
+        <div className="flex items-center justify-between text-xs border-t border-stone-200/50 dark:border-border-default/50 pt-3 mb-3">
           <span className="text-stone-500 dark:text-text-subtle">
             Stop: {trailingStopPct}% from peak (${stopTriggerPrice.toFixed(2)})
           </span>
@@ -168,7 +168,7 @@ export default function TrailingStopConfig({
         ) : (
           <button
             onClick={() => setShowRemoveConfirm(true)}
-            className="w-full text-xs font-semibold text-stone-500 dark:text-text-subtle bg-white/60 hover:bg-white dark:hover:bg-surface-elevated border border-stone-200/50 px-4 py-2 rounded-lg transition-colors"
+            className="w-full text-xs font-semibold text-stone-500 dark:text-text-subtle bg-white/60 dark:bg-surface-elevated/60 hover:bg-white dark:hover:bg-surface-elevated border border-stone-200/50 dark:border-border-default/50 px-4 py-2 rounded-lg transition-colors"
           >
             Remove Stop
           </button>

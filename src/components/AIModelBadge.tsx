@@ -60,11 +60,11 @@ export function AIModelBadge({ feature, provider, model, timestamp }: AIModelBad
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-stone-100 dark:border-border-subtle bg-stone-50/50 backdrop-blur-sm transition-all hover:bg-white dark:hover:bg-surface-elevated group">
+    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-stone-100 dark:border-border-subtle bg-stone-50/50 dark:bg-surface-muted/50 backdrop-blur-sm transition-all hover:bg-white dark:hover:bg-surface-elevated group">
       <div className={`w-1.5 h-1.5 rounded-full ${isGemini ? "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" : "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"}`} />
       <span className="text-[10px] font-medium text-stone-500 dark:text-text-subtle">
         <span className="opacity-60 font-normal mr-1">AI</span>
-        <span className={isGemini ? "text-sky-700 dark:text-accent-hover" : "text-purple-700"}>
+        <span className={isGemini ? "text-sky-700 dark:text-accent-hover" : "text-purple-700 dark:text-purple-300"}>
           {settings.provider === "gemini" ? "Gemini" : "Claude"}
         </span>
         <span className="mx-1 opacity-30">|</span>

@@ -7,9 +7,9 @@ type Filter = "all" | "active" | "closed";
 
 function strategyBadgeClass(strategy: string) {
   const map: Record<string, string> = {
-    PMCC: "bg-violet-50 text-violet-700",
+    PMCC: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
     "Covered Call": "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
-    "Cash-Secured Put": "bg-amber-50 text-amber-700",
+    "Cash-Secured Put": "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
     "The Wheel": "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
   return map[strategy] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";

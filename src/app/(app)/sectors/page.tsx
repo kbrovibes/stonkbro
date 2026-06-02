@@ -5,13 +5,13 @@ import Link from "next/link";
 import { SECTORS } from "@/lib/market/sectors";
 
 const colorMap: Record<string, { accent: string; badge: string; dot: string }> = {
-  violet: { accent: "text-violet-600", badge: "bg-violet-50 text-violet-600", dot: "bg-violet-500" },
+  violet: { accent: "text-violet-600 dark:text-violet-300", badge: "bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300", dot: "bg-violet-500" },
   sky: { accent: "text-sky-600 dark:text-accent", badge: "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent", dot: "bg-sky-500" },
-  indigo: { accent: "text-indigo-600", badge: "bg-indigo-50 text-indigo-600", dot: "bg-indigo-500" },
+  indigo: { accent: "text-indigo-600 dark:text-indigo-300", badge: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300", dot: "bg-indigo-500" },
   emerald: { accent: "text-emerald-600 dark:text-gain", badge: "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain", dot: "bg-emerald-500" },
-  amber: { accent: "text-amber-600", badge: "bg-amber-50 text-amber-600", dot: "bg-amber-500" },
+  amber: { accent: "text-amber-600 dark:text-amber-300", badge: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300", dot: "bg-amber-500" },
   rose: { accent: "text-rose-600 dark:text-loss", badge: "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss", dot: "bg-rose-500" },
-  lime: { accent: "text-lime-600", badge: "bg-lime-50 text-lime-600", dot: "bg-lime-500" },
+  lime: { accent: "text-lime-600 dark:text-lime-300", badge: "bg-lime-50 dark:bg-lime-950/40 text-lime-600 dark:text-lime-300", dot: "bg-lime-500" },
 };
 
 export default function SectorsPage() {

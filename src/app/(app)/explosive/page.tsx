@@ -38,7 +38,7 @@ function convictionColor(conviction: string) {
     case "High":
       return "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
     case "Medium":
-      return "bg-amber-100 text-amber-700 border-amber-200";
+      return "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50";
     case "Low":
       return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
     default:
@@ -48,7 +48,7 @@ function convictionColor(conviction: string) {
 
 function strategyColor(strategy: string) {
   if (strategy.includes("CSP")) return "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border";
-  if (strategy.includes("PMCC")) return "bg-violet-100 text-violet-700 border-violet-200";
+  if (strategy.includes("PMCC")) return "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/50";
   return "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
 }
 
@@ -314,7 +314,7 @@ function ExplosivePage() {
 
                   {/* Catalyst */}
                   <div className="mb-2.5">
-                    <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">
+                    <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide mb-1">
                       Catalyst
                     </p>
                     <p className="text-xs text-stone-600 dark:text-text-muted leading-relaxed">
@@ -341,7 +341,7 @@ function ExplosivePage() {
       {/* Empty state */}
       {!loading && !result && !error && (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
-          <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center mb-4">
             <svg
               className="w-6 h-6 text-amber-500"
               fill="none"
