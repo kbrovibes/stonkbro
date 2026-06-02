@@ -16,11 +16,13 @@ import {
   reconstructOptionPositionsAt,
   reconstructCashAt,
   reconstructCashAtReverse,
+  reconcileSnapshot,
   categorizePostSnapshotCashFlows,
   computeRealizedGainsSinceSnapshot,
   computeExitAnalysisSinceSnapshot,
   getRsuVestsAfter,
 } from "./reconstruct";
+import type { ReconciliationResult } from "./reconstruct";
 import type { PortfolioData } from "@/lib/snaptrade/client";
 
 /** Bumped whenever the simulator's payload shape or math changes. */
@@ -129,6 +131,10 @@ export interface SimulationResult {
   payloadVersion: number;
   /** Which reconstruction engine produced this payload. */
   engine: "forward" | "reverse";
+  /** Sanity check: reverse-walk to snapshot, forward-apply to today,
+   *  assert we land back at today's known portfolio. Only present when
+   *  engine="reverse". */
+  reconciliation?: ReconciliationResult;
 }
 
 export async function simulateTimeMachine(args: {
@@ -297,6 +303,20 @@ export async function simulateTimeMachine(args: {
   const delta = simulatedTotal - actualTotal;
   const pct = actualTotal > 0 ? (delta / actualTotal) * 100 : 0;
 
+  // Reconcile: forward-apply post-snapshot txns from the reverse-reconstructed
+  // state and assert we land back at today's broker portfolio.
+  const reconciliation: ReconciliationResult | undefined =
+    engine === "reverse" && currentPortfolio
+      ? reconcileSnapshot(
+          snapshotDate,
+          txns,
+          stockUnitsAtSnapshot,
+          cashAtSnapshot,
+          aggregatePortfolioUnits(currentPortfolio),
+          currentPortfolio.summary.cash,
+        )
+      : undefined;
+
   const assumptions: string[] = [
     "Option expiries between snapshot and today are replayed using Tradier daily closes for the underlying; missing dates fall back to the prior trading day.",
     "Stock splits between snapshot and today: Tradier prices are split-adjusted, but SnapTrade share counts at the time of snapshot may not be. Counts taken at face value.",
@@ -372,6 +392,7 @@ export async function simulateTimeMachine(args: {
     assumptions,
     payloadVersion: PAYLOAD_VERSION,
     engine,
+    reconciliation,
   };
 }
 

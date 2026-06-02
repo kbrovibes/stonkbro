@@ -544,6 +544,134 @@ export function reconstructCashAtReverse(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Reconciliation — sanity-check the reverse walk by forward-applying
+// post-snapshot txns and verifying we land at today's known state.
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface ReconciliationResult {
+  passed: boolean;
+  /** Largest |reconstructed − actual| over all symbols. */
+  maxSharesDelta: number;
+  /** Symbol with the worst delta, when > tolerance. */
+  worstSymbol: string | null;
+  /** reconstructed_cash − actual_cash. */
+  cashDelta: number;
+  /** Per-symbol mismatches above tolerance (truncated to 12). */
+  mismatches: Array<{ symbol: string; reconstructed: number; actual: number; delta: number }>;
+  /** Tolerances used for the pass/fail decision. */
+  tolerance: { shares: number; cash: number };
+}
+
+/**
+ * Walk forward from the reverse-reconstructed snapshot state, apply every
+ * post-snapshot txn, and compare to today's known broker portfolio. If
+ * passed=false, the reverse-walk and forward-apply code paths have
+ * diverged — that's a bug, not a data issue.
+ */
+export function reconcileSnapshot(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  snapshotUnits: Map<string, number>,
+  snapshotCash: number,
+  todayUnits: Map<string, number>,
+  todayCash: number,
+): ReconciliationResult {
+  const units = new Map(snapshotUnits);
+  let cash = snapshotCash;
+  const optUnits = new Map<string, number>();
+  const sorted = sortAscending(txns);
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (date > snapshotDate) {
+        if (tx.type === "OPTIONASSIGNMENT") {
+          const optionType = (tx.option_symbol?.option_type ?? "").toUpperCase();
+          const underlying = tx.option_symbol?.underlying_symbol?.symbol ?? "";
+          const strike = Number(tx.option_symbol?.strike_price ?? 0);
+          const contracts = Math.abs(prev || tx.units);
+          const wasShort = prev < 0 || prev === 0;
+          if (underlying) {
+            let stockDelta = 0;
+            if (optionType === "CALL") stockDelta = wasShort ? -100 * contracts : +100 * contracts;
+            else if (optionType === "PUT") stockDelta = wasShort ? +100 * contracts : -100 * contracts;
+            units.set(underlying, (units.get(underlying) ?? 0) + stockDelta);
+          }
+          if (tx.amount !== 0) {
+            cash += tx.amount;
+          } else {
+            const notional = strike * 100 * contracts;
+            if (optionType === "CALL") cash += wasShort ? notional : -notional;
+            else if (optionType === "PUT") cash += wasShort ? -notional : notional;
+          }
+        } else if (tx.type === "BUY" || tx.type === "SELL") {
+          cash += tx.amount;
+        }
+      }
+      if (tx.type === "OPTIONASSIGNMENT") optUnits.set(key, 0);
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+
+    switch (tx.type) {
+      case "BUY":
+        units.set(sym, (units.get(sym) ?? 0) + Math.abs(tx.units));
+        if (!isRsuVest(tx)) cash += tx.amount;
+        break;
+      case "SELL":
+        units.set(sym, (units.get(sym) ?? 0) - Math.abs(tx.units));
+        cash += tx.amount;
+        break;
+      case "DEPOSIT":
+      case "CONTRIBUTION":
+      case "DIVIDEND":
+      case "INTEREST":
+        cash += Math.abs(tx.amount);
+        break;
+      case "WITHDRAWAL":
+      case "FEE":
+      case "TAX":
+        cash -= Math.abs(tx.amount);
+        break;
+      default:
+        break;
+    }
+  }
+
+  const tolerance = { shares: 0.001, cash: 1.0 };
+  const all = new Set<string>([...units.keys(), ...todayUnits.keys()]);
+  const mismatches: ReconciliationResult["mismatches"] = [];
+  let maxSharesDelta = 0;
+  let worstSymbol: string | null = null;
+  for (const sym of all) {
+    const r = units.get(sym) ?? 0;
+    const a = todayUnits.get(sym) ?? 0;
+    const d = r - a;
+    if (Math.abs(d) > tolerance.shares) {
+      mismatches.push({ symbol: sym, reconstructed: r, actual: a, delta: d });
+      if (Math.abs(d) > maxSharesDelta) { maxSharesDelta = Math.abs(d); worstSymbol = sym; }
+    }
+  }
+  // Sort by largest absolute delta, truncate.
+  mismatches.sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta));
+  const cashDelta = cash - todayCash;
+  const passed = maxSharesDelta <= tolerance.shares && Math.abs(cashDelta) <= tolerance.cash;
+
+  return { passed, maxSharesDelta, worstSymbol, cashDelta, mismatches: mismatches.slice(0, 12), tolerance };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Post-snapshot cash-flow categorization
 // ─────────────────────────────────────────────────────────────────────────
 
