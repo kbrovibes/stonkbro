@@ -23,7 +23,7 @@ function VolumeBar({ ratio }: { ratio: number }) {
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full ${ratio >= 2 ? "bg-amber-500" : "bg-stone-300"}`}
+          className={`h-full rounded-full ${ratio >= 2 ? "bg-amber-500" : "bg-stone-300 dark:bg-border-strong"}`}
           style={{ width: `${pct}%` }}
         />
       </div>

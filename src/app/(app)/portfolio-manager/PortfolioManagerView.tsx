@@ -555,7 +555,7 @@ function RatingPill({ rating }: { rating: Rating }) {
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-sky-500" : "bg-stone-400";
+  const color = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-sky-500" : "bg-stone-400 dark:bg-text-faint";
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex-1 h-1.5 rounded-full bg-stone-200 dark:bg-surface-sunken overflow-hidden">

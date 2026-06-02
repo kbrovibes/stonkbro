@@ -643,7 +643,7 @@ export default function TodayPage() {
                       <div className="w-8 h-1 rounded-full bg-stone-100 dark:bg-surface-muted overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            f.activityScore >= 60 ? "bg-violet-500" : f.activityScore >= 30 ? "bg-amber-400" : "bg-stone-300"
+                            f.activityScore >= 60 ? "bg-violet-500" : f.activityScore >= 30 ? "bg-amber-400" : "bg-stone-300 dark:bg-border-strong"
                           }`}
                           style={{ width: `${f.activityScore}%` }}
                         />

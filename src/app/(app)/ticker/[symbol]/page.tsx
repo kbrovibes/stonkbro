@@ -116,7 +116,7 @@ export default async function TickerPage({ params }: { params: Params }) {
         </div>
         <div className="h-2 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full ${quote.volumeRatio >= 2 ? "bg-amber-500" : "bg-stone-300"}`}
+            className={`h-full rounded-full ${quote.volumeRatio >= 2 ? "bg-amber-500" : "bg-stone-300 dark:bg-border-strong"}`}
             style={{ width: `${Math.min(quote.volumeRatio / 4 * 100, 100)}%` }}
           />
         </div>

@@ -212,7 +212,7 @@ export default function AdminDashboard() {
               <div className="mt-3">
                 {tradierLoading ? (
                   <div className="flex items-center gap-2 py-3">
-                    <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-stone-300 dark:bg-border-strong animate-pulse" />
                     <span className="text-xs text-stone-400 dark:text-text-faint">Checking connection...</span>
                   </div>
                 ) : tradierError ? (

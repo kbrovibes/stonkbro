@@ -75,7 +75,7 @@ export default function TickerCSPSection({ symbol }: { symbol: string }) {
 
 function CSPPickCard({ pick: p }: { pick: CSPPick }) {
   const [open, setOpen] = useState(false);
-  const priorityColor = p.priority === "high" ? "bg-emerald-500" : p.priority === "medium" ? "bg-amber-500" : "bg-stone-400";
+  const priorityColor = p.priority === "high" ? "bg-emerald-500" : p.priority === "medium" ? "bg-amber-500" : "bg-stone-400 dark:bg-text-faint";
 
   return (
     <div className="px-4 py-3 cursor-pointer hover:bg-stone-50 dark:hover:bg-surface-muted transition" onClick={() => setOpen(!open)}>

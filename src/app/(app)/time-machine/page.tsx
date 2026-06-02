@@ -514,7 +514,7 @@ export default function TimeMachinePage() {
             }
             const s = it.meta;
             const sel = selectedDate === s.snapshotDate;
-            const ring = sel ? "ring-2 ring-stone-900 ring-offset-1" : "";
+            const ring = sel ? "ring-2 ring-stone-900 dark:ring-text ring-offset-1" : "";
             return (
               <button
                 key={s.snapshotDate}
@@ -548,7 +548,7 @@ export default function TimeMachinePage() {
                       role="switch"
                       aria-checked={showDeltas}
                       onClick={() => setShowDeltas((v) => !v)}
-                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDeltas ? "bg-emerald-500" : "bg-stone-300"}`}
+                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDeltas ? "bg-emerald-500" : "bg-stone-300 dark:bg-border-strong"}`}
                     >
                       <span
                         className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-surface-elevated shadow transition-transform ${showDeltas ? "translate-x-3.5" : "translate-x-0.5"}`}
@@ -587,7 +587,7 @@ export default function TimeMachinePage() {
                   <span className="w-2 h-2 rounded-full bg-rose-400" /> should&apos;ve stopped
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-stone-300" /> not yet computed
+                  <span className="w-2 h-2 rounded-full bg-stone-300 dark:bg-border-strong" /> not yet computed
                 </span>
               </div>
 

@@ -237,7 +237,7 @@ export default function TimeMachineDetailPage() {
           <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
             <span className="text-[10px] text-stone-500 dark:text-text-subtle">$</span>
             <button type="button" role="switch" aria-checked={showDollars} onClick={() => setShowDollars((v) => !v)}
-              className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDollars ? "bg-sky-500" : "bg-stone-300"}`}>
+              className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDollars ? "bg-sky-500" : "bg-stone-300 dark:bg-border-strong"}`}>
               <span className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-surface-elevated shadow transition-transform ${showDollars ? "translate-x-3.5" : "translate-x-0.5"}`} />
             </button>
           </label>

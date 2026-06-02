@@ -28,7 +28,7 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 const PROGRESS_BAR_MAP: Record<string, string> = {
-  "stone-500": "bg-stone-500",
+  "stone-500": "bg-stone-500 dark:bg-text-subtle",
   "blue-500": "bg-blue-500",
   "amber-500": "bg-amber-500",
   "emerald-500": "bg-emerald-500",
@@ -91,7 +91,7 @@ export default async function LearnPage() {
     ).length;
     const totalCount = mod.lessons.length;
     const colorClasses = COLOR_MAP[mod.color] || "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
-    const barColor = PROGRESS_BAR_MAP[mod.color] || "bg-stone-500";
+    const barColor = PROGRESS_BAR_MAP[mod.color] || "bg-stone-500 dark:bg-text-subtle";
 
     return (
       <Link

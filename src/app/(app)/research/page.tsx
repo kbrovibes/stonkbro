@@ -390,7 +390,7 @@ function EntryCard({
                           <button
                             onClick={() => onSuggestionAction(idx, "dismiss")}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                              isDismissed ? "bg-stone-400 text-white" : "border border-stone-200 dark:border-border-default text-stone-500 dark:text-text-subtle hover:bg-stone-50"
+                              isDismissed ? "bg-stone-400 dark:bg-text-faint text-white" : "border border-stone-200 dark:border-border-default text-stone-500 dark:text-text-subtle hover:bg-stone-50"
                             }`}
                           >
                             {isDismissed ? "Dismissed" : "Dismiss"}
@@ -666,7 +666,7 @@ export default function ResearchPage() {
       {/* Entries */}
       {loadingHistory ? (
         <div className="flex items-center justify-center py-8 gap-2 text-xs text-stone-400 dark:text-text-faint">
-          <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-stone-300 dark:bg-border-strong animate-pulse" />
           Loading history…
         </div>
       ) : entries.length === 0 ? (

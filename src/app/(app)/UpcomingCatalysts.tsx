@@ -103,7 +103,7 @@ export default function UpcomingCatalysts({ earnings, ipos }: Props) {
         {ipos.map((ipo) => {
           const isSelected = selected === ipo.name;
           const pillBg = STATUS_PILL[ipo.status] ?? STATUS_PILL.rumored;
-          const ring = isSelected ? "ring-2 ring-stone-900 ring-offset-1" : "";
+          const ring = isSelected ? "ring-2 ring-stone-900 dark:ring-text ring-offset-1" : "";
           return (
             <button
               key={`ipo-${ipo.name}`}

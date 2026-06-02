@@ -686,7 +686,7 @@ function CSPCard({ candidate: c, rank }: { candidate: Candidate; rank: number })
   const priorityColors = {
     high: "bg-emerald-500",
     medium: "bg-amber-500",
-    low: "bg-stone-400",
+    low: "bg-stone-400 dark:bg-text-faint",
   };
 
   return (
@@ -754,7 +754,7 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
   const priorityColors = {
     high: "bg-sky-500",
     medium: "bg-amber-500",
-    low: "bg-stone-400",
+    low: "bg-stone-400 dark:bg-text-faint",
   };
 
   return (
