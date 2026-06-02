@@ -71,9 +71,9 @@ const THEME_META: Record<string, { label: string; emoji: string }> = {
 };
 
 const SENTIMENT_META: Record<string, { label: string; color: string; bg: string }> = {
-  bullish: { label: "Bullish", color: "text-emerald-700", bg: "bg-emerald-50" },
-  bearish: { label: "Bearish", color: "text-red-700", bg: "bg-red-50" },
-  neutral: { label: "Neutral", color: "text-stone-600", bg: "bg-stone-100" },
+  bullish: { label: "Bullish", color: "text-emerald-700 dark:text-gain-strong", bg: "bg-emerald-50 dark:bg-gain-bg" },
+  bearish: { label: "Bearish", color: "text-red-700 dark:text-loss-strong", bg: "bg-red-50 dark:bg-loss-bg" },
+  neutral: { label: "Neutral", color: "text-stone-600 dark:text-text-muted", bg: "bg-stone-100 dark:bg-surface-muted" },
 };
 
 const FLOW_TYPE_LABELS: Record<string, string> = {
@@ -120,7 +120,7 @@ function isStale(iso: string): boolean {
 
 function Spinner({ size = "w-5 h-5" }: { size?: string }) {
   return (
-    <svg className={`${size} animate-spin text-stone-400`} fill="none" viewBox="0 0 24 24">
+    <svg className={`${size} animate-spin text-stone-400 dark:text-text-faint`} fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
@@ -133,7 +133,7 @@ function Section({ title, children, badge }: { title: string; children: React.Re
   return (
     <section className="mb-4">
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-xs font-bold text-stone-800">{title}</h3>
+        <h3 className="text-xs font-bold text-stone-800 dark:text-text">{title}</h3>
         {badge}
       </div>
       {children}
@@ -266,7 +266,7 @@ export default function TodayPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-0.5">
         <div className="flex items-center gap-3">
-          <h2 className="text-base font-bold text-stone-900">Today&apos;s Plays</h2>
+          <h2 className="text-base font-bold text-stone-900 dark:text-text">Today&apos;s Plays</h2>
           <AIModelBadge 
             model={firstRec?.model} 
             timestamp={firstRec?.generatedAt}
@@ -295,9 +295,9 @@ export default function TodayPage() {
 
       {/* Date + last updated */}
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-[11px] text-stone-400">{formatDate()}</span>
+        <span className="text-[11px] text-stone-400 dark:text-text-faint">{formatDate()}</span>
         {lastUpdated && (
-          <span className="text-[10px] text-stone-400">{updatedAgoText(lastUpdated)}</span>
+          <span className="text-[10px] text-stone-400 dark:text-text-faint">{updatedAgoText(lastUpdated)}</span>
         )}
       </div>
 
@@ -308,7 +308,7 @@ export default function TodayPage() {
         title="Explosive Movers"
         badge={
           movers.length > 0 ? (
-            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg px-1.5 py-0.5 rounded-full">
               {movers.length} found
             </span>
           ) : null
@@ -321,15 +321,15 @@ export default function TodayPage() {
         )}
 
         {moversError && !moversLoading && (
-          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3">
-            <p className="text-xs text-red-600">{moversError}</p>
+          <div className="rounded-xl bg-red-50 dark:bg-loss-bg border border-red-100 dark:border-loss-border px-4 py-3">
+            <p className="text-xs text-red-600 dark:text-loss">{moversError}</p>
           </div>
         )}
 
         {!moversLoading && !moversError && movers.length === 0 && (
-          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-            <p className="text-sm text-stone-500">Markets are quiet today</p>
-            <p className="text-[10px] text-stone-400 mt-1">No explosive moves detected yet</p>
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-4 py-6 text-center">
+            <p className="text-sm text-stone-500 dark:text-text-subtle">Markets are quiet today</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">No explosive moves detected yet</p>
           </div>
         )}
 
@@ -340,39 +340,39 @@ export default function TodayPage() {
               return (
                 <div
                   key={m.symbol}
-                  className={`rounded-xl border bg-white px-2 py-2 ${
-                    isUp ? "border-emerald-200" : "border-red-200"
+                  className={`rounded-xl border bg-white dark:bg-surface-elevated px-2 py-2 ${
+                    isUp ? "border-emerald-200 dark:border-gain-border" : "border-red-200 dark:border-loss-border"
                   }`}
                 >
                   {/* Top row: symbol, change, volume */}
                   <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                    <span className={`text-[11px] font-bold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                    <span className={`text-[11px] font-bold ${isUp ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
                       {isUp ? "▲" : "▼"}
                     </span>
                     <Link
                       href={`/ticker/${m.symbol}`}
-                      className="text-[11px] font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                      className="text-[11px] font-bold text-stone-900 dark:text-text hover:text-sky-600 transition-colors"
                     >
                       {m.symbol}
                     </Link>
-                    <span className={`text-[9px] font-semibold tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                    <span className={`text-[9px] font-semibold tabular-nums ${isUp ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
                       {isUp ? "+" : ""}{m.changePct.toFixed(1)}%
                     </span>
-                    <span className="text-[9px] text-stone-400">
+                    <span className="text-[9px] text-stone-400 dark:text-text-faint">
                       {m.volumeRatio.toFixed(1)}x
                     </span>
                   </div>
 
                   {/* Name + price */}
-                  <p className="text-[9px] text-stone-500 mb-1 truncate">
+                  <p className="text-[9px] text-stone-500 dark:text-text-subtle mb-1 truncate">
                     {m.name} &middot; ${m.price.toFixed(2)}
                   </p>
 
                   {/* Suggested play */}
-                  <p className="text-[9px] font-medium text-stone-800 mb-0.5">
+                  <p className="text-[9px] font-medium text-stone-800 dark:text-text mb-0.5">
                     {m.suggestedPlay}
                   </p>
-                  <p className="text-[9px] text-stone-500 leading-snug mb-1.5">
+                  <p className="text-[9px] text-stone-500 dark:text-text-subtle leading-snug mb-1.5">
                     {m.reasoning}
                   </p>
 
@@ -380,19 +380,19 @@ export default function TodayPage() {
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <Link
                       href={`/ticker/${m.symbol}`}
-                      className="text-[9px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                      className="text-[9px] font-medium text-stone-500 dark:text-text-subtle hover:text-stone-700 transition-colors"
                     >
                       Research &rarr;
                     </Link>
                     <Link
                       href={`/suggestions/${m.symbol}`}
-                      className="text-[9px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                      className="text-[9px] font-medium text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
                     >
                       Options &rarr;
                     </Link>
                     <Link
                       href={`/positions/new?symbol=${m.symbol}&strategy=Cash-Secured Put`}
-                      className="inline-flex items-center rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
+                      className="inline-flex items-center rounded-md bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 text-[9px] font-medium text-stone-700 dark:text-text-muted hover:bg-stone-200 dark:hover:bg-surface-sunken transition-colors"
                     >
                       Log Trade
                     </Link>
@@ -411,7 +411,7 @@ export default function TodayPage() {
         title="Premium Plays"
         badge={
           recommendations.length > 0 ? (
-            <span className="text-[10px] font-semibold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold text-sky-600 dark:text-accent bg-sky-50 dark:bg-accent-bg px-1.5 py-0.5 rounded-full">
               {recommendations.reduce((n, r) => n + r.picks.length, 0)} picks
             </span>
           ) : null
@@ -419,11 +419,11 @@ export default function TodayPage() {
       >
         {/* In-progress banner */}
         {isRunning && (
-          <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
+          <div className="mb-3 rounded-xl border border-sky-200 dark:border-accent-border bg-sky-50 dark:bg-accent-bg px-4 py-3 flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-sky-800">Generating recommendations...</p>
-              <p className="text-[10px] text-sky-600">Runs in the background. You can leave and come back.</p>
+              <p className="text-xs font-semibold text-sky-800 dark:text-accent-hover">Generating recommendations...</p>
+              <p className="text-[10px] text-sky-600 dark:text-accent">Runs in the background. You can leave and come back.</p>
             </div>
           </div>
         )}
@@ -435,15 +435,15 @@ export default function TodayPage() {
         )}
 
         {recsError && !recsLoading && (
-          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3">
-            <p className="text-xs text-red-600">{recsError}</p>
+          <div className="rounded-xl bg-red-50 dark:bg-loss-bg border border-red-100 dark:border-loss-border px-4 py-3">
+            <p className="text-xs text-red-600 dark:text-loss">{recsError}</p>
           </div>
         )}
 
         {!recsLoading && !recsError && recommendations.length === 0 && !isRunning && (
-          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-            <p className="text-sm text-stone-500">No recommendations yet</p>
-            <p className="text-[10px] text-stone-400 mt-1">
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-4 py-6 text-center">
+            <p className="text-sm text-stone-500 dark:text-text-subtle">No recommendations yet</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">
               Hit Refresh All to generate, or they auto-run during market hours.
             </p>
           </div>
@@ -456,27 +456,27 @@ export default function TodayPage() {
               const isCollapsed = collapsed[rec.theme] ?? false;
 
               return (
-                <div key={rec.theme} className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+                <div key={rec.theme} className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
                   {/* Theme header */}
                   <button
                     onClick={() => toggleTheme(rec.theme)}
-                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 active:bg-sky-50 transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-surface-muted active:bg-sky-50 dark:active:bg-accent-bg transition-colors"
                   >
                     <div className="flex items-center gap-1 min-w-0">
                       <svg
-                        className={`w-3 h-3 shrink-0 text-stone-400 transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}
+                        className={`w-3 h-3 shrink-0 text-stone-400 dark:text-text-faint transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}
                         fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                       </svg>
                       <span className="text-xs">{meta.emoji}</span>
-                      <span className="text-[11px] font-bold text-stone-900 truncate">{meta.label}</span>
-                      <span className="text-[9px] text-stone-400 font-medium shrink-0">{rec.picks.length}</span>
+                      <span className="text-[11px] font-bold text-stone-900 dark:text-text truncate">{meta.label}</span>
+                      <span className="text-[9px] text-stone-400 dark:text-text-faint font-medium shrink-0">{rec.picks.length}</span>
                     </div>
                     <span className={`text-[9px] px-1 py-0.5 rounded-full font-medium shrink-0 ${
                       isStale(rec.generatedAt)
                         ? "text-amber-700 bg-amber-50"
-                        : "text-stone-400"
+                        : "text-stone-400 dark:text-text-faint"
                     }`}>
                       {formatTimeAgo(rec.generatedAt)}
                     </span>
@@ -488,58 +488,58 @@ export default function TodayPage() {
                       {rec.picks.map((pick, i) => (
                         <div
                           key={`${pick.symbol}-${i}`}
-                          className="rounded-lg bg-stone-50 px-2 py-1.5"
+                          className="rounded-lg bg-stone-50 dark:bg-surface px-2 py-1.5"
                         >
                           {/* Ticker row */}
                           <div className="flex items-center justify-between mb-0.5 gap-1">
                             <div className="flex items-center gap-1 min-w-0 flex-wrap">
                               <Link
                                 href={`/ticker/${pick.symbol}`}
-                                className="text-[11px] font-bold text-sky-600 hover:text-sky-800 transition-colors"
+                                className="text-[11px] font-bold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
                               >
                                 {pick.symbol}
                               </Link>
                               {pick.price != null && (
-                                <span className="text-[9px] text-stone-500 tabular-nums">
+                                <span className="text-[9px] text-stone-500 dark:text-text-subtle tabular-nums">
                                   ${pick.price.toFixed(2)}
                                 </span>
                               )}
                               {pick.changePct != null && (
                                 <span className={`text-[9px] font-semibold tabular-nums ${
-                                  pick.changePct >= 0 ? "text-emerald-600" : "text-red-500"
+                                  pick.changePct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                                 }`}>
                                   {pick.changePct >= 0 ? "+" : ""}{pick.changePct.toFixed(1)}%
                                 </span>
                               )}
                             </div>
                             {pick.strike && pick.premium && (
-                              <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded-full shrink-0">
+                              <span className="text-[9px] font-semibold text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg px-1 py-0.5 rounded-full shrink-0">
                                 ${pick.premium.toFixed(2)}
                               </span>
                             )}
                           </div>
 
                           {/* Action */}
-                          <p className="text-[9px] font-medium text-stone-800 mb-0.5">{pick.action}</p>
+                          <p className="text-[9px] font-medium text-stone-800 dark:text-text mb-0.5">{pick.action}</p>
 
                           {/* Rationale */}
-                          <p className="text-[9px] text-stone-500 leading-snug">{pick.rationale}</p>
+                          <p className="text-[9px] text-stone-500 dark:text-text-subtle leading-snug">{pick.rationale}</p>
 
                           {/* Optional details */}
                           {(pick.target || pick.risk || pick.annualizedReturn) && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {pick.target && (
-                                <span className="text-[9px] text-sky-600 bg-sky-50 px-1 py-0.5 rounded">
+                                <span className="text-[9px] text-sky-600 dark:text-accent bg-sky-50 dark:bg-accent-bg px-1 py-0.5 rounded">
                                   Target: {pick.target}
                                 </span>
                               )}
                               {pick.annualizedReturn && (
-                                <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">
+                                <span className="text-[9px] text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg px-1 py-0.5 rounded">
                                   {pick.annualizedReturn}
                                 </span>
                               )}
                               {pick.risk && (
-                                <span className="text-[9px] text-red-500 bg-red-50 px-1 py-0.5 rounded">
+                                <span className="text-[9px] text-red-500 dark:text-loss bg-red-50 dark:bg-loss-bg px-1 py-0.5 rounded">
                                   Risk: {pick.risk}
                                 </span>
                               )}
@@ -550,13 +550,13 @@ export default function TodayPage() {
                           <div className="flex items-center gap-1 justify-end mt-1 flex-wrap">
                             <Link
                               href={`/ticker/${pick.symbol}`}
-                              className="text-[9px] font-medium text-stone-500 hover:text-stone-700 transition-colors"
+                              className="text-[9px] font-medium text-stone-500 dark:text-text-subtle hover:text-stone-700 transition-colors"
                             >
                               Research &rarr;
                             </Link>
                             <Link
                               href={`/positions/new?symbol=${pick.symbol}&strategy=${encodeURIComponent(pick.action?.split(" ")[0] === "Sell" ? "Cash-Secured Put" : "Covered Call")}`}
-                              className="inline-flex items-center rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-medium text-stone-700 hover:bg-stone-200 transition-colors"
+                              className="inline-flex items-center rounded-md bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 text-[9px] font-medium text-stone-700 dark:text-text-muted hover:bg-stone-200 dark:hover:bg-surface-sunken transition-colors"
                             >
                               Log
                             </Link>
@@ -593,15 +593,15 @@ export default function TodayPage() {
         )}
 
         {flowError && !flowLoading && (
-          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3">
-            <p className="text-xs text-red-600">{flowError}</p>
+          <div className="rounded-xl bg-red-50 dark:bg-loss-bg border border-red-100 dark:border-loss-border px-4 py-3">
+            <p className="text-xs text-red-600 dark:text-loss">{flowError}</p>
           </div>
         )}
 
         {!flowLoading && !flowError && flow.length === 0 && (
-          <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
-            <p className="text-sm text-stone-500">No unusual activity</p>
-            <p className="text-[10px] text-stone-400 mt-1">Options flow looks normal across tracked tickers.</p>
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-4 py-6 text-center">
+            <p className="text-sm text-stone-500 dark:text-text-subtle">No unusual activity</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">Options flow looks normal across tracked tickers.</p>
           </div>
         )}
 
@@ -612,15 +612,15 @@ export default function TodayPage() {
               const isExpanded = flowExpanded[f.symbol] ?? false;
 
               return (
-                <div key={f.symbol} className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+                <div key={f.symbol} className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
                   {/* Header — always visible */}
                   <button
                     onClick={() => setFlowExpanded((prev) => ({ ...prev, [f.symbol]: !prev[f.symbol] }))}
-                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 active:bg-violet-50 transition-colors gap-1"
+                    className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-surface-muted active:bg-violet-50 transition-colors gap-1"
                   >
                     <div className="flex items-center gap-1 min-w-0 flex-wrap">
                       <svg
-                        className={`w-3 h-3 shrink-0 text-stone-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                        className={`w-3 h-3 shrink-0 text-stone-400 dark:text-text-faint transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                         fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -628,19 +628,19 @@ export default function TodayPage() {
                       <Link
                         href={`/ticker/${f.symbol}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-[11px] font-bold text-stone-900 hover:text-sky-600 transition-colors"
+                        className="text-[11px] font-bold text-stone-900 dark:text-text hover:text-sky-600 transition-colors"
                       >
                         {f.symbol}
                       </Link>
-                      <span className="text-[9px] text-stone-400 tabular-nums">${f.price.toFixed(2)}</span>
+                      <span className="text-[9px] text-stone-400 dark:text-text-faint tabular-nums">${f.price.toFixed(2)}</span>
                       <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-full ${sentMeta.bg} ${sentMeta.color}`}>
                         {sentMeta.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-[9px] text-stone-400">{f.signals.length}</span>
+                      <span className="text-[9px] text-stone-400 dark:text-text-faint">{f.signals.length}</span>
                       {/* Activity score bar */}
-                      <div className="w-8 h-1 rounded-full bg-stone-100 overflow-hidden">
+                      <div className="w-8 h-1 rounded-full bg-stone-100 dark:bg-surface-muted overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
                             f.activityScore >= 60 ? "bg-violet-500" : f.activityScore >= 30 ? "bg-amber-400" : "bg-stone-300"
@@ -652,11 +652,11 @@ export default function TodayPage() {
                   </button>
 
                   {/* Stats row */}
-                  <div className="px-2 pb-1 flex items-center gap-2 text-[9px] text-stone-400 flex-wrap">
+                  <div className="px-2 pb-1 flex items-center gap-2 text-[9px] text-stone-400 dark:text-text-faint flex-wrap">
                     <span>C: {f.totalCallVolume.toLocaleString()}</span>
                     <span>P: {f.totalPutVolume.toLocaleString()}</span>
                     {f.putCallRatio != null && (
-                      <span className={f.putCallRatio >= 1.5 ? "text-red-500 font-semibold" : f.putCallRatio <= 0.5 ? "text-emerald-600 font-semibold" : ""}>
+                      <span className={f.putCallRatio >= 1.5 ? "text-red-500 dark:text-loss font-semibold" : f.putCallRatio <= 0.5 ? "text-emerald-600 dark:text-gain font-semibold" : ""}>
                         P/C: {f.putCallRatio.toFixed(2)}
                       </span>
                     )}
@@ -667,13 +667,13 @@ export default function TodayPage() {
                     <div className="px-2 pb-1.5 flex flex-col gap-1">
                       {f.signals.map((sig, i) => {
                         const dirColor = sig.direction === "bullish"
-                          ? "text-emerald-600"
+                          ? "text-emerald-600 dark:text-gain"
                           : sig.direction === "bearish"
-                          ? "text-red-500"
-                          : "text-stone-500";
+                          ? "text-red-500 dark:text-loss"
+                          : "text-stone-500 dark:text-text-subtle";
 
                         return (
-                          <div key={i} className="rounded-lg bg-stone-50 px-2 py-1">
+                          <div key={i} className="rounded-lg bg-stone-50 dark:bg-surface px-2 py-1">
                             <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                               <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1 py-0.5 rounded">
                                 {FLOW_TYPE_LABELS[sig.type] || sig.type}
@@ -682,9 +682,9 @@ export default function TodayPage() {
                                 {sig.direction === "bullish" ? "▲" : sig.direction === "bearish" ? "▼" : "—"}
                               </span>
                               <div className="flex-1" />
-                              <span className="text-[9px] text-stone-400">{sig.significance}</span>
+                              <span className="text-[9px] text-stone-400 dark:text-text-faint">{sig.significance}</span>
                             </div>
-                            <p className="text-[9px] text-stone-600 leading-snug">{sig.description}</p>
+                            <p className="text-[9px] text-stone-600 dark:text-text-muted leading-snug">{sig.description}</p>
                           </div>
                         );
                       })}
@@ -693,7 +693,7 @@ export default function TodayPage() {
                       <div className="flex justify-end mt-1">
                         <Link
                           href={`/suggestions/${f.symbol}`}
-                          className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                          className="text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
                         >
                           Options &rarr;
                         </Link>

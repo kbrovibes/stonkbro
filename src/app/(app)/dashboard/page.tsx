@@ -93,24 +93,24 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5">
-      <h2 className="text-lg font-bold text-stone-900 mb-1">Dashboard</h2>
-      <p className="text-xs text-stone-400 mb-5">Your home base</p>
+      <h2 className="text-lg font-bold text-stone-900 dark:text-text mb-1">Dashboard</h2>
+      <p className="text-xs text-stone-400 dark:text-text-faint mb-5">Your home base</p>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Active</p>
-          <p className="text-xl font-bold mt-1 text-stone-900">{activePositions.length}</p>
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Active</p>
+          <p className="text-xl font-bold mt-1 text-stone-900 dark:text-text">{activePositions.length}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Total P&L</p>
-          <p className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Total P&L</p>
+          <p className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? "text-emerald-700 dark:text-gain-strong" : "text-red-600 dark:text-loss"}`}>
             {formatCurrency(totalPnl)}
           </p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Income</p>
-          <p className="text-xl font-bold mt-1 text-stone-900">${totalPremium.toLocaleString()}</p>
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Income</p>
+          <p className="text-xl font-bold mt-1 text-stone-900 dark:text-text">${totalPremium.toLocaleString()}</p>
         </div>
       </div>
 
@@ -136,21 +136,21 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <Link href="/portfolio" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-          <p className="text-xs font-bold text-stone-900">Portfolio</p>
-          <p className="text-[10px] text-stone-400 mt-0.5">Gain & drawdown tracking</p>
+        <Link href="/portfolio" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900 dark:text-text">Portfolio</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Gain & drawdown tracking</p>
         </Link>
-        <Link href="/positions/new" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-          <p className="text-xs font-bold text-stone-900">Add Position</p>
-          <p className="text-[10px] text-stone-400 mt-0.5">Track a new trade</p>
+        <Link href="/positions/new" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900 dark:text-text">Add Position</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Track a new trade</p>
         </Link>
-        <Link href="/pmcc-picks" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-          <p className="text-xs font-bold text-stone-900">PMCC Picks</p>
-          <p className="text-[10px] text-stone-400 mt-0.5">Top setups today</p>
+        <Link href="/pmcc-picks" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900 dark:text-text">PMCC Picks</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Top setups today</p>
         </Link>
-        <Link href="/explosive" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-          <p className="text-xs font-bold text-stone-900">Explosive Finder</p>
-          <p className="text-[10px] text-stone-400 mt-0.5">Breakout candidates</p>
+        <Link href="/explosive" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+          <p className="text-xs font-bold text-stone-900 dark:text-text">Explosive Finder</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Breakout candidates</p>
         </Link>
       </div>
 
@@ -158,8 +158,8 @@ export default async function DashboardPage() {
       {activePositions.length > 0 && (
         <div className="mb-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-stone-900">Active Positions</h3>
-            <Link href="/portfolio" className="text-[10px] text-stone-400 hover:text-stone-600">
+            <h3 className="text-sm font-bold text-stone-900 dark:text-text">Active Positions</h3>
+            <Link href="/portfolio" className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600">
               View all
             </Link>
           </div>
@@ -177,14 +177,14 @@ export default async function DashboardPage() {
                 : null;
 
               return (
-                <Link key={pos.id} href="/portfolio" className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors">
+                <Link key={pos.id} href="/portfolio" className="flex items-center justify-between p-3 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-stone-300 transition-colors">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-stone-900">{pos.symbol}</span>
-                    <span className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{pos.strategy}</span>
+                    <span className="text-sm font-bold text-stone-900 dark:text-text">{pos.symbol}</span>
+                    <span className="text-[10px] text-stone-400 dark:text-text-faint bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 rounded-full">{pos.strategy}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     {gainPct != null && (
-                      <span className={`text-xs font-semibold ${gainPct >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                      <span className={`text-xs font-semibold ${gainPct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
                         {gainPct >= 0 ? "+" : ""}{gainPct.toFixed(1)}%
                       </span>
                     )}
@@ -194,7 +194,7 @@ export default async function DashboardPage() {
                       </span>
                     )}
                     {quote && (
-                      <span className="text-xs text-stone-400">${quote.price.toFixed(2)}</span>
+                      <span className="text-xs text-stone-400 dark:text-text-faint">${quote.price.toFixed(2)}</span>
                     )}
                   </div>
                 </Link>
@@ -206,23 +206,23 @@ export default async function DashboardPage() {
 
       {/* Explore */}
       <div>
-        <h3 className="text-sm font-bold text-stone-900 mb-3">Explore</h3>
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-3">Explore</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/sectors" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-            <p className="text-xs font-bold text-stone-900">Sectors</p>
-            <p className="text-[10px] text-stone-400 mt-0.5">Market themes</p>
+          <Link href="/sectors" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+            <p className="text-xs font-bold text-stone-900 dark:text-text">Sectors</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Market themes</p>
           </Link>
-          <Link href="/research" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-            <p className="text-xs font-bold text-stone-900">Research</p>
-            <p className="text-[10px] text-stone-400 mt-0.5">AI reports</p>
+          <Link href="/research" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+            <p className="text-xs font-bold text-stone-900 dark:text-text">Research</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">AI reports</p>
           </Link>
-          <Link href="/signals" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-            <p className="text-xs font-bold text-stone-900">Trade Signals</p>
-            <p className="text-[10px] text-stone-400 mt-0.5">Roll & close alerts</p>
+          <Link href="/signals" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+            <p className="text-xs font-bold text-stone-900 dark:text-text">Trade Signals</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Roll & close alerts</p>
           </Link>
-          <Link href="/income" className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 transition-colors">
-            <p className="text-xs font-bold text-stone-900">Income</p>
-            <p className="text-[10px] text-stone-400 mt-0.5">Premium tracking</p>
+          <Link href="/income" className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 hover:border-stone-300 transition-colors">
+            <p className="text-xs font-bold text-stone-900 dark:text-text">Income</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Premium tracking</p>
           </Link>
         </div>
       </div>

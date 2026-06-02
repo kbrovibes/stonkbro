@@ -45,18 +45,18 @@ export default function TickerSearch({ watchlistId }: TickerSearchProps) {
           }}
           placeholder="Add ticker, e.g. AAPL"
           maxLength={5}
-          className="flex-1 px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent"
+          className="flex-1 px-3 py-2 text-sm rounded-lg border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent"
           disabled={isPending}
         />
         <button
           type="submit"
           disabled={isPending || !value.trim()}
-          className="px-4 py-2 text-sm font-semibold rounded-lg bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 text-sm font-semibold rounded-lg bg-stone-900 dark:bg-surface-elevated text-white hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {isPending ? "Adding..." : "Add"}
         </button>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-500 dark:text-loss">{error}</p>}
     </form>
   );
 }

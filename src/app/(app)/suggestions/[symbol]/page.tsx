@@ -79,9 +79,9 @@ type OptionsData = {
 
 function GradeBadge({ grade }: { grade: "A" | "B" | "C" }) {
   const colors = {
-    A: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    B: "bg-sky-50 text-sky-700 border-sky-200",
-    C: "bg-stone-100 text-stone-600 border-stone-200",
+    A: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
+    B: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border",
+    C: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default",
   };
   return (
     <span
@@ -104,60 +104,60 @@ function SectionHeader({
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-bold text-stone-900">{title}</h3>
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text">{title}</h3>
         {count > 0 && (
-          <span className="text-[10px] font-semibold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-semibold text-stone-400 dark:text-text-faint bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 rounded-full">
             {count}
           </span>
         )}
       </div>
-      <p className="text-xs text-stone-500 mt-0.5">{subtitle}</p>
+      <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">{subtitle}</p>
     </div>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-6 text-center">
-      <p className="text-sm text-stone-400">{message}</p>
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-6 text-center">
+      <p className="text-sm text-stone-400 dark:text-text-faint">{message}</p>
     </div>
   );
 }
 
 function CSPCard({ candidate }: { candidate: CSPCandidate }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <span className="text-sm font-bold text-stone-900">
+          <span className="text-sm font-bold text-stone-900 dark:text-text">
             ${candidate.strike.toFixed(0)} Put
           </span>
-          <span className="text-xs text-stone-400 ml-2">
+          <span className="text-xs text-stone-400 dark:text-text-faint ml-2">
             {candidate.expiry} ({candidate.dte}d)
           </span>
         </div>
-        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <span className="text-xs font-bold text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg px-2 py-0.5 rounded-full">
           {candidate.annualizedReturn}% ann.
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Premium</p>
-          <p className="text-sm font-semibold text-stone-900">${candidate.mid.toFixed(2)}</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Premium</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">${candidate.mid.toFixed(2)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Prob OTM</p>
-          <p className="text-sm font-semibold text-stone-900">{candidate.probOTM}%</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Prob OTM</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">{candidate.probOTM}%</p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Below Price</p>
-          <p className="text-sm font-semibold text-stone-900">{candidate.distanceFromPrice}%</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Below Price</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">{candidate.distanceFromPrice}%</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-stone-500 border-t border-stone-100 pt-2">
-        <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-text-subtle border-t border-stone-100 dark:border-border-subtle pt-2">
+        <svg className="w-3.5 h-3.5 text-stone-400 dark:text-text-faint shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
         </svg>
         <span>{candidate.reasoning}</span>
@@ -168,38 +168,38 @@ function CSPCard({ candidate }: { candidate: CSPCandidate }) {
 
 function CCCard({ candidate }: { candidate: CCCandidate }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <span className="text-sm font-bold text-stone-900">
+          <span className="text-sm font-bold text-stone-900 dark:text-text">
             ${candidate.strike.toFixed(0)} Call
           </span>
-          <span className="text-xs text-stone-400 ml-2">
+          <span className="text-xs text-stone-400 dark:text-text-faint ml-2">
             {candidate.expiry} ({candidate.dte}d)
           </span>
         </div>
-        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <span className="text-xs font-bold text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg px-2 py-0.5 rounded-full">
           {candidate.annualizedReturn}% ann.
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Premium</p>
-          <p className="text-sm font-semibold text-stone-900">${candidate.mid.toFixed(2)}</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Premium</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">${candidate.mid.toFixed(2)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Prob OTM</p>
-          <p className="text-sm font-semibold text-stone-900">{candidate.probOTM}%</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Prob OTM</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">{candidate.probOTM}%</p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Above Price</p>
-          <p className="text-sm font-semibold text-stone-900">{candidate.distanceFromPrice}%</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Above Price</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">{candidate.distanceFromPrice}%</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-stone-500 border-t border-stone-100 pt-2">
-        <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-text-subtle border-t border-stone-100 dark:border-border-subtle pt-2">
+        <svg className="w-3.5 h-3.5 text-stone-400 dark:text-text-faint shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
         </svg>
         <span>{candidate.reasoning}</span>
@@ -210,27 +210,27 @@ function CCCard({ candidate }: { candidate: CCCandidate }) {
 
 function PMCCCard({ setup }: { setup: PMCCSetup }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <GradeBadge grade={setup.grade} />
-          <span className="text-xs font-bold text-emerald-600">
+          <span className="text-xs font-bold text-emerald-600 dark:text-gain">
             {setup.monthlyReturnPct.toFixed(1)}%/mo
           </span>
         </div>
-        <span className="text-xs text-stone-400">
+        <span className="text-xs text-stone-400 dark:text-text-faint">
           {setup.annualizedReturn.toFixed(0)}% ann.
         </span>
       </div>
 
       {/* LEAPS leg */}
       <div className="mb-2">
-        <p className="text-[10px] text-stone-400 uppercase tracking-wider mb-1">Buy LEAPS</p>
+        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">Buy LEAPS</p>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-stone-900">
+          <span className="text-sm font-semibold text-stone-900 dark:text-text">
             ${setup.leaps.strike.toFixed(0)} Call
           </span>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-stone-500 dark:text-text-subtle">
             {setup.leaps.expiry} ({setup.leaps.dte}d) @ ${setup.leaps.mid.toFixed(2)}
           </span>
         </div>
@@ -238,32 +238,32 @@ function PMCCCard({ setup }: { setup: PMCCSetup }) {
 
       {/* Short call leg */}
       <div className="mb-3">
-        <p className="text-[10px] text-stone-400 uppercase tracking-wider mb-1">Sell Short Call</p>
+        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">Sell Short Call</p>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-stone-900">
+          <span className="text-sm font-semibold text-stone-900 dark:text-text">
             ${setup.shortCall.strike.toFixed(0)} Call
           </span>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-stone-500 dark:text-text-subtle">
             {setup.shortCall.expiry} ({setup.shortCall.dte}d) @ ${setup.shortCall.mid.toFixed(2)}
           </span>
         </div>
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-3 gap-3 border-t border-stone-100 pt-3">
+      <div className="grid grid-cols-3 gap-3 border-t border-stone-100 dark:border-border-subtle pt-3">
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Capital</p>
-          <p className="text-sm font-semibold text-stone-900">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Capital</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">
             ${(setup.capitalRequired / 1000).toFixed(1)}k
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Breakeven</p>
-          <p className="text-sm font-semibold text-stone-900">${setup.breakeven.toFixed(0)}</p>
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Breakeven</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">${setup.breakeven.toFixed(0)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">Savings</p>
-          <p className="text-sm font-semibold text-stone-900">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Savings</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-text">
             {setup.capitalVs100Shares.toFixed(0)}%
           </p>
         </div>
@@ -275,7 +275,7 @@ function PMCCCard({ setup }: { setup: PMCCSetup }) {
           {setup.signals.slice(0, 3).map((signal, i) => (
             <span
               key={i}
-              className="text-[10px] font-medium bg-stone-50 text-stone-600 px-2 py-0.5 rounded-full border border-stone-200"
+              className="text-[10px] font-medium bg-stone-50 dark:bg-surface text-stone-600 dark:text-text-muted px-2 py-0.5 rounded-full border border-stone-200 dark:border-border-default"
             >
               {signal}
             </span>
@@ -320,7 +320,7 @@ export default function SuggestionsAnalysisPage({ params }: { params: Params }) 
       {/* Back */}
       <Link
         href="/suggestions"
-        className="flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 w-fit"
+        className="flex items-center gap-1 text-sm text-stone-400 dark:text-text-faint hover:text-stone-600 w-fit"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -331,8 +331,8 @@ export default function SuggestionsAnalysisPage({ params }: { params: Params }) 
       {/* Loading state */}
       {loading && (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-          <p className="text-sm text-stone-500">
+          <div className="w-8 h-8 border-2 border-stone-200 dark:border-border-default border-t-stone-900 rounded-full animate-spin" />
+          <p className="text-sm text-stone-500 dark:text-text-subtle">
             Analyzing {symbol.toUpperCase()} options...
           </p>
         </div>
@@ -341,15 +341,15 @@ export default function SuggestionsAnalysisPage({ params }: { params: Params }) 
       {/* Error state */}
       {error && !loading && (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-loss-bg flex items-center justify-center">
+            <svg className="w-5 h-5 text-red-500 dark:text-loss" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
           </div>
-          <p className="text-sm text-stone-700 font-medium">{error}</p>
+          <p className="text-sm text-stone-700 dark:text-text-muted font-medium">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="text-sm text-stone-500 underline"
+            className="text-sm text-stone-500 dark:text-text-subtle underline"
           >
             Try again
           </button>
@@ -363,14 +363,14 @@ export default function SuggestionsAnalysisPage({ params }: { params: Params }) 
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-extrabold text-stone-900">
+                <h2 className="text-xl font-extrabold text-stone-900 dark:text-text">
                   {data.quote.symbol}
                 </h2>
                 <span
                   className={`text-sm font-semibold ${
                     data.quote.changePct >= 0
-                      ? "text-emerald-600"
-                      : "text-red-500"
+                      ? "text-emerald-600 dark:text-gain"
+                      : "text-red-500 dark:text-loss"
                   }`}
                 >
                   {data.quote.changePct >= 0 ? "+" : ""}
@@ -378,10 +378,10 @@ export default function SuggestionsAnalysisPage({ params }: { params: Params }) 
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-lg font-bold text-stone-900">
+                <span className="text-lg font-bold text-stone-900 dark:text-text">
                   ${data.quote.price.toFixed(2)}
                 </span>
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-stone-400 dark:text-text-faint">
                   {data.callCount} calls / {data.putCount} puts
                 </span>
               </div>

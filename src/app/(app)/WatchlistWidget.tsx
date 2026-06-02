@@ -158,13 +158,13 @@ function InlineAdd({
         onKeyDown={handleKeyDown}
         placeholder="TICKER"
         disabled={saving}
-        className="w-16 px-1.5 py-0.5 rounded border border-sky-300 bg-white text-[10px] font-bold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-sky-500 disabled:opacity-50"
+        className="w-16 px-1.5 py-0.5 rounded border border-sky-300 bg-white dark:bg-surface-elevated text-[10px] font-bold text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:border-sky-500 disabled:opacity-50"
       />
-      {saving && <span className="text-[9px] text-stone-400">...</span>}
+      {saving && <span className="text-[9px] text-stone-400 dark:text-text-faint">...</span>}
 
       {/* Autocomplete dropdown */}
       {suggestions.length > 0 && (
-        <div className="absolute top-6 left-0 z-20 w-32 rounded-lg bg-white border border-stone-200 shadow-lg py-1">
+        <div className="absolute top-6 left-0 z-20 w-32 rounded-lg bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default shadow-lg py-1">
           {suggestions.map((s, i) => {
             const typedQ = query.toUpperCase().trim();
             const isTypedExact = i === 0 && s === typedQ && !ALL_TICKERS.includes(s);
@@ -174,8 +174,8 @@ function InlineAdd({
                 onClick={() => addTicker(s)}
                 className={`w-full text-left px-3 py-1.5 text-[11px] font-bold transition-colors ${
                   isTypedExact
-                    ? "text-sky-700 hover:bg-sky-100 border-b border-stone-100"
-                    : "text-stone-800 hover:bg-sky-50 hover:text-sky-700"
+                    ? "text-sky-700 dark:text-accent-hover hover:bg-sky-100 border-b border-stone-100 dark:border-border-subtle"
+                    : "text-stone-800 dark:text-text hover:bg-sky-50 hover:text-sky-700"
                 }`}
               >
                 {isTypedExact ? `Add "${s}" →` : s}
@@ -240,10 +240,10 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
             {/* Section header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-stone-800">{wl.name}</span>
+                <span className="text-xs font-bold text-stone-800 dark:text-text">{wl.name}</span>
                 {avgReturn !== null && (
                   <span className={`text-[10px] font-bold tabular-nums ${
-                    avgReturn >= 0 ? "text-emerald-600" : "text-red-500"
+                    avgReturn >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                   }`}>
                     {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(1)}%
                   </span>
@@ -260,7 +260,7 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                     />
                     <button
                       onClick={() => setAddingTo(null)}
-                      className="text-[10px] text-stone-400 hover:text-stone-600"
+                      className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600"
                     >
                       Done
                     </button>
@@ -268,14 +268,14 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                 ) : (
                   <button
                     onClick={() => setAddingTo(wl.id)}
-                    className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                    className="text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
                   >
                     + Add
                   </button>
                 )}
                 <Link
                   href={`/watchlists/${wl.id}`}
-                  className="text-[10px] font-medium text-stone-400 hover:text-stone-600 transition-colors"
+                  className="text-[10px] font-medium text-stone-400 dark:text-text-faint hover:text-stone-600 transition-colors"
                 >
                   Edit
                 </Link>
@@ -293,13 +293,13 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                         key={t.symbol}
                         href={`/ticker/${t.symbol}`}
                         className={`rounded-lg p-2 transition-all hover:scale-[1.02] active:scale-95 ${
-                          up ? "bg-emerald-50 hover:bg-emerald-100/80" : "bg-red-50 hover:bg-red-100/80"
+                          up ? "bg-emerald-50 dark:bg-gain-bg hover:bg-emerald-100/80" : "bg-red-50 dark:bg-loss-bg hover:bg-red-100/80"
                         }`}
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="text-[11px] font-extrabold text-stone-900 leading-none">{t.symbol}</div>
-                            <div className="text-[10px] text-stone-500 tabular-nums mt-0.5">
+                            <div className="text-[11px] font-extrabold text-stone-900 dark:text-text leading-none">{t.symbol}</div>
+                            <div className="text-[10px] text-stone-500 dark:text-text-subtle tabular-nums mt-0.5">
                               ${t.price < 1000 ? t.price.toFixed(2) : t.price.toFixed(0)}
                             </div>
                           </div>
@@ -308,7 +308,7 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                           )}
                         </div>
                         <div className={`text-[10px] font-bold tabular-nums mt-0.5 ${
-                          up ? "text-emerald-600" : "text-red-500"
+                          up ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                         }`}>
                           {up ? "+" : ""}{t.changePct.toFixed(1)}%
                         </div>
@@ -321,15 +321,15 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                 {needsCollapse && (
                   <button
                     onClick={() => setExpanded((prev) => ({ ...prev, [wl.id]: !isExpanded }))}
-                    className="mt-1.5 text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                    className="mt-1.5 text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
                   >
                     {isExpanded ? "Show less" : `+${hiddenCount} more`}
                   </button>
                 )}
               </>
             ) : (
-              <div className="rounded-lg border border-dashed border-stone-200 px-4 py-3 text-center">
-                <span className="text-[11px] text-stone-400">No tickers yet</span>
+              <div className="rounded-lg border border-dashed border-stone-200 dark:border-border-default px-4 py-3 text-center">
+                <span className="text-[11px] text-stone-400 dark:text-text-faint">No tickers yet</span>
               </div>
             )}
 

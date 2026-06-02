@@ -46,11 +46,11 @@ type ResearchEntry = {
 
 function strategyColor(strategy: string) {
   switch (strategy) {
-    case "CSP": return "bg-sky-50 text-sky-700 border-sky-200";
+    case "CSP": return "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border";
     case "CC": return "bg-amber-50 text-amber-700 border-amber-200";
-    case "PMCC": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "AVOID": return "bg-red-50 text-red-700 border-red-200";
-    default: return "bg-stone-100 text-stone-600 border-stone-200";
+    case "PMCC": return "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
+    case "AVOID": return "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong border-red-200 dark:border-loss-border";
+    default: return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
   }
 }
 
@@ -92,7 +92,7 @@ function MarkdownReport({ content }: { content: string }) {
       const m = remaining.match(/\*\*(.+?)\*\*/);
       if (m && m.index !== undefined) {
         if (m.index > 0) parts.push(remaining.substring(0, m.index));
-        parts.push(<span key={key++} className="font-semibold text-stone-900">{m[1]}</span>);
+        parts.push(<span key={key++} className="font-semibold text-stone-900 dark:text-text">{m[1]}</span>);
         remaining = remaining.substring(m.index + m[0].length);
       } else { parts.push(remaining); break; }
     }
@@ -102,27 +102,27 @@ function MarkdownReport({ content }: { content: string }) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.startsWith("#### ")) {
-      elements.push(<h4 key={i} className="text-sm font-bold text-stone-800 mt-4 mb-1">{line.replace(/^####\s*/, "")}</h4>);
+      elements.push(<h4 key={i} className="text-sm font-bold text-stone-800 dark:text-text mt-4 mb-1">{line.replace(/^####\s*/, "")}</h4>);
     } else if (line.startsWith("### ")) {
-      elements.push(<h3 key={i} className="text-base font-extrabold text-stone-900 mt-5 mb-2">{line.replace(/^###\s*/, "")}</h3>);
+      elements.push(<h3 key={i} className="text-base font-extrabold text-stone-900 dark:text-text mt-5 mb-2">{line.replace(/^###\s*/, "")}</h3>);
     } else if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} className="text-lg font-extrabold text-stone-900 mt-6 mb-2 pb-1 border-b border-stone-200">{line.replace(/^##\s*/, "")}</h2>);
+      elements.push(<h2 key={i} className="text-lg font-extrabold text-stone-900 dark:text-text mt-6 mb-2 pb-1 border-b border-stone-200 dark:border-border-default">{line.replace(/^##\s*/, "")}</h2>);
     } else if (line.startsWith("# ")) {
-      elements.push(<h1 key={i} className="text-xl font-extrabold text-stone-900 mt-6 mb-3">{line.replace(/^#\s*/, "")}</h1>);
+      elements.push(<h1 key={i} className="text-xl font-extrabold text-stone-900 dark:text-text mt-6 mb-3">{line.replace(/^#\s*/, "")}</h1>);
     } else if (line.match(/^\s*-\s/)) {
       const indent = line.match(/^(\s*)/)?.[1]?.length || 0;
       elements.push(
-        <p key={i} className={`text-sm text-stone-600 ${indent > 0 ? "ml-4" : ""} py-0.5 flex`}>
-          <span className="text-stone-400 mr-2 shrink-0">-</span>
+        <p key={i} className={`text-sm text-stone-600 dark:text-text-muted ${indent > 0 ? "ml-4" : ""} py-0.5 flex`}>
+          <span className="text-stone-400 dark:text-text-faint mr-2 shrink-0">-</span>
           <span>{fmt(line.replace(/^\s*-\s*/, ""))}</span>
         </p>
       );
     } else if (line.match(/^\d+\.\s/)) {
-      elements.push(<p key={i} className="text-sm text-stone-700 py-0.5">{fmt(line)}</p>);
+      elements.push(<p key={i} className="text-sm text-stone-700 dark:text-text-muted py-0.5">{fmt(line)}</p>);
     } else if (line.trim() === "") {
       elements.push(<div key={i} className="h-2" />);
     } else {
-      elements.push(<p key={i} className="text-sm text-stone-700 leading-relaxed">{fmt(line)}</p>);
+      elements.push(<p key={i} className="text-sm text-stone-700 dark:text-text-muted leading-relaxed">{fmt(line)}</p>);
     }
   }
   return <div className="space-y-0">{elements}</div>;
@@ -195,16 +195,16 @@ function TickerInput({
 
   return (
     <div
-      className="relative flex flex-wrap items-center gap-1.5 px-2.5 py-2 rounded-xl border border-stone-200 bg-white min-h-[44px] cursor-text focus-within:border-stone-400 transition-colors"
+      className="relative flex flex-wrap items-center gap-1.5 px-2.5 py-2 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated min-h-[44px] cursor-text focus-within:border-stone-400 transition-colors"
       onClick={() => inputRef.current?.focus()}
     >
       {value.map((sym) => (
-        <span key={sym} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-900 text-white text-[11px] font-bold">
+        <span key={sym} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-900 dark:bg-surface-elevated text-white text-[11px] font-bold">
           {sym}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); removeTicker(sym); }}
-            className="text-stone-400 hover:text-white leading-none"
+            className="text-stone-400 dark:text-text-faint hover:text-white leading-none"
           >
             ×
           </button>
@@ -221,14 +221,14 @@ function TickerInput({
       />
 
       {suggestions.length > 0 && (
-        <div className="absolute top-full left-0 z-20 w-full mt-1 rounded-xl bg-white border border-stone-200 shadow-lg py-1">
+        <div className="absolute top-full left-0 z-20 w-full mt-1 rounded-xl bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default shadow-lg py-1">
           {suggestions.map((s, i) => (
             <button
               key={s}
               type="button"
               onMouseDown={(e) => { e.preventDefault(); addTicker(s); }}
               className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors ${
-                i === focusedIdx ? "bg-sky-50 text-sky-700" : "text-stone-800 hover:bg-stone-50"
+                i === focusedIdx ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "text-stone-800 dark:text-text hover:bg-stone-50 dark:hover:bg-surface-muted"
               }`}
             >
               {s}
@@ -261,8 +261,8 @@ function EntryCard({
   const isFailed = entry.status === "failed";
 
   return (
-    <div className={`rounded-xl border bg-white overflow-hidden transition-colors ${
-      isFailed ? "border-red-200" : "border-stone-200"
+    <div className={`rounded-xl border bg-white dark:bg-surface-elevated overflow-hidden transition-colors ${
+      isFailed ? "border-red-200 dark:border-loss-border" : "border-stone-200 dark:border-border-default"
     }`}>
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3">
@@ -276,11 +276,11 @@ function EntryCard({
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-stone-900">
+              <span className="text-xs font-bold text-stone-900 dark:text-text">
                 {entry.symbols.slice(0, 5).join(", ")}
                 {entry.symbols.length > 5 && ` +${entry.symbols.length - 5}`}
               </span>
-              <span className="text-[10px] text-stone-400">
+              <span className="text-[10px] text-stone-400 dark:text-text-faint">
                 {isRunning ? "analyzing…" : isFailed ? "failed" : timeAgo(entry.timestamp)}
               </span>
             </div>
@@ -292,13 +292,13 @@ function EntryCard({
                   </span>
                 ))}
                 {entry.suggestions.length > 4 && (
-                  <span className="text-[10px] text-stone-400">+{entry.suggestions.length - 4}</span>
+                  <span className="text-[10px] text-stone-400 dark:text-text-faint">+{entry.suggestions.length - 4}</span>
                 )}
               </div>
             )}
           </div>
           {!isRunning && (
-            <svg className={`w-4 h-4 text-stone-400 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className={`w-4 h-4 text-stone-400 dark:text-text-faint shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           )}
@@ -306,7 +306,7 @@ function EntryCard({
         {/* Redo button */}
         <button
           onClick={() => onRedo(entry.symbols)}
-          className="shrink-0 px-2 py-1 rounded-lg border border-stone-200 text-[10px] font-semibold text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-colors"
+          className="shrink-0 px-2 py-1 rounded-lg border border-stone-200 dark:border-border-default text-[10px] font-semibold text-stone-500 dark:text-text-subtle hover:border-stone-300 hover:text-stone-700 transition-colors"
           title="Run research again for these tickers"
         >
           Redo
@@ -316,8 +316,8 @@ function EntryCard({
       {/* Running state inline */}
       {isRunning && (
         <div className="px-4 pb-3">
-          <p className="text-xs text-stone-400">AI is analyzing market data and technicals…</p>
-          <div className="mt-2 h-0.5 bg-stone-100 rounded-full overflow-hidden">
+          <p className="text-xs text-stone-400 dark:text-text-faint">AI is analyzing market data and technicals…</p>
+          <div className="mt-2 h-0.5 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
             <div className="h-full bg-sky-400 animate-pulse w-3/5 rounded-full" />
           </div>
         </div>
@@ -326,17 +326,17 @@ function EntryCard({
       {/* Failed state */}
       {isFailed && (
         <div className="px-4 pb-3">
-          <p className="text-xs text-red-600">{entry.error || "Research failed. Try again."}</p>
+          <p className="text-xs text-red-600 dark:text-loss">{entry.error || "Research failed. Try again."}</p>
         </div>
       )}
 
       {/* Expanded content */}
       {expanded && entry.status === "completed" && (
-        <div className="border-t border-stone-100">
+        <div className="border-t border-stone-100 dark:border-border-subtle">
           {/* Trade suggestions */}
           {entry.suggestions && entry.suggestions.length > 0 && (
-            <div className="px-4 py-3 border-b border-stone-100">
-              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">
+            <div className="px-4 py-3 border-b border-stone-100 dark:border-border-subtle">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 dark:text-text-faint mb-2">
                 Trade Suggestions ({entry.suggestions.length})
               </p>
               <div className="flex flex-col gap-2.5">
@@ -346,43 +346,43 @@ function EntryCard({
                   return (
                     <div
                       key={idx}
-                      className={`rounded-xl border bg-white p-3 transition-opacity ${
-                        isDismissed ? "opacity-40 border-stone-100"
+                      className={`rounded-xl border bg-white dark:bg-surface-elevated p-3 transition-opacity ${
+                        isDismissed ? "opacity-40 border-stone-100 dark:border-border-subtle"
                           : isAccepted ? "border-emerald-300 bg-emerald-50/30"
-                          : "border-stone-200"
+                          : "border-stone-200 dark:border-border-default"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-stone-900">{suggestion.symbol}</span>
+                          <span className="text-sm font-bold text-stone-900 dark:text-text">{suggestion.symbol}</span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${strategyColor(suggestion.strategy)}`}>
                             {strategyLabel(suggestion.strategy)}
                           </span>
                         </div>
                         {suggestion.premium !== undefined && (
-                          <span className={`text-sm font-bold ${suggestion.premium >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                          <span className={`text-sm font-bold ${suggestion.premium >= 0 ? "text-emerald-700 dark:text-gain-strong" : "text-red-600 dark:text-loss"}`}>
                             {formatDollar(suggestion.premium)}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-stone-800 bg-stone-50 rounded-lg px-3 py-2 mb-1.5">
+                      <p className="text-xs font-medium text-stone-800 dark:text-text bg-stone-50 dark:bg-surface rounded-lg px-3 py-2 mb-1.5">
                         {suggestion.action}
                       </p>
-                      <div className="flex gap-4 mb-1.5 text-xs text-stone-500">
+                      <div className="flex gap-4 mb-1.5 text-xs text-stone-500 dark:text-text-subtle">
                         {suggestion.strike !== undefined && (
-                          <span>Strike: <span className="font-medium text-stone-700">${suggestion.strike}</span></span>
+                          <span>Strike: <span className="font-medium text-stone-700 dark:text-text-muted">${suggestion.strike}</span></span>
                         )}
                         {suggestion.expiry && (
-                          <span>Expiry: <span className="font-medium text-stone-700">{suggestion.expiry}</span></span>
+                          <span>Expiry: <span className="font-medium text-stone-700 dark:text-text-muted">{suggestion.expiry}</span></span>
                         )}
                       </div>
-                      <p className="text-xs text-stone-600 leading-relaxed mb-2">{suggestion.reasoning}</p>
+                      <p className="text-xs text-stone-600 dark:text-text-muted leading-relaxed mb-2">{suggestion.reasoning}</p>
                       {suggestion.strategy !== "AVOID" && (
                         <div className="flex gap-2">
                           <button
                             onClick={() => onSuggestionAction(idx, "accept")}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                              isAccepted ? "bg-emerald-600 text-white" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              isAccepted ? "bg-emerald-600 text-white" : "border border-emerald-200 dark:border-gain-border text-emerald-700 dark:text-gain-strong hover:bg-emerald-50"
                             }`}
                           >
                             {isAccepted ? "Accepted" : "Accept"}
@@ -390,7 +390,7 @@ function EntryCard({
                           <button
                             onClick={() => onSuggestionAction(idx, "dismiss")}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                              isDismissed ? "bg-stone-400 text-white" : "border border-stone-200 text-stone-500 hover:bg-stone-50"
+                              isDismissed ? "bg-stone-400 text-white" : "border border-stone-200 dark:border-border-default text-stone-500 dark:text-text-subtle hover:bg-stone-50"
                             }`}
                           >
                             {isDismissed ? "Dismissed" : "Dismiss"}
@@ -407,7 +407,7 @@ function EntryCard({
           {/* Full report */}
           {entry.report && (
             <div className="px-4 py-4">
-              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-3">Full Report</p>
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 dark:text-text-faint mb-3">Full Report</p>
               <MarkdownReport content={entry.report} />
             </div>
           )}
@@ -618,18 +618,18 @@ export default function ResearchPage() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-extrabold text-stone-900">Research</h2>
+            <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">Research</h2>
             <AIModelBadge 
               provider={lastCompleted?.aiProvider as any} 
               model={lastCompleted?.aiModel} 
               timestamp={lastCompleted?.timestamp}
             />
           </div>
-          <p className="text-xs text-stone-500 mt-0.5">AI-powered options analysis</p>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">AI-powered options analysis</p>
         </div>
         <Link
           href="/research/history"
-          className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-border-default text-xs font-semibold text-stone-700 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors"
         >
           All History
         </Link>
@@ -639,16 +639,16 @@ export default function ResearchPage() {
       <div className="flex flex-col gap-2.5">
         <TickerInput value={tickers} onChange={setTickers} />
 
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-stone-100">
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-stone-100 dark:bg-surface-muted">
           <button
             onClick={() => setMode("hybrid")}
-            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "hybrid" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "hybrid" ? "bg-white dark:bg-surface-elevated text-stone-900 dark:text-text shadow-sm" : "text-stone-500 dark:text-text-subtle"}`}
           >
             Hybrid (fast)
           </button>
           <button
             onClick={() => setMode("deep")}
-            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "deep" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${mode === "deep" ? "bg-white dark:bg-surface-elevated text-stone-900 dark:text-text shadow-sm" : "text-stone-500 dark:text-text-subtle"}`}
           >
             Deep (thorough)
           </button>
@@ -657,7 +657,7 @@ export default function ResearchPage() {
         <button
           onClick={() => runResearch()}
           disabled={tickers.length === 0 || hasRunning}
-          className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-3 rounded-xl bg-stone-900 dark:bg-surface-elevated text-white text-sm font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {hasRunning ? "Analyzing…" : "Run Research"}
         </button>
@@ -665,28 +665,28 @@ export default function ResearchPage() {
 
       {/* Entries */}
       {loadingHistory ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-xs text-stone-400">
+        <div className="flex items-center justify-center py-8 gap-2 text-xs text-stone-400 dark:text-text-faint">
           <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
           Loading history…
         </div>
       ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900">Ready to research</h3>
-          <p className="text-xs text-stone-500 mt-1 max-w-xs">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text">Ready to research</h3>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-1 max-w-xs">
             Type tickers above and hit Run. AI will analyze live market data and generate specific trade suggestions.
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Recent</span>
+            <span className="text-xs font-semibold text-stone-500 dark:text-text-subtle uppercase tracking-wider">Recent</span>
             {entries.length >= 10 && (
-              <Link href="/research/history" className="text-[10px] font-medium text-sky-600 hover:text-sky-800">
+              <Link href="/research/history" className="text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-800">
                 View all →
               </Link>
             )}

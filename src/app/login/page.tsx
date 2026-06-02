@@ -40,23 +40,23 @@ function LoginForm() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-white flex flex-col items-center justify-center px-6">
+    <div className="h-screen overflow-hidden bg-white dark:bg-surface-elevated flex flex-col items-center justify-center px-6">
       {/* Brand */}
       <div className="flex items-baseline gap-0.5 mb-10">
-        <span className="text-4xl font-extrabold tracking-tight text-stone-900">stonk</span>
-        <span className="text-5xl font-display text-sky-600 leading-none">BRO</span>
+        <span className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-text">stonk</span>
+        <span className="text-5xl font-display text-sky-600 dark:text-accent leading-none">BRO</span>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-xs flex flex-col gap-5">
         <div className="text-center">
-          <p className="text-sm text-stone-500 leading-relaxed">
+          <p className="text-sm text-stone-500 dark:text-text-subtle leading-relaxed">
             Explosive stock discovery, options scanning,<br />and AI research — in one app.
           </p>
         </div>
 
         {error && (
-          <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 text-center">
+          <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-loss-bg border border-red-200 dark:border-loss-border text-xs text-red-700 dark:text-loss-strong text-center">
             {error}
           </div>
         )}
@@ -64,7 +64,7 @@ function LoginForm() {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="flex items-center justify-center gap-2.5 w-full px-4 py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-50 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2.5 w-full px-4 py-3 rounded-xl bg-stone-900 dark:bg-surface-elevated text-white text-sm font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-50 transition-colors shadow-sm"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -76,14 +76,14 @@ function LoginForm() {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-stone-100" />
-          <span className="text-xs text-stone-400">or</span>
-          <div className="flex-1 h-px bg-stone-100" />
+          <div className="flex-1 h-px bg-stone-100 dark:bg-surface-muted" />
+          <span className="text-xs text-stone-400 dark:text-text-faint">or</span>
+          <div className="flex-1 h-px bg-stone-100 dark:bg-surface-muted" />
         </div>
 
         <Link
           href="/today"
-          className="flex items-center justify-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-700 transition-colors"
+          className="flex items-center justify-center gap-1.5 text-sm font-medium text-stone-500 dark:text-text-subtle hover:text-stone-700 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -92,7 +92,7 @@ function LoginForm() {
         </Link>
       </div>
 
-      <p className="absolute bottom-8 text-xs text-stone-300 text-center px-6">
+      <p className="absolute bottom-8 text-xs text-stone-300 dark:text-text-faint text-center px-6">
         Not financial advice. For informational purposes only.
       </p>
     </div>

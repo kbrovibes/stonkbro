@@ -7,12 +7,12 @@ import { getUserProgress } from "@/lib/learn/progress";
 export const dynamic = "force-dynamic";
 
 const COLOR_MAP: Record<string, string> = {
-  "stone-500": "bg-stone-100 text-stone-600",
+  "stone-500": "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",
   "blue-500": "bg-blue-50 text-blue-600",
   "amber-500": "bg-amber-50 text-amber-600",
-  "emerald-500": "bg-emerald-50 text-emerald-600",
+  "emerald-500": "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain",
   "purple-500": "bg-purple-50 text-purple-600",
-  "rose-500": "bg-rose-50 text-rose-600",
+  "rose-500": "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss",
   "cyan-500": "bg-cyan-50 text-cyan-600",
   "yellow-500": "bg-yellow-50 text-yellow-600",
   "indigo-500": "bg-indigo-50 text-indigo-600",
@@ -36,7 +36,7 @@ export default async function ModulePage({
   const progress = await getUserProgress(userId);
   const moduleProgress = progress.filter((p) => p.module_id === moduleId);
 
-  const colorClasses = COLOR_MAP[mod.color] || "bg-stone-100 text-stone-600";
+  const colorClasses = COLOR_MAP[mod.color] || "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
 
   // Find the first lesson the user should continue with
   const nextLessonIndex = mod.lessons.findIndex((lesson) => {
@@ -50,7 +50,7 @@ export default async function ModulePage({
       {/* Back link */}
       <Link
         href="/learn"
-        className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 mb-5"
+        className="inline-flex items-center gap-1 text-sm text-stone-500 dark:text-text-subtle hover:text-stone-700 mb-5"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -64,18 +64,18 @@ export default async function ModulePage({
           {mod.icon}
         </span>
         <div>
-          <h1 className="text-xl font-bold text-stone-900">{mod.title}</h1>
-          <p className="text-sm text-stone-500">{mod.subtitle}</p>
+          <h1 className="text-xl font-bold text-stone-900 dark:text-text">{mod.title}</h1>
+          <p className="text-sm text-stone-500 dark:text-text-subtle">{mod.subtitle}</p>
         </div>
       </div>
 
       {/* Lessons list */}
       {mod.lessons.length === 0 ? (
-        <div className="bg-white rounded-xl border border-stone-100 shadow-sm p-8 text-center">
-          <p className="text-stone-400 text-sm">Lessons for this module are coming soon.</p>
+        <div className="bg-white dark:bg-surface-elevated rounded-xl border border-stone-100 dark:border-border-subtle shadow-sm p-8 text-center">
+          <p className="text-stone-400 dark:text-text-faint text-sm">Lessons for this module are coming soon.</p>
           <Link
             href="/learn"
-            className="inline-block mt-4 text-sm text-sky-600 hover:text-sky-700 font-medium"
+            className="inline-block mt-4 text-sm text-sky-600 dark:text-accent hover:text-sky-700 font-medium"
           >
             Back to curriculum
           </Link>
@@ -92,7 +92,7 @@ export default async function ModulePage({
             </Link>
           )}
 
-          <div className="bg-white rounded-xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+          <div className="bg-white dark:bg-surface-elevated rounded-xl border border-stone-100 dark:border-border-subtle shadow-sm overflow-hidden divide-y divide-stone-50">
             {mod.lessons.map((lesson, i) => {
               const lp = moduleProgress.find((p) => p.lesson_id === lesson.id);
               const isCompleted = lp?.completed === true;
@@ -110,26 +110,26 @@ export default async function ModulePage({
                     {isCompleted ? (
                       <span className="text-emerald-500 text-base">&#10003;</span>
                     ) : isLocked ? (
-                      <svg className="w-4 h-4 text-stone-300" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <svg className="w-4 h-4 text-stone-300 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                       </svg>
                     ) : (
-                      <span className="w-5 h-5 rounded-full border-2 border-stone-200 flex items-center justify-center text-[10px] text-stone-400">
+                      <span className="w-5 h-5 rounded-full border-2 border-stone-200 dark:border-border-default flex items-center justify-center text-[10px] text-stone-400 dark:text-text-faint">
                         {i + 1}
                       </span>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${isCompleted ? "text-stone-500" : isLocked ? "text-stone-300" : "text-stone-900"}`}>
+                    <p className={`text-sm font-medium ${isCompleted ? "text-stone-500 dark:text-text-subtle" : isLocked ? "text-stone-300 dark:text-text-faint" : "text-stone-900 dark:text-text"}`}>
                       {lesson.title}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {isLocked && (
-                        <span className="text-[11px] text-stone-300">Complete previous lesson first</span>
+                        <span className="text-[11px] text-stone-300 dark:text-text-faint">Complete previous lesson first</span>
                       )}
                       {!isLocked && quizScore !== undefined && quizScore !== null && (
-                        <span className="text-[11px] text-emerald-600 font-medium">
+                        <span className="text-[11px] text-emerald-600 dark:text-gain font-medium">
                           Quiz: {quizScore}%
                         </span>
                       )}
@@ -139,7 +139,7 @@ export default async function ModulePage({
                     </div>
                   </div>
 
-                  <span className={`text-xs flex-shrink-0 ${isLocked ? "text-stone-300" : "text-stone-400"}`}>
+                  <span className={`text-xs flex-shrink-0 ${isLocked ? "text-stone-300" : "text-stone-400 dark:text-text-faint"}`}>
                     {lesson.estimatedMinutes}min
                   </span>
                 </>
@@ -157,7 +157,7 @@ export default async function ModulePage({
                 <Link
                   key={lesson.id}
                   href={`/learn/${moduleId}/${lesson.id}`}
-                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors"
                 >
                   {inner}
                 </Link>

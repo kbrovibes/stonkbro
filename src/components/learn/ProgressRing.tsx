@@ -56,12 +56,12 @@ export default function ProgressRing({
         className="absolute flex items-center justify-center"
         style={{ width: size, height: size }}
       >
-        <span className="text-gray-900 font-bold" style={{ fontSize: size * 0.22 }}>
+        <span className="text-gray-900 dark:text-text font-bold" style={{ fontSize: size * 0.22 }}>
           {Math.round(percentage)}%
         </span>
       </div>
       {label && (
-        <span className="text-xs text-gray-500 font-medium mt-1">{label}</span>
+        <span className="text-xs text-gray-500 dark:text-text-subtle font-medium mt-1">{label}</span>
       )}
     </div>
   );

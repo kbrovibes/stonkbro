@@ -20,29 +20,29 @@ function legLabel(type: string) {
 function legTypeBadge(type: string) {
   const map: Record<string, string> = {
     leaps_call: "bg-violet-50 text-violet-700",
-    short_call: "bg-red-50 text-red-600",
+    short_call: "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss",
     short_put: "bg-amber-50 text-amber-700",
-    shares: "bg-sky-50 text-sky-700",
-    long_put: "bg-emerald-50 text-emerald-700",
+    shares: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
+    long_put: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
-  return map[type] ?? "bg-stone-100 text-stone-600";
+  return map[type] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
 }
 
 function strategyBadgeClass(strategy: string) {
   const map: Record<string, string> = {
     PMCC: "bg-violet-50 text-violet-700",
-    "Covered Call": "bg-sky-50 text-sky-700",
+    "Covered Call": "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
     "Cash-Secured Put": "bg-amber-50 text-amber-700",
-    "The Wheel": "bg-emerald-50 text-emerald-700",
+    "The Wheel": "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
-  return map[strategy] ?? "bg-stone-100 text-stone-600";
+  return map[strategy] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
 }
 
 function statusConfig(status: string) {
   const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "Active", cls: "bg-stone-100 text-stone-600" },
-    closed: { label: "Closed", cls: "bg-stone-200 text-stone-500" },
-    rolled: { label: "Rolled", cls: "bg-sky-50 text-sky-600" },
+    active: { label: "Active", cls: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted" },
+    closed: { label: "Closed", cls: "bg-stone-200 dark:bg-surface-sunken text-stone-500 dark:text-text-subtle" },
+    rolled: { label: "Rolled", cls: "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent" },
   };
   return map[status] ?? map.active;
 }
@@ -119,10 +119,10 @@ export default async function PositionDetailPage({
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/positions"
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-100 dark:bg-surface-muted hover:bg-stone-200 dark:hover:bg-surface-sunken transition-colors"
         >
           <svg
-            className="w-4 h-4 text-stone-600"
+            className="w-4 h-4 text-stone-600 dark:text-text-muted"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -137,7 +137,7 @@ export default async function PositionDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-stone-900">
+            <h2 className="text-lg font-bold text-stone-900 dark:text-text">
               {position.symbol}
             </h2>
             <span
@@ -156,25 +156,25 @@ export default async function PositionDetailPage({
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             Premium
           </p>
-          <p className="text-base font-bold mt-1 text-stone-900">
+          <p className="text-base font-bold mt-1 text-stone-900 dark:text-text">
             ${totalPremium.toLocaleString()}
           </p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             Days Open
           </p>
-          <p className="text-base font-bold mt-1 text-stone-900">{days}</p>
+          <p className="text-base font-bold mt-1 text-stone-900 dark:text-text">{days}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             Legs
           </p>
-          <p className="text-base font-bold mt-1 text-stone-900">
+          <p className="text-base font-bold mt-1 text-stone-900 dark:text-text">
             {legs.length}
           </p>
         </div>
@@ -183,7 +183,7 @@ export default async function PositionDetailPage({
       {/* Legs */}
       <div className="mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wider">
             Legs
           </h3>
         </div>
@@ -207,7 +207,7 @@ export default async function PositionDetailPage({
               return (
                 <div
                   key={leg.id}
-                  className="rounded-xl border border-stone-200 bg-white p-4"
+                  className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -220,10 +220,10 @@ export default async function PositionDetailPage({
                         <span
                           className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                             isExpired
-                              ? "bg-red-50 text-red-500"
+                              ? "bg-red-50 dark:bg-loss-bg text-red-500 dark:text-loss"
                               : daysToExpiry <= 7
                                 ? "bg-amber-50 text-amber-600"
-                                : "bg-stone-50 text-stone-400"
+                                : "bg-stone-50 dark:bg-surface text-stone-400 dark:text-text-faint"
                           }`}
                         >
                           {isExpired
@@ -232,7 +232,7 @@ export default async function PositionDetailPage({
                         </span>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-stone-400">
+                    <span className="text-xs font-medium text-stone-400 dark:text-text-faint">
                       x{leg.quantity ?? 1}
                     </span>
                   </div>
@@ -240,16 +240,16 @@ export default async function PositionDetailPage({
                   <div className="grid grid-cols-3 gap-3 mt-2">
                     {leg.type !== "shares" && (
                       <div>
-                        <p className="text-[10px] text-stone-400">Strike</p>
-                        <p className="text-sm font-bold text-stone-900">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint">Strike</p>
+                        <p className="text-sm font-bold text-stone-900 dark:text-text">
                           ${leg.strike}
                         </p>
                       </div>
                     )}
                     {leg.type !== "shares" && (
                       <div>
-                        <p className="text-[10px] text-stone-400">Expiry</p>
-                        <p className="text-sm font-bold text-stone-900">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint">Expiry</p>
+                        <p className="text-sm font-bold text-stone-900 dark:text-text">
                           {new Date(leg.expiry).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
@@ -259,10 +259,10 @@ export default async function PositionDetailPage({
                       </div>
                     )}
                     <div>
-                      <p className="text-[10px] text-stone-400">
+                      <p className="text-[10px] text-stone-400 dark:text-text-faint">
                         {leg.type === "shares" ? "Cost Basis" : "Entry"}
                       </p>
-                      <p className="text-sm font-bold text-stone-900">
+                      <p className="text-sm font-bold text-stone-900 dark:text-text">
                         ${Math.abs(leg.entry_price).toFixed(2)}
                       </p>
                     </div>
@@ -276,25 +276,25 @@ export default async function PositionDetailPage({
 
       {/* Notes */}
       {position.notes && (
-        <div className="rounded-xl border border-stone-200 bg-white p-4 mb-5">
-          <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4 mb-5">
+          <h3 className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wider mb-2">
             Notes
           </h3>
-          <p className="text-sm text-stone-600 whitespace-pre-wrap">
+          <p className="text-sm text-stone-600 dark:text-text-muted whitespace-pre-wrap">
             {position.notes}
           </p>
         </div>
       )}
 
       {/* Entry info */}
-      <div className="rounded-xl border border-stone-200 bg-white p-4 mb-5">
-        <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+      <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4 mb-5">
+        <h3 className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wider mb-2">
           Details
         </h3>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-stone-400">Opened</span>
-            <span className="text-stone-700 font-medium">
+            <span className="text-stone-400 dark:text-text-faint">Opened</span>
+            <span className="text-stone-700 dark:text-text-muted font-medium">
               {position.entry_date
                 ? new Date(position.entry_date).toLocaleDateString("en-US", {
                     month: "long",
@@ -305,12 +305,12 @@ export default async function PositionDetailPage({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-stone-400">Status</span>
-            <span className="text-stone-700 font-medium">{statusLabel}</span>
+            <span className="text-stone-400 dark:text-text-faint">Status</span>
+            <span className="text-stone-700 dark:text-text-muted font-medium">{statusLabel}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-stone-400">Strategy</span>
-            <span className="text-stone-700 font-medium">
+            <span className="text-stone-400 dark:text-text-faint">Strategy</span>
+            <span className="text-stone-700 dark:text-text-muted font-medium">
               {position.strategy}
             </span>
           </div>
@@ -319,22 +319,22 @@ export default async function PositionDetailPage({
 
       {/* Live Price & Gain Summary */}
       {quote && (
-        <div className="rounded-xl border border-stone-200 bg-white p-4 mb-5">
-          <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4 mb-5">
+          <h3 className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wider mb-2">
             Live Quote
           </h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <p className="text-[10px] text-stone-400">Price</p>
-              <p className="text-sm font-bold text-stone-900">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Price</p>
+              <p className="text-sm font-bold text-stone-900 dark:text-text">
                 ${currentPrice.toFixed(2)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-stone-400">Change</p>
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Change</p>
               <p
                 className={`text-sm font-bold ${
-                  quote.changePct >= 0 ? "text-emerald-600" : "text-red-600"
+                  quote.changePct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-600 dark:text-loss"
                 }`}
               >
                 {quote.changePct >= 0 ? "+" : ""}
@@ -342,8 +342,8 @@ export default async function PositionDetailPage({
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-stone-400">Volume</p>
-              <p className="text-sm font-bold text-stone-900">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Volume</p>
+              <p className="text-sm font-bold text-stone-900 dark:text-text">
                 {quote.volumeRatio.toFixed(1)}x avg
               </p>
             </div>

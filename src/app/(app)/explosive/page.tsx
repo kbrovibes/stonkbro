@@ -36,20 +36,20 @@ const SECTORS = [
 function convictionColor(conviction: string) {
   switch (conviction) {
     case "High":
-      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      return "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
     case "Medium":
       return "bg-amber-100 text-amber-700 border-amber-200";
     case "Low":
-      return "bg-stone-100 text-stone-600 border-stone-200";
+      return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
     default:
-      return "bg-stone-100 text-stone-600 border-stone-200";
+      return "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
   }
 }
 
 function strategyColor(strategy: string) {
-  if (strategy.includes("CSP")) return "bg-sky-100 text-sky-700 border-sky-200";
+  if (strategy.includes("CSP")) return "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border";
   if (strategy.includes("PMCC")) return "bg-violet-100 text-violet-700 border-violet-200";
-  return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  return "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border";
 }
 
 // Simple markdown renderer matching research page pattern
@@ -62,19 +62,19 @@ function MarkdownReport({ content }: { content: string }) {
 
     if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="text-base font-extrabold text-stone-900 mt-5 mb-2">
+        <h3 key={i} className="text-base font-extrabold text-stone-900 dark:text-text mt-5 mb-2">
           {line.replace(/^###\s*/, "")}
         </h3>
       );
     } else if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="text-lg font-extrabold text-stone-900 mt-6 mb-2 pb-1 border-b border-stone-200">
+        <h2 key={i} className="text-lg font-extrabold text-stone-900 dark:text-text mt-6 mb-2 pb-1 border-b border-stone-200 dark:border-border-default">
           {line.replace(/^##\s*/, "")}
         </h2>
       );
     } else if (line.startsWith("# ")) {
       elements.push(
-        <h1 key={i} className="text-xl font-extrabold text-stone-900 mt-6 mb-3">
+        <h1 key={i} className="text-xl font-extrabold text-stone-900 dark:text-text mt-6 mb-3">
           {line.replace(/^#\s*/, "")}
         </h1>
       );
@@ -86,7 +86,7 @@ function MarkdownReport({ content }: { content: string }) {
         const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
         if (boldMatch && boldMatch.index !== undefined) {
           if (boldMatch.index > 0) parts.push(remaining.substring(0, boldMatch.index));
-          parts.push(<span key={key++} className="font-semibold text-stone-900">{boldMatch[1]}</span>);
+          parts.push(<span key={key++} className="font-semibold text-stone-900 dark:text-text">{boldMatch[1]}</span>);
           remaining = remaining.substring(boldMatch.index + boldMatch[0].length);
         } else {
           parts.push(remaining);
@@ -95,7 +95,7 @@ function MarkdownReport({ content }: { content: string }) {
       }
       const isListItem = line.match(/^\s*-\s/);
       elements.push(
-        <p key={i} className={`text-sm text-stone-700 leading-relaxed ${isListItem ? "pl-3" : ""}`}>
+        <p key={i} className={`text-sm text-stone-700 dark:text-text-muted leading-relaxed ${isListItem ? "pl-3" : ""}`}>
           {parts}
         </p>
       );
@@ -103,7 +103,7 @@ function MarkdownReport({ content }: { content: string }) {
       elements.push(<div key={i} className="h-2" />);
     } else {
       elements.push(
-        <p key={i} className="text-sm text-stone-700 leading-relaxed">
+        <p key={i} className="text-sm text-stone-700 dark:text-text-muted leading-relaxed">
           {line}
         </p>
       );
@@ -115,7 +115,7 @@ function MarkdownReport({ content }: { content: string }) {
 
 export default function ExplosivePageWrapper() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center flex-1 py-20"><span className="text-sm text-stone-400">Loading...</span></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center flex-1 py-20"><span className="text-sm text-stone-400 dark:text-text-faint">Loading...</span></div>}>
       <ExplosivePage />
     </Suspense>
   );
@@ -170,8 +170,8 @@ function ExplosivePage() {
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       <div>
-        <h2 className="text-lg font-extrabold text-stone-900">Find Explosive Stocks</h2>
-        <p className="text-xs text-stone-500 mt-0.5">
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">Find Explosive Stocks</h2>
+        <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
           AI-powered search for 10x potential opportunities
         </p>
       </div>
@@ -181,7 +181,7 @@ function ExplosivePage() {
         <select
           value={selectedSector}
           onChange={(e) => setSelectedSector(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 focus:outline-none focus:border-stone-400 appearance-none"
+          className="w-full px-3 py-2.5 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-sm text-stone-900 dark:text-text focus:outline-none focus:border-stone-400 appearance-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
             backgroundPosition: "right 0.5rem center",
@@ -199,7 +199,7 @@ function ExplosivePage() {
         <button
           onClick={runAnalysis}
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl bg-stone-900 dark:bg-surface-elevated text-white text-sm font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -223,11 +223,11 @@ function ExplosivePage() {
         <div className="flex flex-col items-center py-8 gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-sm text-stone-600 font-medium">
+            <span className="text-sm text-stone-600 dark:text-text-muted font-medium">
               Analyzing sector for 10x opportunities...
             </span>
           </div>
-          <p className="text-xs text-stone-400 text-center max-w-xs">
+          <p className="text-xs text-stone-400 dark:text-text-faint text-center max-w-xs">
             Fetching live market data, evaluating growth potential, catalysts, and optimal entry strategies. This usually takes 30-60 seconds.
           </p>
         </div>
@@ -235,9 +235,9 @@ function ExplosivePage() {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700 font-medium">Analysis failed</p>
-          <p className="text-xs text-red-600 mt-1">{error}</p>
+        <div className="rounded-xl border border-red-200 dark:border-loss-border bg-red-50 dark:bg-loss-bg p-4">
+          <p className="text-sm text-red-700 dark:text-loss-strong font-medium">Analysis failed</p>
+          <p className="text-xs text-red-600 dark:text-loss mt-1">{error}</p>
         </div>
       )}
 
@@ -247,16 +247,16 @@ function ExplosivePage() {
           {/* Meta */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-stone-500 dark:text-text-subtle uppercase tracking-wide">
                 {result.sector}
               </p>
-              <p className="text-xs text-stone-400 mt-0.5">
+              <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">
                 {new Date(result.timestamp).toLocaleString()} — {result.tickersAnalyzed.length} tickers analyzed
               </p>
             </div>
             <button
               onClick={() => setShowReport(!showReport)}
-              className="text-xs font-medium text-sky-700 hover:text-sky-800"
+              className="text-xs font-medium text-sky-700 dark:text-accent-hover hover:text-sky-800"
             >
               {showReport ? "Hide Report" : "Show Report"}
             </button>
@@ -264,7 +264,7 @@ function ExplosivePage() {
 
           {/* Report */}
           {showReport && result.report && (
-            <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-5">
               <MarkdownReport content={result.report} />
             </div>
           )}
@@ -272,20 +272,20 @@ function ExplosivePage() {
           {/* Picks */}
           {result.picks.length > 0 && (
             <div className="flex flex-col gap-2.5">
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-stone-500 dark:text-text-subtle uppercase tracking-wide">
                 Explosive Picks ({result.picks.length})
               </p>
               {result.picks.map((pick, idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-stone-200 bg-white p-4"
+                  className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4"
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/ticker/${pick.symbol}`}
-                        className="text-sm font-bold text-stone-900 hover:text-sky-700 transition-colors"
+                        className="text-sm font-bold text-stone-900 dark:text-text hover:text-sky-700 transition-colors"
                       >
                         {pick.symbol}
                       </Link>
@@ -304,10 +304,10 @@ function ExplosivePage() {
 
                   {/* Thesis */}
                   <div className="mb-2.5">
-                    <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1">
+                    <p className="text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide mb-1">
                       10x Thesis
                     </p>
-                    <p className="text-xs text-stone-700 leading-relaxed bg-stone-50 rounded-lg px-3 py-2">
+                    <p className="text-xs text-stone-700 dark:text-text-muted leading-relaxed bg-stone-50 dark:bg-surface rounded-lg px-3 py-2">
                       {pick.thesis}
                     </p>
                   </div>
@@ -317,17 +317,17 @@ function ExplosivePage() {
                     <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">
                       Catalyst
                     </p>
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 dark:text-text-muted leading-relaxed">
                       {pick.catalyst}
                     </p>
                   </div>
 
                   {/* Risk */}
                   <div>
-                    <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide mb-1">
+                    <p className="text-[10px] font-semibold text-red-500 dark:text-loss uppercase tracking-wide mb-1">
                       Key Risk
                     </p>
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 dark:text-text-muted leading-relaxed">
                       {pick.risk}
                     </p>
                   </div>
@@ -361,10 +361,10 @@ function ExplosivePage() {
               />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text">
             Find your next 10x
           </h3>
-          <p className="text-xs text-stone-500 mt-1 max-w-xs">
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-1 max-w-xs">
             Select a sector and let AI analyze live market data to find stocks with explosive growth potential and optimal entry strategies.
           </p>
         </div>

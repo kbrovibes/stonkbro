@@ -262,21 +262,21 @@ export default function PnLDiagram({ strategy = "long-call" }: PnLDiagramProps) 
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold text-gray-900">{config.label} P&L</h3>
-        <span className="text-xs font-mono text-gray-500">{dte} DTE</span>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">{config.label} P&L</h3>
+        <span className="text-xs font-mono text-gray-500 dark:text-text-subtle">{dte} DTE</span>
       </div>
 
       {/* Key stats */}
       <div className="flex gap-3 text-xs mb-3">
         <div>
-          <span className="text-gray-500">Max Profit: </span>
-          <span className="text-green-600 font-semibold">{config.maxProfit}</span>
+          <span className="text-gray-500 dark:text-text-subtle">Max Profit: </span>
+          <span className="text-green-600 dark:text-gain font-semibold">{config.maxProfit}</span>
         </div>
         <div>
-          <span className="text-gray-500">Max Loss: </span>
-          <span className="text-red-600 font-semibold">{config.maxLoss}</span>
+          <span className="text-gray-500 dark:text-text-subtle">Max Loss: </span>
+          <span className="text-red-600 dark:text-loss font-semibold">{config.maxLoss}</span>
         </div>
       </div>
 

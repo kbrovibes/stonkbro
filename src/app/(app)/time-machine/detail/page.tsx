@@ -225,34 +225,34 @@ export default function TimeMachineDetailPage() {
   const arrow = (col: SortCol) => sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24">
+    <div className="min-h-screen bg-stone-50 dark:bg-surface pb-24">
       <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col gap-4">
 
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-2xl font-bold text-stone-900 flex items-center gap-2"><span>⏰</span> Hindsight · All Snapshots & Insights</h1>
-            <p className="text-sm text-stone-500">Trade-by-trade trajectory of trading vs. holding</p>
-            <Link href="/time-machine" className="text-[11px] text-sky-600 hover:text-sky-800 mt-1 underline underline-offset-2">← Back to Hindsight</Link>
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-text flex items-center gap-2"><span>⏰</span> Hindsight · All Snapshots & Insights</h1>
+            <p className="text-sm text-stone-500 dark:text-text-subtle">Trade-by-trade trajectory of trading vs. holding</p>
+            <Link href="/time-machine" className="text-[11px] text-sky-600 dark:text-accent hover:text-sky-800 mt-1 underline underline-offset-2">← Back to Hindsight</Link>
           </div>
           <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
-            <span className="text-[10px] text-stone-500">$</span>
+            <span className="text-[10px] text-stone-500 dark:text-text-subtle">$</span>
             <button type="button" role="switch" aria-checked={showDollars} onClick={() => setShowDollars((v) => !v)}
               className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDollars ? "bg-sky-500" : "bg-stone-300"}`}>
-              <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDollars ? "translate-x-3.5" : "translate-x-0.5"}`} />
+              <span className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-surface-elevated shadow transition-transform ${showDollars ? "translate-x-3.5" : "translate-x-0.5"}`} />
             </button>
           </label>
         </div>
 
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-stone-300 border-t-sky-500 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-stone-300 dark:border-border-strong border-t-sky-500 rounded-full animate-spin" />
           </div>
         )}
         {error && !loading && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</div>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">{error}</div>
         )}
         {!loading && !error && snapshots.length === 0 && (
-          <div className="rounded-xl border border-stone-200 bg-white p-6 text-center text-sm text-stone-500">No snapshots yet — head back and run a backfill.</div>
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-6 text-center text-sm text-stone-500 dark:text-text-subtle">No snapshots yet — head back and run a backfill.</div>
         )}
 
         {!loading && snapshots.length > 0 && (
@@ -298,19 +298,19 @@ export default function TimeMachineDetailPage() {
             </ChartCard>
 
             {/* Full data table */}
-            <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl overflow-hidden">
               <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">
                   All snapshots · click row to load on main page
                 </span>
-                <span className="text-[10px] text-stone-400">
+                <span className="text-[10px] text-stone-400 dark:text-text-faint">
                   {snapshots.length} snapshot{snapshots.length === 1 ? "" : "s"}
                 </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="text-stone-400 border-y border-stone-100">
+                    <tr className="text-stone-400 dark:text-text-faint border-y border-stone-100 dark:border-border-subtle">
                       {([
                         ["Month", "snapshotDate", "left"],
                         ["Snap total", "snapshotTotal", "right"],
@@ -335,27 +335,27 @@ export default function TimeMachineDetailPage() {
                       const cell = "px-2 py-2 text-right tabular-nums";
                       const sign = showDollars && r.deltaAbsolute >= 0 ? "+" : "";
                       return (
-                        <tr key={r.snapshotDate} className="border-t border-stone-50 hover:bg-stone-50/60 transition">
+                        <tr key={r.snapshotDate} className="border-t border-stone-50 dark:border-border-subtle hover:bg-stone-50/60 transition">
                           <td className="px-2 py-2">
-                            <Link href={`/time-machine?date=${r.snapshotDate}`} className="font-semibold text-stone-900 hover:text-sky-700 transition">
+                            <Link href={`/time-machine?date=${r.snapshotDate}`} className="font-semibold text-stone-900 dark:text-text hover:text-sky-700 transition">
                               {monthLabel(r.snapshotDate)}
                             </Link>
                           </td>
-                          <td className={`${cell} text-stone-700`}>{fmt(r.snapshotTotal)}</td>
-                          <td className={`${cell} text-stone-700`}>{fmt(r.simTotal)}</td>
-                          <td className={`${cell} text-stone-700`}>{fmt(r.actualTotal)}</td>
-                          <td className={`${cell} font-medium ${isRed ? "text-rose-600" : "text-emerald-600"}`}>{sign}{fmt(r.deltaAbsolute)}</td>
+                          <td className={`${cell} text-stone-700 dark:text-text-muted`}>{fmt(r.snapshotTotal)}</td>
+                          <td className={`${cell} text-stone-700 dark:text-text-muted`}>{fmt(r.simTotal)}</td>
+                          <td className={`${cell} text-stone-700 dark:text-text-muted`}>{fmt(r.actualTotal)}</td>
+                          <td className={`${cell} font-medium ${isRed ? "text-rose-600 dark:text-loss" : "text-emerald-600 dark:text-gain"}`}>{sign}{fmt(r.deltaAbsolute)}</td>
                           <td className="px-2 py-2 text-center">
-                            <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${isRed ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                            <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${isRed ? "bg-rose-100 text-rose-700 dark:text-loss-strong" : "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"}`}>
                               {isRed ? "Should've stopped" : "Trading worked"}
                             </span>
                           </td>
-                          <td className={`${cell} text-emerald-700`}>{fmt(r.realizedGains)}</td>
-                          <td className={`${cell} text-rose-600`}>{fmt(r.estimatedTax)}</td>
+                          <td className={`${cell} text-emerald-700 dark:text-gain-strong`}>{fmt(r.realizedGains)}</td>
+                          <td className={`${cell} text-rose-600 dark:text-loss`}>{fmt(r.estimatedTax)}</td>
                           <td className={`${cell} text-teal-700`}>{fmt(r.rsuVests)}</td>
                           <td className={`${cell} text-amber-700`}>{fmt(r.deposits)}</td>
                           <td className={`${cell} text-orange-700`}>{fmt(r.withdrawals)}</td>
-                          <td className="px-2 py-2 text-right text-stone-400 text-[10px]">{fmtComputed(r.computedAt)}</td>
+                          <td className="px-2 py-2 text-right text-stone-400 dark:text-text-faint text-[10px]">{fmtComputed(r.computedAt)}</td>
                         </tr>
                       );
                     })}
@@ -376,26 +376,26 @@ export default function TimeMachineDetailPage() {
 
 function StatCard({ label, value, tone, hint }: { label: string; value: string; tone: "stone" | "emerald" | "rose" | "sky"; hint?: string }) {
   const toneClass = {
-    stone: "text-stone-900",
-    emerald: "text-emerald-700",
-    rose: "text-rose-700",
-    sky: "text-sky-700",
+    stone: "text-stone-900 dark:text-text",
+    emerald: "text-emerald-700 dark:text-gain-strong",
+    rose: "text-rose-700 dark:text-loss-strong",
+    sky: "text-sky-700 dark:text-accent-hover",
   }[tone];
   return (
-    <div className="bg-white border border-stone-200 rounded-xl p-3">
-      <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">{label}</p>
+    <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-3">
+      <p className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">{label}</p>
       <p className={`text-lg font-bold mt-1 tabular-nums ${toneClass}`}>{value}</p>
-      {hint && <p className="text-[10px] text-stone-400 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">{hint}</p>}
     </div>
   );
 }
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-4 flex flex-col gap-2">
       <div className="flex flex-col">
-        <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">{title}</span>
-        {subtitle && <span className="text-[10px] text-stone-400 mt-0.5">{subtitle}</span>}
+        <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">{title}</span>
+        {subtitle && <span className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">{subtitle}</span>}
       </div>
       {children}
     </div>
@@ -404,7 +404,7 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
 
 function Legend({ items }: { items: { color: string; label: string }[] }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-[10px] text-stone-500">
+    <div className="flex flex-wrap items-center gap-3 text-[10px] text-stone-500 dark:text-text-subtle">
       {items.map((it, i) => (
         <span key={i} className="flex items-center gap-1.5">
           <span className={`inline-block w-2.5 h-2.5 rounded-full ${it.color}`} />
@@ -425,7 +425,7 @@ function Th({ label, col, sortCol, arrow, toggle, align = "right" }: {
   return (
     <th className={`px-2 py-1.5 font-medium ${text}`}>
       <button type="button" onClick={() => toggle(col)}
-        className={`w-full font-medium hover:text-stone-700 transition flex items-center gap-1 ${justify} ${sortCol === col ? "text-stone-700" : ""}`}>
+        className={`w-full font-medium hover:text-stone-700 transition flex items-center gap-1 ${justify} ${sortCol === col ? "text-stone-700 dark:text-text-muted" : ""}`}>
         <span>{label}{arrow(col)}</span>
       </button>
     </th>
@@ -680,5 +680,5 @@ function InflowBars({
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="text-[11px] text-stone-400 py-6 text-center">{children}</div>;
+  return <div className="text-[11px] text-stone-400 dark:text-text-faint py-6 text-center">{children}</div>;
 }

@@ -56,15 +56,15 @@ export default function VegaImpact() {
   const crushY2 = PAD_T + plotH - (priceAfter / maxPrice) * plotH;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Vega: IV Impact on Price</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Vega: IV Impact on Price</h3>
         <button
           onClick={() => setShowCrush((s) => !s)}
           className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
             showCrush
               ? "bg-purple-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted hover:bg-gray-200"
           }`}
         >
           {showCrush ? "Earnings ON" : "Earnings"}
@@ -81,7 +81,7 @@ export default function VegaImpact() {
           </div>
           <div>
             <span className="text-purple-700 font-medium">Price: </span>
-            <span className="text-red-600 font-bold">
+            <span className="text-red-600 dark:text-loss font-bold">
               -${(priceBefore - priceAfter).toFixed(2)}
             </span>
           </div>

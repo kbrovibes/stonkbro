@@ -121,16 +121,16 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
   const yTicks = [priceMin + 1, (priceMin + priceMax) / 2, priceMax - 1];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Bollinger Bands — SPY</h3>
-        <div className="flex items-center gap-1 text-[10px] text-gray-500">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Bollinger Bands — SPY</h3>
+        <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-text-subtle">
           <span className="flex items-center gap-1">
             <span className="w-3 h-0.5 bg-blue-400 border-dashed inline-block" />
             Bands
           </span>
           <span className="flex items-center gap-1 ml-1">
-            <span className="w-3 h-0.5 bg-white border border-gray-400 inline-block" />
+            <span className="w-3 h-0.5 bg-white dark:bg-surface-elevated border border-gray-400 inline-block" />
             Price
           </span>
         </div>
@@ -149,7 +149,7 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
                   : tab === "breakout"
                   ? "bg-emerald-500 text-white"
                   : "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted hover:bg-gray-200"
             }`}
           >
             {tab}
@@ -292,28 +292,28 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
       </svg>
 
       {/* Key insight panel */}
-      <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
-        <p className="text-[10px] font-bold text-gray-700 mb-2 uppercase tracking-wide">Options Strategy Connection</p>
+      <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100 dark:border-border-subtle">
+        <p className="text-[10px] font-bold text-gray-700 dark:text-text-muted mb-2 uppercase tracking-wide">Options Strategy Connection</p>
         <div className="space-y-1.5">
           <div className="flex items-start gap-2">
-            <span className="text-red-500 font-bold text-xs shrink-0">Wide</span>
-            <p className="text-[10px] text-gray-600 leading-snug">
-              High IV = Wide bands = Options are <span className="font-semibold text-red-600">expensive</span> →
-              better to <span className="font-semibold text-red-600">SELL</span> options (covered calls, cash-secured puts)
+            <span className="text-red-500 dark:text-loss font-bold text-xs shrink-0">Wide</span>
+            <p className="text-[10px] text-gray-600 dark:text-text-muted leading-snug">
+              High IV = Wide bands = Options are <span className="font-semibold text-red-600 dark:text-loss">expensive</span> →
+              better to <span className="font-semibold text-red-600 dark:text-loss">SELL</span> options (covered calls, cash-secured puts)
             </p>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-yellow-600 font-bold text-xs shrink-0">Squeeze</span>
-            <p className="text-[10px] text-gray-600 leading-snug">
-              Low IV = Narrow bands = Options are <span className="font-semibold text-emerald-600">cheap</span> →
-              better to <span className="font-semibold text-emerald-600">BUY</span> options (calls/puts before the breakout)
+            <p className="text-[10px] text-gray-600 dark:text-text-muted leading-snug">
+              Low IV = Narrow bands = Options are <span className="font-semibold text-emerald-600 dark:text-gain">cheap</span> →
+              better to <span className="font-semibold text-emerald-600 dark:text-gain">BUY</span> options (calls/puts before the breakout)
             </p>
           </div>
         </div>
       </div>
 
       {/* Tab-specific annotation */}
-      <div className="mt-2 text-center text-[10px] text-gray-400">
+      <div className="mt-2 text-center text-[10px] text-gray-400 dark:text-text-faint">
         {activeTab === "squeeze" && "Volatility compression → breakout coming. Buy cheap options now."}
         {activeTab === "breakout" && "Upper band touch → overbought signal OR start of strong trend."}
         {activeTab === "bounce" && "Lower band touch → oversold signal. Watch for reversal candle."}

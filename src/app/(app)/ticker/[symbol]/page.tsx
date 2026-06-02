@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 
 function Indicator({ label, value, status }: { label: string; value: string; status: "green" | "red" | "neutral" }) {
   const colors = {
-    green: "text-emerald-700 bg-emerald-50",
-    red: "text-red-600 bg-red-50",
-    neutral: "text-stone-600 bg-stone-100",
+    green: "text-emerald-700 dark:text-gain-strong bg-emerald-50 dark:bg-gain-bg",
+    red: "text-red-600 dark:text-loss bg-red-50 dark:bg-loss-bg",
+    neutral: "text-stone-600 dark:text-text-muted bg-stone-100 dark:bg-surface-muted",
   };
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-stone-100 last:border-0">
-      <span className="text-xs text-stone-500">{label}</span>
+    <div className="flex items-center justify-between py-2.5 border-b border-stone-100 dark:border-border-subtle last:border-0">
+      <span className="text-xs text-stone-500 dark:text-text-subtle">{label}</span>
       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${colors[status]}`}>{value}</span>
     </div>
   );
@@ -28,8 +28,8 @@ export default async function TickerPage({ params }: { params: Params }) {
   if (!quote) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 px-6 gap-4">
-        <p className="text-stone-500">Could not load data for {symbol}</p>
-        <Link href="/" className="text-sm text-sky-600 hover:underline">Back to Discovery</Link>
+        <p className="text-stone-500 dark:text-text-subtle">Could not load data for {symbol}</p>
+        <Link href="/" className="text-sm text-sky-600 dark:text-accent hover:underline">Back to Discovery</Link>
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default async function TickerPage({ params }: { params: Params }) {
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       {/* Back */}
-      <Link href="/" className="flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 w-fit">
+      <Link href="/" className="flex items-center gap-1 text-sm text-stone-400 dark:text-text-faint hover:text-stone-600 w-fit">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
@@ -61,19 +61,19 @@ export default async function TickerPage({ params }: { params: Params }) {
 
       {/* Header */}
       <div className="flex-1">
-        <h2 className="text-xl font-extrabold text-stone-900">{quote.symbol}</h2>
-        <p className="text-sm text-stone-500">{quote.name}</p>
+        <h2 className="text-xl font-extrabold text-stone-900 dark:text-text">{quote.symbol}</h2>
+        <p className="text-sm text-stone-500 dark:text-text-subtle">{quote.name}</p>
         <div className="flex items-center gap-3 mt-1">
-          <span className="text-lg font-bold text-stone-900">${quote.price.toFixed(2)}</span>
-          <span className={`text-sm font-semibold ${quote.changePct >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <span className="text-lg font-bold text-stone-900 dark:text-text">${quote.price.toFixed(2)}</span>
+          <span className={`text-sm font-semibold ${quote.changePct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
             {quote.changePct >= 0 ? "+" : ""}{quote.changePct.toFixed(2)}%
           </span>
-          <span className="text-xs text-stone-400">
+          <span className="text-xs text-stone-400 dark:text-text-faint">
             ({quote.change >= 0 ? "+" : ""}${quote.change.toFixed(2)})
           </span>
         </div>
         {quote.lastTradeDate && (
-          <p className="text-[11px] text-stone-400 mt-1">
+          <p className="text-[11px] text-stone-400 dark:text-text-faint mt-1">
             As of {new Date(quote.lastTradeDate).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET
             {" · "}May be 15min delayed
           </p>
@@ -87,7 +87,7 @@ export default async function TickerPage({ params }: { params: Params }) {
       {signals.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {signals.map((signal) => (
-            <span key={signal} className="text-xs font-medium bg-sky-50 text-sky-700 px-2.5 py-1 rounded-full border border-sky-200">
+            <span key={signal} className="text-xs font-medium bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover px-2.5 py-1 rounded-full border border-sky-200 dark:border-accent-border">
               {signal}
             </span>
           ))}
@@ -95,8 +95,8 @@ export default async function TickerPage({ params }: { params: Params }) {
       )}
 
       {/* Key Stats */}
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h3 className="text-sm font-bold text-stone-900 mb-2">Key Stats</h3>
+      <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-2">Key Stats</h3>
         <Indicator label="50-Day SMA" value={`$${quote.fiftyDayAvg.toFixed(2)}`} status={quote.above50sma ? "green" : "red"} />
         <Indicator label="200-Day SMA" value={`$${quote.twoHundredDayAvg.toFixed(2)}`} status={quote.above200sma ? "green" : "red"} />
         <Indicator label="Volume vs Avg" value={`${quote.volumeRatio.toFixed(1)}x`} status={quote.volumeRatio >= 1.5 ? "green" : "neutral"} />
@@ -109,12 +109,12 @@ export default async function TickerPage({ params }: { params: Params }) {
       </div>
 
       {/* Volume bar */}
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
+      <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-stone-500">Volume</span>
-          <span className="text-xs text-stone-500">{(quote.volume / 1e6).toFixed(1)}M / {(quote.avgVolume / 1e6).toFixed(1)}M avg</span>
+          <span className="text-xs text-stone-500 dark:text-text-subtle">Volume</span>
+          <span className="text-xs text-stone-500 dark:text-text-subtle">{(quote.volume / 1e6).toFixed(1)}M / {(quote.avgVolume / 1e6).toFixed(1)}M avg</span>
         </div>
-        <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full ${quote.volumeRatio >= 2 ? "bg-amber-500" : "bg-stone-300"}`}
             style={{ width: `${Math.min(quote.volumeRatio / 4 * 100, 100)}%` }}
@@ -129,25 +129,25 @@ export default async function TickerPage({ params }: { params: Params }) {
       <div className="flex flex-col gap-2">
         <Link
           href={`/suggestions/${quote.symbol}`}
-          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-stone-300 transition-colors"
         >
           <div>
-            <h3 className="text-sm font-bold text-stone-900">Options Suggestions</h3>
-            <p className="text-xs text-stone-500 mt-0.5">CSP, Covered Call, and PMCC recommendations</p>
+            <h3 className="text-sm font-bold text-stone-900 dark:text-text">Options Suggestions</h3>
+            <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">CSP, Covered Call, and PMCC recommendations</p>
           </div>
-          <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <svg className="w-5 h-5 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </Link>
         <Link
           href={`/ticker/${quote.symbol}/pmcc`}
-          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+          className="flex items-center justify-between p-4 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-stone-300 transition-colors"
         >
           <div>
-            <h3 className="text-sm font-bold text-stone-900">PMCC Analyzer</h3>
-            <p className="text-xs text-stone-500 mt-0.5">View LEAPS + short call setups</p>
+            <h3 className="text-sm font-bold text-stone-900 dark:text-text">PMCC Analyzer</h3>
+            <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">View LEAPS + short call setups</p>
           </div>
-          <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <svg className="w-5 h-5 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </Link>

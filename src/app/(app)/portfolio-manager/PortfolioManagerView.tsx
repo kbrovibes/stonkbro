@@ -238,12 +238,12 @@ export function PortfolioManagerView() {
 
   if (loading) {
     return (
-      <div className="p-6 text-stone-500 text-sm">Loading portfolio manager…</div>
+      <div className="p-6 text-stone-500 dark:text-text-subtle text-sm">Loading portfolio manager…</div>
     );
   }
 
   if (error) {
-    return <div className="p-6 text-red-600 text-sm">Error: {error}</div>;
+    return <div className="p-6 text-red-600 dark:text-loss text-sm">Error: {error}</div>;
   }
 
   // Top view shows either the selected historical scan or the latest completed
@@ -256,8 +256,8 @@ export function PortfolioManagerView() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">Portfolio Manager</h1>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-text">Portfolio Manager</h1>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
             AI-driven ratings + $100K reallocation plan for your stock holdings
           </p>
         </div>
@@ -276,13 +276,13 @@ export function PortfolioManagerView() {
       </div>
 
       {scanError && (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="mb-3 rounded-lg border border-red-200 dark:border-loss-border bg-red-50 dark:bg-loss-bg px-3 py-2 text-sm text-red-700 dark:text-loss-strong">
           {scanError}
         </div>
       )}
 
       {refreshing && (
-        <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
+        <div className="mb-3 rounded-lg border border-sky-200 dark:border-accent-border bg-sky-50 dark:bg-accent-bg px-3 py-2 text-sm text-sky-700 dark:text-accent-hover">
           Scan in progress — page will refresh automatically.
         </div>
       )}
@@ -307,10 +307,10 @@ export function PortfolioManagerView() {
 
       {/* Last run + filter strip */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div className="text-xs text-stone-500">
+        <div className="text-xs text-stone-500 dark:text-text-subtle">
           {scan ? (
             <>
-              Last scan: <span className="font-medium text-stone-700">{formatRelative(scan.completed_at ?? scan.created_at)}</span>
+              Last scan: <span className="font-medium text-stone-700 dark:text-text-muted">{formatRelative(scan.completed_at ?? scan.created_at)}</span>
               {" · "}
               <span className="capitalize">{scan.scan_type}</span>
               {scan.trigger_source && ` (${scan.trigger_source})`}
@@ -324,7 +324,7 @@ export function PortfolioManagerView() {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as RatingFilter)}
-          className="text-xs rounded-md border border-stone-300 bg-white px-2 py-1"
+          className="text-xs rounded-md border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-2 py-1"
         >
           <option value="ALL">All ratings</option>
           <option value="BUYS">Buy &amp; Strong Buy</option>
@@ -335,16 +335,16 @@ export function PortfolioManagerView() {
 
       {/* Empty state */}
       {!scan && (
-        <div className="rounded-xl border border-stone-200 bg-white p-6 text-center">
-          <p className="text-sm text-stone-600 mb-3">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-6 text-center">
+          <p className="text-sm text-stone-600 dark:text-text-muted mb-3">
             No scan yet. Tap <span className="font-semibold">Re-run now</span> or wait for the next market-open / market-close cron.
           </p>
         </div>
       )}
 
       {scan && scan.ticker_count === 0 && (
-        <div className="rounded-xl border border-stone-200 bg-white p-6 text-center">
-          <p className="text-sm text-stone-600">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-6 text-center">
+          <p className="text-sm text-stone-600 dark:text-text-muted">
             No stock holdings found in your connected portfolio. (Options are intentionally excluded.)
           </p>
         </div>
@@ -352,10 +352,10 @@ export function PortfolioManagerView() {
 
       {/* Table */}
       {scan && scan.ticker_count > 0 && (
-        <div className="rounded-xl border border-stone-200 bg-white overflow-x-auto">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-x-auto">
           <table className="w-full text-sm border-collapse">
-            <thead className="bg-stone-50 border-b border-stone-200">
-              <tr className="text-[10px] font-bold uppercase text-stone-500">
+            <thead className="bg-stone-50 dark:bg-surface border-b border-stone-200 dark:border-border-default">
+              <tr className="text-[10px] font-bold uppercase text-stone-500 dark:text-text-subtle">
                 <th className="px-3 py-2 text-left whitespace-nowrap"><SortHeader label="Symbol"  sortKey="symbol"     currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
                 <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="Price"  align="right" sortKey="price" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
                 <th className="px-3 py-2 text-right whitespace-nowrap"><SortHeader label="1d"     align="right" sortKey="change_1d" currentKey={sortKey} currentDir={sortDir} onToggle={toggleSort} /></th>
@@ -368,7 +368,7 @@ export function PortfolioManagerView() {
             </thead>
             <tbody>
               {filteredAnalyses.length === 0 ? (
-                <tr><td colSpan={8} className="px-3 py-6 text-center text-sm text-stone-500">No tickers match the current filter.</td></tr>
+                <tr><td colSpan={8} className="px-3 py-6 text-center text-sm text-stone-500 dark:text-text-subtle">No tickers match the current filter.</td></tr>
               ) : (
                 filteredAnalyses.map((a) => (
                   <Row
@@ -391,7 +391,7 @@ export function PortfolioManagerView() {
 
       {/* Loading historical scan */}
       {loadingSelected && (
-        <div className="mt-3 text-xs text-stone-500">Loading scan…</div>
+        <div className="mt-3 text-xs text-stone-500 dark:text-text-subtle">Loading scan…</div>
       )}
 
       {/* Scan history */}
@@ -420,14 +420,14 @@ function Row({
     <>
       <tr
         onClick={onToggle}
-        className="border-b border-stone-100 last:border-b-0 hover:bg-stone-50 transition-colors cursor-pointer"
+        className="border-b border-stone-100 dark:border-border-subtle last:border-b-0 hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors cursor-pointer"
       >
-        <td className="px-3 py-2.5 font-bold text-stone-900 whitespace-nowrap">{analysis.symbol}</td>
-        <td className="px-3 py-2.5 text-right tabular-nums text-stone-700 whitespace-nowrap">${e.price.toFixed(2)}</td>
-        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_1d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <td className="px-3 py-2.5 font-bold text-stone-900 dark:text-text whitespace-nowrap">{analysis.symbol}</td>
+        <td className="px-3 py-2.5 text-right tabular-nums text-stone-700 dark:text-text-muted whitespace-nowrap">${e.price.toFixed(2)}</td>
+        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_1d_pct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-600 dark:text-loss"}`}>
           {signed(e.change_1d_pct)}%
         </td>
-        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_30d_pct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${e.change_30d_pct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-600 dark:text-loss"}`}>
           {signed(e.change_30d_pct)}%
         </td>
         <td className={`px-3 py-2.5 text-right tabular-nums text-xs whitespace-nowrap ${rsiColor(e.rsi_14)}`}>
@@ -440,9 +440,9 @@ function Row({
 
       {expanded && (
         <tr>
-          <td colSpan={8} className="px-3 pb-3 pt-1 text-sm bg-stone-50 border-t border-stone-100 sticky left-0 w-screen md:static md:w-auto">
+          <td colSpan={8} className="px-3 pb-3 pt-1 text-sm bg-stone-50 dark:bg-surface border-t border-stone-100 dark:border-border-subtle sticky left-0 w-screen md:static md:w-auto">
           {analysis.thesis && (
-            <p className="text-stone-800 mb-3 leading-snug">{analysis.thesis}</p>
+            <p className="text-stone-800 dark:text-text mb-3 leading-snug">{analysis.thesis}</p>
           )}
 
           {/* Mini technicals strip */}
@@ -461,23 +461,23 @@ function Row({
           </div>
 
           {/* Suggested action detail */}
-          <div className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs mb-3">
-            <span className="font-semibold text-stone-700">Suggested action: </span>
+          <div className="rounded-md border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-3 py-2 text-xs mb-3">
+            <span className="font-semibold text-stone-700 dark:text-text-muted">Suggested action: </span>
             <ActionBadge type={analysis.suggested_action.type} />
             {"target_pct_of_position" in analysis.suggested_action && (
-              <span className="ml-2 text-stone-600">
+              <span className="ml-2 text-stone-600 dark:text-text-muted">
                 {analysis.suggested_action.target_pct_of_position}% of position
               </span>
             )}
             {"note" in analysis.suggested_action && analysis.suggested_action.note && (
-              <span className="ml-2 text-stone-600">— {analysis.suggested_action.note}</span>
+              <span className="ml-2 text-stone-600 dark:text-text-muted">— {analysis.suggested_action.note}</span>
             )}
           </div>
 
           {/* News */}
           {e.news_headlines.length > 0 && (
             <div>
-              <div className="text-[10px] font-bold uppercase text-stone-500 mb-1">Recent news</div>
+              <div className="text-[10px] font-bold uppercase text-stone-500 dark:text-text-subtle mb-1">Recent news</div>
               <ul className="space-y-1">
                 {e.news_headlines.slice(0, 3).map((h, i) => (
                   <li key={i} className="text-xs">
@@ -485,18 +485,18 @@ function Row({
                       href={h.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sky-700 hover:underline"
+                      className="text-sky-700 dark:text-accent-hover hover:underline"
                     >
                       {h.title}
                     </a>
-                    {h.publisher && <span className="text-stone-500"> · {h.publisher}</span>}
+                    {h.publisher && <span className="text-stone-500 dark:text-text-subtle"> · {h.publisher}</span>}
                   </li>
                 ))}
               </ul>
             </div>
           )}
           {e.news_headlines.length === 0 && (
-            <div className="text-xs text-stone-400 italic">No recent headlines available.</div>
+            <div className="text-xs text-stone-400 dark:text-text-faint italic">No recent headlines available.</div>
           )}
           </td>
         </tr>
@@ -507,9 +507,9 @@ function Row({
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-white border border-stone-200 px-2 py-1">
-      <div className="text-[9px] uppercase font-semibold text-stone-500">{label}</div>
-      <div className="text-stone-800 font-medium tabular-nums">{value}</div>
+    <div className="rounded-md bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default px-2 py-1">
+      <div className="text-[9px] uppercase font-semibold text-stone-500 dark:text-text-subtle">{label}</div>
+      <div className="text-stone-800 dark:text-text font-medium tabular-nums">{value}</div>
     </div>
   );
 }
@@ -518,10 +518,10 @@ function BulletBlock({ title, items, dotColor }: { title: string; items: string[
   if (items.length === 0) return null;
   return (
     <div>
-      <div className="text-[10px] font-bold uppercase text-stone-500 mb-1">{title}</div>
+      <div className="text-[10px] font-bold uppercase text-stone-500 dark:text-text-subtle mb-1">{title}</div>
       <ul className="space-y-1">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-1.5 text-xs text-stone-700">
+          <li key={i} className="flex items-start gap-1.5 text-xs text-stone-700 dark:text-text-muted">
             <span className={`mt-1 h-1.5 w-1.5 rounded-full ${dotColor} shrink-0`} />
             <span>{item}</span>
           </li>
@@ -533,11 +533,11 @@ function BulletBlock({ title, items, dotColor }: { title: string; items: string[
 
 function RatingPill({ rating }: { rating: Rating }) {
   const styles: Record<Rating, string> = {
-    STRONG_BUY: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    STRONG_BUY: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
     BUY: "bg-green-100 text-green-800 border-green-200",
-    HOLD: "bg-stone-100 text-stone-700 border-stone-200",
+    HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted border-stone-200 dark:border-border-default",
     SELL: "bg-amber-100 text-amber-800 border-amber-200",
-    STRONG_SELL: "bg-red-100 text-red-800 border-red-200",
+    STRONG_SELL: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong border-red-200 dark:border-loss-border",
   };
   const labels: Record<Rating, string> = {
     STRONG_BUY: "STRONG BUY",
@@ -558,20 +558,20 @@ function ConfidenceBar({ value }: { value: number }) {
   const color = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-sky-500" : "bg-stone-400";
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1.5 rounded-full bg-stone-200 overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-stone-200 dark:bg-surface-sunken overflow-hidden">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[10px] tabular-nums text-stone-500 w-6 text-right">{pct}</span>
+      <span className="text-[10px] tabular-nums text-stone-500 dark:text-text-subtle w-6 text-right">{pct}</span>
     </div>
   );
 }
 
 function ActionBadge({ type }: { type: "HOLD" | "TRIM" | "ADD" | "EXIT" }) {
   const styles: Record<typeof type, string> = {
-    HOLD: "bg-stone-100 text-stone-700",
+    HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted",
     TRIM: "bg-amber-100 text-amber-800",
-    ADD: "bg-emerald-100 text-emerald-800",
-    EXIT: "bg-red-100 text-red-800",
+    ADD: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong",
+    EXIT: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong",
   };
   return (
     <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${styles[type]}`}>
@@ -582,17 +582,17 @@ function ActionBadge({ type }: { type: "HOLD" | "TRIM" | "ADD" | "EXIT" }) {
 
 function AllocationCard({ allocation }: { allocation: PortfolioAllocation }) {
   return (
-    <div className="mt-6 rounded-xl border border-sky-200 bg-sky-50 p-4">
+    <div className="mt-6 rounded-xl border border-sky-200 dark:border-accent-border bg-sky-50 dark:bg-accent-bg p-4">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-bold text-sky-900">Today&apos;s $100K reallocation plan</h2>
-        <span className="text-[10px] font-semibold text-sky-700">
+        <span className="text-[10px] font-semibold text-sky-700 dark:text-accent-hover">
           Deployed ${allocation.capital_deployed.toLocaleString()} / $100,000
         </span>
       </div>
-      <p className="text-sm text-stone-800 mb-3 leading-snug">{allocation.summary}</p>
+      <p className="text-sm text-stone-800 dark:text-text mb-3 leading-snug">{allocation.summary}</p>
 
-      <div className="rounded-lg border border-sky-200 bg-white overflow-hidden mb-3">
-        <div className="grid grid-cols-12 gap-2 px-3 py-1.5 text-[10px] font-bold uppercase text-stone-500 border-b border-stone-200 bg-stone-50">
+      <div className="rounded-lg border border-sky-200 dark:border-accent-border bg-white dark:bg-surface-elevated overflow-hidden mb-3">
+        <div className="grid grid-cols-12 gap-2 px-3 py-1.5 text-[10px] font-bold uppercase text-stone-500 dark:text-text-subtle border-b border-stone-200 dark:border-border-default bg-stone-50 dark:bg-surface">
           <div className="col-span-2">Symbol</div>
           <div className="col-span-2">Action</div>
           <div className="col-span-2 text-right">Amount</div>
@@ -605,16 +605,16 @@ function AllocationCard({ allocation }: { allocation: PortfolioAllocation }) {
 
       <div className="flex flex-wrap gap-3 text-xs mb-3">
         <Pill label="Capital released" value={`$${allocation.capital_released.toLocaleString()}`} color="bg-amber-100 text-amber-800" />
-        <Pill label="Capital deployed" value={`$${allocation.capital_deployed.toLocaleString()}`} color="bg-emerald-100 text-emerald-800" />
-        <Pill label="Cash remaining" value={`$${allocation.cash_remaining.toLocaleString()}`} color="bg-sky-100 text-sky-800" />
+        <Pill label="Capital deployed" value={`$${allocation.capital_deployed.toLocaleString()}`} color="bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong" />
+        <Pill label="Cash remaining" value={`$${allocation.cash_remaining.toLocaleString()}`} color="bg-sky-100 dark:bg-accent-bg text-sky-800 dark:text-accent-hover" />
       </div>
 
       {allocation.risk_notes.length > 0 && (
         <div>
-          <div className="text-[10px] font-bold uppercase text-stone-500 mb-1">Risk notes</div>
+          <div className="text-[10px] font-bold uppercase text-stone-500 dark:text-text-subtle mb-1">Risk notes</div>
           <ul className="space-y-1">
             {allocation.risk_notes.map((r, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-xs text-stone-700">
+              <li key={i} className="flex items-start gap-1.5 text-xs text-stone-700 dark:text-text-muted">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
                 <span>{r}</span>
               </li>
@@ -628,24 +628,24 @@ function AllocationCard({ allocation }: { allocation: PortfolioAllocation }) {
 
 function AllocationRow({ action }: { action: AllocationAction }) {
   const styles: Record<AllocationAction["action"], string> = {
-    SELL: "bg-red-100 text-red-800",
+    SELL: "bg-red-100 dark:bg-loss-bg text-red-800 dark:text-loss-strong",
     TRIM: "bg-amber-100 text-amber-800",
-    HOLD: "bg-stone-100 text-stone-700",
-    ADD: "bg-emerald-100 text-emerald-800",
-    BUY: "bg-sky-100 text-sky-800",
+    HOLD: "bg-stone-100 dark:bg-surface-muted text-stone-700 dark:text-text-muted",
+    ADD: "bg-emerald-100 dark:bg-gain-bg text-emerald-800 dark:text-gain-strong",
+    BUY: "bg-sky-100 dark:bg-accent-bg text-sky-800 dark:text-accent-hover",
   };
   return (
-    <div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-t border-stone-100 first:border-t-0 items-center">
-      <div className="col-span-2 font-bold text-stone-900">{action.symbol}</div>
+    <div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs border-t border-stone-100 dark:border-border-subtle first:border-t-0 items-center">
+      <div className="col-span-2 font-bold text-stone-900 dark:text-text">{action.symbol}</div>
       <div className="col-span-2">
         <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${styles[action.action]}`}>
           {action.action}
         </span>
       </div>
-      <div className="col-span-2 text-right tabular-nums text-stone-700">
+      <div className="col-span-2 text-right tabular-nums text-stone-700 dark:text-text-muted">
         ${action.dollar_amount.toLocaleString()}
       </div>
-      <div className="col-span-6 text-stone-600 leading-snug">{action.rationale}</div>
+      <div className="col-span-6 text-stone-600 dark:text-text-muted leading-snug">{action.rationale}</div>
     </div>
   );
 }
@@ -660,10 +660,10 @@ function Pill({ label, value, color }: { label: string; value: string; color: st
 }
 
 function rsiColor(rsi: number | null): string {
-  if (rsi === null) return "text-stone-400";
-  if (rsi <= 30) return "text-emerald-600";
-  if (rsi >= 70) return "text-red-600";
-  return "text-stone-600";
+  if (rsi === null) return "text-stone-400 dark:text-text-faint";
+  if (rsi <= 30) return "text-emerald-600 dark:text-gain";
+  if (rsi >= 70) return "text-red-600 dark:text-loss";
+  return "text-stone-600 dark:text-text-muted";
 }
 
 function signed(n: number): string {
@@ -717,13 +717,13 @@ function ScanHistoryPanel({
   if (history.length === 0) return null;
   const activeId = selectedScanId ?? latestScanId;
   return (
-    <div className="mt-6 rounded-xl border border-stone-200 bg-white overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-stone-200 bg-stone-50">
-        <h2 className="text-xs font-bold uppercase text-stone-500 tracking-wide">Scan history</h2>
+    <div className="mt-6 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-stone-200 dark:border-border-default bg-stone-50 dark:bg-surface">
+        <h2 className="text-xs font-bold uppercase text-stone-500 dark:text-text-subtle tracking-wide">Scan history</h2>
         {selectedScanId && (
           <button
             onClick={onShowLatest}
-            className="text-[11px] font-semibold text-sky-700 hover:underline"
+            className="text-[11px] font-semibold text-sky-700 dark:text-accent-hover hover:underline"
           >
             Show latest →
           </button>
@@ -734,37 +734,37 @@ function ScanHistoryPanel({
           const isActive = h.id === activeId;
           const isLatest = h.id === latestScanId;
           return (
-            <li key={h.id} className="border-b border-stone-100 last:border-b-0">
+            <li key={h.id} className="border-b border-stone-100 dark:border-border-subtle last:border-b-0">
               <button
                 onClick={() => onSelect(h.id)}
                 disabled={h.status === "running"}
-                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 transition-colors text-left ${isActive ? "bg-sky-50/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
+                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors text-left ${isActive ? "bg-sky-50/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
               >
                 <div className="col-span-2 flex items-center gap-1.5">
                   <StatusDot status={h.status} />
-                  <span className="text-stone-700 font-medium capitalize">{h.status}</span>
+                  <span className="text-stone-700 dark:text-text-muted font-medium capitalize">{h.status}</span>
                 </div>
-                <div className="col-span-3 text-stone-700" title={formatAbsolute(h.created_at)}>
+                <div className="col-span-3 text-stone-700 dark:text-text-muted" title={formatAbsolute(h.created_at)}>
                   {formatRelative(h.created_at)}
-                  {isLatest && <span className="ml-1.5 text-[9px] font-bold text-sky-700">LATEST</span>}
+                  {isLatest && <span className="ml-1.5 text-[9px] font-bold text-sky-700 dark:text-accent-hover">LATEST</span>}
                 </div>
-                <div className="col-span-2 text-stone-500 truncate" title={h.trigger_source ?? h.scan_type}>
+                <div className="col-span-2 text-stone-500 dark:text-text-subtle truncate" title={h.trigger_source ?? h.scan_type}>
                   {h.trigger_source ?? h.scan_type}
                 </div>
-                <div className="col-span-1 text-right text-stone-600 tabular-nums">
+                <div className="col-span-1 text-right text-stone-600 dark:text-text-muted tabular-nums">
                   {h.ticker_count || "—"}
                 </div>
-                <div className="col-span-2 text-right text-stone-600 tabular-nums">
+                <div className="col-span-2 text-right text-stone-600 dark:text-text-muted tabular-nums">
                   {h.duration_ms ? formatDuration(h.duration_ms) : (h.status === "running" ? "…" : "—")}
                 </div>
-                <div className="col-span-2 text-right text-stone-500 truncate text-[10px]">
+                <div className="col-span-2 text-right text-stone-500 dark:text-text-subtle truncate text-[10px]">
                   {h.ai_model
                     ? `${h.ai_model.replace(/^(claude-|gemini-)/, "")} · ${(h.input_tokens + h.output_tokens).toLocaleString()}tok`
                     : h.status === "running" ? "" : "—"}
                 </div>
               </button>
               {h.status === "failed" && h.error && (
-                <div className="px-3 pb-2 text-[11px] text-red-600 truncate" title={h.error}>
+                <div className="px-3 pb-2 text-[11px] text-red-600 dark:text-loss truncate" title={h.error}>
                   Error: {h.error}
                 </div>
               )}
@@ -797,7 +797,7 @@ function SortHeader({
     <button
       type="button"
       onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1 hover:text-stone-700 transition-colors ${active ? "text-sky-700" : "text-stone-500"} ${align === "right" ? "justify-end" : ""}`}
+      className={`inline-flex items-center gap-1 hover:text-stone-700 transition-colors ${active ? "text-sky-700 dark:text-accent-hover" : "text-stone-500 dark:text-text-subtle"} ${align === "right" ? "justify-end" : ""}`}
     >
       <span>{label}</span>
       <span className={`text-[8px] ${active ? "opacity-100" : "opacity-40"}`}>{arrow}</span>

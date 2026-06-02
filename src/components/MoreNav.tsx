@@ -79,10 +79,10 @@ export function MoreTile({ link, onClick }: { link: MoreLink; onClick?: () => vo
     <Link
       href={link.href}
       onClick={onClick}
-      className="aspect-square rounded-xl border border-stone-200 bg-white p-2 flex flex-col items-center justify-center gap-1 text-center hover:border-sky-300 hover:bg-sky-50 active:bg-sky-100 transition-colors min-w-0"
+      className="aspect-square rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-2 flex flex-col items-center justify-center gap-1 text-center hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-accent-bg active:bg-sky-100 transition-colors min-w-0"
     >
       <span className="text-2xl leading-none">{link.emoji}</span>
-      <span className="text-[11px] font-bold text-stone-900 leading-tight line-clamp-2 w-full">{link.title}</span>
+      <span className="text-[11px] font-bold text-stone-900 dark:text-text leading-tight line-clamp-2 w-full">{link.title}</span>
     </Link>
   );
 }

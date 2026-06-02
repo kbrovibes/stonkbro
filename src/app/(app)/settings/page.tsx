@@ -202,24 +202,24 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/more"
-            className="p-1.5 -ml-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+            className="p-1.5 -ml-1.5 rounded-lg text-stone-400 dark:text-text-faint hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-surface-muted transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
               <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
             </svg>
           </Link>
-          <h2 className="text-lg font-bold text-stone-900">Settings</h2>
+          <h2 className="text-lg font-bold text-stone-900 dark:text-text">Settings</h2>
         </div>
 
         {/* Theme */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Theme</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Theme</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Switch the font used across the whole app, including the title bar.
             Choice is saved locally on this device.
           </p>
           <div className="mt-4">
-            <label htmlFor="theme-font" className="block text-xs font-medium text-stone-700 mb-1">
+            <label htmlFor="theme-font" className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1">
               Font
             </label>
             <select
@@ -230,13 +230,13 @@ export default function SettingsPage() {
                 setThemeFont(next);
                 applyThemeFont(next);
               }}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+              className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
             >
               {THEME_FONTS.map((f) => (
                 <option key={f.key} value={f.key}>{f.label}</option>
               ))}
             </select>
-            <p className="mt-2 text-[11px] text-stone-400">
+            <p className="mt-2 text-[11px] text-stone-400 dark:text-text-faint">
               Preview: <span style={{ fontFamily: (THEME_FONTS.find((f) => f.key === themeFont) ?? THEME_FONTS[0]).family }}>
                 stonk<span className="text-[#00C805] font-black">BRO</span> · The quick brown fox jumps over $1,234.56
               </span>
@@ -245,9 +245,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Account Settings */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Account Settings</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Account Settings</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Configure your trading account defaults.
           </p>
 
@@ -255,12 +255,12 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="starting-cash"
-                className="block text-xs font-medium text-stone-700 mb-1"
+                className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1"
               >
                 Starting Cash
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400 dark:text-text-faint">
                   $
                 </span>
                 <input
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                   inputMode="numeric"
                   value={startingCash}
                   onChange={(e) => setStartingCash(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3 pl-7 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 pl-7 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   placeholder="20000"
                 />
               </div>
@@ -278,7 +278,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="alert-email"
-                className="block text-xs font-medium text-stone-700 mb-1"
+                className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1"
               >
                 Alert Email
               </label>
@@ -287,7 +287,7 @@ export default function SettingsPage() {
                 type="email"
                 value={alertEmail}
                 onChange={(e) => setAlertEmail(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 placeholder="you@example.com"
               />
             </div>
@@ -295,24 +295,24 @@ export default function SettingsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-50"
+              className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted active:bg-stone-700 dark:active:bg-surface-muted transition-colors disabled:opacity-50"
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Save Settings"}
             </button>
-            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
+            {saveError && <p className="text-xs text-red-500 dark:text-loss">{saveError}</p>}
           </div>
         </div>
 
         {/* AI Configuration */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">AI Configuration</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">AI Configuration</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Choose which AI engine powers your research, scans, and risk analysis.
           </p>
 
           <div className="mt-4 flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-medium text-stone-700 mb-2">
+              <label className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-2">
                 Primary AI Provider
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -323,8 +323,8 @@ export default function SettingsPage() {
                   }}
                   className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
                     preferredProvider === "gemini"
-                      ? "border-sky-600 bg-sky-50 text-sky-700"
-                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                      ? "border-sky-600 bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
+                      : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-600 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted"
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-sky-500"></span>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                   className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
                     preferredProvider === "claude"
                       ? "border-purple-600 bg-purple-50 text-purple-700"
-                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                      : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-600 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted"
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-purple-500"></span>
@@ -348,14 +348,14 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="ai-model" className="block text-xs font-medium text-stone-700 mb-1">
+              <label htmlFor="ai-model" className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1">
                 Model Selection
               </label>
               <select
                 id="ai-model"
                 value={preferredModel}
                 onChange={(e) => setPreferredModel(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text focus:outline-none focus:ring-2 focus:ring-sky-500"
               >
                 {preferredProvider === "gemini"
                   ? GEMINI_MODELS.map((m) => (
@@ -369,7 +369,7 @@ export default function SettingsPage() {
                       </option>
                     ))}
               </select>
-              <p className="mt-2 text-[10px] text-stone-400 italic">
+              <p className="mt-2 text-[10px] text-stone-400 dark:text-text-faint italic">
                 * If your preferred provider reaches its rate limit, the system will automatically failover to the other provider and notify you.
               </p>
             </div>
@@ -377,27 +377,27 @@ export default function SettingsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="self-start rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 active:bg-stone-700 transition-colors disabled:opacity-50"
+              className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted active:bg-stone-700 dark:active:bg-surface-muted transition-colors disabled:opacity-50"
             >
               {saved ? "Saved!" : saving ? "Saving..." : "Update AI Preferences"}
             </button>
-            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
+            {saveError && <p className="text-xs text-red-500 dark:text-loss">{saveError}</p>}
           </div>
         </div>
 
         {/* AI Model Health Check */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-sm font-semibold text-stone-900">AI Model Health</h3>
+            <h3 className="text-sm font-semibold text-stone-900 dark:text-text">AI Model Health</h3>
             <button
               onClick={checkAIHealth}
               disabled={Object.values(healthStatus).some(s => s === "checking")}
-              className="text-xs font-bold text-sky-600 hover:text-sky-700 disabled:text-stone-300 transition-colors"
+              className="text-xs font-bold text-sky-600 dark:text-accent hover:text-sky-700 disabled:text-stone-300 transition-colors"
             >
               {Object.values(healthStatus).some(s => s === "checking") ? "Checking..." : "Check All Models"}
             </button>
           </div>
-          <p className="text-sm text-stone-500 mb-4">
+          <p className="text-sm text-stone-500 dark:text-text-subtle mb-4">
             Verify that your API keys are valid and models are responding.
           </p>
 
@@ -407,12 +407,12 @@ export default function SettingsPage() {
               const isGemini = GEMINI_MODELS.some(m => m.id === model.id);
               
               return (
-                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 bg-stone-50/30">
+                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 dark:border-border-subtle bg-stone-50/30">
                   <div className="flex items-center gap-2.5">
                     <div className={`w-2 h-2 rounded-full ${isGemini ? "bg-sky-500" : "bg-purple-500"}`} />
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-stone-800">{model.name}</span>
-                      <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">
+                      <span className="text-xs font-bold text-stone-800 dark:text-text">{model.name}</span>
+                      <span className="text-[10px] text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">
                         {isGemini ? "Google Gemini" : "Anthropic Claude"}
                       </span>
                     </div>
@@ -420,9 +420,9 @@ export default function SettingsPage() {
                   
                   <div className="flex items-center">
                     {status === "checking" ? (
-                      <div className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-stone-200 dark:border-border-default border-t-stone-500 rounded-full animate-spin" />
                     ) : status === "healthy" ? (
-                      <div className="flex items-center gap-1.5 text-emerald-600">
+                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-gain">
                         <span className="text-[10px] font-bold">Healthy</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                           <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4.13-5.689Z" clipRule="evenodd" />
@@ -433,19 +433,19 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => setActiveErrorTooltip(activeErrorTooltip === model.id ? null : model.id)}
-                          className="flex items-center gap-1 text-red-500 active:opacity-70"
+                          className="flex items-center gap-1 text-red-500 dark:text-loss active:opacity-70"
                         >
                           <span className="text-[10px] font-bold">Failed</span>
                           <span className="text-sm leading-none">✕</span>
                         </button>
                         {activeErrorTooltip === model.id && healthErrors[model.id] && (
-                          <div className="absolute right-0 top-6 z-50 w-56 rounded-lg border border-red-100 bg-white shadow-lg px-3 py-2">
-                            <p className="text-[10px] text-red-500 leading-snug">{healthErrors[model.id]}</p>
+                          <div className="absolute right-0 top-6 z-50 w-56 rounded-lg border border-red-100 dark:border-loss-border bg-white dark:bg-surface-elevated shadow-lg px-3 py-2">
+                            <p className="text-[10px] text-red-500 dark:text-loss leading-snug">{healthErrors[model.id]}</p>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <span className="text-[10px] font-bold text-stone-300">Not checked</span>
+                      <span className="text-[10px] font-bold text-stone-300 dark:text-text-faint">Not checked</span>
                     )}
                   </div>
                 </div>
@@ -455,9 +455,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Alert Preferences */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Alert Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Alert Preferences</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Configure how you want to be notified about breakout signals and
             position triggers.
           </p>
@@ -474,13 +474,13 @@ export default function SettingsPage() {
                 : "Send Daily Summary"}
             </button>
             {!alertEmail && (
-              <p className="text-xs text-stone-400">Save an alert email above first.</p>
+              <p className="text-xs text-stone-400 dark:text-text-faint">Save an alert email above first.</p>
             )}
             {testStatus === "error" && (
-              <p className="text-xs text-red-500">{testError}</p>
+              <p className="text-xs text-red-500 dark:text-loss">{testError}</p>
             )}
 
-            <div className="border-t border-stone-100 pt-3 mt-1">
+            <div className="border-t border-stone-100 dark:border-border-subtle pt-3 mt-1">
               <button
                 onClick={handlePingEmail}
                 disabled={pingStatus === "sending"}
@@ -488,36 +488,36 @@ export default function SettingsPage() {
               >
                 {pingStatus === "sending" ? "Sending..." : "Test Resend (Debug)"}
               </button>
-              <p className="text-[10px] text-stone-400 mt-1">Sends a static test email and shows the raw API response.</p>
+              <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">Sends a static test email and shows the raw API response.</p>
               {pingResult && (
-                <pre className="mt-2 text-[11px] bg-stone-50 rounded-lg p-3 overflow-x-auto text-stone-700 whitespace-pre-wrap">{pingResult}</pre>
+                <pre className="mt-2 text-[11px] bg-stone-50 dark:bg-surface rounded-lg p-3 overflow-x-auto text-stone-700 dark:text-text-muted whitespace-pre-wrap">{pingResult}</pre>
               )}
             </div>
           </div>
         </div>
 
         {/* Push Notifications */}
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Push Notifications</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Push Notifications</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Get notified on your phone when positions need action or explosive movers are detected.
           </p>
           <div className="mt-3 flex flex-col gap-2">
             {notifPermission === "unsupported" ? (
-              <p className="text-xs text-stone-400">Push notifications are not supported in this browser.</p>
+              <p className="text-xs text-stone-400 dark:text-text-faint">Push notifications are not supported in this browser.</p>
             ) : notifPermission === "granted" ? (
               <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">Enabled</span>
+                <span className="text-xs font-medium text-green-700 dark:text-gain-strong bg-green-50 dark:bg-gain-bg px-2.5 py-1 rounded-full">Enabled</span>
                 <button
                   onClick={handleDisableNotifications}
                   disabled={subscribing}
-                  className="text-xs text-stone-500 hover:text-stone-700 underline underline-offset-2 disabled:opacity-50"
+                  className="text-xs text-stone-500 dark:text-text-subtle hover:text-stone-700 underline underline-offset-2 disabled:opacity-50"
                 >
                   {subscribing ? "..." : "Disable"}
                 </button>
               </div>
             ) : notifPermission === "denied" ? (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red-500 dark:text-loss">
                 Notifications blocked. Open your browser settings to re-enable them for this site.
               </p>
             ) : (
@@ -532,13 +532,13 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900">Scoring Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Scoring Preferences</h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
             Tune the weights for technical indicators in the explosive stock
             scoring engine.
           </p>
-          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 text-xs text-stone-400 font-medium">
+          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 dark:bg-surface text-xs text-stone-400 dark:text-text-faint font-medium">
             Coming soon
           </div>
         </div>

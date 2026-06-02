@@ -49,9 +49,9 @@ export default function GammaCurve() {
   const isGammaZone = dte <= 7;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Gamma vs Stock Price</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Gamma vs Stock Price</h3>
         <span className="text-xs font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
           {dte} DTE
         </span>

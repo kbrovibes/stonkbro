@@ -41,30 +41,30 @@ export default function TickerCSPSection({ symbol }: { symbol: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h3 className="text-sm font-bold text-stone-900 mb-2">Cash Secured Puts</h3>
-        <p className="text-xs text-stone-400 animate-pulse">Scanning options chains...</p>
+      <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-2">Cash Secured Puts</h3>
+        <p className="text-xs text-stone-400 dark:text-text-faint animate-pulse">Scanning options chains...</p>
       </div>
     );
   }
 
   if (picks.length === 0) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h3 className="text-sm font-bold text-stone-900 mb-2">Cash Secured Puts</h3>
-        <p className="text-xs text-stone-400">No qualifying CSP candidates for {symbol} right now.</p>
+      <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-2">Cash Secured Puts</h3>
+        <p className="text-xs text-stone-400 dark:text-text-faint">No qualifying CSP candidates for {symbol} right now.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
       <div className="px-4 pt-4 pb-2">
-        <h3 className="text-sm font-bold text-stone-900">Cash Secured Puts</h3>
-        <p className="text-xs text-stone-400 mt-0.5">Top opportunities · 7-45 DTE · $100K capital</p>
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text">Cash Secured Puts</h3>
+        <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">Top opportunities · 7-45 DTE · $100K capital</p>
       </div>
 
-      <div className="divide-y divide-stone-100">
+      <div className="divide-y divide-stone-100 dark:divide-border-subtle">
         {picks.map((p) => (
           <CSPPickCard key={`${p.strike}-${p.expiry}`} pick={p} />
         ))}
@@ -78,25 +78,25 @@ function CSPPickCard({ pick: p }: { pick: CSPPick }) {
   const priorityColor = p.priority === "high" ? "bg-emerald-500" : p.priority === "medium" ? "bg-amber-500" : "bg-stone-400";
 
   return (
-    <div className="px-4 py-3 cursor-pointer hover:bg-stone-50 transition" onClick={() => setOpen(!open)}>
+    <div className="px-4 py-3 cursor-pointer hover:bg-stone-50 dark:hover:bg-surface-muted transition" onClick={() => setOpen(!open)}>
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${priorityColor}`} />
-          <span className="text-sm font-semibold text-stone-900">${p.strike} Put</span>
-          <span className="text-xs text-stone-400">{p.expiry.slice(5)} · {p.dte}d</span>
+          <span className="text-sm font-semibold text-stone-900 dark:text-text">${p.strike} Put</span>
+          <span className="text-xs text-stone-400 dark:text-text-faint">{p.expiry.slice(5)} · {p.dte}d</span>
         </div>
         <div className="text-right">
-          <span className="text-sm font-bold text-emerald-600">{p.aroc}%</span>
-          <span className="text-xs text-stone-400 ml-1">AROC</span>
+          <span className="text-sm font-bold text-emerald-600 dark:text-gain">{p.aroc}%</span>
+          <span className="text-xs text-stone-400 dark:text-text-faint ml-1">AROC</span>
         </div>
       </div>
 
       {/* Catalyst */}
-      <p className="text-xs text-stone-500 mt-1 leading-snug italic">{p.catalyst}</p>
+      <p className="text-xs text-stone-500 dark:text-text-subtle mt-1 leading-snug italic">{p.catalyst}</p>
 
       {/* Quick stats */}
-      <div className="flex gap-3 mt-1.5 text-xs text-stone-400">
+      <div className="flex gap-3 mt-1.5 text-xs text-stone-400 dark:text-text-faint">
         <span>${p.mid.toFixed(2)} mid</span>
         <span>Δ{p.delta.toFixed(2)}</span>
         <span>{p.distanceFromPrice}% OTM</span>
@@ -105,22 +105,22 @@ function CSPPickCard({ pick: p }: { pick: CSPPick }) {
 
       {/* Expanded details */}
       {open && (
-        <div className="mt-3 pt-3 border-t border-stone-100 space-y-2">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone-500">
-            <div>Premium per contract: <span className="text-stone-900 font-medium">${p.premium.toFixed(0)}</span></div>
-            <div>Collateral: <span className="text-stone-900 font-medium">${p.collateralRequired.toLocaleString()}</span></div>
-            <div>Contracts @ $100K: <span className="text-stone-900 font-medium">{p.contractsAt100k}</span></div>
-            <div>Total premium: <span className="text-emerald-600 font-medium">${p.totalPremium.toLocaleString()}</span></div>
-            <div>RSI: <span className="text-stone-900 font-medium">{p.rsi}</span></div>
-            <div>Juiciness: <span className="text-stone-900 font-medium">{p.juiciness}/100</span></div>
-            {p.nearSupport && <div className="col-span-2 text-emerald-600">Strike near support at ${p.supportLevel.toFixed(2)}</div>}
+        <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle space-y-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-text-subtle">
+            <div>Premium per contract: <span className="text-stone-900 dark:text-text font-medium">${p.premium.toFixed(0)}</span></div>
+            <div>Collateral: <span className="text-stone-900 dark:text-text font-medium">${p.collateralRequired.toLocaleString()}</span></div>
+            <div>Contracts @ $100K: <span className="text-stone-900 dark:text-text font-medium">{p.contractsAt100k}</span></div>
+            <div>Total premium: <span className="text-emerald-600 dark:text-gain font-medium">${p.totalPremium.toLocaleString()}</span></div>
+            <div>RSI: <span className="text-stone-900 dark:text-text font-medium">{p.rsi}</span></div>
+            <div>Juiciness: <span className="text-stone-900 dark:text-text font-medium">{p.juiciness}/100</span></div>
+            {p.nearSupport && <div className="col-span-2 text-emerald-600 dark:text-gain">Strike near support at ${p.supportLevel.toFixed(2)}</div>}
             {p.earningsWithinDTE && <div className="col-span-2 text-amber-600">⚠ Earnings in {p.daysToEarnings}d — within DTE window</div>}
           </div>
 
           {/* Technical reasoning */}
-          <div className="pt-2 border-t border-stone-100">
-            <p className="text-[11px] font-semibold text-stone-600 uppercase tracking-wider mb-1">Why this setup works</p>
-            <p className="text-xs text-stone-500 leading-relaxed">
+          <div className="pt-2 border-t border-stone-100 dark:border-border-subtle">
+            <p className="text-[11px] font-semibold text-stone-600 dark:text-text-muted uppercase tracking-wider mb-1">Why this setup works</p>
+            <p className="text-xs text-stone-500 dark:text-text-subtle leading-relaxed">
               {buildTechnicalReasoning(p)}
             </p>
           </div>

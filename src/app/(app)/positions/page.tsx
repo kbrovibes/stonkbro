@@ -14,18 +14,18 @@ function formatCurrency(n: number) {
 function strategyBadge(strategy: string) {
   const map: Record<string, string> = {
     PMCC: "bg-violet-50 text-violet-700",
-    "Covered Call": "bg-sky-50 text-sky-700",
+    "Covered Call": "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
     "Cash-Secured Put": "bg-amber-50 text-amber-700",
-    "The Wheel": "bg-emerald-50 text-emerald-700",
+    "The Wheel": "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
-  return map[strategy] ?? "bg-stone-100 text-stone-600";
+  return map[strategy] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
 }
 
 function statusBadge(status: string) {
   const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "Active", cls: "bg-stone-100 text-stone-600" },
-    closed: { label: "Closed", cls: "bg-stone-200 text-stone-500" },
-    rolled: { label: "Rolled", cls: "bg-sky-50 text-sky-600" },
+    active: { label: "Active", cls: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted" },
+    closed: { label: "Closed", cls: "bg-stone-200 dark:bg-surface-sunken text-stone-500 dark:text-text-subtle" },
+    rolled: { label: "Rolled", cls: "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent" },
   };
   const { label, cls } = map[status] ?? map.active;
   return (
@@ -100,10 +100,10 @@ export default async function PositionsPage() {
     <div className="flex flex-col flex-1 px-4 py-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-bold text-stone-900">Positions</h2>
+        <h2 className="text-lg font-bold text-stone-900 dark:text-text">Positions</h2>
         <Link
           href="/positions/new"
-          className="flex items-center gap-1.5 text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-3.5 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted px-3.5 py-2 rounded-lg transition-colors"
         >
           <svg
             className="w-3.5 h-3.5"
@@ -124,26 +124,26 @@ export default async function PositionsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             P&L
           </p>
-          <p className="text-lg font-bold mt-1 text-stone-400">--</p>
-          <p className="text-[10px] text-stone-300 mt-0.5">needs live data</p>
+          <p className="text-lg font-bold mt-1 text-stone-400 dark:text-text-faint">--</p>
+          <p className="text-[10px] text-stone-300 dark:text-text-faint mt-0.5">needs live data</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             Income
           </p>
-          <p className="text-lg font-bold mt-1 text-stone-900">
+          <p className="text-lg font-bold mt-1 text-stone-900 dark:text-text">
             ${totalIncome.toLocaleString()}
           </p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">
             Active
           </p>
-          <p className="text-lg font-bold mt-1 text-stone-900">
+          <p className="text-lg font-bold mt-1 text-stone-900 dark:text-text">
             {activeCount}
           </p>
         </div>
@@ -164,9 +164,9 @@ export default async function PositionsPage() {
 
       {positions.length === 0 && !fetchError && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-4">
             <svg
-              className="w-6 h-6 text-stone-400"
+              className="w-6 h-6 text-stone-400 dark:text-text-faint"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -179,15 +179,15 @@ export default async function PositionsPage() {
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-stone-500 mb-1">
+          <p className="text-sm font-medium text-stone-500 dark:text-text-subtle mb-1">
             No positions yet
           </p>
-          <p className="text-xs text-stone-400 mb-4">
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">
             Start tracking your options trades
           </p>
           <Link
             href="/positions/new"
-            className="text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-lg transition-colors"
+            className="text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted px-4 py-2 rounded-lg transition-colors"
           >
             Add your first position
           </Link>

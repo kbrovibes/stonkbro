@@ -107,9 +107,9 @@ export default function CandlestickChart({
   const scaleRSIY = (r: number) => rsiTop + H_RSI_PANEL - (r / 100) * H_RSI_PANEL;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">
           {mode === "anatomy"
             ? "Candlestick Anatomy"
             : mode === "single-patterns"
@@ -293,33 +293,33 @@ export default function CandlestickChart({
         <div className="mt-2 bg-gray-50 rounded-lg p-3 text-xs">
           <div className="grid grid-cols-4 gap-2 text-center">
             <div>
-              <div className="text-gray-500">Open</div>
-              <div className="font-bold text-gray-900">${data[selectedCandle].open}</div>
+              <div className="text-gray-500 dark:text-text-subtle">Open</div>
+              <div className="font-bold text-gray-900 dark:text-text">${data[selectedCandle].open}</div>
             </div>
             <div>
-              <div className="text-gray-500">High</div>
-              <div className="font-bold text-gray-900">${data[selectedCandle].high}</div>
+              <div className="text-gray-500 dark:text-text-subtle">High</div>
+              <div className="font-bold text-gray-900 dark:text-text">${data[selectedCandle].high}</div>
             </div>
             <div>
-              <div className="text-gray-500">Low</div>
-              <div className="font-bold text-gray-900">${data[selectedCandle].low}</div>
+              <div className="text-gray-500 dark:text-text-subtle">Low</div>
+              <div className="font-bold text-gray-900 dark:text-text">${data[selectedCandle].low}</div>
             </div>
             <div>
-              <div className="text-gray-500">Close</div>
-              <div className={`font-bold ${data[selectedCandle].close >= data[selectedCandle].open ? "text-green-600" : "text-red-600"}`}>
+              <div className="text-gray-500 dark:text-text-subtle">Close</div>
+              <div className={`font-bold ${data[selectedCandle].close >= data[selectedCandle].open ? "text-green-600 dark:text-gain" : "text-red-600 dark:text-loss"}`}>
                 ${data[selectedCandle].close}
               </div>
             </div>
           </div>
           {data[selectedCandle].label && (
-            <div className="text-center mt-1 text-gray-600 font-semibold">{data[selectedCandle].label}</div>
+            <div className="text-center mt-1 text-gray-600 dark:text-text-muted font-semibold">{data[selectedCandle].label}</div>
           )}
         </div>
       )}
 
       {/* Tap instruction */}
       {mode !== "anatomy" && (
-        <p className="text-center text-[10px] text-gray-400 mt-2">Tap a candle for details</p>
+        <p className="text-center text-[10px] text-gray-400 dark:text-text-faint mt-2">Tap a candle for details</p>
       )}
     </div>
   );

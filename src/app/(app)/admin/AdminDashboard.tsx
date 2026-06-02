@@ -94,13 +94,13 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-3">
           <Link
             href="/settings"
-            className="p-1.5 -ml-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+            className="p-1.5 -ml-1.5 rounded-lg text-stone-400 dark:text-text-faint hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-surface-muted transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
               <path fillRule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clipRule="evenodd" />
             </svg>
           </Link>
-          <h2 className="text-lg font-bold text-stone-900">Admin</h2>
+          <h2 className="text-lg font-bold text-stone-900 dark:text-text">Admin</h2>
           <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
             Admin only
           </span>
@@ -114,30 +114,30 @@ export default function AdminDashboard() {
           <>
             {/* User Count + AI Provider — side by side */}
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-                <p className="text-[10px] text-stone-400 uppercase tracking-wide">Users</p>
-                <p className="text-2xl font-bold text-stone-900 mt-1">{data.userCount}</p>
+              <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+                <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">Users</p>
+                <p className="text-2xl font-bold text-stone-900 dark:text-text mt-1">{data.userCount}</p>
               </div>
-              <div className="rounded-xl bg-white shadow-sm px-4 py-3">
-                <p className="text-[10px] text-stone-400 uppercase tracking-wide">AI Provider</p>
+              <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+                <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">AI Provider</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-bold text-stone-900 capitalize">{data.defaultProvider}</span>
+                  <span className="text-sm font-bold text-stone-900 dark:text-text capitalize">{data.defaultProvider}</span>
                   <button
                     onClick={toggleProvider}
                     disabled={switching}
-                    className="text-[10px] font-medium text-sky-600 hover:text-sky-800 transition-colors disabled:opacity-40"
+                    className="text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-800 transition-colors disabled:opacity-40"
                   >
                     {switching ? "..." : "Switch"}
                   </button>
                 </div>
                 <div className="flex gap-2 mt-1.5">
                   <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    data.availableProviders.claude ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"
+                    data.availableProviders.claude ? "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain" : "bg-red-50 dark:bg-loss-bg text-red-400"
                   }`}>
                     Claude {data.availableProviders.claude ? "✓" : "✗"}
                   </span>
                   <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    data.availableProviders.gemini ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"
+                    data.availableProviders.gemini ? "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain" : "bg-red-50 dark:bg-loss-bg text-red-400"
                   }`}>
                     Gemini {data.availableProviders.gemini ? "✓" : "✗"}
                   </span>
@@ -146,45 +146,45 @@ export default function AdminDashboard() {
             </div>
 
             {/* Token Usage */}
-            <div className="rounded-xl bg-white shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-stone-100">
-                <h3 className="text-sm font-semibold text-stone-900">AI Token Usage</h3>
-                <p className="text-[10px] text-stone-400 mt-0.5">Last 30 days</p>
+            <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-stone-100 dark:border-border-subtle">
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-text">AI Token Usage</h3>
+                <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">Last 30 days</p>
               </div>
               {data.usage.length === 0 ? (
                 <div className="px-4 py-6 text-center">
-                  <p className="text-xs text-stone-400">No usage data yet</p>
+                  <p className="text-xs text-stone-400 dark:text-text-faint">No usage data yet</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-stone-100">
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 uppercase tracking-wide">User</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Provider</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Feature</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Calls</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Tokens</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Est. $</th>
+                      <tr className="border-b border-stone-100 dark:border-border-subtle">
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">User</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Provider</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Feature</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Calls</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Tokens</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Est. $</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100/80">
                       {data.usage.map((row, i) => (
-                        <tr key={i} className="hover:bg-stone-50">
-                          <td className="px-3 py-2 text-stone-700 truncate max-w-[100px]">{row.email}</td>
+                        <tr key={i} className="hover:bg-stone-50 dark:hover:bg-surface-muted">
+                          <td className="px-3 py-2 text-stone-700 dark:text-text-muted truncate max-w-[100px]">{row.email}</td>
                           <td className="px-3 py-2">
                             <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                              row.provider === "claude" ? "bg-violet-50 text-violet-600" : "bg-sky-50 text-sky-600"
+                              row.provider === "claude" ? "bg-violet-50 text-violet-600" : "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent"
                             }`}>
                               {row.provider}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-stone-500">{row.feature}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-stone-700">{row.call_count}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-stone-700">
+                          <td className="px-3 py-2 text-stone-500 dark:text-text-subtle">{row.feature}</td>
+                          <td className="px-3 py-2 text-right tabular-nums text-stone-700 dark:text-text-muted">{row.call_count}</td>
+                          <td className="px-3 py-2 text-right tabular-nums text-stone-700 dark:text-text-muted">
                             {((row.total_input + row.total_output) / 1000).toFixed(1)}k
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-stone-700">
+                          <td className="px-3 py-2 text-right tabular-nums text-stone-700 dark:text-text-muted">
                             ${estimateCost(row.provider, row.total_input, row.total_output)}
                           </td>
                         </tr>
@@ -196,69 +196,69 @@ export default function AdminDashboard() {
             </div>
 
             {/* Tradier API */}
-            <div className="rounded-xl bg-white shadow-sm px-4 py-3">
+            <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-stone-900">Tradier API</h3>
+                <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Tradier API</h3>
                 <button
                   onClick={fetchTradier}
                   disabled={tradierLoading}
-                  className="text-xs text-sky-600 hover:text-sky-800 active:opacity-60 transition-colors disabled:opacity-40"
+                  className="text-xs text-sky-600 dark:text-accent hover:text-sky-800 active:opacity-60 transition-colors disabled:opacity-40"
                 >
                   {tradierLoading ? "Loading..." : "Refresh"}
                 </button>
               </div>
-              <p className="mt-1 text-sm text-stone-500">Market data provider status.</p>
+              <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">Market data provider status.</p>
 
               <div className="mt-3">
                 {tradierLoading ? (
                   <div className="flex items-center gap-2 py-3">
                     <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
-                    <span className="text-xs text-stone-400">Checking connection...</span>
+                    <span className="text-xs text-stone-400 dark:text-text-faint">Checking connection...</span>
                   </div>
                 ) : tradierError ? (
                   <div className="flex items-center gap-2 py-3">
                     <div className="w-2 h-2 rounded-full bg-red-400" />
-                    <span className="text-xs text-red-500">{tradierError}</span>
+                    <span className="text-xs text-red-500 dark:text-loss">{tradierError}</span>
                   </div>
                 ) : tradier ? (
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500" />
-                      <span className="text-xs font-medium text-green-700">Connected</span>
-                      <span className="text-[10px] text-stone-400">
+                      <span className="text-xs font-medium text-green-700 dark:text-gain-strong">Connected</span>
+                      <span className="text-[10px] text-stone-400 dark:text-text-faint">
                         {tradier.env === "sandbox" ? "sandbox.tradier.com" : "api.tradier.com"}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-lg bg-stone-50 px-3 py-2">
-                        <p className="text-[10px] text-stone-400 uppercase tracking-wide">Account</p>
-                        <p className="text-sm font-semibold text-stone-900 tabular-nums mt-0.5">
+                      <div className="rounded-lg bg-stone-50 dark:bg-surface px-3 py-2">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">Account</p>
+                        <p className="text-sm font-semibold text-stone-900 dark:text-text tabular-nums mt-0.5">
                           {tradier.account?.accountNumber || "N/A"}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-stone-50 px-3 py-2">
-                        <p className="text-[10px] text-stone-400 uppercase tracking-wide">Status</p>
-                        <p className="text-sm font-semibold text-stone-900 mt-0.5">
+                      <div className="rounded-lg bg-stone-50 dark:bg-surface px-3 py-2">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">Status</p>
+                        <p className="text-sm font-semibold text-stone-900 dark:text-text mt-0.5">
                           {tradier.account?.status || "N/A"}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-stone-50 px-3 py-2">
-                        <p className="text-[10px] text-stone-400 uppercase tracking-wide">Type</p>
-                        <p className="text-sm font-semibold text-stone-900 mt-0.5">
+                      <div className="rounded-lg bg-stone-50 dark:bg-surface px-3 py-2">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">Type</p>
+                        <p className="text-sm font-semibold text-stone-900 dark:text-text mt-0.5">
                           {tradier.account?.classification || "N/A"}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-stone-50 px-3 py-2">
-                        <p className="text-[10px] text-stone-400 uppercase tracking-wide">Name</p>
-                        <p className="text-sm font-semibold text-stone-900 mt-0.5">
+                      <div className="rounded-lg bg-stone-50 dark:bg-surface px-3 py-2">
+                        <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">Name</p>
+                        <p className="text-sm font-semibold text-stone-900 dark:text-text mt-0.5">
                           {tradier.profile.name}
                         </p>
                       </div>
                     </div>
                     {tradier.env === "sandbox" && (
-                      <div className="px-3 py-2 rounded-lg bg-sky-50 border border-sky-100">
-                        <p className="text-xs text-sky-700 font-medium">Sandbox Mode</p>
-                        <p className="text-[10px] text-sky-600 mt-0.5">
+                      <div className="px-3 py-2 rounded-lg bg-sky-50 dark:bg-accent-bg border border-sky-100 dark:border-accent-border">
+                        <p className="text-xs text-sky-700 dark:text-accent-hover font-medium">Sandbox Mode</p>
+                        <p className="text-[10px] text-sky-600 dark:text-accent mt-0.5">
                           Using delayed/simulated data.
                         </p>
                       </div>

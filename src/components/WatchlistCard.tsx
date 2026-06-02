@@ -16,11 +16,11 @@ export default function WatchlistCard({
   return (
     <Link
       href={`/watchlists/${id}`}
-      className="flex items-center gap-3 p-3 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-colors"
+      className="flex items-center gap-3 p-3 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-stone-300 transition-colors"
     >
-      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+      <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-surface-muted flex items-center justify-center shrink-0">
         <svg
-          className="w-4 h-4 text-stone-500"
+          className="w-4 h-4 text-stone-500 dark:text-text-subtle"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -36,20 +36,20 @@ export default function WatchlistCard({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-stone-900">{name}</span>
+          <span className="text-sm font-bold text-stone-900 dark:text-text">{name}</span>
           {isDefault && (
-            <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold text-stone-500 dark:text-text-subtle bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 rounded-full">
               Default
             </span>
           )}
         </div>
-        <span className="text-xs text-stone-400">
+        <span className="text-xs text-stone-400 dark:text-text-faint">
           {itemCount} {itemCount === 1 ? "ticker" : "tickers"}
         </span>
       </div>
 
       <svg
-        className="w-4 h-4 text-stone-300 shrink-0"
+        className="w-4 h-4 text-stone-300 dark:text-text-faint shrink-0"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth={2}

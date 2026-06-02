@@ -197,7 +197,7 @@ export default async function CoveredCallsPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      <Link href="/" className="flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 w-fit">
+      <Link href="/" className="flex items-center gap-1 text-sm text-stone-400 dark:text-text-faint hover:text-stone-600 w-fit">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
@@ -205,8 +205,8 @@ export default async function CoveredCallsPage() {
       </Link>
 
       <div>
-        <h2 className="text-lg font-extrabold text-stone-900">Covered Call Optimizer</h2>
-        <p className="text-xs text-stone-500 mt-0.5">Compare strikes and expirations for your holdings</p>
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">Covered Call Optimizer</h2>
+        <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">Compare strikes and expirations for your holdings</p>
       </div>
 
       {fetchError && (
@@ -217,16 +217,16 @@ export default async function CoveredCallsPage() {
 
       {!hasPositions && !fetchError && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-stone-500 mb-1">Add stock positions to see covered call recommendations</p>
-          <p className="text-xs text-stone-400 mb-4">Track your shares or LEAPS to get optimized call-selling suggestions</p>
+          <p className="text-sm font-medium text-stone-500 dark:text-text-subtle mb-1">Add stock positions to see covered call recommendations</p>
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">Track your shares or LEAPS to get optimized call-selling suggestions</p>
           <Link
             href="/positions/new"
-            className="text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-lg transition-colors"
+            className="text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted px-4 py-2 rounded-lg transition-colors"
           >
             Add a position
           </Link>
@@ -238,14 +238,14 @@ export default async function CoveredCallsPage() {
         <div key={analysis.symbol} className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link href={`/ticker/${analysis.symbol}`} className="text-sm font-bold text-stone-900 hover:underline">
+              <Link href={`/ticker/${analysis.symbol}`} className="text-sm font-bold text-stone-900 dark:text-text hover:underline">
                 {analysis.symbol}
               </Link>
-              <span className="text-xs text-stone-400">
+              <span className="text-xs text-stone-400 dark:text-text-faint">
                 {analysis.sharesOwned} {analysis.sharesOwned === 1 ? "contract" : "shares"} @ {formatDollar(analysis.costBasis)}
               </span>
             </div>
-            <span className="text-sm font-semibold text-stone-700">
+            <span className="text-sm font-semibold text-stone-700 dark:text-text-muted">
               {analysis.currentPrice > 0 ? formatDollar(analysis.currentPrice) : "--"}
             </span>
           </div>
@@ -257,8 +257,8 @@ export default async function CoveredCallsPage() {
           )}
 
           {analysis.candidates.length === 0 && !analysis.error && (
-            <div className="rounded-xl border border-stone-200 bg-white p-4">
-              <p className="text-xs text-stone-500">No covered call candidates found in the 3-10% OTM, 20-45 DTE range.</p>
+            <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
+              <p className="text-xs text-stone-500 dark:text-text-subtle">No covered call candidates found in the 3-10% OTM, 20-45 DTE range.</p>
             </div>
           )}
 
@@ -269,9 +269,9 @@ export default async function CoveredCallsPage() {
       ))}
 
       {/* Custom ticker lookup section */}
-      <div className="border-t border-stone-200 pt-5 mt-1">
-        <h3 className="text-sm font-bold text-stone-900 mb-1">Analyze any ticker</h3>
-        <p className="text-xs text-stone-400 mb-3">Enter a symbol to see covered call candidates</p>
+      <div className="border-t border-stone-200 dark:border-border-default pt-5 mt-1">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-1">Analyze any ticker</h3>
+        <p className="text-xs text-stone-400 dark:text-text-faint mb-3">Enter a symbol to see covered call candidates</p>
         <TickerLookup />
       </div>
     </div>
@@ -280,9 +280,9 @@ export default async function CoveredCallsPage() {
 
 function CandidateGrid({ candidates }: { candidates: CoveredCallCandidate[] }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-5 gap-1 px-3 py-2 bg-stone-50 border-b border-stone-100 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+      <div className="grid grid-cols-5 gap-1 px-3 py-2 bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wider">
         <span>Strike</span>
         <span>Premium</span>
         <span>Prob OTM</span>
@@ -296,26 +296,26 @@ function CandidateGrid({ candidates }: { candidates: CoveredCallCandidate[] }) {
 
         return (
           <div key={`${opt.strike}-${opt.expiry}`}>
-            {showDivider && <div className="border-t-2 border-stone-200" />}
-            <div className="grid grid-cols-5 gap-1 px-3 py-2.5 border-b border-stone-50 hover:bg-stone-50/50 transition-colors items-center">
+            {showDivider && <div className="border-t-2 border-stone-200 dark:border-border-default" />}
+            <div className="grid grid-cols-5 gap-1 px-3 py-2.5 border-b border-stone-50 dark:border-border-subtle hover:bg-stone-50/50 transition-colors items-center">
               <div>
-                <span className="text-xs font-bold text-stone-900">${opt.strike}</span>
-                <span className="text-[10px] text-stone-400 block">{opt.expiry} · {opt.dte}d</span>
+                <span className="text-xs font-bold text-stone-900 dark:text-text">${opt.strike}</span>
+                <span className="text-[10px] text-stone-400 dark:text-text-faint block">{opt.expiry} · {opt.dte}d</span>
               </div>
-              <span className="text-xs font-semibold text-emerald-700">${opt.premium.toFixed(2)}</span>
+              <span className="text-xs font-semibold text-emerald-700 dark:text-gain-strong">${opt.premium.toFixed(2)}</span>
               <div className="flex items-center gap-1">
-                <div className="w-8 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div className="w-8 h-1.5 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${opt.probOTM >= 75 ? "bg-emerald-500" : opt.probOTM >= 60 ? "bg-amber-500" : "bg-red-400"}`}
                     style={{ width: `${opt.probOTM}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-stone-500">{opt.probOTM}%</span>
+                <span className="text-[10px] text-stone-500 dark:text-text-subtle">{opt.probOTM}%</span>
               </div>
-              <span className={`text-xs font-semibold ${opt.annualizedReturn >= 20 ? "text-emerald-700" : opt.annualizedReturn >= 10 ? "text-amber-600" : "text-stone-500"}`}>
+              <span className={`text-xs font-semibold ${opt.annualizedReturn >= 20 ? "text-emerald-700 dark:text-gain-strong" : opt.annualizedReturn >= 10 ? "text-amber-600" : "text-stone-500 dark:text-text-subtle"}`}>
                 {opt.annualizedReturn.toFixed(1)}%
               </span>
-              <span className="text-xs text-stone-700">{formatDollar(opt.maxProfit)}</span>
+              <span className="text-xs text-stone-700 dark:text-text-muted">{formatDollar(opt.maxProfit)}</span>
             </div>
           </div>
         );

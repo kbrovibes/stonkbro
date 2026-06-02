@@ -87,12 +87,12 @@ export default function ThetaDecay() {
   const moneynessOptions: Moneyness[] = ["OTM", "ATM", "ITM"];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Theta Decay Over Time</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Theta Decay Over Time</h3>
         <button
           onClick={togglePlay}
-          className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+          className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong hover:bg-emerald-100 transition-colors"
         >
           {playing ? "Pause" : animDte <= 0 ? "Replay" : "Play"}
         </button>
@@ -100,8 +100,8 @@ export default function ThetaDecay() {
 
       {/* Daily theta */}
       <div className="text-center mb-2">
-        <span className="text-xs text-gray-500">Daily decay at {animDte} DTE: </span>
-        <span className="text-sm font-bold text-emerald-600">
+        <span className="text-xs text-gray-500 dark:text-text-subtle">Daily decay at {animDte} DTE: </span>
+        <span className="text-sm font-bold text-emerald-600 dark:text-gain">
           ${Math.abs(thetaToday).toFixed(2)}/day
         </span>
       </div>
@@ -184,7 +184,7 @@ export default function ThetaDecay() {
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               moneyness === m
                 ? "bg-emerald-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted hover:bg-gray-200"
             }`}
           >
             {m}

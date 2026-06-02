@@ -191,10 +191,10 @@ function isoNDaysAgo(days: number): string {
 }
 
 const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
-  "live":         { bg: "bg-sky-100 text-sky-700",         label: "Live" },
-  "exercised":    { bg: "bg-emerald-100 text-emerald-700", label: "Exercised" },
+  "live":         { bg: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",         label: "Live" },
+  "exercised":    { bg: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong", label: "Exercised" },
   "assigned":     { bg: "bg-violet-100 text-violet-700",   label: "Assigned" },
-  "expired-otm":  { bg: "bg-stone-100 text-stone-600",     label: "Expired OTM" },
+  "expired-otm":  { bg: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",     label: "Expired OTM" },
 };
 
 // =========================================================================
@@ -435,15 +435,15 @@ export default function TimeMachinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24">
+    <div className="min-h-screen bg-stone-50 dark:bg-surface pb-24">
       <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col gap-4">
 
         {/* Header */}
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-text flex items-center gap-2">
             <span>⏰</span> Hindsight
           </h1>
-          <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
+          <p className="text-sm text-stone-500 dark:text-text-subtle">If you&apos;d stopped trading on…</p>
         </div>
 
         {/* Monthly snapshot strip — expected months, grey/pulse for missing */}
@@ -487,16 +487,16 @@ export default function TimeMachinePage() {
               : "bg-emerald-200 border-emerald-300 text-emerald-900 hover:bg-emerald-300";
             if (tier >= 0.25) return isRed
               ? "bg-rose-100 border-rose-200 text-rose-800 hover:bg-rose-200"
-              : "bg-emerald-100 border-emerald-200 text-emerald-800 hover:bg-emerald-200";
+              : "bg-emerald-100 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-200";
             return isRed
-              ? "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100"
-              : "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100";
+              ? "bg-rose-50 dark:bg-loss-bg border-rose-200 text-rose-800 hover:bg-rose-100"
+              : "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-100";
           };
           const renderItem = (it: StripItem) => {
             if (it.kind === "missing") {
               const greyClass = it.inProgress
-                ? "bg-stone-100 border-stone-300 text-stone-600 animate-pulse"
-                : "bg-stone-50 border-stone-200 text-stone-400 hover:bg-stone-100";
+                ? "bg-stone-100 dark:bg-surface-muted border-stone-300 dark:border-border-strong text-stone-600 dark:text-text-muted animate-pulse"
+                : "bg-stone-50 dark:bg-surface border-stone-200 dark:border-border-default text-stone-400 dark:text-text-faint hover:bg-stone-100";
               return (
                 <button
                   key={it.monthKey}
@@ -534,15 +534,15 @@ export default function TimeMachinePage() {
             );
           };
           return (
-            <div className="bg-white border border-stone-200 rounded-xl p-3 flex flex-col gap-2">
+            <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-3 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">
                   Monthly snapshots · click to load
                 </span>
                 <div className="flex items-center gap-3">
                   {/* iOS-style toggle for delta visibility (screenshot-safe mode) */}
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <span className="text-[10px] text-stone-500">$</span>
+                    <span className="text-[10px] text-stone-500 dark:text-text-subtle">$</span>
                     <button
                       type="button"
                       role="switch"
@@ -551,7 +551,7 @@ export default function TimeMachinePage() {
                       className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDeltas ? "bg-emerald-500" : "bg-stone-300"}`}
                     >
                       <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${showDeltas ? "translate-x-3.5" : "translate-x-0.5"}`}
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-surface-elevated shadow transition-transform ${showDeltas ? "translate-x-3.5" : "translate-x-0.5"}`}
                       />
                     </button>
                   </label>
@@ -559,7 +559,7 @@ export default function TimeMachinePage() {
                     type="button"
                     onClick={runBackfill}
                     disabled={backfilling}
-                    className="text-[10px] text-stone-400 hover:text-stone-600 transition disabled:opacity-50"
+                    className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600 transition disabled:opacity-50"
                     title="Regenerate every monthly snapshot"
                   >
                     {backfilling ? "Backfilling…" : "↻ Backfill"}
@@ -573,13 +573,13 @@ export default function TimeMachinePage() {
                   <button
                     type="button"
                     onClick={() => setShowMoreMonths((v) => !v)}
-                    className="px-2.5 rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-semibold text-stone-600 hover:bg-stone-100 transition shrink-0 h-10"
+                    className="px-2.5 rounded-lg border border-stone-200 dark:border-border-default bg-stone-50 dark:bg-surface text-[10px] font-semibold text-stone-600 dark:text-text-muted hover:bg-stone-100 dark:hover:bg-surface-muted transition shrink-0 h-10"
                   >
                     {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[9px] text-stone-400 flex-wrap">
+              <div className="flex items-center gap-3 text-[9px] text-stone-400 dark:text-text-faint flex-wrap">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" /> trading worked
                 </span>
@@ -600,7 +600,7 @@ export default function TimeMachinePage() {
               </Link>
 
               {backfillResult && (
-                <p className="text-[10px] text-stone-500 italic">{backfillResult}</p>
+                <p className="text-[10px] text-stone-500 dark:text-text-subtle italic">{backfillResult}</p>
               )}
             </div>
           );
@@ -608,8 +608,8 @@ export default function TimeMachinePage() {
 
         {/* Empty state — prompt to run first backfill */}
         {snapshotList.length === 0 && (
-          <div className="bg-white border border-stone-200 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-xs text-stone-500">No monthly snapshots yet</span>
+          <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-3 flex items-center justify-between">
+            <span className="text-xs text-stone-500 dark:text-text-subtle">No monthly snapshots yet</span>
             <button
               type="button"
               onClick={runBackfill}
@@ -622,17 +622,17 @@ export default function TimeMachinePage() {
         )}
 
         {/* Date picker row */}
-        <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col gap-3">
+        <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-stone-400 uppercase tracking-wider">Snapshot date</label>
+              <label className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Snapshot date</label>
               <input
                 type="date"
                 value={selectedDate}
                 min={earliestAvailable}
                 max={isoNDaysAgo(7)}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
+                className="px-3 py-2 border border-stone-300 dark:border-border-strong rounded-lg text-sm bg-white dark:bg-surface-elevated text-stone-900 dark:text-text focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
               />
             </div>
             <button
@@ -643,11 +643,11 @@ export default function TimeMachinePage() {
               {loading ? "Simulating…" : "Simulate"}
             </button>
           </div>
-          <p className="text-[10px] text-stone-400">
+          <p className="text-[10px] text-stone-400 dark:text-text-faint">
             History available back to {fmtDate(earliestAvailable)}
           </p>
           {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
               {error} — showing sample data
             </div>
           )}
@@ -655,7 +655,7 @@ export default function TimeMachinePage() {
 
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-stone-300 border-t-emerald-500 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-stone-300 dark:border-border-strong border-t-emerald-500 rounded-full animate-spin" />
           </div>
         )}
 
@@ -665,16 +665,16 @@ export default function TimeMachinePage() {
             <div
               className={`rounded-xl border p-5 ${
                 data.delta.favorableToHold
-                  ? "bg-emerald-50 border-emerald-200"
-                  : "bg-rose-50 border-rose-200"
+                  ? "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border"
+                  : "bg-rose-50 dark:bg-loss-bg border-rose-200"
               }`}
             >
-              <p className="text-[10px] uppercase tracking-wider text-stone-500 font-semibold">
+              <p className="text-[10px] uppercase tracking-wider text-stone-500 dark:text-text-subtle font-semibold">
                 If you&apos;d stopped trading on {fmtDate(data.snapshotDate)}
               </p>
               <p
                 className={`text-3xl font-bold mt-1 ${
-                  data.delta.favorableToHold ? "text-emerald-700" : "text-rose-700"
+                  data.delta.favorableToHold ? "text-emerald-700 dark:text-gain-strong" : "text-rose-700 dark:text-loss-strong"
                 }`}
               >
                 You&apos;d have {fmtCurrency0(Math.abs(data.delta.absolute))}{" "}
@@ -682,7 +682,7 @@ export default function TimeMachinePage() {
               </p>
               <p
                 className={`text-sm font-semibold mt-1 ${
-                  data.delta.favorableToHold ? "text-emerald-600" : "text-rose-600"
+                  data.delta.favorableToHold ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"
                 }`}
               >
                 {data.delta.favorableToHold ? "+" : ""}
@@ -691,19 +691,19 @@ export default function TimeMachinePage() {
             </div>
 
             {/* Snapshot summary card */}
-            <div className="bg-white border border-stone-200 rounded-xl p-4">
+            <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Snapshot</p>
-                  <p className="text-sm text-stone-700 mt-1">
-                    On <span className="font-semibold text-stone-900">{fmtDate(data.snapshotDate)}</span>:
-                    held <span className="font-semibold text-stone-900">{data.snapshot.positions.length}</span> stocks,{" "}
-                    <span className="font-semibold text-stone-900">{data.snapshot.options.length}</span> options,{" "}
-                    <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.cash)}</span> cash,
-                    total <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.total)}</span>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider font-semibold">Snapshot</p>
+                  <p className="text-sm text-stone-700 dark:text-text-muted mt-1">
+                    On <span className="font-semibold text-stone-900 dark:text-text">{fmtDate(data.snapshotDate)}</span>:
+                    held <span className="font-semibold text-stone-900 dark:text-text">{data.snapshot.positions.length}</span> stocks,{" "}
+                    <span className="font-semibold text-stone-900 dark:text-text">{data.snapshot.options.length}</span> options,{" "}
+                    <span className="font-semibold text-stone-900 dark:text-text">{fmtCurrency0(data.snapshot.cash)}</span> cash,
+                    total <span className="font-semibold text-stone-900 dark:text-text">{fmtCurrency0(data.snapshot.total)}</span>
                   </p>
                   {data._computedAt && (
-                    <p className="text-[10px] text-stone-400 mt-1.5">
+                    <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1.5">
                       Generated {new Date(data._computedAt).toLocaleString("en-US", {
                         month: "short", day: "numeric", year: "numeric",
                         hour: "numeric", minute: "2-digit",
@@ -715,7 +715,7 @@ export default function TimeMachinePage() {
                   type="button"
                   onClick={() => regenerateSnapshot(data.snapshotDate)}
                   disabled={regenerating}
-                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white text-[11px] font-semibold text-stone-700 hover:bg-stone-50 active:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated text-[11px] font-semibold text-stone-700 dark:text-text-muted hover:bg-stone-50 active:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                   title="Re-run this snapshot with the latest simulator logic"
                 >
                   <span aria-hidden>↻</span>
@@ -726,54 +726,54 @@ export default function TimeMachinePage() {
 
             {/* Today comparison */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-stone-200 bg-white p-3">
+              <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-wider">Actual today</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Actual today</p>
                   {data.actual.breakdown && (
                     <button
                       type="button"
                       onClick={() => setBreakdownOpen((v) => !v)}
-                      className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                      className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600 transition"
                     >
                       {breakdownOpen ? "hide" : "details"}
                     </button>
                   )}
                 </div>
-                <p className="text-xl font-bold text-stone-900 mt-1">{fmtCurrency0(data.actual.total)}</p>
+                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{fmtCurrency0(data.actual.total)}</p>
                 {breakdownOpen && data.actual.breakdown && (
-                  <div className="mt-2 pt-2 border-t border-stone-100 text-[10px] text-stone-500 space-y-0.5 tabular-nums">
+                  <div className="mt-2 pt-2 border-t border-stone-100 dark:border-border-subtle text-[10px] text-stone-500 dark:text-text-subtle space-y-0.5 tabular-nums">
                     <div className="flex justify-between"><span>Stocks ({data.actual.breakdown.stockPositionCount})</span><span>{fmtCurrency0(data.actual.breakdown.stocks)}</span></div>
                     <div className="flex justify-between"><span>Options ({data.actual.breakdown.optionPositionCount}, net of shorts)</span><span>{fmtCurrency0(data.actual.breakdown.options)}</span></div>
                     <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(data.actual.breakdown.cash)}</span></div>
-                    <div className="pt-1.5 mt-1.5 border-t border-stone-100">
-                      <div className="text-stone-400 mb-1">
+                    <div className="pt-1.5 mt-1.5 border-t border-stone-100 dark:border-border-subtle">
+                      <div className="text-stone-400 dark:text-text-faint mb-1">
                         {data.actual.breakdown.accountCount} account{data.actual.breakdown.accountCount === 1 ? "" : "s"} linked via SnapTrade
                       </div>
                       {data.actual.breakdown.perAccount && data.actual.breakdown.perAccount.map((a) => (
-                        <div key={a.id} className="flex justify-between py-0.5 border-t border-stone-50">
-                          <span className="truncate pr-2 text-stone-600">
+                        <div key={a.id} className="flex justify-between py-0.5 border-t border-stone-50 dark:border-border-subtle">
+                          <span className="truncate pr-2 text-stone-600 dark:text-text-muted">
                             {a.institution} · {a.name}
                             {a.number ? ` (${a.number.slice(-4)})` : ""}
                           </span>
-                          <span className="text-stone-700 font-medium">{fmtCurrency0(a.total)}</span>
+                          <span className="text-stone-700 dark:text-text-muted font-medium">{fmtCurrency0(a.total)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
-              <div className="rounded-xl border border-stone-200 bg-white p-3">
+              <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-wider">Simulated today</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Simulated today</p>
                   <button
                     type="button"
                     onClick={() => setSimBreakdownOpen((v) => !v)}
-                    className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                    className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600 transition"
                   >
                     {simBreakdownOpen ? "hide" : "details"}
                   </button>
                 </div>
-                <p className="text-xl font-bold text-stone-900 mt-1">{fmtCurrency0(data.simulation.total)}</p>
+                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{fmtCurrency0(data.simulation.total)}</p>
                 {simBreakdownOpen && (() => {
                   const stockSum = data.simulation.stockValues.reduce((a, v) => a + v.value, 0);
                   const optionSum = data.simulation.optionValues.reduce((a, v) => a + v.value, 0);
@@ -781,20 +781,20 @@ export default function TimeMachinePage() {
                     ?? (data.simulation.total - stockSum - optionSum);
                   const cb = data.simulation.cashBreakdown;
                   return (
-                    <div className="mt-2 pt-2 border-t border-stone-100 text-[10px] text-stone-500 space-y-0.5 tabular-nums">
+                    <div className="mt-2 pt-2 border-t border-stone-100 dark:border-border-subtle text-[10px] text-stone-500 dark:text-text-subtle space-y-0.5 tabular-nums">
                       <div className="flex justify-between"><span>Stocks ({data.simulation.stockValues.length})</span><span>{fmtCurrency0(stockSum)}</span></div>
                       <div className="flex justify-between">
                         <span>Live options MTM ({data.simulation.optionValues.filter((o) => o.status === "live").length})</span>
-                        <span className={optionSum < 0 ? "text-rose-600" : ""}>{fmtCurrency0(optionSum)}</span>
+                        <span className={optionSum < 0 ? "text-rose-600 dark:text-loss" : ""}>{fmtCurrency0(optionSum)}</span>
                       </div>
                       <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(cashFinal)}</span></div>
                       {cb && (
-                        <div className="pt-1.5 mt-1.5 border-t border-stone-100 text-[9px] text-stone-400 space-y-0.5">
-                          <div className="text-stone-500 mb-0.5">Cash chain</div>
+                        <div className="pt-1.5 mt-1.5 border-t border-stone-100 dark:border-border-subtle text-[9px] text-stone-400 dark:text-text-faint space-y-0.5">
+                          <div className="text-stone-500 dark:text-text-subtle mb-0.5">Cash chain</div>
                           <div className="flex justify-between"><span>· at snapshot</span><span>{fmtCurrency0(cb.atSnapshot)}</span></div>
                           <div className="flex justify-between">
                             <span>· from option replay</span>
-                            <span className={cb.fromOptionReplay < 0 ? "text-rose-600" : cb.fromOptionReplay > 0 ? "text-emerald-700" : ""}>
+                            <span className={cb.fromOptionReplay < 0 ? "text-rose-600 dark:text-loss" : cb.fromOptionReplay > 0 ? "text-emerald-700 dark:text-gain-strong" : ""}>
                               {cb.fromOptionReplay >= 0 ? "+" : ""}{fmtCurrency0(cb.fromOptionReplay)}
                             </span>
                           </div>
@@ -823,30 +823,30 @@ export default function TimeMachinePage() {
               // Per-accent class literals — Tailwind's purge won't accept dynamic strings.
               const PALETTE = {
                 emerald: {
-                  card: "rounded-xl border border-emerald-200 bg-emerald-50/40 overflow-hidden",
-                  title: "text-[11px] uppercase tracking-wider text-emerald-700 font-semibold",
+                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50/40 overflow-hidden",
+                  title: "text-[11px] uppercase tracking-wider text-emerald-700 dark:text-gain-strong font-semibold",
                   totalLabel: "text-[10px] text-emerald-700/80 uppercase tracking-wider font-semibold",
-                  totalValue: "text-base font-bold text-emerald-700 tabular-nums",
-                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-emerald-700",
-                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700",
+                  totalValue: "text-base font-bold text-emerald-700 dark:text-gain-strong tabular-nums",
+                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-emerald-700 dark:text-gain-strong",
+                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700 dark:text-gain-strong",
                 },
                 rose: {
                   card: "rounded-xl border border-rose-200 bg-rose-50/40 overflow-hidden",
-                  title: "text-[11px] uppercase tracking-wider text-rose-700 font-semibold",
+                  title: "text-[11px] uppercase tracking-wider text-rose-700 dark:text-loss-strong font-semibold",
                   totalLabel: "text-[10px] text-rose-700/80 uppercase tracking-wider font-semibold",
-                  totalValue: "text-base font-bold text-rose-700 tabular-nums",
-                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700",
-                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700",
+                  totalValue: "text-base font-bold text-rose-700 dark:text-loss-strong tabular-nums",
+                  rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700 dark:text-loss-strong",
+                  rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700 dark:text-loss-strong",
                 },
               } as const;
               const renderRow = (e: ExitAnalysisItem, accent: "emerald" | "rose") => {
                 const p = PALETTE[accent];
                 return (
-                  <tr key={e.symbol} className="border-t border-stone-50">
-                    <td className="px-2 py-1.5 font-semibold text-stone-900">{e.symbol}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700">{fmtSh(e.unitsSold)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-500">{fmtCurrency(e.avgExitPrice)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700">{fmtCurrency(e.todayPrice)}</td>
+                  <tr key={e.symbol} className="border-t border-stone-50 dark:border-border-subtle">
+                    <td className="px-2 py-1.5 font-semibold text-stone-900 dark:text-text">{e.symbol}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtSh(e.unitsSold)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-500 dark:text-text-subtle">{fmtCurrency(e.avgExitPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtCurrency(e.todayPrice)}</td>
                     <td className={p.rowPct}>{e.changePct >= 0 ? "+" : ""}{e.changePct.toFixed(1)}%</td>
                     <td className={p.rowImpact}>{e.totalDiff >= 0 ? "+" : ""}{fmtCurrency0(e.totalDiff)}</td>
                   </tr>
@@ -865,7 +865,7 @@ export default function TimeMachinePage() {
                     <div className="px-4 pt-3 pb-2 flex items-center justify-between">
                       <div>
                         <p className={p.title}>{title}</p>
-                        <p className="text-[10px] text-stone-500 mt-0.5">{subtitle}</p>
+                        <p className="text-[10px] text-stone-500 dark:text-text-subtle mt-0.5">{subtitle}</p>
                       </div>
                       <div className="text-right">
                         <p className={p.totalLabel}>{totalLabel}</p>
@@ -874,7 +874,7 @@ export default function TimeMachinePage() {
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-[11px]">
-                        <thead className="text-stone-400 bg-white/60">
+                        <thead className="text-stone-400 dark:text-text-faint bg-white/60">
                           <tr>
                             <th className="px-2 py-1 text-left font-medium">Symbol</th>
                             <th className="px-2 py-1 text-right font-medium">Sold</th>
@@ -890,7 +890,7 @@ export default function TimeMachinePage() {
                       </table>
                     </div>
                     {items.length > TOP && (
-                      <div className="px-4 py-1.5 text-[10px] text-stone-500 italic bg-white/40 border-t border-stone-100">
+                      <div className="px-4 py-1.5 text-[10px] text-stone-500 dark:text-text-subtle italic bg-white/40 border-t border-stone-100 dark:border-border-subtle">
                         + {items.length - TOP} more · top {TOP} by impact
                       </div>
                     )}
@@ -986,34 +986,34 @@ export default function TimeMachinePage() {
               }> = {
                 symbol: { label: "Symbol", align: "left",
                   body: (r) => r.symbol,
-                  bodyClass: () => "font-semibold text-stone-900",
-                  foot: <span className="font-bold text-stone-900">Total</span>,
+                  bodyClass: () => "font-semibold text-stone-900 dark:text-text",
+                  foot: <span className="font-bold text-stone-900 dark:text-text">Total</span>,
                 },
                 units: { label: "Units", align: "right",
                   body: (r) => r.isCash ? "—" : Math.round(r.units),
-                  bodyClass: () => "text-stone-700 tabular-nums",
+                  bodyClass: () => "text-stone-700 dark:text-text-muted tabular-nums",
                 },
                 snapshotPrice: { label: "Snap $", align: "right",
                   body: (r) => r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—"),
-                  bodyClass: () => "text-stone-500 tabular-nums",
+                  bodyClass: () => "text-stone-500 dark:text-text-subtle tabular-nums",
                 },
                 todayPrice: { label: "Today $", align: "right",
                   body: (r) => r.isCash ? "—" : fmtCurrency(r.todayPrice),
-                  bodyClass: () => "text-stone-700 tabular-nums",
+                  bodyClass: () => "text-stone-700 dark:text-text-muted tabular-nums",
                 },
                 snapshotValue: { label: "Snap value", align: "right",
                   body: (r) => fmtCurrency0(r.snapshotValue),
-                  bodyClass: () => "text-stone-500 tabular-nums",
-                  foot: <span className="font-bold text-stone-700 tabular-nums">{fmtCurrency0(data.snapshot.total)}</span>,
+                  bodyClass: () => "text-stone-500 dark:text-text-subtle tabular-nums",
+                  foot: <span className="font-bold text-stone-700 dark:text-text-muted tabular-nums">{fmtCurrency0(data.snapshot.total)}</span>,
                 },
                 todayValue: { label: "Today value", align: "right",
                   body: (r) => fmtCurrency0(r.todayValue),
-                  bodyClass: () => "font-medium text-stone-900 tabular-nums",
-                  foot: <span className="font-bold text-stone-900 tabular-nums">{fmtCurrency0(totalToday)}</span>,
+                  bodyClass: () => "font-medium text-stone-900 dark:text-text tabular-nums",
+                  foot: <span className="font-bold text-stone-900 dark:text-text tabular-nums">{fmtCurrency0(totalToday)}</span>,
                 },
                 returnPct: { label: "Return", align: "right",
                   body: (r) => r.returnPct == null ? "—" : `${r.returnPct >= 0 ? "+" : ""}${r.returnPct.toFixed(1)}%`,
-                  bodyClass: (r) => `font-medium tabular-nums ${r.returnPct == null ? "text-stone-400" : r.returnPct >= 0 ? "text-emerald-600" : "text-red-500"}`,
+                  bodyClass: (r) => `font-medium tabular-nums ${r.returnPct == null ? "text-stone-400 dark:text-text-faint" : r.returnPct >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`,
                   foot: data.snapshot.total > 0 ? (
                     <span className="font-bold tabular-nums">
                       {`${((totalToday - data.snapshot.total) / data.snapshot.total * 100).toFixed(1)}%`}
@@ -1022,20 +1022,20 @@ export default function TimeMachinePage() {
                 },
                 contribution: { label: "% of total", align: "right",
                   body: (r) => `${(totalToday > 0 ? (r.todayValue / totalToday) * 100 : 0).toFixed(1)}%`,
-                  bodyClass: () => "text-stone-500 tabular-nums",
+                  bodyClass: () => "text-stone-500 dark:text-text-subtle tabular-nums",
                 },
               };
 
               return (
-                <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+                <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl overflow-hidden">
                   <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                    <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">
                       Holdings · drag column headers to reorder
                     </span>
                     <button
                       type="button"
                       onClick={resetColOrder}
-                      className="text-[10px] text-stone-400 hover:text-stone-600 transition"
+                      className="text-[10px] text-stone-400 dark:text-text-faint hover:text-stone-600 transition"
                       title="Reset column order"
                     >
                       Reset
@@ -1044,7 +1044,7 @@ export default function TimeMachinePage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="text-stone-400 border-y border-stone-100">
+                        <tr className="text-stone-400 dark:text-text-faint border-y border-stone-100 dark:border-border-subtle">
                           {colOrder.map((col, idx) => {
                             const def = COL_DEFS[col];
                             const isOver = dragOverIdx === idx && dragIdx !== idx;
@@ -1057,14 +1057,14 @@ export default function TimeMachinePage() {
                                 onDragLeave={() => setDragOverIdx((cur) => (cur === idx ? null : cur))}
                                 onDrop={(e) => { e.preventDefault(); handleColDrop(idx); }}
                                 onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
-                                className={`px-2 py-1.5 font-medium select-none cursor-move ${isOver ? "bg-sky-50" : ""} ${dragIdx === idx ? "opacity-50" : ""}`}
+                                className={`px-2 py-1.5 font-medium select-none cursor-move ${isOver ? "bg-sky-50 dark:bg-accent-bg" : ""} ${dragIdx === idx ? "opacity-50" : ""}`}
                               >
                                 <button
                                   type="button"
                                   onClick={() => toggleSort(col)}
                                   className={`w-full ${def.align === "right" ? "text-right" : "text-left"} font-medium hover:text-stone-700 transition flex items-center ${def.align === "right" ? "justify-end" : "justify-start"} gap-1`}
                                 >
-                                  <span className="text-stone-300 text-[9px]" aria-hidden>⋮⋮</span>
+                                  <span className="text-stone-300 dark:text-text-faint text-[9px]" aria-hidden>⋮⋮</span>
                                   <span>{def.label}{arrow(col)}</span>
                                 </button>
                               </th>
@@ -1074,7 +1074,7 @@ export default function TimeMachinePage() {
                       </thead>
                       <tbody>
                         {sorted.map((r) => (
-                          <tr key={r.symbol} className={`border-t border-stone-50 ${r.isCash ? "bg-amber-50/30" : ""}`}>
+                          <tr key={r.symbol} className={`border-t border-stone-50 dark:border-border-subtle ${r.isCash ? "bg-amber-50/30" : ""}`}>
                             {colOrder.map((col) => {
                               const def = COL_DEFS[col];
                               return (
@@ -1090,7 +1090,7 @@ export default function TimeMachinePage() {
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="border-t border-stone-200 bg-stone-50">
+                        <tr className="border-t border-stone-200 dark:border-border-default bg-stone-50 dark:bg-surface">
                           {colOrder.map((col) => {
                             const def = COL_DEFS[col];
                             return (
@@ -1254,7 +1254,7 @@ export default function TimeMachinePage() {
                   withdrawals above were likely real tax obligations from the activity below.
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
                       <div className="text-[10px] uppercase text-violet-600 font-semibold">Options (STCG)</div>
                       {(data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
@@ -1268,12 +1268,12 @@ export default function TimeMachinePage() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.options)}</div>
-                    <div className="text-[10px] text-stone-500 mt-1">
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.options)}</div>
+                    <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
                       All short-term · net of {data.realizedGains.optionsBreakdown?.length ?? 0} legs
                     </div>
                   </div>
-                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
                       <div className="text-[10px] uppercase text-violet-600 font-semibold">Stocks STCG</div>
                       {(data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
@@ -1287,25 +1287,25 @@ export default function TimeMachinePage() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
-                    <div className="text-[10px] text-stone-500 mt-1">Held &lt; 1 yr</div>
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
+                    <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held &lt; 1 yr</div>
                   </div>
-                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks LTCG</div>
-                    <div className="text-sm font-bold text-stone-900">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
-                    <div className="text-[10px] text-stone-500 mt-1">Held ≥ 1 yr</div>
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
+                    <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held ≥ 1 yr</div>
                   </div>
                 </div>
 
                 {/* Options breakdown — per-leg detail */}
                 {optionsRealizationOpen && (data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white border border-violet-100 rounded-lg overflow-hidden">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
                     <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
                       Options legs since {fmtDate(data.snapshotDate)} · {data.realizedGains.optionsBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
                       <table className="w-full text-[10px]">
-                        <thead className="text-stone-400 bg-stone-50">
+                        <thead className="text-stone-400 dark:text-text-faint bg-stone-50 dark:bg-surface">
                           <tr>
                             <th className="px-2 py-1 text-left font-medium">Date</th>
                             <th className="px-2 py-1 text-left font-medium">Side</th>
@@ -1316,18 +1316,18 @@ export default function TimeMachinePage() {
                         </thead>
                         <tbody>
                           {data.realizedGains.optionsBreakdown!.map((o, i) => (
-                            <tr key={i} className="border-t border-stone-50">
-                              <td className="px-2 py-1 text-stone-600 tabular-nums">{fmtDateShort(o.date)}</td>
+                            <tr key={i} className="border-t border-stone-50 dark:border-border-subtle">
+                              <td className="px-2 py-1 text-stone-600 dark:text-text-muted tabular-nums">{fmtDateShort(o.date)}</td>
                               <td className="px-2 py-1">
-                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold ${o.side === "SELL" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold ${o.side === "SELL" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" : "bg-rose-50 dark:bg-loss-bg text-rose-700 dark:text-loss-strong"}`}>
                                   {o.side}
                                 </span>
                               </td>
-                              <td className="px-2 py-1 text-stone-700 truncate">
-                                {o.underlying} {o.optionType} ${o.strike} <span className="text-stone-400">· exp {fmtDateShort(o.expiry)}</span>
+                              <td className="px-2 py-1 text-stone-700 dark:text-text-muted truncate">
+                                {o.underlying} {o.optionType} ${o.strike} <span className="text-stone-400 dark:text-text-faint">· exp {fmtDateShort(o.expiry)}</span>
                               </td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{o.units}</td>
-                              <td className={`px-2 py-1 text-right tabular-nums font-medium ${o.amount > 0 ? "text-emerald-700" : o.amount < 0 ? "text-rose-600" : "text-stone-500"}`}>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{o.units}</td>
+                              <td className={`px-2 py-1 text-right tabular-nums font-medium ${o.amount > 0 ? "text-emerald-700 dark:text-gain-strong" : o.amount < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"}`}>
                                 {o.amount > 0 ? "+" : ""}{fmtCurrency(o.amount)}
                               </td>
                             </tr>
@@ -1340,13 +1340,13 @@ export default function TimeMachinePage() {
 
                 {/* Stocks breakdown — per-SELL detail */}
                 {stocksRealizationOpen && (data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white border border-violet-100 rounded-lg overflow-hidden">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
                     <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
                       Stock SELLs since {fmtDate(data.snapshotDate)} · {data.realizedGains.stocksBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
                       <table className="w-full text-[10px]">
-                        <thead className="text-stone-400 bg-stone-50">
+                        <thead className="text-stone-400 dark:text-text-faint bg-stone-50 dark:bg-surface">
                           <tr>
                             <th className="px-2 py-1 text-left font-medium">Date</th>
                             <th className="px-2 py-1 text-left font-medium">Symbol</th>
@@ -1359,24 +1359,24 @@ export default function TimeMachinePage() {
                         </thead>
                         <tbody>
                           {data.realizedGains.stocksBreakdown!.map((s, i) => (
-                            <tr key={i} className="border-t border-stone-50">
-                              <td className="px-2 py-1 text-stone-600 tabular-nums">{fmtDateShort(s.date)}</td>
-                              <td className="px-2 py-1 font-semibold text-stone-900">{s.symbol}</td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{Math.round(s.units)}</td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700">{fmtCurrency0(s.proceeds)}</td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-500">
+                            <tr key={i} className="border-t border-stone-50 dark:border-border-subtle">
+                              <td className="px-2 py-1 text-stone-600 dark:text-text-muted tabular-nums">{fmtDateShort(s.date)}</td>
+                              <td className="px-2 py-1 font-semibold text-stone-900 dark:text-text">{s.symbol}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{Math.round(s.units)}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtCurrency0(s.proceeds)}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-500 dark:text-text-subtle">
                                 {s.term === "skipped" ? "—" : fmtCurrency(s.avgCost)}
                               </td>
                               <td className={`px-2 py-1 text-right tabular-nums font-medium ${
-                                s.term === "skipped" ? "text-stone-400" : s.gain > 0 ? "text-emerald-700" : s.gain < 0 ? "text-rose-600" : "text-stone-500"
+                                s.term === "skipped" ? "text-stone-400 dark:text-text-faint" : s.gain > 0 ? "text-emerald-700 dark:text-gain-strong" : s.gain < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"
                               }`}>
                                 {s.term === "skipped" ? "skipped" : `${s.gain > 0 ? "+" : ""}${fmtCurrency0(s.gain)}`}
                               </td>
                               <td className="px-2 py-1 text-center">
                                 <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                                  s.term === "LT" ? "bg-emerald-50 text-emerald-700" :
+                                  s.term === "LT" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" :
                                   s.term === "ST" ? "bg-amber-50 text-amber-700" :
-                                  "bg-stone-100 text-stone-500"
+                                  "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"
                                 }`} title={s.term === "skipped" ? "No in-window BUY — gain not tallied" : `Held ${s.holdDays}d from ${s.earliestBuyDate}`}>
                                   {s.term}
                                 </span>
@@ -1385,35 +1385,35 @@ export default function TimeMachinePage() {
                           ))}
                         </tbody>
                       </table>
-                      <div className="px-3 py-2 border-t border-stone-100 text-[9px] text-stone-500 italic">
+                      <div className="px-3 py-2 border-t border-stone-100 dark:border-border-subtle text-[9px] text-stone-500 dark:text-text-subtle italic">
                         &ldquo;skipped&rdquo; = SELL with no in-window BUY (cost basis pre-dates the activity history) — proceeds shown for context, gain not tallied.
                       </div>
                     </div>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2 text-xs mt-3">
-                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
-                    <div className="text-sm font-bold text-rose-600">
+                    <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.stcgTax)}
                     </div>
-                    <div className="text-[10px] text-stone-500 mt-1">
+                    <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
                       on {fmtCurrency0(data.realizedGains.taxBreakdown.stcgBase)}
                     </div>
                   </div>
-                  <div className="bg-white border border-violet-100 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
-                    <div className="text-sm font-bold text-rose-600">
+                    <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.ltcgTax)}
                     </div>
-                    <div className="text-[10px] text-stone-500 mt-1">
+                    <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
                       on {fmtCurrency0(data.realizedGains.taxBreakdown.ltcgBase)}
                     </div>
                   </div>
                 </div>
-                <div className="bg-white border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
+                <div className="bg-white dark:bg-surface-elevated border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
                   <span className="text-[11px] text-violet-700 font-semibold uppercase tracking-wider">Total est. tax</span>
-                  <span className="text-base font-bold text-rose-600">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
+                  <span className="text-base font-bold text-rose-600 dark:text-loss">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
                 </div>
                 <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
                   {data.realizedGains.taxRateLabel}. Stock hold-period uses earliest in-window
@@ -1423,14 +1423,14 @@ export default function TimeMachinePage() {
             )}
 
             {/* Options replay timeline */}
-            <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl overflow-hidden">
               <div className="px-4 pt-3 pb-2">
-                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">
                   Options replay
                 </span>
               </div>
               {data.simulation.optionValues.length === 0 ? (
-                <p className="text-sm text-stone-400 text-center py-6">No options held at snapshot</p>
+                <p className="text-sm text-stone-400 dark:text-text-faint text-center py-6">No options held at snapshot</p>
               ) : (
                 <div className="flex flex-col">
                   {data.simulation.optionValues.map((opt, i) => {
@@ -1448,11 +1448,11 @@ export default function TimeMachinePage() {
                     const isLong = snap ? snap.units > 0 : premium < 0;
                     const sideLabel = isLong ? "LONG" : "SHORT";
                     const sideClass = isLong
-                      ? "bg-sky-50 text-sky-700"
+                      ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
                       : "bg-amber-50 text-amber-700";
                     const qty = snap ? Math.abs(snap.units) : null;
                     return (
-                      <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50" : ""}`}>
+                      <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50 dark:border-border-subtle" : ""}`}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${style.bg}`}>
@@ -1461,26 +1461,26 @@ export default function TimeMachinePage() {
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${sideClass}`}>
                               {sideLabel}
                             </span>
-                            <span className="text-xs font-medium text-stone-900 truncate">
+                            <span className="text-xs font-medium text-stone-900 dark:text-text truncate">
                               {snap ? (
                                 <>
-                                  {qty != null && qty !== 1 && <span className="text-stone-500">{qty}× </span>}
+                                  {qty != null && qty !== 1 && <span className="text-stone-500 dark:text-text-subtle">{qty}× </span>}
                                   {snap.underlying} · {snap.type} ${snap.strike} ·{" "}
-                                  <span className="text-stone-500">exp {fmtDateShort(snap.expiry)}</span>
+                                  <span className="text-stone-500 dark:text-text-subtle">exp {fmtDateShort(snap.expiry)}</span>
                                 </>
                               ) : opt.ticker}
                             </span>
                           </div>
                           <span className={`text-xs font-semibold whitespace-nowrap ${
-                            opt.value > 0 ? "text-emerald-600" : opt.value < 0 ? "text-rose-600" : "text-stone-500"
+                            opt.value > 0 ? "text-emerald-600 dark:text-gain" : opt.value < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"
                           }`}>
                             {opt.value > 0 ? "+" : ""}{fmtCurrency(opt.value)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 ml-1 flex-wrap">
-                          <span className="text-[10px] text-stone-400">{premiumLabel}</span>
+                          <span className="text-[10px] text-stone-400 dark:text-text-faint">{premiumLabel}</span>
                           {opt.note && (
-                            <span className="text-[10px] text-stone-500">· {opt.note}</span>
+                            <span className="text-[10px] text-stone-500 dark:text-text-subtle">· {opt.note}</span>
                           )}
                         </div>
                       </div>
@@ -1491,21 +1491,21 @@ export default function TimeMachinePage() {
             </div>
 
             {/* Assumptions footer — collapsible */}
-            <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl overflow-hidden">
               <button
                 onClick={() => setAssumptionsOpen((v) => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
               >
-                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-text-faint font-semibold">
                   Assumptions
                 </span>
-                <span className="text-stone-300 text-xs">{assumptionsOpen ? "▲" : "▼"}</span>
+                <span className="text-stone-300 dark:text-text-faint text-xs">{assumptionsOpen ? "▲" : "▼"}</span>
               </button>
               {assumptionsOpen && (
-                <ul className="px-4 pb-4 pt-1 border-t border-stone-50 flex flex-col gap-1.5">
+                <ul className="px-4 pb-4 pt-1 border-t border-stone-50 dark:border-border-subtle flex flex-col gap-1.5">
                   {data.assumptions.map((a, i) => (
-                    <li key={i} className="text-[11px] text-stone-600 flex gap-2">
-                      <span className="text-stone-300">•</span>
+                    <li key={i} className="text-[11px] text-stone-600 dark:text-text-muted flex gap-2">
+                      <span className="text-stone-300 dark:text-text-faint">•</span>
                       <span>{a}</span>
                     </li>
                   ))}

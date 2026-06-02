@@ -88,10 +88,10 @@ export default function MACDChart(_props: Record<string, unknown>) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">MACD Indicator — AAPL</h3>
-        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">MACD Indicator — AAPL</h3>
+        <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-text-subtle">
           <span className="flex items-center gap-1">
             <span className="w-3 h-0.5 bg-blue-500 inline-block" />
             EMA12
@@ -206,7 +206,7 @@ export default function MACDChart(_props: Record<string, unknown>) {
       </svg>
 
       {/* MACD panel legend */}
-      <div className="flex items-center justify-center gap-4 mt-1 mb-3 text-[10px] text-gray-500">
+      <div className="flex items-center justify-center gap-4 mt-1 mb-3 text-[10px] text-gray-500 dark:text-text-subtle">
         <span className="flex items-center gap-1">
           <span className="w-3 h-0.5 bg-blue-500 inline-block" />
           MACD
@@ -227,24 +227,24 @@ export default function MACDChart(_props: Record<string, unknown>) {
 
       {/* Info cards */}
       <div className="grid grid-cols-2 gap-2 mt-2">
-        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+        <div className="bg-emerald-50 dark:bg-gain-bg border border-emerald-100 dark:border-gain-border rounded-lg p-3">
           <div className="flex items-center gap-1 mb-1">
-            <span className="text-emerald-600 font-bold text-xs">Bullish MACD Cross</span>
+            <span className="text-emerald-600 dark:text-gain font-bold text-xs">Bullish MACD Cross</span>
           </div>
-          <p className="text-[10px] text-gray-600 leading-snug">
-            MACD line crosses <span className="font-semibold text-emerald-700">above</span> signal line
+          <p className="text-[10px] text-gray-600 dark:text-text-muted leading-snug">
+            MACD line crosses <span className="font-semibold text-emerald-700 dark:text-gain-strong">above</span> signal line
             → upward momentum building
-            → consider <span className="font-semibold text-emerald-700">call options</span>
+            → consider <span className="font-semibold text-emerald-700 dark:text-gain-strong">call options</span>
           </p>
         </div>
-        <div className="bg-red-50 border border-red-100 rounded-lg p-3">
+        <div className="bg-red-50 dark:bg-loss-bg border border-red-100 dark:border-loss-border rounded-lg p-3">
           <div className="flex items-center gap-1 mb-1">
-            <span className="text-red-600 font-bold text-xs">Bearish MACD Cross</span>
+            <span className="text-red-600 dark:text-loss font-bold text-xs">Bearish MACD Cross</span>
           </div>
-          <p className="text-[10px] text-gray-600 leading-snug">
-            MACD line crosses <span className="font-semibold text-red-600">below</span> signal line
+          <p className="text-[10px] text-gray-600 dark:text-text-muted leading-snug">
+            MACD line crosses <span className="font-semibold text-red-600 dark:text-loss">below</span> signal line
             → downward momentum building
-            → consider <span className="font-semibold text-red-600">put options</span>
+            → consider <span className="font-semibold text-red-600 dark:text-loss">put options</span>
           </p>
         </div>
       </div>

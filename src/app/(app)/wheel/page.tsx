@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 const stepIcons: Record<string, { emoji: string; color: string }> = {
   sell_put: { emoji: "P", color: "bg-amber-100 text-amber-700" },
-  assigned: { emoji: "A", color: "bg-sky-100 text-sky-700" },
-  sell_call: { emoji: "C", color: "bg-emerald-100 text-emerald-700" },
+  assigned: { emoji: "A", color: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" },
+  sell_call: { emoji: "C", color: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" },
   called_away: { emoji: "X", color: "bg-violet-100 text-violet-700" },
 };
 
@@ -251,7 +251,7 @@ export default async function WheelPage() {
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       <Link
         href="/portfolio"
-        className="flex items-center gap-1 text-sm text-stone-400 hover:text-stone-600 w-fit"
+        className="flex items-center gap-1 text-sm text-stone-400 dark:text-text-faint hover:text-stone-600 w-fit"
       >
         <svg
           className="w-4 h-4"
@@ -270,8 +270,8 @@ export default async function WheelPage() {
       </Link>
 
       <div>
-        <h2 className="text-lg font-extrabold text-stone-900">The Wheel</h2>
-        <p className="text-xs text-stone-500 mt-0.5">
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">The Wheel</h2>
+        <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
           Sell puts &rarr; get assigned &rarr; sell calls &rarr; repeat
         </p>
       </div>
@@ -285,7 +285,7 @@ export default async function WheelPage() {
             >
               {emoji}
             </span>
-            <span className="text-[10px] text-stone-400 capitalize">
+            <span className="text-[10px] text-stone-400 dark:text-text-faint capitalize">
               {key.replace("_", " ")}
             </span>
           </div>
@@ -293,8 +293,8 @@ export default async function WheelPage() {
       </div>
 
       {fetchError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 dark:border-loss-border bg-red-50 dark:bg-loss-bg px-4 py-3">
+          <p className="text-sm text-red-700 dark:text-loss-strong">
             Failed to load positions. Please try again.
           </p>
         </div>
@@ -302,19 +302,19 @@ export default async function WheelPage() {
 
       {/* Overall income summary */}
       {wheelData.length > 0 && (
-        <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-stone-400 uppercase tracking-wide">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wide">
                 Total Wheel Income
               </p>
-              <p className="text-lg font-extrabold text-emerald-700">
+              <p className="text-lg font-extrabold text-emerald-700 dark:text-gain-strong">
                 +${overallIncome.toLocaleString()}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-stone-400">Active Tickers</p>
-              <p className="text-sm font-bold text-stone-900">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Active Tickers</p>
+              <p className="text-sm font-bold text-stone-900 dark:text-text">
                 {wheelData.length}
               </p>
             </div>
@@ -324,10 +324,10 @@ export default async function WheelPage() {
 
       {/* Empty state */}
       {!fetchError && wheelData.length === 0 && (
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-3">
+        <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated px-5 py-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mx-auto mb-3">
             <svg
-              className="w-6 h-6 text-stone-400"
+              className="w-6 h-6 text-stone-400 dark:text-text-faint"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -340,21 +340,21 @@ export default async function WheelPage() {
               />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900 mb-1">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-1">
             No Wheel Positions Yet
           </h3>
-          <p className="text-xs text-stone-500 mb-1 max-w-xs mx-auto">
+          <p className="text-xs text-stone-500 dark:text-text-subtle mb-1 max-w-xs mx-auto">
             The Wheel is a systematic income strategy: sell cash-secured puts on
             stocks you want to own. If assigned, sell covered calls on the
             shares. Collect premium at every step.
           </p>
-          <p className="text-xs text-stone-400 mb-4 max-w-xs mx-auto">
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4 max-w-xs mx-auto">
             Start by selling a cash-secured put on a stock you would be happy
             owning at a lower price.
           </p>
           <Link
             href="/positions/new"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted px-4 py-2 rounded-lg transition-colors"
           >
             <svg
               className="w-3.5 h-3.5"
@@ -378,24 +378,24 @@ export default async function WheelPage() {
       {wheelData.map((pos) => (
         <div
           key={pos.symbol}
-          className="rounded-xl border border-stone-200 bg-white overflow-hidden"
+          className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden"
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-stone-100">
+          <div className="px-4 py-3 border-b border-stone-100 dark:border-border-subtle">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-stone-900">
+                <span className="text-sm font-bold text-stone-900 dark:text-text">
                   {pos.symbol}
                 </span>
-                <span className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] text-stone-400 dark:text-text-faint bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 rounded-full">
                   {pos.currentStep}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-emerald-700">
+                <p className="text-sm font-bold text-emerald-700 dark:text-gain-strong">
                   +${pos.totalIncome.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-stone-400">
+                <p className="text-[10px] text-stone-400 dark:text-text-faint">
                   {pos.annualizedReturn}% ann.
                 </p>
               </div>
@@ -418,7 +418,7 @@ export default async function WheelPage() {
                         {icon.emoji}
                       </div>
                       {!isLast && (
-                        <div className="w-px flex-1 bg-stone-200 min-h-[16px]" />
+                        <div className="w-px flex-1 bg-stone-200 dark:bg-surface-sunken min-h-[16px]" />
                       )}
                     </div>
 
@@ -426,16 +426,16 @@ export default async function WheelPage() {
                     <div className="flex-1 pb-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-xs font-semibold text-stone-800">
+                          <p className="text-xs font-semibold text-stone-800 dark:text-text">
                             {cycle.description}
                           </p>
-                          <p className="text-[10px] text-stone-400 mt-0.5">
+                          <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">
                             {cycle.date}
                           </p>
                         </div>
                         {cycle.premium > 0 && (
                           <span
-                            className={`text-xs font-semibold ${cycle.step === "assigned" ? "text-stone-500" : "text-emerald-600"}`}
+                            className={`text-xs font-semibold ${cycle.step === "assigned" ? "text-stone-500 dark:text-text-subtle" : "text-emerald-600 dark:text-gain"}`}
                           >
                             +${cycle.premium.toLocaleString()}
                           </span>
@@ -444,7 +444,7 @@ export default async function WheelPage() {
 
                       {/* Cumulative bar */}
                       <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-1 bg-stone-100 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-emerald-400 rounded-full transition-all"
                             style={{
@@ -452,7 +452,7 @@ export default async function WheelPage() {
                             }}
                           />
                         </div>
-                        <span className="text-[10px] text-stone-400">
+                        <span className="text-[10px] text-stone-400 dark:text-text-faint">
                           ${cycle.cumulativeIncome.toLocaleString()}
                         </span>
                       </div>
@@ -464,22 +464,22 @@ export default async function WheelPage() {
           </div>
 
           {/* Footer */}
-          <div className="grid grid-cols-3 border-t border-stone-100">
+          <div className="grid grid-cols-3 border-t border-stone-100 dark:border-border-subtle">
             <div className="px-3 py-2.5 text-center">
-              <p className="text-[10px] text-stone-400">Cycles</p>
-              <p className="text-xs font-bold text-stone-900">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Cycles</p>
+              <p className="text-xs font-bold text-stone-900 dark:text-text">
                 {pos.totalCycles}
               </p>
             </div>
-            <div className="px-3 py-2.5 text-center border-x border-stone-100">
-              <p className="text-[10px] text-stone-400">Avg/Cycle</p>
-              <p className="text-xs font-bold text-stone-900">
+            <div className="px-3 py-2.5 text-center border-x border-stone-100 dark:border-border-subtle">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Avg/Cycle</p>
+              <p className="text-xs font-bold text-stone-900 dark:text-text">
                 ${pos.avgCycleReturn.toLocaleString()}
               </p>
             </div>
             <div className="px-3 py-2.5 text-center">
-              <p className="text-[10px] text-stone-400">Started</p>
-              <p className="text-xs font-bold text-stone-900">
+              <p className="text-[10px] text-stone-400 dark:text-text-faint">Started</p>
+              <p className="text-xs font-bold text-stone-900 dark:text-text">
                 {pos.startDate ? pos.startDate.slice(5) : "--"}
               </p>
             </div>

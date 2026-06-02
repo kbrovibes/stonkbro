@@ -7,24 +7,24 @@ import { calculateModuleCompletion } from "@/lib/learn/curriculum";
 export const dynamic = "force-dynamic";
 
 const COLOR_MAP: Record<string, string> = {
-  "stone-500": "bg-stone-100 text-stone-600 border-stone-200",
+  "stone-500": "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default",
   "blue-500": "bg-blue-50 text-blue-600 border-blue-200",
   "amber-500": "bg-amber-50 text-amber-600 border-amber-200",
-  "emerald-500": "bg-emerald-50 text-emerald-600 border-emerald-200",
+  "emerald-500": "bg-emerald-50 dark:bg-gain-bg text-emerald-600 dark:text-gain border-emerald-200 dark:border-gain-border",
   "purple-500": "bg-purple-50 text-purple-600 border-purple-200",
-  "rose-500": "bg-rose-50 text-rose-600 border-rose-200",
+  "rose-500": "bg-rose-50 dark:bg-loss-bg text-rose-600 dark:text-loss border-rose-200",
   "cyan-500": "bg-cyan-50 text-cyan-600 border-cyan-200",
   "yellow-500": "bg-yellow-50 text-yellow-600 border-yellow-200",
   "indigo-500": "bg-indigo-50 text-indigo-600 border-indigo-200",
   "teal-500": "bg-teal-50 text-teal-600 border-teal-200",
   "orange-500": "bg-orange-50 text-orange-600 border-orange-200",
   "lime-500": "bg-lime-50 text-lime-600 border-lime-200",
-  "sky-500": "bg-sky-50 text-sky-600 border-sky-200",
+  "sky-500": "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent border-sky-200 dark:border-accent-border",
   "violet-500": "bg-violet-50 text-violet-600 border-violet-200",
   "fuchsia-500": "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200",
   "pink-500": "bg-pink-50 text-pink-600 border-pink-200",
-  "green-500": "bg-green-50 text-green-600 border-green-200",
-  "red-500": "bg-red-50 text-red-600 border-red-200",
+  "green-500": "bg-green-50 dark:bg-gain-bg text-green-600 dark:text-gain border-green-200",
+  "red-500": "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss border-red-200 dark:border-loss-border",
 };
 
 const PROGRESS_BAR_MAP: Record<string, string> = {
@@ -90,13 +90,13 @@ export default async function LearnPage() {
       progress.some((p) => p.module_id === mod.id && p.lesson_id === mod.lessons[li]?.id && p.completed === true)
     ).length;
     const totalCount = mod.lessons.length;
-    const colorClasses = COLOR_MAP[mod.color] || "bg-stone-100 text-stone-600 border-stone-200";
+    const colorClasses = COLOR_MAP[mod.color] || "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted border-stone-200 dark:border-border-default";
     const barColor = PROGRESS_BAR_MAP[mod.color] || "bg-stone-500";
 
     return (
       <Link
         href={`/learn/${mod.id}`}
-        className="block bg-white rounded-xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow p-4"
+        className="block bg-white dark:bg-surface-elevated rounded-xl border border-stone-100 dark:border-border-subtle shadow-sm hover:shadow-md transition-shadow p-4"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -106,24 +106,24 @@ export default async function LearnPage() {
               {mod.icon}
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-stone-900 text-sm">{mod.title}</h3>
-              <p className="text-xs text-stone-500 mt-0.5">{mod.subtitle}</p>
+              <h3 className="font-semibold text-stone-900 dark:text-text text-sm">{mod.title}</h3>
+              <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">{mod.subtitle}</p>
 
               <div className="mt-3">
-                <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-stone-400 mt-1">
+                <p className="text-[11px] text-stone-400 dark:text-text-faint mt-1">
                   {pct}% {totalCount > 0 ? `· ${completedCount}/${totalCount} lessons` : ""}
                 </p>
               </div>
             </div>
           </div>
 
-          <svg className="w-4 h-4 text-stone-300 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <svg className="w-4 h-4 text-stone-300 dark:text-text-faint flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
         </div>
@@ -135,8 +135,8 @@ export default async function LearnPage() {
     <div className="px-4 py-6">
       {/* Hero */}
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-stone-900 mb-1">Options Trading Academy</h1>
-        <p className="text-stone-500 text-sm mb-5">
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-text mb-1">Options Trading Academy</h1>
+        <p className="text-stone-500 dark:text-text-subtle text-sm mb-5">
           From Greeks to strategy — master the full playbook
         </p>
 
@@ -157,11 +157,11 @@ export default async function LearnPage() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold text-stone-800">{overallPct}%</span>
+              <span className="text-lg font-bold text-stone-800 dark:text-text">{overallPct}%</span>
             </div>
           </div>
         </div>
-        <p className="text-xs text-stone-400 mt-2">
+        <p className="text-xs text-stone-400 dark:text-text-faint mt-2">
           {completedLessons} of {totalLessons} lessons completed
         </p>
       </div>
@@ -173,9 +173,9 @@ export default async function LearnPage() {
             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200">
               {LEVEL_CONFIG[1].badge}
             </span>
-            <h2 className="text-sm font-semibold text-stone-700">{LEVEL_CONFIG[1].label}</h2>
+            <h2 className="text-sm font-semibold text-stone-700 dark:text-text-muted">{LEVEL_CONFIG[1].label}</h2>
           </div>
-          <p className="text-xs text-stone-400 mb-4">{LEVEL_CONFIG[1].description}</p>
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">{LEVEL_CONFIG[1].description}</p>
           <div className="space-y-3">
             {level1Modules.map((mod) => {
               const i = CURRICULUM.findIndex((m) => m.id === mod.id);
@@ -192,9 +192,9 @@ export default async function LearnPage() {
             <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-violet-100 text-violet-700 border-violet-200">
               {LEVEL_CONFIG[2].badge}
             </span>
-            <h2 className="text-sm font-semibold text-stone-700">{LEVEL_CONFIG[2].label}</h2>
+            <h2 className="text-sm font-semibold text-stone-700 dark:text-text-muted">{LEVEL_CONFIG[2].label}</h2>
           </div>
-          <p className="text-xs text-stone-400 mb-4">{LEVEL_CONFIG[2].description}</p>
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">{LEVEL_CONFIG[2].description}</p>
           <div className="space-y-3">
             {level2Modules.map((mod) => {
               const i = CURRICULUM.findIndex((m) => m.id === mod.id);
@@ -205,7 +205,7 @@ export default async function LearnPage() {
       )}
 
       <div className="mt-4 text-center">
-        <p className="text-xs text-stone-400">
+        <p className="text-xs text-stone-400 dark:text-text-faint">
           Complete Level 1 before advancing to Level 2 for the best learning experience
         </p>
       </div>

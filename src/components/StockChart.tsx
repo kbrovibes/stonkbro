@@ -117,22 +117,22 @@ export default function StockChart({ symbol, currentPrice }: { symbol: string; c
   const hoverChange = closes.length > 0 ? ((hoverPrice - closes[0]) / closes[0]) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden">
       {/* Price header */}
       <div className="px-4 pt-3 pb-1">
         {hoverBar ? (
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-stone-900">{formatPrice(hoverBar.close)}</span>
-            <span className={`text-xs font-semibold ${hoverChange >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            <span className="text-lg font-bold text-stone-900 dark:text-text">{formatPrice(hoverBar.close)}</span>
+            <span className={`text-xs font-semibold ${hoverChange >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
               {hoverChange >= 0 ? "+" : ""}{hoverChange.toFixed(2)}%
             </span>
-            <span className="text-[10px] text-stone-400">{formatDate(hoverBar.date, tf)}</span>
+            <span className="text-[10px] text-stone-400 dark:text-text-faint">{formatDate(hoverBar.date, tf)}</span>
           </div>
         ) : (
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-stone-900">{formatPrice(currentPrice)}</span>
+            <span className="text-lg font-bold text-stone-900 dark:text-text">{formatPrice(currentPrice)}</span>
             {closes.length >= 2 && (
-              <span className={`text-xs font-semibold ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+              <span className={`text-xs font-semibold ${isUp ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"}`}>
                 {isUp ? "+" : ""}{((closes[closes.length - 1] - closes[0]) / closes[0] * 100).toFixed(2)}%
               </span>
             )}
@@ -144,13 +144,13 @@ export default function StockChart({ symbol, currentPrice }: { symbol: string; c
       <div className="px-2">
         {loading ? (
           <div className="flex items-center justify-center h-[140px]">
-            <svg className="w-5 h-5 animate-spin text-stone-300" fill="none" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 animate-spin text-stone-300 dark:text-text-faint" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           </div>
         ) : closes.length < 2 ? (
-          <div className="flex items-center justify-center h-[140px] text-xs text-stone-400">
+          <div className="flex items-center justify-center h-[140px] text-xs text-stone-400 dark:text-text-faint">
             No chart data
           </div>
         ) : (
@@ -185,15 +185,15 @@ export default function StockChart({ symbol, currentPrice }: { symbol: string; c
       </div>
 
       {/* Timeframe tabs */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-stone-100">
+      <div className="flex items-center justify-between px-3 py-2 border-t border-stone-100 dark:border-border-subtle">
         {TIMEFRAMES.map((t) => (
           <button
             key={t.label}
             onClick={() => setTf(t.label)}
             className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-colors ${
               tf === t.label
-                ? "bg-stone-900 text-white"
-                : "text-stone-500 hover:bg-stone-100"
+                ? "bg-stone-900 dark:bg-surface-elevated text-white"
+                : "text-stone-500 dark:text-text-subtle hover:bg-stone-100"
             }`}
           >
             {t.label}

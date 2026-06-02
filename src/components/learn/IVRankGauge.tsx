@@ -35,9 +35,9 @@ function arcPath(fromVal: number, toVal: number): string {
 }
 
 function zoneLabel(ivRank: number): { zone: string; color: string; bg: string } {
-  if (ivRank <= 25) return { zone: "LOW", color: "text-green-600", bg: "bg-green-50 border-green-200" };
+  if (ivRank <= 25) return { zone: "LOW", color: "text-green-600 dark:text-gain", bg: "bg-green-50 dark:bg-gain-bg border-green-200" };
   if (ivRank <= 74) return { zone: "MODERATE", color: "text-yellow-600", bg: "bg-yellow-50 border-yellow-200" };
-  return { zone: "HIGH", color: "text-red-600", bg: "bg-red-50 border-red-200" };
+  return { zone: "HIGH", color: "text-red-600 dark:text-loss", bg: "bg-red-50 dark:bg-loss-bg border-red-200 dark:border-loss-border" };
 }
 
 function contextText(ivRank: number): string {
@@ -81,10 +81,10 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
   const ticks = [0, 25, 50, 75, 100];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-bold text-gray-900">IV Rank Gauge</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">IV Rank Gauge</h3>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
           {zone}
         </span>
@@ -240,7 +240,7 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
 
       {/* Context panel */}
       <div
-        className={`mt-3 rounded-lg border p-3 text-xs leading-relaxed text-gray-700 transition-all duration-200 ${bg}`}
+        className={`mt-3 rounded-lg border p-3 text-xs leading-relaxed text-gray-700 dark:text-text-muted transition-all duration-200 ${bg}`}
       >
         <span className={`font-bold ${color}`}>IV Rank {ivRank}%: </span>
         {contextText(ivRank)}

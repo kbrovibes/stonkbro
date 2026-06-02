@@ -93,15 +93,15 @@ export default function RSIChart({
   if (osStart !== null) osZones.push({ start: osStart, end: data.length - 1 });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">
           {mode === "divergence" ? `RSI Divergence (${divergenceType})` : "RSI Indicator"}
         </h3>
         <button
           onClick={() => setShowPrice(!showPrice)}
           className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-            showPrice ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+            showPrice ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
           }`}
         >
           Price
@@ -264,7 +264,7 @@ export default function RSIChart({
       </svg>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
+      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500 dark:text-text-subtle">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-red-400 inline-block"></span> Overbought (70+)
         </span>

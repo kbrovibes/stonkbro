@@ -87,9 +87,9 @@ type ScanRecord = {
 type Tab = "csp" | "calls" | "leaps";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  high: "text-emerald-600 bg-emerald-50",
+  high: "text-emerald-600 dark:text-gain bg-emerald-50 dark:bg-gain-bg",
   medium: "text-amber-600 bg-amber-50",
-  low: "text-stone-500 bg-stone-100",
+  low: "text-stone-500 dark:text-text-subtle bg-stone-100 dark:bg-surface-muted",
 };
 
 function formatAge(isoDate: string): string {
@@ -172,8 +172,8 @@ export default function OptionsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 p-10">
-        <div className="w-8 h-8 border-4 border-stone-200 border-t-sky-600 rounded-full animate-spin mb-4" />
-        <p className="text-sm text-stone-500 font-medium">Loading scan data...</p>
+        <div className="w-8 h-8 border-4 border-stone-200 dark:border-border-default border-t-sky-600 rounded-full animate-spin mb-4" />
+        <p className="text-sm text-stone-500 dark:text-text-subtle font-medium">Loading scan data...</p>
       </div>
     );
   }
@@ -183,16 +183,16 @@ export default function OptionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-stone-900">Options Scanner</h1>
-          <p className="text-xs text-stone-500 mt-0.5">CSP · Calls · LEAPS — live scanner data</p>
+          <h1 className="text-xl font-extrabold text-stone-900 dark:text-text">Options Scanner</h1>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">CSP · Calls · LEAPS — live scanner data</p>
         </div>
         <button
           onClick={handleScanNow}
           disabled={scanning}
           className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-all ${
             scanning
-              ? "opacity-50 cursor-not-allowed border-stone-200 text-stone-400"
-              : "border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100 active:scale-95"
+              ? "opacity-50 cursor-not-allowed border-stone-200 dark:border-border-default text-stone-400 dark:text-text-faint"
+              : "border-sky-200 dark:border-accent-border text-sky-700 dark:text-accent-hover bg-sky-50 dark:bg-accent-bg hover:bg-sky-100 active:scale-95"
           }`}
         >
           {scanning ? (
@@ -215,7 +215,7 @@ export default function OptionsPage() {
         </div>
       )}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 font-medium">
+        <div className="p-3 bg-red-50 dark:bg-loss-bg border border-red-100 dark:border-loss-border rounded-lg text-xs text-red-600 dark:text-loss font-medium">
           {error}
         </div>
       )}
@@ -224,7 +224,7 @@ export default function OptionsPage() {
         <div className="flex flex-col gap-4">
           {/* Timestamp + staleness */}
           <div className="flex items-center gap-2 px-1">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-stone-400 dark:text-text-faint uppercase tracking-wider">
               Scanned: {new Date(scan.createdAt).toLocaleString()}
             </span>
             {isStale(scan.createdAt) && (
@@ -235,15 +235,15 @@ export default function OptionsPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-stone-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-stone-100 dark:bg-surface-muted p-1 rounded-lg">
             {(["csp", "calls", "leaps"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all uppercase tracking-wide ${
                   tab === t
-                    ? "bg-white text-stone-900 shadow-sm"
-                    : "text-stone-500 hover:text-stone-700"
+                    ? "bg-white dark:bg-surface-elevated text-stone-900 dark:text-text shadow-sm"
+                    : "text-stone-500 dark:text-text-subtle hover:text-stone-700"
                 }`}
               >
                 {t === "csp" ? "CSP" : t === "calls" ? "Calls" : "LEAPS"}
@@ -267,8 +267,8 @@ export default function OptionsPage() {
           )}
         </div>
       ) : (
-        <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-          <p className="text-sm text-stone-400 font-medium">No scan data found. Tap Scan Now to run a scan.</p>
+        <div className="p-8 text-center bg-stone-50 dark:bg-surface rounded-2xl border border-dashed border-stone-200 dark:border-border-default">
+          <p className="text-sm text-stone-400 dark:text-text-faint font-medium">No scan data found. Tap Scan Now to run a scan.</p>
         </div>
       )}
 
@@ -283,37 +283,37 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
   }
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-stone-50 border-b border-stone-100">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Premium</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Return</th>
+              <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Premium</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Return</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
-                      <span className="text-xs font-bold text-stone-900 group-hover:text-sky-600 transition-colors">{c.symbol}</span>
-                      <div className="text-[9px] text-stone-400 font-medium">${c.currentPrice?.toFixed(2)}</div>
+                      <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>
+                      <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">${c.currentPrice?.toFixed(2)}</div>
                     </Link>
                     <span className={`mt-0.5 inline-block px-1 py-0.5 rounded text-[9px] font-bold uppercase ${PRIORITY_COLORS[c.priority]}`}>
                       {c.priority}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-xs font-medium text-stone-600">{c.dte}d</td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">
+                  <td className="px-3 py-3 text-xs font-medium text-stone-600 dark:text-text-muted">{c.dte}d</td>
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">
                     ${c.strike.toFixed(2)}
-                    <div className="text-[9px] text-stone-400 font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
+                    <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
                   </td>
-                  <td className="px-3 py-3 text-xs font-bold text-emerald-600 text-right">${c.premium?.toFixed(2)}</td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">{c.aroc?.toFixed(1)}%</td>
+                  <td className="px-3 py-3 text-xs font-bold text-emerald-600 dark:text-gain text-right">${c.premium?.toFixed(2)}</td>
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">{c.aroc?.toFixed(1)}%</td>
                 </tr>
               ))}
             </tbody>
@@ -323,15 +323,15 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
 
       {/* Rationale cards */}
       <div className="flex flex-col gap-3">
-        <h3 className="text-xs font-bold text-stone-900 px-1">Rationale</h3>
+        <h3 className="text-xs font-bold text-stone-900 dark:text-text px-1">Rationale</h3>
         <div className="grid gap-3">
           {candidates.map((c, idx) => (
-            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 dark:bg-surface border border-stone-100 dark:border-border-subtle">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[11px] font-bold text-stone-900">{c.symbol}</span>
-                <span className="text-[10px] font-medium text-stone-500">Sell ${c.strike} Put · {c.dte}d</span>
+                <span className="text-[11px] font-bold text-stone-900 dark:text-text">{c.symbol}</span>
+                <span className="text-[10px] font-medium text-stone-500 dark:text-text-subtle">Sell ${c.strike} Put · {c.dte}d</span>
               </div>
-              <p className="text-[11px] text-stone-600 leading-relaxed">{c.reasoning}</p>
+              <p className="text-[11px] text-stone-600 dark:text-text-muted leading-relaxed">{c.reasoning}</p>
             </div>
           ))}
         </div>
@@ -339,9 +339,9 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
 
       {/* Claude analysis */}
       {claudeAnalysis && (
-        <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
+        <div className="p-4 rounded-xl bg-sky-50 dark:bg-accent-bg border border-sky-100 dark:border-accent-border">
           <h3 className="text-xs font-bold text-sky-900 mb-2">AI Analysis</h3>
-          <p className="text-[11px] text-sky-800 leading-relaxed whitespace-pre-wrap">{claudeAnalysis}</p>
+          <p className="text-[11px] text-sky-800 dark:text-accent-hover leading-relaxed whitespace-pre-wrap">{claudeAnalysis}</p>
         </div>
       )}
     </div>
@@ -354,37 +354,37 @@ function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
   }
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-stone-50 border-b border-stone-100">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Breakeven</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">50% Ret</th>
+              <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Breakeven</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">50% Ret</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
-                      <span className="text-xs font-bold text-stone-900 group-hover:text-sky-600 transition-colors">{c.symbol}</span>
-                      <div className="text-[9px] text-stone-400 font-medium">${c.currentPrice?.toFixed(2)}</div>
+                      <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>
+                      <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">${c.currentPrice?.toFixed(2)}</div>
                     </Link>
                     <span className={`mt-0.5 inline-block px-1 py-0.5 rounded text-[9px] font-bold uppercase ${PRIORITY_COLORS[c.priority]}`}>
                       {c.priority}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-xs font-medium text-stone-600">{c.dte}d</td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">
+                  <td className="px-3 py-3 text-xs font-medium text-stone-600 dark:text-text-muted">{c.dte}d</td>
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">
                     ${c.strike.toFixed(2)}
-                    <div className="text-[9px] text-stone-400 font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
+                    <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
                   </td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">${c.breakeven?.toFixed(2)}</td>
-                  <td className="px-3 py-3 text-xs font-bold text-emerald-600 text-right">
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">${c.breakeven?.toFixed(2)}</td>
+                  <td className="px-3 py-3 text-xs font-bold text-emerald-600 dark:text-gain text-right">
                     {c.outcome50pct?.returnPct != null ? `${c.outcome50pct.returnPct.toFixed(1)}%` : "—"}
                   </td>
                 </tr>
@@ -395,15 +395,15 @@ function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-xs font-bold text-stone-900 px-1">Rationale</h3>
+        <h3 className="text-xs font-bold text-stone-900 dark:text-text px-1">Rationale</h3>
         <div className="grid gap-3">
           {candidates.map((c, idx) => (
-            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 dark:bg-surface border border-stone-100 dark:border-border-subtle">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[11px] font-bold text-stone-900">{c.symbol}</span>
-                <span className="text-[10px] font-medium text-stone-500">Buy ${c.strike} Call · {c.dte}d</span>
+                <span className="text-[11px] font-bold text-stone-900 dark:text-text">{c.symbol}</span>
+                <span className="text-[10px] font-medium text-stone-500 dark:text-text-subtle">Buy ${c.strike} Call · {c.dte}d</span>
               </div>
-              <p className="text-[11px] text-stone-600 leading-relaxed">{c.reasoning}</p>
+              <p className="text-[11px] text-stone-600 dark:text-text-muted leading-relaxed">{c.reasoning}</p>
             </div>
           ))}
         </div>
@@ -418,39 +418,39 @@ function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
   }
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-stone-50 border-b border-stone-100">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Confidence</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 uppercase text-right">Breakeven</th>
+              <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Confidence</th>
+                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Breakeven</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
               {candidates.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
-                      <span className="text-xs font-bold text-stone-900 group-hover:text-sky-600 transition-colors">{c.symbol}</span>
-                      <div className="text-[9px] text-stone-400 font-medium">${c.currentPrice?.toFixed(2)}</div>
+                      <span className="text-xs font-bold text-stone-900 dark:text-text group-hover:text-sky-600 transition-colors">{c.symbol}</span>
+                      <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">${c.currentPrice?.toFixed(2)}</div>
                     </Link>
                     <span className={`mt-0.5 inline-block px-1 py-0.5 rounded text-[9px] font-bold uppercase ${PRIORITY_COLORS[c.priority]}`}>
                       {c.priority}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-xs font-medium text-stone-600">{c.dte}d</td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">
+                  <td className="px-3 py-3 text-xs font-medium text-stone-600 dark:text-text-muted">{c.dte}d</td>
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">
                     ${c.strike.toFixed(2)}
-                    <div className="text-[9px] text-stone-400 font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
+                    <div className="text-[9px] text-stone-400 dark:text-text-faint font-medium">{c.distanceFromPrice?.toFixed(1)}% OTM</div>
                   </td>
-                  <td className="px-3 py-3 text-xs font-bold text-sky-600 text-right">
+                  <td className="px-3 py-3 text-xs font-bold text-sky-600 dark:text-accent text-right">
                     {c.score != null ? `${Math.round(c.score)}/100` : "—"}
                   </td>
-                  <td className="px-3 py-3 text-xs font-bold text-stone-900 text-right">${c.breakeven?.toFixed(2)}</td>
+                  <td className="px-3 py-3 text-xs font-bold text-stone-900 dark:text-text text-right">${c.breakeven?.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -459,18 +459,18 @@ function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-xs font-bold text-stone-900 px-1">Rationale</h3>
+        <h3 className="text-xs font-bold text-stone-900 dark:text-text px-1">Rationale</h3>
         <div className="grid gap-3">
           {candidates.map((c, idx) => (
-            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+            <div key={`rationale-${c.symbol}-${idx}`} className="p-3 rounded-xl bg-stone-50 dark:bg-surface border border-stone-100 dark:border-border-subtle">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[11px] font-bold text-stone-900">{c.symbol}</span>
-                <span className="text-[10px] font-medium text-stone-500">Buy ${c.strike} LEAPS · {c.dte}d</span>
+                <span className="text-[11px] font-bold text-stone-900 dark:text-text">{c.symbol}</span>
+                <span className="text-[10px] font-medium text-stone-500 dark:text-text-subtle">Buy ${c.strike} LEAPS · {c.dte}d</span>
                 {c.score != null && (
-                  <span className="text-[9px] font-bold text-sky-600">{Math.round(c.score)}/100 confidence</span>
+                  <span className="text-[9px] font-bold text-sky-600 dark:text-accent">{Math.round(c.score)}/100 confidence</span>
                 )}
               </div>
-              <p className="text-[11px] text-stone-600 leading-relaxed">{c.reasoning}</p>
+              <p className="text-[11px] text-stone-600 dark:text-text-muted leading-relaxed">{c.reasoning}</p>
             </div>
           ))}
         </div>
@@ -481,8 +481,8 @@ function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-      <p className="text-sm text-stone-400 font-medium">{message}</p>
+    <div className="p-8 text-center bg-stone-50 dark:bg-surface rounded-2xl border border-dashed border-stone-200 dark:border-border-default">
+      <p className="text-sm text-stone-400 dark:text-text-faint font-medium">{message}</p>
     </div>
   );
 }

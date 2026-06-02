@@ -60,16 +60,16 @@ const TAB_LABELS: { id: Tab; label: string }[] = [
 
 const colorClasses = {
   green: {
-    text: "text-emerald-600",
+    text: "text-emerald-600 dark:text-gain",
     pct: "text-emerald-500",
-    bg: "bg-emerald-50 border-emerald-200",
-    badge: "bg-emerald-100 text-emerald-700",
+    bg: "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border",
+    badge: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   },
   red: {
     text: "text-red-600",
-    pct: "text-red-500",
-    bg: "bg-red-50 border-red-200",
-    badge: "bg-red-100 text-red-700",
+    pct: "text-red-500 dark:text-loss",
+    bg: "bg-red-50 dark:bg-loss-bg border-red-200 dark:border-loss-border",
+    badge: "bg-red-100 dark:bg-loss-bg text-red-700 dark:text-loss-strong",
   },
 };
 
@@ -115,23 +115,23 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
   const downColors = colorClasses[scenario.downColor];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Long vs Short — AAPL Example</h3>
-        <p className="text-xs text-gray-500 mt-0.5">Starting price: $175.00 &nbsp;|&nbsp; Move: ±10%</p>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Long vs Short — AAPL Example</h3>
+        <p className="text-xs text-gray-500 dark:text-text-subtle mt-0.5">Starting price: $175.00 &nbsp;|&nbsp; Move: ±10%</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-4 p-1 bg-gray-100 rounded-lg">
+      <div className="flex gap-1 mb-4 p-1 bg-gray-100 dark:bg-surface-muted rounded-lg">
         {TAB_LABELS.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
               activeTab === id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-white dark:bg-surface-elevated text-gray-900 dark:text-text shadow-sm"
+                : "text-gray-500 dark:text-text-subtle hover:text-gray-700"
             }`}
           >
             {label}
@@ -141,7 +141,7 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
 
       {/* Note for options tabs */}
       {scenario.note && (
-        <p className="text-xs text-gray-400 text-center mb-3 italic">{scenario.note}</p>
+        <p className="text-xs text-gray-400 dark:text-text-faint text-center mb-3 italic">{scenario.note}</p>
       )}
 
       {/* Scenario panels */}
@@ -149,7 +149,7 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
         {/* Up scenario */}
         <div className={`rounded-lg border p-3 ${upColors.bg}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-600">AAPL goes UP</span>
+            <span className="text-xs font-semibold text-gray-600 dark:text-text-muted">AAPL goes UP</span>
             <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${upColors.badge}`}>+10%</span>
           </div>
           <PriceArrow direction="up" />
@@ -162,7 +162,7 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
         {/* Down scenario */}
         <div className={`rounded-lg border p-3 ${downColors.bg}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-600">AAPL goes DOWN</span>
+            <span className="text-xs font-semibold text-gray-600 dark:text-text-muted">AAPL goes DOWN</span>
             <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${downColors.badge}`}>-10%</span>
           </div>
           <PriceArrow direction="down" />
@@ -175,20 +175,20 @@ export default function LongShortDiagram(_props: Record<string, unknown>) {
 
       {/* Quick reference row */}
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-center">
-        <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5">
-          <span className="font-semibold text-gray-700">You profit when</span>
+        <div className="rounded-md bg-gray-50 border border-gray-200 dark:border-border-default px-2 py-1.5">
+          <span className="font-semibold text-gray-700 dark:text-text-muted">You profit when</span>
           <br />
-          <span className={activeTab.startsWith("long") ? "text-emerald-600 font-bold" : "text-red-600 font-bold"}>
+          <span className={activeTab.startsWith("long") ? "text-emerald-600 dark:text-gain font-bold" : "text-red-600 dark:text-loss font-bold"}>
             {activeTab === "long-stock" && "price rises"}
             {activeTab === "short-stock" && "price falls"}
             {activeTab === "long-call" && "price rises past $178.50"}
             {activeTab === "long-put" && "price falls past $172.00"}
           </span>
         </div>
-        <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5">
-          <span className="font-semibold text-gray-700">Max loss</span>
+        <div className="rounded-md bg-gray-50 border border-gray-200 dark:border-border-default px-2 py-1.5">
+          <span className="font-semibold text-gray-700 dark:text-text-muted">Max loss</span>
           <br />
-          <span className="text-red-600 font-bold">
+          <span className="text-red-600 dark:text-loss font-bold">
             {activeTab === "long-stock" && "100% (to $0)"}
             {activeTab === "short-stock" && "Unlimited"}
             {activeTab === "long-call" && "$3.50/contract"}

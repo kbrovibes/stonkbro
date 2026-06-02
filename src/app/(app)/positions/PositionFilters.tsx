@@ -8,18 +8,18 @@ type Filter = "all" | "active" | "closed";
 function strategyBadgeClass(strategy: string) {
   const map: Record<string, string> = {
     PMCC: "bg-violet-50 text-violet-700",
-    "Covered Call": "bg-sky-50 text-sky-700",
+    "Covered Call": "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
     "Cash-Secured Put": "bg-amber-50 text-amber-700",
-    "The Wheel": "bg-emerald-50 text-emerald-700",
+    "The Wheel": "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
   };
-  return map[strategy] ?? "bg-stone-100 text-stone-600";
+  return map[strategy] ?? "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted";
 }
 
 function statusBadge(status: string) {
   const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "Active", cls: "bg-stone-100 text-stone-600" },
-    closed: { label: "Closed", cls: "bg-stone-200 text-stone-500" },
-    rolled: { label: "Rolled", cls: "bg-sky-50 text-sky-600" },
+    active: { label: "Active", cls: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted" },
+    closed: { label: "Closed", cls: "bg-stone-200 dark:bg-surface-sunken text-stone-500 dark:text-text-subtle" },
+    rolled: { label: "Rolled", cls: "bg-sky-50 dark:bg-accent-bg text-sky-600 dark:text-accent" },
   };
   const { label, cls } = map[status] ?? map.active;
   return (
@@ -70,15 +70,15 @@ export default function PositionFilters({ positions }: { positions: any[]; child
   return (
     <>
       {/* Filter Tabs */}
-      <div className="flex gap-1 mb-4 p-1 bg-stone-100 rounded-lg w-fit">
+      <div className="flex gap-1 mb-4 p-1 bg-stone-100 dark:bg-surface-muted rounded-lg w-fit">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
               filter === tab.key
-                ? "bg-white text-stone-900 shadow-sm"
-                : "text-stone-500 hover:text-stone-700"
+                ? "bg-white dark:bg-surface-elevated text-stone-900 dark:text-text shadow-sm"
+                : "text-stone-500 dark:text-text-subtle hover:text-stone-700"
             }`}
           >
             {tab.label}
@@ -100,12 +100,12 @@ export default function PositionFilters({ positions }: { positions: any[]; child
             <Link
               key={pos.id}
               href={`/positions/${pos.id}`}
-              className="rounded-xl border border-stone-200 bg-white p-4 hover:border-stone-300 transition-colors"
+              className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4 hover:border-stone-300 transition-colors"
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-stone-900">
+                  <span className="text-sm font-bold text-stone-900 dark:text-text">
                     {pos.symbol}
                   </span>
                   <span
@@ -124,7 +124,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
                     key={leg.id}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="text-stone-500">
+                    <span className="text-stone-500 dark:text-text-subtle">
                       {legLabel(leg.type)} ${leg.strike} exp{" "}
                       {new Date(leg.expiry).toLocaleDateString("en-US", {
                         month: "short",
@@ -132,7 +132,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
                         year: "2-digit",
                       })}
                     </span>
-                    <span className="font-medium text-stone-600">
+                    <span className="font-medium text-stone-600 dark:text-text-muted">
                       ${Math.abs(leg.entry_price).toFixed(2)}
                     </span>
                   </div>
@@ -140,8 +140,8 @@ export default function PositionFilters({ positions }: { positions: any[]; child
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between pt-2.5 border-t border-stone-100">
-                <span className="text-[10px] text-stone-400">
+              <div className="flex items-center justify-between pt-2.5 border-t border-stone-100 dark:border-border-subtle">
+                <span className="text-[10px] text-stone-400 dark:text-text-faint">
                   {pos.entry_date
                     ? new Date(pos.entry_date).toLocaleDateString("en-US", {
                         month: "short",
@@ -149,7 +149,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
                       })
                     : ""}
                 </span>
-                <span className="text-[10px] text-stone-400">
+                <span className="text-[10px] text-stone-400 dark:text-text-faint">
                   {days}d open
                 </span>
               </div>
@@ -158,7 +158,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
         })}
 
         {filtered.length === 0 && (
-          <p className="text-xs text-stone-400 text-center py-8">
+          <p className="text-xs text-stone-400 dark:text-text-faint text-center py-8">
             No {filter} positions
           </p>
         )}

@@ -103,16 +103,16 @@ export default function SupportResistanceChart({
   }, [data, showBounces, showTouches, mode]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">
           {mode === "breakout" ? "Breakout & Role Reversal" : "Support & Resistance"}
         </h3>
         <div className="flex gap-1">
           <button
             onClick={() => setActiveLevel(activeLevel === "support" ? null : "support")}
             className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-              activeLevel === "support" ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-600"
+              activeLevel === "support" ? "bg-emerald-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
             }`}
           >
             Support
@@ -120,7 +120,7 @@ export default function SupportResistanceChart({
           <button
             onClick={() => setActiveLevel(activeLevel === "resistance" ? null : "resistance")}
             className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-              activeLevel === "resistance" ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600"
+              activeLevel === "resistance" ? "bg-red-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
             }`}
           >
             Resistance
@@ -277,7 +277,7 @@ export default function SupportResistanceChart({
       </svg>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
+      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500 dark:text-text-subtle">
         <span className="flex items-center gap-1">
           <span className="w-3 h-0.5 bg-emerald-500 inline-block"></span> Support (floor)
         </span>

@@ -90,10 +90,10 @@ export default function LessonPage() {
   if (!mod || !lesson) {
     return (
       <div className="px-4 py-12 text-center">
-        <p className="text-stone-400">Lesson not found.</p>
+        <p className="text-stone-400 dark:text-text-faint">Lesson not found.</p>
         <button
           onClick={() => router.push(moduleId ? `/learn/${moduleId}` : "/learn")}
-          className="mt-4 text-sm text-sky-600 hover:text-sky-700 font-medium"
+          className="mt-4 text-sm text-sky-600 dark:text-accent hover:text-sky-700 font-medium"
         >
           Back to module
         </button>
@@ -105,23 +105,23 @@ export default function LessonPage() {
   const totalLessons = mod.lessons.length;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-surface-elevated">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-stone-100">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-stone-100 dark:border-border-subtle">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => router.push(`/learn/${moduleId}`)}
-            className="text-stone-500 hover:text-stone-700 -ml-1"
+            className="text-stone-500 dark:text-text-subtle hover:text-stone-700 -ml-1"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-stone-900 truncate">{lesson.title}</p>
-            <p className="text-[11px] text-stone-400">{mod.title}</p>
+            <p className="text-sm font-semibold text-stone-900 dark:text-text truncate">{lesson.title}</p>
+            <p className="text-[11px] text-stone-400 dark:text-text-faint">{mod.title}</p>
           </div>
-          <span className="text-xs text-stone-400">{lesson.estimatedMinutes}min</span>
+          <span className="text-xs text-stone-400 dark:text-text-faint">{lesson.estimatedMinutes}min</span>
         </div>
 
         {/* Step dots */}
@@ -134,7 +134,7 @@ export default function LessonPage() {
                   ? "bg-emerald-400"
                   : i === lessonIndex
                     ? "bg-sky-500"
-                    : "bg-stone-100"
+                    : "bg-stone-100 dark:bg-surface-muted"
               }`}
             />
           ))}
@@ -150,12 +150,12 @@ export default function LessonPage() {
       <div ref={bottomRef} className="h-1" />
 
       {/* Navigation buttons */}
-      <div className="max-w-2xl mx-auto px-4 py-6 border-t border-stone-100">
+      <div className="max-w-2xl mx-auto px-4 py-6 border-t border-stone-100 dark:border-border-subtle">
         <div className="flex items-center justify-between">
           {prevLesson ? (
             <button
               onClick={() => router.push(`/learn/${moduleId}/${prevLesson.id}`)}
-              className="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1"
+              className="text-sm text-stone-500 dark:text-text-subtle hover:text-stone-700 flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -166,14 +166,14 @@ export default function LessonPage() {
             <div />
           )}
 
-          <span className="text-xs text-stone-400">
+          <span className="text-xs text-stone-400 dark:text-text-faint">
             {lessonIndex + 1} of {totalLessons}
           </span>
 
           {nextLesson ? (
             <button
               onClick={() => router.push(`/learn/${moduleId}/${nextLesson.id}`)}
-              className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1"
+              className="text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-700 flex items-center gap-1"
             >
               Next Lesson
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -183,7 +183,7 @@ export default function LessonPage() {
           ) : (
             <button
               onClick={() => router.push(`/learn/${moduleId}`)}
-              className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+              className="text-sm font-medium text-emerald-600 dark:text-gain hover:text-emerald-700 flex items-center gap-1"
             >
               Complete Module
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

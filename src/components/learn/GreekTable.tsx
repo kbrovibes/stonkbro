@@ -61,9 +61,9 @@ function calcGreeks(S: number, K: number, T: number, sigma: number, r: number = 
 const greekConfig = [
   { key: "delta" as const, label: "Delta", color: "text-blue-600", bg: "bg-blue-50", desc: "Price sensitivity" },
   { key: "gamma" as const, label: "Gamma", color: "text-amber-600", bg: "bg-amber-50", desc: "Delta sensitivity" },
-  { key: "theta" as const, label: "Theta", color: "text-emerald-600", bg: "bg-emerald-50", desc: "Time decay/day" },
+  { key: "theta" as const, label: "Theta", color: "text-emerald-600 dark:text-gain", bg: "bg-emerald-50 dark:bg-gain-bg", desc: "Time decay/day" },
   { key: "vega" as const, label: "Vega", color: "text-purple-600", bg: "bg-purple-50", desc: "IV sensitivity/1%" },
-  { key: "rho" as const, label: "Rho", color: "text-rose-600", bg: "bg-rose-50", desc: "Rate sensitivity/1%" },
+  { key: "rho" as const, label: "Rho", color: "text-rose-600 dark:text-loss", bg: "bg-rose-50 dark:bg-loss-bg", desc: "Rate sensitivity/1%" },
 ];
 
 export default function GreekTable() {
@@ -78,9 +78,9 @@ export default function GreekTable() {
   const greeks = useMemo(() => calcGreeks(stockPrice, K, T, sigma), [stockPrice, K, T, sigma]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <h3 className="text-sm font-bold text-gray-900 mb-1">Option Greeks Calculator</h3>
-      <p className="text-xs text-gray-500 mb-3">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
+      <h3 className="text-sm font-bold text-gray-900 dark:text-text mb-1">Option Greeks Calculator</h3>
+      <p className="text-xs text-gray-500 dark:text-text-subtle mb-3">
         Strike: ${K} | Risk-free rate: 5%
       </p>
 
@@ -104,7 +104,7 @@ export default function GreekTable() {
       <div className="space-y-1 mb-4">
         {greekConfig.map(({ key, label, color, desc }) => (
           <div key={key} className="flex items-center justify-between text-xs">
-            <span className="text-gray-500">
+            <span className="text-gray-500 dark:text-text-subtle">
               <span className={`font-semibold ${color}`}>{label}</span> — {desc}
             </span>
             <span className={`font-mono font-semibold ${color}`}>

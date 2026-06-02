@@ -22,13 +22,13 @@ interface Recommendation {
 function getRecommendation(answers: Answers): Recommendation | null {
   const { outlook, rsi, iv } = answers;
   if (outlook === "bullish" && rsi === "oversold" && iv === "low")
-    return { trade: "Buy a Call Option", rationale: "RSI oversold signals a likely reversal. Low IV means options are cheap.", example: "Buy AAPL $180 call 45 DTE when RSI=28 and IV Rank=20.", color: "bg-green-50 border-green-300" };
+    return { trade: "Buy a Call Option", rationale: "RSI oversold signals a likely reversal. Low IV means options are cheap.", example: "Buy AAPL $180 call 45 DTE when RSI=28 and IV Rank=20.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bullish" && rsi === "neutral" && iv === "low")
-    return { trade: "Buy a Bull Call Spread", rationale: "Defined risk, benefits from an upward move. Low IV makes buying spreads attractive.", example: "Buy SPY $480/$490 call spread — pay less premium, cap the upside.", color: "bg-green-50 border-green-300" };
+    return { trade: "Buy a Bull Call Spread", rationale: "Defined risk, benefits from an upward move. Low IV makes buying spreads attractive.", example: "Buy SPY $480/$490 call spread — pay less premium, cap the upside.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bullish" && rsi === "overbought" && iv === "high")
     return { trade: "Sell a Cash-Secured Put", rationale: "Collect rich premium from high IV. Bullish bias means you are comfortable owning the stock at the strike.", example: "Sell NVDA $420 put with IV Rank=82 — premium is thick, bullish long-term.", color: "bg-blue-50 border-blue-300" };
   if (outlook === "bearish" && rsi === "overbought" && iv === "low")
-    return { trade: "Buy a Put Option", rationale: "Overbought RSI signals a peak. Low IV means puts are cheap to buy.", example: "Buy TSLA $200 put 30 DTE when RSI=75 and IV Rank=15.", color: "bg-green-50 border-green-300" };
+    return { trade: "Buy a Put Option", rationale: "Overbought RSI signals a peak. Low IV means puts are cheap to buy.", example: "Buy TSLA $200 put 30 DTE when RSI=75 and IV Rank=15.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bearish" && rsi === "neutral" && iv === "high")
     return { trade: "Sell a Bear Call Spread", rationale: "Collect premium in a high-IV environment. Bearish bias gives the short call side the statistical edge.", example: "Sell SPY $505/$515 call spread — defined risk, high premium collected.", color: "bg-blue-50 border-blue-300" };
   if (outlook === "neutral" && iv === "high")
@@ -36,9 +36,9 @@ function getRecommendation(answers: Answers): Recommendation | null {
   if (outlook === "neutral" && iv === "low")
     return { trade: "Buy a Straddle — or wait", rationale: "Low IV + no directional conviction = few great setups. A straddle works if you expect a big move but do not know which way.", example: "Consider waiting for a catalyst (earnings, FDA event) to push IV higher before entering.", color: "bg-yellow-50 border-yellow-300" };
   if (outlook === "bullish")
-    return { trade: "Bull Call Spread or Long Call", rationale: "Mid IV: a spread reduces premium risk. A long call works if you expect a strong move.", example: "Buy SPY $480/$490 call spread with IV Rank=50 — balanced risk/reward.", color: "bg-green-50 border-green-300" };
+    return { trade: "Bull Call Spread or Long Call", rationale: "Mid IV: a spread reduces premium risk. A long call works if you expect a strong move.", example: "Buy SPY $480/$490 call spread with IV Rank=50 — balanced risk/reward.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   if (outlook === "bearish")
-    return { trade: "Bear Put Spread or Long Put", rationale: "Mid IV: a spread keeps cost reasonable. A long put works if you expect a sharp decline.", example: "Buy QQQ $400/$390 put spread with IV Rank=45.", color: "bg-green-50 border-green-300" };
+    return { trade: "Bear Put Spread or Long Put", rationale: "Mid IV: a spread keeps cost reasonable. A long put works if you expect a sharp decline.", example: "Buy QQQ $400/$390 put spread with IV Rank=45.", color: "bg-green-50 dark:bg-gain-bg border-green-300" };
   return null;
 }
 
@@ -65,10 +65,10 @@ function Choice({ label, sub, onClick }: { label: string; sub?: string; onClick:
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-0.5 px-2 py-3 rounded-xl border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 active:scale-95 transition-all text-center w-full"
+      className="flex flex-col items-center gap-0.5 px-2 py-3 rounded-xl border border-gray-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-blue-400 hover:bg-blue-50 active:scale-95 transition-all text-center w-full"
     >
       <span className="text-base leading-none">{label}</span>
-      {sub && <span className="text-xs text-gray-500 mt-0.5 leading-tight">{sub}</span>}
+      {sub && <span className="text-xs text-gray-500 dark:text-text-subtle mt-0.5 leading-tight">{sub}</span>}
     </button>
   );
 }
@@ -78,7 +78,7 @@ function Progress({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i < current ? "bg-blue-500 w-6" : i === current ? "bg-blue-300 w-6" : "bg-gray-200 w-4"}`} />
+        <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i < current ? "bg-blue-500 w-6" : i === current ? "bg-blue-300 w-6" : "bg-gray-200 dark:bg-surface-sunken w-4"}`} />
       ))}
     </div>
   );
@@ -92,7 +92,7 @@ function Breadcrumb({ answers }: { answers: Answers }) {
   return (
     <div className="flex flex-wrap gap-1.5 mb-2">
       {pills.map((p) => (
-        <span key={p.label} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium capitalize">
+        <span key={p.label} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted font-medium capitalize">
           {p.value}
         </span>
       ))}
@@ -132,14 +132,14 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Trade Decision Framework</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Trade Decision Framework</h3>
         {isResult
           ? <button onClick={reset} className="text-xs text-blue-600 font-medium px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors">Start over</button>
           : Object.keys(answers).length > 0 && (
-            <button onClick={back} className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">← Back</button>
+            <button onClick={back} className="text-xs text-gray-500 dark:text-text-subtle hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">← Back</button>
           )
         }
       </div>
@@ -148,14 +148,14 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       {!isResult && (
         <div className="flex items-center justify-between mb-4">
           <Progress current={stepIndex} total={totalSteps} />
-          <span className="text-xs text-gray-400 ml-2">Step {stepIndex + 1} of {totalSteps}</span>
+          <span className="text-xs text-gray-400 dark:text-text-faint ml-2">Step {stepIndex + 1} of {totalSteps}</span>
         </div>
       )}
 
       {/* Step: Outlook */}
       {step === "outlook" && (
         <>
-          <p className="text-sm font-semibold text-gray-800 mb-3">What is your market outlook on this stock?</p>
+          <p className="text-sm font-semibold text-gray-800 dark:text-text mb-3">What is your market outlook on this stock?</p>
           <div className="grid grid-cols-3 gap-2">
             <Choice label="📈 Bullish" sub="Expecting up"    onClick={() => set({ outlook: "bullish" })} />
             <Choice label="📉 Bearish" sub="Expecting down"  onClick={() => set({ outlook: "bearish" })} />
@@ -168,7 +168,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       {step === "rsi" && (
         <>
           <Breadcrumb answers={answers} />
-          <p className="text-sm font-semibold text-gray-800 mb-3">Where is RSI right now?</p>
+          <p className="text-sm font-semibold text-gray-800 dark:text-text mb-3">Where is RSI right now?</p>
           <div className="grid grid-cols-3 gap-2">{rsiChoices}</div>
         </>
       )}
@@ -177,7 +177,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       {step === "iv_direction" && (
         <>
           <Breadcrumb answers={answers} />
-          <p className="text-sm font-semibold text-gray-800 mb-3">What is the IV Rank?</p>
+          <p className="text-sm font-semibold text-gray-800 dark:text-text mb-3">What is the IV Rank?</p>
           <div className="grid grid-cols-3 gap-2">{ivChoices}</div>
         </>
       )}
@@ -186,7 +186,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
       {step === "iv_neutral" && (
         <>
           <Breadcrumb answers={answers} />
-          <p className="text-sm font-semibold text-gray-800 mb-3">What is the IV Rank?</p>
+          <p className="text-sm font-semibold text-gray-800 dark:text-text mb-3">What is the IV Rank?</p>
           <div className="grid grid-cols-3 gap-2">{ivChoices}</div>
         </>
       )}
@@ -196,22 +196,22 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
         <>
           {/* Path summary pills */}
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {answers.outlook && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium capitalize">{answers.outlook}</span>}
-            {answers.rsi     && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium capitalize">RSI {answers.rsi}</span>}
-            {answers.iv      && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium capitalize">IV {answers.iv}</span>}
+            {answers.outlook && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted font-medium capitalize">{answers.outlook}</span>}
+            {answers.rsi     && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted font-medium capitalize">RSI {answers.rsi}</span>}
+            {answers.iv      && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted font-medium capitalize">IV {answers.iv}</span>}
           </div>
 
           <div className={`rounded-xl border p-4 ${rec.color}`}>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Recommended Strategy</p>
-            <p className="text-base font-bold text-gray-900 mb-2">{rec.trade}</p>
-            <p className="text-xs text-gray-700 leading-relaxed mb-3">{rec.rationale}</p>
-            <div className="rounded-lg bg-white border border-gray-200 px-3 py-2">
-              <p className="text-xs font-semibold text-gray-500 mb-0.5">Example trade:</p>
-              <p className="text-xs text-gray-700 leading-relaxed">{rec.example}</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-text-subtle uppercase tracking-wide mb-1">Recommended Strategy</p>
+            <p className="text-base font-bold text-gray-900 dark:text-text mb-2">{rec.trade}</p>
+            <p className="text-xs text-gray-700 dark:text-text-muted leading-relaxed mb-3">{rec.rationale}</p>
+            <div className="rounded-lg bg-white dark:bg-surface-elevated border border-gray-200 dark:border-border-default px-3 py-2">
+              <p className="text-xs font-semibold text-gray-500 dark:text-text-subtle mb-0.5">Example trade:</p>
+              <p className="text-xs text-gray-700 dark:text-text-muted leading-relaxed">{rec.example}</p>
             </div>
           </div>
 
-          <p className="text-xs text-gray-400 mt-3 text-center">
+          <p className="text-xs text-gray-400 dark:text-text-faint mt-3 text-center">
             Educational only — always paper trade new strategies first.
           </p>
         </>
@@ -219,7 +219,7 @@ export default function DecisionTreeWidget(_props: Record<string, unknown>) {
 
       {isResult && !rec && (
         <div className="text-center py-6">
-          <p className="text-sm text-gray-500">No recommendation found for this combination.</p>
+          <p className="text-sm text-gray-500 dark:text-text-subtle">No recommendation found for this combination.</p>
           <button onClick={reset} className="mt-2 text-xs text-blue-600 underline">Start over</button>
         </div>
       )}

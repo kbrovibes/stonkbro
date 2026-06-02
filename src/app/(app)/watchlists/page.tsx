@@ -16,10 +16,10 @@ export default async function WatchlistsPage() {
   return (
     <div className="flex flex-col flex-1 px-4 py-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-stone-900">Watchlists</h2>
+        <h2 className="text-lg font-bold text-stone-900 dark:text-text">Watchlists</h2>
         <Link
           href="/watchlists/new"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900 dark:bg-surface-elevated text-white hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors"
         >
           <svg
             className="w-3.5 h-3.5"
@@ -40,9 +40,9 @@ export default async function WatchlistsPage() {
 
       {watchlists.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-3">
             <svg
-              className="w-6 h-6 text-stone-400"
+              className="w-6 h-6 text-stone-400 dark:text-text-faint"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -55,15 +55,15 @@ export default async function WatchlistsPage() {
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-stone-900 mb-1">
+          <p className="text-sm font-medium text-stone-900 dark:text-text mb-1">
             No watchlists yet
           </p>
-          <p className="text-xs text-stone-400 mb-4">
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">
             Create one to start tracking tickers
           </p>
           <Link
             href="/watchlists/new"
-            className="px-4 py-2 text-sm font-semibold rounded-lg bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-stone-900 dark:bg-surface-elevated text-white hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors"
           >
             Create watchlist
           </Link>

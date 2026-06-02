@@ -13,11 +13,11 @@ type Alert = {
 };
 
 const actionColors: Record<string, string> = {
-  CLOSE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  CLOSE: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
   ROLL: "bg-amber-50 text-amber-700 border-amber-200",
-  SELL: "bg-sky-50 text-sky-700 border-sky-200",
+  SELL: "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover border-sky-200 dark:border-accent-border",
   BUY: "bg-violet-50 text-violet-700 border-violet-200",
-  WARNING: "bg-red-50 text-red-600 border-red-200",
+  WARNING: "bg-red-50 dark:bg-loss-bg text-red-600 dark:text-loss border-red-200 dark:border-loss-border",
 };
 
 const urgencyOrder = { high: 0, medium: 1, low: 2 };
@@ -58,15 +58,15 @@ export default function SignalsPage() {
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-extrabold text-stone-900">Trade Signals</h2>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">Trade Signals</h2>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
             Live analysis of your {positionCount} active position{positionCount !== 1 ? "s" : ""}
           </p>
         </div>
         <button
           onClick={fetchSignals}
           disabled={loading}
-          className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 transition-colors"
+          className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-border-default text-xs font-semibold text-stone-700 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted disabled:opacity-50 transition-colors"
         >
           {loading ? "Checking..." : "Refresh"}
         </button>
@@ -75,29 +75,29 @@ export default function SignalsPage() {
       {loading && (
         <div className="flex items-center gap-2 py-8 justify-center">
           <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-          <span className="text-xs text-stone-500">Checking positions against live market data...</span>
+          <span className="text-xs text-stone-500 dark:text-text-subtle">Checking positions against live market data...</span>
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-200 dark:border-loss-border bg-red-50 dark:bg-loss-bg p-4 text-sm text-red-700 dark:text-loss-strong">{error}</div>
       )}
 
       {!loading && !error && alerts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-gain-bg flex items-center justify-center mb-4">
             <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900">All clear</h3>
-          <p className="text-xs text-stone-500 mt-1 max-w-xs">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text">All clear</h3>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-1 max-w-xs">
             {positionCount > 0
               ? "No action needed on your positions right now."
               : "Add positions to start getting trade signals."}
           </p>
           {positionCount === 0 && (
-            <Link href="/positions/new" className="mt-4 px-4 py-2 rounded-lg bg-stone-900 text-white text-xs font-semibold">
+            <Link href="/positions/new" className="mt-4 px-4 py-2 rounded-lg bg-stone-900 dark:bg-surface-elevated text-white text-xs font-semibold">
               Add Position
             </Link>
           )}
@@ -106,7 +106,7 @@ export default function SignalsPage() {
 
       {!loading && highAlerts.length > 0 && (
         <div>
-          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-red-500 mb-2">Action Required</h3>
+          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-red-500 dark:text-loss mb-2">Action Required</h3>
           <div className="flex flex-col gap-2">
             {highAlerts.map((alert, i) => (
               <AlertCard key={i} alert={alert} />
@@ -128,7 +128,7 @@ export default function SignalsPage() {
 
       {!loading && lowAlerts.length > 0 && (
         <div>
-          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 mb-2">FYI</h3>
+          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 dark:text-text-faint mb-2">FYI</h3>
           <div className="flex flex-col gap-2">
             {lowAlerts.map((alert, i) => (
               <AlertCard key={i} alert={alert} />
@@ -142,17 +142,17 @@ export default function SignalsPage() {
 
 function AlertCard({ alert }: { alert: Alert }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
       <div className="flex items-center gap-2 mb-2">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${actionColors[alert.action]}`}>
           {alert.action}
         </span>
-        <span className="text-sm font-bold text-stone-900">{alert.symbol}</span>
-        <span className="text-[10px] text-stone-400">{alert.strategy}</span>
+        <span className="text-sm font-bold text-stone-900 dark:text-text">{alert.symbol}</span>
+        <span className="text-[10px] text-stone-400 dark:text-text-faint">{alert.strategy}</span>
       </div>
-      <p className="text-xs text-stone-700 leading-relaxed">{alert.message}</p>
+      <p className="text-xs text-stone-700 dark:text-text-muted leading-relaxed">{alert.message}</p>
       {alert.details && (
-        <p className="text-[10px] text-stone-400 mt-1">{alert.details}</p>
+        <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">{alert.details}</p>
       )}
     </div>
   );

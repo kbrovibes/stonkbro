@@ -22,8 +22,8 @@ export default function InteractiveSlider({
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600 font-medium">{label}</span>
-        <span className="text-gray-900 font-semibold tabular-nums">
+        <span className="text-gray-600 dark:text-text-muted font-medium">{label}</span>
+        <span className="text-gray-900 dark:text-text font-semibold tabular-nums">
           {value}
           {unit}
         </span>

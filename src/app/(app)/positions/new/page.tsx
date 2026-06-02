@@ -299,10 +299,10 @@ function NewPositionForm() {
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/positions"
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-stone-100 dark:bg-surface-muted hover:bg-stone-200 dark:hover:bg-surface-sunken transition-colors"
         >
           <svg
-            className="w-4 h-4 text-stone-600"
+            className="w-4 h-4 text-stone-600 dark:text-text-muted"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -315,7 +315,7 @@ function NewPositionForm() {
             />
           </svg>
         </Link>
-        <h2 className="text-lg font-bold text-stone-900">New Position</h2>
+        <h2 className="text-lg font-bold text-stone-900 dark:text-text">New Position</h2>
       </div>
 
       {/* Step Indicator */}
@@ -325,8 +325,8 @@ function NewPositionForm() {
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                 step >= s
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-400"
+                  ? "bg-stone-900 dark:bg-surface-elevated text-white"
+                  : "bg-stone-100 dark:bg-surface-muted text-stone-400 dark:text-text-faint"
               }`}
             >
               {s}
@@ -334,7 +334,7 @@ function NewPositionForm() {
             {s < 3 && (
               <div
                 className={`flex-1 h-0.5 rounded-full transition-colors ${
-                  step > s ? "bg-stone-900" : "bg-stone-200"
+                  step > s ? "bg-stone-900 dark:bg-surface-elevated" : "bg-stone-200 dark:bg-surface-sunken"
                 }`}
               />
             )}
@@ -343,8 +343,8 @@ function NewPositionForm() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-4">
-          <p className="text-xs text-red-600">{error}</p>
+        <div className="rounded-xl border border-red-200 dark:border-loss-border bg-red-50 dark:bg-loss-bg p-3 mb-4">
+          <p className="text-xs text-red-600 dark:text-loss">{error}</p>
         </div>
       )}
 
@@ -352,7 +352,7 @@ function NewPositionForm() {
       {step === 1 && (
         <div className="flex flex-col gap-5">
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-2">
+            <label className="block text-xs font-semibold text-stone-700 dark:text-text-muted mb-2">
               Ticker Symbol
             </label>
             <input
@@ -360,14 +360,14 @@ function NewPositionForm() {
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
               placeholder="AAPL"
-              className="w-full px-3 py-2.5 rounded-lg border border-stone-200 bg-white text-sm font-medium text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
+              className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-sm font-medium text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
               autoFocus
               maxLength={5}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-2">
+            <label className="block text-xs font-semibold text-stone-700 dark:text-text-muted mb-2">
               Strategy
             </label>
             <div className="flex flex-col gap-2">
@@ -377,12 +377,12 @@ function NewPositionForm() {
                   onClick={() => selectStrategy(s.value)}
                   className={`text-left p-3 rounded-xl border transition-colors ${
                     strategy === s.value
-                      ? "border-stone-900 bg-stone-50"
-                      : "border-stone-200 bg-white hover:border-stone-300"
+                      ? "border-stone-900 bg-stone-50 dark:bg-surface"
+                      : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated hover:border-stone-300"
                   }`}
                 >
-                  <p className="text-sm font-bold text-stone-900">{s.label}</p>
-                  <p className="text-xs text-stone-400 mt-0.5">
+                  <p className="text-sm font-bold text-stone-900 dark:text-text">{s.label}</p>
+                  <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">
                     {s.description}
                   </p>
                 </button>
@@ -391,7 +391,7 @@ function NewPositionForm() {
           </div>
 
           {symbol.trim() && !strategy && (
-            <p className="text-xs text-stone-400 text-center">
+            <p className="text-xs text-stone-400 dark:text-text-faint text-center">
               Select a strategy to continue
             </p>
           )}
@@ -402,8 +402,8 @@ function NewPositionForm() {
       {step === 2 && (
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold text-stone-900">{symbol}</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+            <span className="text-sm font-bold text-stone-900 dark:text-text">{symbol}</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted">
               {strategy}
             </span>
           </div>
@@ -411,20 +411,20 @@ function NewPositionForm() {
           {legs.map((leg, i) => (
             <div
               key={i}
-              className="rounded-xl border border-stone-200 bg-white p-4"
+              className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4"
             >
-              <p className="text-xs font-bold text-stone-700 mb-3">
+              <p className="text-xs font-bold text-stone-700 dark:text-text-muted mb-3">
                 {legTypeLabel(leg.type)}
               </p>
 
               <div className="grid grid-cols-2 gap-3">
                 {leg.type !== "shares" && (
                   <div>
-                    <label className="block text-[10px] text-stone-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">
                       Strike
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-text-faint">
                         $
                       </span>
                       <input
@@ -433,7 +433,7 @@ function NewPositionForm() {
                         onChange={(e) => updateLeg(i, "strike", e.target.value)}
                         placeholder="0.00"
                         step="0.5"
-                        className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-200 text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
+                        className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-200 dark:border-border-default text-sm text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
                       />
                     </div>
                   </div>
@@ -441,24 +441,24 @@ function NewPositionForm() {
 
                 {leg.type !== "shares" && (
                   <div>
-                    <label className="block text-[10px] text-stone-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">
                       Expiry
                     </label>
                     <input
                       type="date"
                       value={leg.expiry}
                       onChange={(e) => updateLeg(i, "expiry", e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
+                      className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-border-default text-sm text-stone-900 dark:text-text focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[10px] text-stone-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">
                     {leg.type === "shares" ? "Cost Basis" : "Premium"}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-text-faint">
                       $
                     </span>
                     <input
@@ -469,13 +469,13 @@ function NewPositionForm() {
                       }
                       placeholder="0.00"
                       step="0.01"
-                      className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-200 text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
+                      className="w-full pl-7 pr-3 py-2 rounded-lg border border-stone-200 dark:border-border-default text-sm text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-stone-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider mb-1">
                     {leg.type === "shares" ? "Shares" : "Contracts"}
                   </label>
                   <input
@@ -484,7 +484,7 @@ function NewPositionForm() {
                     onChange={(e) => updateLeg(i, "quantity", e.target.value)}
                     placeholder="1"
                     min="1"
-                    className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
+                    className="w-full px-3 py-2 rounded-lg border border-stone-200 dark:border-border-default text-sm text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors"
                   />
                 </div>
               </div>
@@ -494,14 +494,14 @@ function NewPositionForm() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(1)}
-              className="flex-1 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-xs font-semibold text-stone-600 dark:text-text-muted bg-stone-100 dark:bg-surface-muted hover:bg-stone-200 dark:hover:bg-surface-sunken px-4 py-2.5 rounded-lg transition-colors"
             >
               Back
             </button>
             <button
               onClick={() => setStep(3)}
               disabled={!canProceedStep2()}
-              className="flex-1 text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted disabled:bg-stone-300 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors"
             >
               Next
             </button>
@@ -513,10 +513,10 @@ function NewPositionForm() {
       {step === 3 && (
         <div className="flex flex-col gap-5">
           {/* Summary */}
-          <div className="rounded-xl border border-stone-200 bg-white p-4">
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-bold text-stone-900">{symbol}</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+              <span className="text-sm font-bold text-stone-900 dark:text-text">{symbol}</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted">
                 {strategy}
               </span>
             </div>
@@ -526,7 +526,7 @@ function NewPositionForm() {
                   key={i}
                   className="flex items-center justify-between text-xs"
                 >
-                  <span className="text-stone-500">
+                  <span className="text-stone-500 dark:text-text-subtle">
                     {legTypeLabel(leg.type)}
                     {leg.type !== "shares" && ` $${leg.strike}`}
                     {leg.expiry &&
@@ -535,7 +535,7 @@ function NewPositionForm() {
                         day: "numeric",
                       })}`}
                   </span>
-                  <span className="font-medium text-stone-600">
+                  <span className="font-medium text-stone-600 dark:text-text-muted">
                     ${leg.entry_price} x {leg.quantity}
                   </span>
                 </div>
@@ -544,30 +544,30 @@ function NewPositionForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-2">
+            <label className="block text-xs font-semibold text-stone-700 dark:text-text-muted mb-2">
               Notes{" "}
-              <span className="text-stone-400 font-normal">(optional)</span>
+              <span className="text-stone-400 dark:text-text-faint font-normal">(optional)</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Thesis, target exit, risk notes..."
               rows={3}
-              className="w-full px-3 py-2.5 rounded-lg border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors resize-none"
+              className="w-full px-3 py-2.5 rounded-lg border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-sm text-stone-900 dark:text-text placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300 transition-colors resize-none"
             />
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={() => setStep(2)}
-              className="flex-1 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-xs font-semibold text-stone-600 dark:text-text-muted bg-stone-100 dark:bg-surface-muted hover:bg-stone-200 dark:hover:bg-surface-sunken px-4 py-2.5 rounded-lg transition-colors"
             >
               Back
             </button>
             <button
               onClick={handleSubmit}
               disabled={isPending}
-              className="flex-1 text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted disabled:bg-stone-300 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors"
             >
               {isPending ? "Creating..." : "Create Position"}
             </button>
@@ -584,12 +584,12 @@ export default function NewPositionPage() {
       fallback={
         <div className="flex flex-col flex-1 px-4 py-5">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
-            <div className="h-5 w-28 rounded bg-stone-100 animate-pulse" />
+            <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-surface-muted animate-pulse" />
+            <div className="h-5 w-28 rounded bg-stone-100 dark:bg-surface-muted animate-pulse" />
           </div>
           <div className="space-y-3">
-            <div className="h-10 rounded-lg bg-stone-100 animate-pulse" />
-            <div className="h-24 rounded-xl bg-stone-100 animate-pulse" />
+            <div className="h-10 rounded-lg bg-stone-100 dark:bg-surface-muted animate-pulse" />
+            <div className="h-24 rounded-xl bg-stone-100 dark:bg-surface-muted animate-pulse" />
           </div>
         </div>
       }

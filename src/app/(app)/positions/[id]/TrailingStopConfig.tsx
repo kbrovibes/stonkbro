@@ -71,23 +71,23 @@ export default function TrailingStopConfig({
       <div
         className={`rounded-xl border p-4 ${
           isTriggered
-            ? "border-red-300 bg-red-50"
+            ? "border-red-300 bg-red-50 dark:bg-loss-bg"
             : isWarning
               ? "border-amber-300 bg-amber-50"
-              : "border-emerald-200 bg-emerald-50"
+              : "border-emerald-200 dark:border-gain-border bg-emerald-50 dark:bg-gain-bg"
         }`}
       >
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-text-muted">
             Trailing Stop
           </h3>
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
               isTriggered
-                ? "bg-red-100 text-red-700"
+                ? "bg-red-100 dark:bg-loss-bg text-red-700 dark:text-loss-strong"
                 : isWarning
                   ? "bg-amber-100 text-amber-700"
-                  : "bg-emerald-100 text-emerald-700"
+                  : "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"
             }`}
           >
             {isTriggered ? "TRIGGERED" : isWarning ? "WARNING" : "ACTIVE"}
@@ -95,8 +95,8 @@ export default function TrailingStopConfig({
         </div>
 
         {isTriggered && (
-          <div className="rounded-lg bg-red-100 border border-red-200 p-3 mb-3">
-            <p className="text-xs font-semibold text-red-800">
+          <div className="rounded-lg bg-red-100 dark:bg-loss-bg border border-red-200 dark:border-loss-border p-3 mb-3">
+            <p className="text-xs font-semibold text-red-800 dark:text-loss-strong">
               Stop triggered! {symbol} has dropped {drawdownFromPeak.toFixed(1)}%
               from peak -- consider closing position.
             </p>
@@ -105,22 +105,22 @@ export default function TrailingStopConfig({
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <p className="text-[10px] text-stone-400">Current Price</p>
-            <p className="text-sm font-bold text-stone-900">
+            <p className="text-[10px] text-stone-400 dark:text-text-faint">Current Price</p>
+            <p className="text-sm font-bold text-stone-900 dark:text-text">
               ${currentPrice.toFixed(2)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-stone-400">Peak Price</p>
-            <p className="text-sm font-bold text-stone-900">
+            <p className="text-[10px] text-stone-400 dark:text-text-faint">Peak Price</p>
+            <p className="text-sm font-bold text-stone-900 dark:text-text">
               ${peakPrice.toFixed(2)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-stone-400">Gain from Entry</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint">Gain from Entry</p>
             <p
               className={`text-sm font-bold ${
-                gainFromEntry >= 0 ? "text-emerald-600" : "text-red-600"
+                gainFromEntry >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-600 dark:text-loss"
               }`}
             >
               {gainFromEntry >= 0 ? "+" : ""}
@@ -128,14 +128,14 @@ export default function TrailingStopConfig({
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-stone-400">Drawdown from Peak</p>
+            <p className="text-[10px] text-stone-400 dark:text-text-faint">Drawdown from Peak</p>
             <p
               className={`text-sm font-bold ${
                 isTriggered
-                  ? "text-red-600"
+                  ? "text-red-600 dark:text-loss"
                   : isWarning
                     ? "text-amber-600"
-                    : "text-stone-600"
+                    : "text-stone-600 dark:text-text-muted"
               }`}
             >
               -{drawdownFromPeak.toFixed(1)}%
@@ -144,7 +144,7 @@ export default function TrailingStopConfig({
         </div>
 
         <div className="flex items-center justify-between text-xs border-t border-stone-200/50 pt-3 mb-3">
-          <span className="text-stone-500">
+          <span className="text-stone-500 dark:text-text-subtle">
             Stop: {trailingStopPct}% from peak (${stopTriggerPrice.toFixed(2)})
           </span>
         </div>
@@ -153,7 +153,7 @@ export default function TrailingStopConfig({
           <div className="flex gap-2">
             <button
               onClick={() => setShowRemoveConfirm(false)}
-              className="flex-1 text-xs font-semibold text-stone-600 bg-white border border-stone-200 px-3 py-2 rounded-lg transition-colors hover:bg-stone-50"
+              className="flex-1 text-xs font-semibold text-stone-600 dark:text-text-muted bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default px-3 py-2 rounded-lg transition-colors hover:bg-stone-50 dark:hover:bg-surface-muted"
             >
               Cancel
             </button>
@@ -168,7 +168,7 @@ export default function TrailingStopConfig({
         ) : (
           <button
             onClick={() => setShowRemoveConfirm(true)}
-            className="w-full text-xs font-semibold text-stone-500 bg-white/60 hover:bg-white border border-stone-200/50 px-4 py-2 rounded-lg transition-colors"
+            className="w-full text-xs font-semibold text-stone-500 dark:text-text-subtle bg-white/60 hover:bg-white dark:hover:bg-surface-elevated border border-stone-200/50 px-4 py-2 rounded-lg transition-colors"
           >
             Remove Stop
           </button>
@@ -179,11 +179,11 @@ export default function TrailingStopConfig({
 
   // Not active -- show setup form
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
-      <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-3">
+    <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
+      <h3 className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wider mb-3">
         Trailing Stop
       </h3>
-      <p className="text-xs text-stone-500 mb-4">
+      <p className="text-xs text-stone-500 dark:text-text-subtle mb-4">
         Set a trailing stop to automatically alert when {symbol} drops a set
         percentage from its peak price. Locks in gains while letting winners run.
       </p>
@@ -198,8 +198,8 @@ export default function TrailingStopConfig({
             }}
             className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
               !useCustom && selectedPct === pct
-                ? "bg-stone-900 text-white"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                ? "bg-stone-900 dark:bg-surface-elevated text-white"
+                : "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted hover:bg-stone-200 dark:hover:bg-surface-sunken"
             }`}
           >
             {pct}%
@@ -209,8 +209,8 @@ export default function TrailingStopConfig({
           onClick={() => setUseCustom(true)}
           className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
             useCustom
-              ? "bg-stone-900 text-white"
-              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              ? "bg-stone-900 dark:bg-surface-elevated text-white"
+              : "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted hover:bg-stone-200 dark:hover:bg-surface-sunken"
           }`}
         >
           Custom
@@ -227,12 +227,12 @@ export default function TrailingStopConfig({
             value={customPct}
             onChange={(e) => setCustomPct(e.target.value)}
             placeholder="Enter %"
-            className="w-full text-sm border border-stone-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-stone-400"
+            className="w-full text-sm border border-stone-200 dark:border-border-default rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-stone-400"
           />
         </div>
       )}
 
-      <div className="text-xs text-stone-400 mb-4">
+      <div className="text-xs text-stone-400 dark:text-text-faint mb-4">
         Current price: ${currentPrice.toFixed(2)} -- alert if drops{" "}
         {useCustom ? (customPct || "?") : selectedPct}% from peak
       </div>
@@ -240,7 +240,7 @@ export default function TrailingStopConfig({
       <button
         onClick={handleActivate}
         disabled={isPending || (useCustom && !customPct)}
-        className="w-full text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 px-4 py-2.5 rounded-lg transition-colors"
+        className="w-full text-xs font-semibold text-white bg-stone-900 dark:bg-surface-elevated hover:bg-stone-800 dark:hover:bg-surface-muted disabled:bg-stone-300 px-4 py-2.5 rounded-lg transition-colors"
       >
         {isPending ? "Activating..." : "Activate Trailing Stop"}
       </button>

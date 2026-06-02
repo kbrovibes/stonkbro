@@ -85,15 +85,15 @@ export default function TAGreeksChart({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">
           {mode === "csp-entry" ? "CSP Entry at Support" : "TA + Greeks Synergy"}
         </h3>
         <button
           onClick={() => setShowGreekPanel(!showGreekPanel)}
           className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
-            showGreekPanel ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+            showGreekPanel ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
           }`}
         >
           Greeks
@@ -245,7 +245,7 @@ export default function TAGreeksChart({
       </svg>
 
       {/* Context label */}
-      <div className="mt-2 text-center text-xs text-gray-500">
+      <div className="mt-2 text-center text-xs text-gray-500 dark:text-text-subtle">
         {mode === "csp-entry"
           ? "Sell puts when price hits support AND RSI is oversold"
           : "Align Greeks exposure with TA levels for higher probability trades"

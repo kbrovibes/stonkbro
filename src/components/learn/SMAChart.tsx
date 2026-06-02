@@ -142,7 +142,7 @@ export default function SMAChart(_props: Record<string, unknown>) {
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
         active
           ? `border-transparent text-white`
-          : "border-gray-300 text-gray-500 bg-white hover:border-gray-400"
+          : "border-gray-300 text-gray-500 dark:text-text-subtle bg-white dark:bg-surface-elevated hover:border-gray-400"
       }`}
       style={active ? { backgroundColor: color } : {}}
     >
@@ -155,12 +155,12 @@ export default function SMAChart(_props: Record<string, unknown>) {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold text-gray-900">Simple Moving Averages — SPY</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Simple Moving Averages — SPY</h3>
         {/* Legend */}
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-text-subtle">
           <span className="flex items-center gap-1">
             <span className="w-5 h-0.5 bg-gray-400 inline-block" /> Price
           </span>
@@ -266,7 +266,7 @@ export default function SMAChart(_props: Record<string, unknown>) {
 
       {/* Toggle buttons */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
-        <span className="text-xs text-gray-500 font-medium mr-1">Show:</span>
+        <span className="text-xs text-gray-500 dark:text-text-subtle font-medium mr-1">Show:</span>
         {toggleBtn(show20, "#3b82f6", "SMA20", () => setShow20(!show20))}
         {toggleBtn(show50, "#f97316", "SMA50", () => setShow50(!show50))}
         {toggleBtn(show200, "#a855f7", "SMA200", () => setShow200(!show200))}

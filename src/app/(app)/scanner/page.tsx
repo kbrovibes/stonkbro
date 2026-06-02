@@ -34,9 +34,9 @@ const DEFAULT_TICKERS = ["NVDA", "AAPL", "MSFT", "TSLA", "AMD", "PLTR", "META", 
 
 function GradeBadge({ grade }: { grade: string }) {
   const colors: Record<string, string> = {
-    A: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    A: "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong border-emerald-200 dark:border-gain-border",
     B: "bg-amber-50 text-amber-700 border-amber-200",
-    C: "bg-stone-100 text-stone-500 border-stone-200",
+    C: "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle border-stone-200 dark:border-border-default",
   };
   return (
     <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${colors[grade] || colors.C}`}>
@@ -117,8 +117,8 @@ export default function ScannerPage() {
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       <div>
-        <h2 className="text-lg font-extrabold text-stone-900">PMCC Scanner</h2>
-        <p className="text-xs text-stone-500 mt-0.5">Find the best Poor Man&apos;s Covered Call setups with real options data</p>
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-text">PMCC Scanner</h2>
+        <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">Find the best Poor Man&apos;s Covered Call setups with real options data</p>
       </div>
 
       {/* Controls */}
@@ -126,7 +126,7 @@ export default function ScannerPage() {
         <button
           onClick={() => runScan(DEFAULT_TICKERS)}
           disabled={scanning}
-          className="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-3 rounded-xl bg-stone-900 dark:bg-surface-elevated text-white text-sm font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {scanning ? `Scanning... (${scannedCount}/${DEFAULT_TICKERS.length})` : "Scan Top Tickers for PMCC Setups"}
         </button>
@@ -138,12 +138,12 @@ export default function ScannerPage() {
             onChange={(e) => setCustomTicker(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && addCustomTicker()}
             placeholder="Add ticker (e.g. NVDA)"
-            className="flex-1 px-3 py-2 rounded-xl border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-stone-400"
+            className="flex-1 px-3 py-2 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-sm placeholder:text-stone-300 focus:outline-none focus:border-stone-400"
           />
           <button
             onClick={addCustomTicker}
             disabled={scanning || !customTicker.trim()}
-            className="px-4 py-2 rounded-xl border border-stone-200 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 rounded-xl border border-stone-200 dark:border-border-default text-sm font-semibold text-stone-700 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted disabled:opacity-50 transition-colors"
           >
             Scan
           </button>
@@ -154,13 +154,13 @@ export default function ScannerPage() {
       {scanning && (
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-          <span className="text-xs text-stone-500">Fetching live options chains...</span>
+          <span className="text-xs text-stone-500 dark:text-text-subtle">Fetching live options chains...</span>
         </div>
       )}
 
       {/* Results summary */}
       {results.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-stone-500">
+        <div className="flex items-center gap-4 text-xs text-stone-500 dark:text-text-subtle">
           <span>{results.length} tickers scanned</span>
           <span>{allSetups.length} PMCC setups found</span>
           <span>{allSetups.filter((s) => s.grade === "A").length} grade A</span>
@@ -171,56 +171,56 @@ export default function ScannerPage() {
       {allSetups.length > 0 && (
         <div className="flex flex-col gap-3">
           {allSetups.map((setup, i) => (
-            <div key={i} className="rounded-xl border border-stone-200 bg-white p-4">
+            <div key={i} className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-4">
               {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Link href={`/ticker/${setup.symbol}`} className="text-sm font-bold text-stone-900 hover:text-sky-700">
+                  <Link href={`/ticker/${setup.symbol}`} className="text-sm font-bold text-stone-900 dark:text-text hover:text-sky-700">
                     {setup.symbol}
                   </Link>
-                  <span className="text-xs text-stone-400">${setup.stockPrice.toFixed(2)}</span>
+                  <span className="text-xs text-stone-400 dark:text-text-faint">${setup.stockPrice.toFixed(2)}</span>
                   <GradeBadge grade={setup.grade} />
                 </div>
-                <span className="text-sm font-bold text-emerald-700">
+                <span className="text-sm font-bold text-emerald-700 dark:text-gain-strong">
                   {setup.monthlyReturnPct.toFixed(1)}%/mo
                 </span>
               </div>
 
               {/* Two legs */}
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="p-2.5 rounded-lg bg-sky-50 border border-sky-100">
-                  <p className="text-[10px] font-semibold text-sky-600 uppercase">Buy LEAPS</p>
-                  <p className="text-sm font-bold text-stone-900 mt-1">${setup.leaps.strike} Call</p>
-                  <p className="text-[10px] text-stone-500">{setup.leaps.expiry} · {setup.leaps.dte}d</p>
-                  <p className="text-xs font-semibold text-stone-700 mt-1">{formatDollar(setup.leaps.mid)}</p>
-                  <p className="text-[10px] text-stone-400">Delta ~{setup.leapsDelta.toFixed(2)}</p>
+                <div className="p-2.5 rounded-lg bg-sky-50 dark:bg-accent-bg border border-sky-100 dark:border-accent-border">
+                  <p className="text-[10px] font-semibold text-sky-600 dark:text-accent uppercase">Buy LEAPS</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-text mt-1">${setup.leaps.strike} Call</p>
+                  <p className="text-[10px] text-stone-500 dark:text-text-subtle">{setup.leaps.expiry} · {setup.leaps.dte}d</p>
+                  <p className="text-xs font-semibold text-stone-700 dark:text-text-muted mt-1">{formatDollar(setup.leaps.mid)}</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Delta ~{setup.leapsDelta.toFixed(2)}</p>
                 </div>
                 <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100">
                   <p className="text-[10px] font-semibold text-amber-600 uppercase">Sell Call</p>
-                  <p className="text-sm font-bold text-stone-900 mt-1">${setup.shortCall.strike} Call</p>
-                  <p className="text-[10px] text-stone-500">{setup.shortCall.expiry} · {setup.shortCall.dte}d</p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-1">{formatDollar(setup.shortCall.mid)}</p>
-                  <p className="text-[10px] text-stone-400">Delta ~{setup.shortDelta.toFixed(2)}</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-text mt-1">${setup.shortCall.strike} Call</p>
+                  <p className="text-[10px] text-stone-500 dark:text-text-subtle">{setup.shortCall.expiry} · {setup.shortCall.dte}d</p>
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-gain-strong mt-1">{formatDollar(setup.shortCall.mid)}</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Delta ~{setup.shortDelta.toFixed(2)}</p>
                 </div>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-4 gap-2 mb-3">
                 <div className="text-center">
-                  <p className="text-xs font-bold text-stone-900">{formatDollar(setup.capitalRequired)}</p>
-                  <p className="text-[10px] text-stone-400">Capital</p>
+                  <p className="text-xs font-bold text-stone-900 dark:text-text">{formatDollar(setup.capitalRequired)}</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Capital</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-emerald-700">{formatDollar(setup.monthlyPremium)}</p>
-                  <p className="text-[10px] text-stone-400">Monthly</p>
+                  <p className="text-xs font-bold text-emerald-700 dark:text-gain-strong">{formatDollar(setup.monthlyPremium)}</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Monthly</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-stone-900">{setup.annualizedReturn.toFixed(0)}%</p>
-                  <p className="text-[10px] text-stone-400">Annualized</p>
+                  <p className="text-xs font-bold text-stone-900 dark:text-text">{setup.annualizedReturn.toFixed(0)}%</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Annualized</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-stone-900">${setup.breakeven.toFixed(0)}</p>
-                  <p className="text-[10px] text-stone-400">Breakeven</p>
+                  <p className="text-xs font-bold text-stone-900 dark:text-text">${setup.breakeven.toFixed(0)}</p>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint">Breakeven</p>
                 </div>
               </div>
 
@@ -228,7 +228,7 @@ export default function ScannerPage() {
               {setup.signals.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {setup.signals.map((s, j) => (
-                    <span key={j} className="text-[10px] font-medium bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                    <span key={j} className="text-[10px] font-medium bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted px-2 py-0.5 rounded-full">
                       {s}
                     </span>
                   ))}
@@ -242,13 +242,13 @@ export default function ScannerPage() {
       {/* Empty state */}
       {!scanning && results.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900">Ready to scan</h3>
-          <p className="text-xs text-stone-500 mt-1 max-w-xs">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text">Ready to scan</h3>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-1 max-w-xs">
             Hit the button above to scan top tickers for PMCC setups using live options chain data.
           </p>
         </div>
@@ -256,7 +256,7 @@ export default function ScannerPage() {
 
       {/* Tickers with no setups */}
       {results.filter((r) => r.setups.length === 0 && !r.error).length > 0 && (
-        <div className="text-xs text-stone-400">
+        <div className="text-xs text-stone-400 dark:text-text-faint">
           <span className="font-medium">No PMCC setups found for: </span>
           {results.filter((r) => r.setups.length === 0 && !r.error).map((r) => r.symbol).join(", ")}
         </div>
@@ -264,7 +264,7 @@ export default function ScannerPage() {
 
       {/* Errors */}
       {results.filter((r) => r.error).length > 0 && (
-        <div className="text-xs text-red-500">
+        <div className="text-xs text-red-500 dark:text-loss">
           <span className="font-medium">Errors: </span>
           {results.filter((r) => r.error).map((r) => `${r.symbol}: ${r.error}`).join(", ")}
         </div>

@@ -50,10 +50,10 @@ export default async function WatchlistDetailPage({
   if (!watchlist) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-16">
-        <p className="text-sm text-stone-500 mb-4">Watchlist not found</p>
+        <p className="text-sm text-stone-500 dark:text-text-subtle mb-4">Watchlist not found</p>
         <Link
           href="/watchlists"
-          className="text-sm font-semibold text-stone-900 hover:underline"
+          className="text-sm font-semibold text-stone-900 dark:text-text hover:underline"
         >
           Back to watchlists
         </Link>
@@ -69,10 +69,10 @@ export default async function WatchlistDetailPage({
       <div className="flex items-center gap-3 mb-1">
         <Link
           href="/watchlists"
-          className="w-8 h-8 rounded-lg border border-stone-200 bg-white flex items-center justify-center hover:border-stone-300 transition-colors"
+          className="w-8 h-8 rounded-lg border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated flex items-center justify-center hover:border-stone-300 transition-colors"
         >
           <svg
-            className="w-4 h-4 text-stone-500"
+            className="w-4 h-4 text-stone-500 dark:text-text-subtle"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -87,11 +87,11 @@ export default async function WatchlistDetailPage({
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-stone-900 truncate">
+            <h2 className="text-lg font-bold text-stone-900 dark:text-text truncate">
               {watchlist.name}
             </h2>
             {watchlist.is_default && (
-              <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-full shrink-0">
+              <span className="text-[10px] font-semibold text-stone-500 dark:text-text-subtle bg-stone-100 dark:bg-surface-muted px-1.5 py-0.5 rounded-full shrink-0">
                 Default
               </span>
             )}
@@ -99,7 +99,7 @@ export default async function WatchlistDetailPage({
         </div>
       </div>
 
-      <p className="text-xs text-stone-400 mb-5 ml-11">
+      <p className="text-xs text-stone-400 dark:text-text-faint mb-5 ml-11">
         {items.length}{" "}
         {items.length === 1 ? "ticker" : "tickers"}
       </p>
@@ -110,7 +110,7 @@ export default async function WatchlistDetailPage({
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-sm text-stone-400">
+          <p className="text-sm text-stone-400 dark:text-text-faint">
             No tickers yet. Add one above.
           </p>
         </div>
@@ -121,13 +121,13 @@ export default async function WatchlistDetailPage({
             return (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white"
+                className="flex items-center justify-between p-3 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated"
               >
                 <Link
                   href={`/ticker/${item.symbol}`}
                   className="flex items-center gap-2 flex-1 min-w-0"
                 >
-                  <span className="text-sm font-bold text-stone-900">
+                  <span className="text-sm font-bold text-stone-900 dark:text-text">
                     {item.symbol}
                   </span>
                   {daysUntil !== undefined && (
@@ -139,7 +139,7 @@ export default async function WatchlistDetailPage({
                 <form action={removeTickerAction.bind(null, id, item.symbol)}>
                   <button
                     type="submit"
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 dark:text-text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                     title="Remove ticker"
                   >
                     <svg
@@ -164,11 +164,11 @@ export default async function WatchlistDetailPage({
       )}
 
       {!watchlist.is_default && (
-        <div className="mt-8 pt-6 border-t border-stone-100">
+        <div className="mt-8 pt-6 border-t border-stone-100 dark:border-border-subtle">
           <form action={deleteWatchlistAction.bind(null, id)}>
             <button
               type="submit"
-              className="w-full py-2.5 text-sm font-semibold rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+              className="w-full py-2.5 text-sm font-semibold rounded-xl border border-red-200 dark:border-loss-border text-red-500 dark:text-loss hover:bg-red-50 transition-colors"
             >
               Delete Watchlist
             </button>

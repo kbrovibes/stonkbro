@@ -69,7 +69,7 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, partIdx) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={partIdx} className="font-semibold text-gray-900">
+        <strong key={partIdx} className="font-semibold text-gray-900 dark:text-text">
           {part.slice(2, -2)}
         </strong>
       );
@@ -91,7 +91,7 @@ function renderTextContent(content: string): React.ReactNode {
       elements.push(
         <ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 pl-1 my-1">
           {bulletGroup.map((b, bi) => (
-            <li key={bi} className="text-sm text-gray-700 leading-relaxed">
+            <li key={bi} className="text-sm text-gray-700 dark:text-text-muted leading-relaxed">
               {renderInline(b)}
             </li>
           ))}
@@ -144,9 +144,9 @@ const calloutStyles = {
     label: "Warning",
   },
   "key-concept": {
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    text: "text-emerald-800",
+    bg: "bg-emerald-50 dark:bg-gain-bg",
+    border: "border-emerald-200 dark:border-gain-border",
+    text: "text-emerald-800 dark:text-gain-strong",
     icon: "\u{1F511}",
     label: "Key Concept",
   },
@@ -154,8 +154,8 @@ const calloutStyles = {
 
 function LoadingPlaceholder() {
   return (
-    <div className="bg-gray-50 rounded-xl border border-gray-100 p-8 flex items-center justify-center">
-      <div className="text-sm text-gray-400">Loading visualization...</div>
+    <div className="bg-gray-50 rounded-xl border border-gray-100 dark:border-border-subtle p-8 flex items-center justify-center">
+      <div className="text-sm text-gray-400 dark:text-text-faint">Loading visualization...</div>
     </div>
   );
 }
@@ -167,7 +167,7 @@ export default function LessonRenderer({ sections, onQuizComplete }: LessonRende
         switch (section.type) {
           case "text":
             return (
-              <div key={idx} className="text-sm text-gray-700 leading-relaxed">
+              <div key={idx} className="text-sm text-gray-700 dark:text-text-muted leading-relaxed">
                 {renderTextContent(section.content)}
               </div>
             );
@@ -192,7 +192,7 @@ export default function LessonRenderer({ sections, onQuizComplete }: LessonRende
             const Component = componentMap[section.component];
             if (!Component) {
               return (
-                <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                <div key={idx} className="bg-red-50 dark:bg-loss-bg border border-red-200 dark:border-loss-border rounded-lg p-3 text-sm text-red-700 dark:text-loss-strong">
                   Unknown component: {section.component}
                 </div>
               );

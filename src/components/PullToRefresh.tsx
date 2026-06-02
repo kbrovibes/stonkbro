@@ -122,7 +122,7 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
         }}
       >
         <div
-          className="w-9 h-9 rounded-full bg-white shadow-md border border-stone-100 flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-white dark:bg-surface-elevated shadow-md border border-stone-100 dark:border-border-subtle flex items-center justify-center"
           style={{
             transform: `translateY(${refreshing ? 8 : Math.min(pullY * 0.35, 22)}px)`,
             transition: refreshing ? "transform 0.2s ease" : undefined,
@@ -132,7 +132,7 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
             <div className="w-4 h-4 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
           ) : (
             <svg
-              className="w-4 h-4 text-sky-600"
+              className="w-4 h-4 text-sky-600 dark:text-accent"
               style={{
                 transform: `rotate(${progressPct * 180}deg)`,
                 transition: "transform 0.1s ease",

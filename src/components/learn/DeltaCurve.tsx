@@ -67,14 +67,14 @@ export default function DeltaCurve() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-white dark:bg-surface-elevated rounded-xl shadow-sm border border-gray-100 dark:border-border-subtle p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Delta vs Stock Price</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-text">Delta vs Stock Price</h3>
         <div className="flex gap-1">
           <button
             onClick={() => setIsCall(true)}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
-              isCall ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+              isCall ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
             }`}
           >
             Call
@@ -82,7 +82,7 @@ export default function DeltaCurve() {
           <button
             onClick={() => setIsCall(false)}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
-              !isCall ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600"
+              !isCall ? "bg-red-500 text-white" : "bg-gray-100 dark:bg-surface-muted text-gray-600 dark:text-text-muted"
             }`}
           >
             Put
@@ -92,8 +92,8 @@ export default function DeltaCurve() {
 
       {/* ATM delta callout */}
       <div className="text-center mb-2">
-        <span className="text-xs text-gray-500">ATM Delta: </span>
-        <span className={`text-lg font-bold ${isCall ? "text-blue-600" : "text-red-600"}`}>
+        <span className="text-xs text-gray-500 dark:text-text-subtle">ATM Delta: </span>
+        <span className={`text-lg font-bold ${isCall ? "text-blue-600" : "text-red-600 dark:text-loss"}`}>
           {atmDelta.toFixed(2)}
         </span>
       </div>

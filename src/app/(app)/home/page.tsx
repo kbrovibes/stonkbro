@@ -83,10 +83,10 @@ export default async function DiscoverPage() {
       {watchlistWidgetData.length > 0 ? (
         <>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-stone-800">Watchlists</h2>
+            <h2 className="text-sm font-bold text-stone-800 dark:text-text">Watchlists</h2>
             <Link
               href="/watchlists"
-              className="text-[11px] font-semibold text-sky-600 hover:text-sky-800 transition-colors"
+              className="text-[11px] font-semibold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
             >
               Manage Watchlists
             </Link>
@@ -95,16 +95,16 @@ export default async function DiscoverPage() {
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-surface-muted flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-stone-400 dark:text-text-faint" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
             </svg>
           </div>
-          <h3 className="text-sm font-bold text-stone-900 mb-1">No watchlists yet</h3>
-          <p className="text-xs text-stone-500 mb-4">Create a watchlist to see your tickers here.</p>
+          <h3 className="text-sm font-bold text-stone-900 dark:text-text mb-1">No watchlists yet</h3>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mb-4">Create a watchlist to see your tickers here.</p>
           <Link
             href="/watchlists"
-            className="px-4 py-2 rounded-lg bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800 transition-colors"
+            className="px-4 py-2 rounded-lg bg-stone-900 dark:bg-surface-elevated text-white text-xs font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors"
           >
             Create Watchlist
           </Link>
