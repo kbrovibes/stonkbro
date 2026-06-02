@@ -64,7 +64,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <head>
-        <meta name="theme-color" content="#FAFAF9" />
+        <meta name="theme-color" content="#0E1014" />
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col font-sans">

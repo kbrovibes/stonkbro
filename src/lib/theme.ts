@@ -2,15 +2,18 @@ export type ThemeMode = "light" | "dark" | "system";
 
 export const THEME_STORAGE_KEY = "stonkbro-theme";
 
+/** Default mode for users who have never set a preference. */
+export const DEFAULT_THEME: ThemeMode = "dark";
+
 export function getStoredTheme(): ThemeMode {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return DEFAULT_THEME;
   try {
     const v = localStorage.getItem(THEME_STORAGE_KEY);
     if (v === "light" || v === "dark" || v === "system") return v;
   } catch {
     /* ignore */
   }
-  return "system";
+  return DEFAULT_THEME;
 }
 
 export function resolveTheme(mode: ThemeMode): "light" | "dark" {
@@ -42,4 +45,4 @@ export function setTheme(mode: ThemeMode): void {
 }
 
 /** Inline pre-paint script source. Injected into <head> to prevent FOUC. */
-export const PRE_PAINT_THEME_SCRIPT = `(function(){try{var k='${THEME_STORAGE_KEY}';var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;if(r==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`;
+export const PRE_PAINT_THEME_SCRIPT = `(function(){try{var k='${THEME_STORAGE_KEY}';var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='${DEFAULT_THEME}';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;if(r==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`;
