@@ -481,22 +481,6 @@ export default function TimeMachinePage() {
     }
   }
 
-  async function runSimulation() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/portfolio/time-machine?date=${selectedDate}`);
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error || `Simulation failed (${res.status})`);
-      }
-      setData(json as TimeMachineResult);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Simulation failed");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-surface pb-24">
@@ -724,10 +708,12 @@ export default function TimeMachinePage() {
                 </span>
               </div>
 
-              {/* Center-aligned full-detail CTA, theme-aligned with portfolio buttons */}
+              {/* Full-detail CTA — matches the emerald action treatment used
+                  on the (now-removed) Simulate button so primary actions are
+                  visually consistent across the page. */}
               <Link
                 href="/time-machine/detail"
-                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200 text-violet-800 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
+                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 text-sm font-semibold transition-colors"
               >
                 <span>⏰</span> Full Hindsight Snapshot
               </Link>
@@ -754,37 +740,12 @@ export default function TimeMachinePage() {
           </div>
         )}
 
-        {/* Date picker row */}
-        <div className="bg-white dark:bg-surface-elevated border border-stone-200 dark:border-border-default rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Snapshot date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                min={earliestAvailable}
-                max={isoNDaysAgo(7)}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 border border-stone-300 dark:border-border-strong rounded-lg text-sm bg-white dark:bg-surface-elevated text-stone-900 dark:text-text focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
-              />
-            </div>
-            <button
-              onClick={runSimulation}
-              disabled={loading}
-              className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? "Simulating…" : "Simulate"}
-            </button>
+        {/* Inline error from per-snapshot loads (Re-run / tile click). */}
+        {error && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg dark:border-loss-border px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
+            {error}
           </div>
-          <p className="text-[10px] text-stone-400 dark:text-text-faint">
-            History available back to {fmtDate(earliestAvailable)}
-          </p>
-          {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
-              {error} — showing sample data
-            </div>
-          )}
-        </div>
+        )}
 
         {loading && (
           <div className="flex items-center justify-center py-12">
@@ -983,20 +944,22 @@ export default function TimeMachinePage() {
               const TOP = 5;
               const fmtSh = (n: number) => Math.round(n).toLocaleString("en-US");
 
-              // Per-accent class literals — Tailwind's purge won't accept dynamic strings.
+              // Per-accent class literals — uses the app's theme-aware
+              // gain-*/loss-* tokens (defined in globals.css with light + dark
+              // variants) so the cards look right in both modes.
               const PALETTE = {
                 emerald: {
-                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50/40 overflow-hidden",
+                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50/40 dark:bg-gain-bg overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-emerald-700 dark:text-gain-strong font-semibold",
-                  totalLabel: "text-[10px] text-emerald-700/80 uppercase tracking-wider font-semibold",
+                  totalLabel: "text-[10px] text-emerald-700/80 dark:text-gain-strong/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-emerald-700 dark:text-gain-strong tabular-nums",
                   rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-emerald-700 dark:text-gain-strong",
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700 dark:text-gain-strong",
                 },
                 rose: {
-                  card: "rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40/40 overflow-hidden",
+                  card: "rounded-xl border border-rose-200 dark:border-loss-border bg-rose-50/60 dark:bg-loss-bg overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-rose-700 dark:text-loss-strong font-semibold",
-                  totalLabel: "text-[10px] text-rose-700/80 uppercase tracking-wider font-semibold",
+                  totalLabel: "text-[10px] text-rose-700/80 dark:text-loss-strong/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-rose-700 dark:text-loss-strong tabular-nums",
                   rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700 dark:text-loss-strong",
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700 dark:text-loss-strong",
