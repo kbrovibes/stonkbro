@@ -79,8 +79,8 @@ function PriceArrow({ direction }: { direction: "up" | "down" }) {
   return (
     <svg viewBox="0 0 80 56" className="w-full h-14" preserveAspectRatio="xMidYMid meet">
       {/* Starting price dot */}
-      <circle cx="12" cy="28" r="4" fill="#6b7280" />
-      <text x="12" y="48" textAnchor="middle" fontSize="9" fill="#9ca3af">$175</text>
+      <circle cx="12" cy="28" r="4" fill="var(--text-subtle)" />
+      <text x="12" y="48" textAnchor="middle" fontSize="9" fill="var(--text-faint)">$175</text>
 
       {/* Arrow line */}
       <line
@@ -94,9 +94,9 @@ function PriceArrow({ direction }: { direction: "up" | "down" }) {
 
       {/* Arrowhead */}
       {isUp ? (
-        <polygon points="60,4 55,14 65,14" fill="#10b981" />
+        <polygon points="60,4 55,14 65,14" fill="var(--gain)" />
       ) : (
-        <polygon points="60,52 55,42 65,42" fill="#ef4444" />
+        <polygon points="60,52 55,42 65,42" fill="var(--loss)" />
       )}
 
       {/* End price */}

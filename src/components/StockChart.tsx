@@ -175,7 +175,7 @@ export default function StockChart({ symbol, currentPrice }: { symbol: string; c
                 <line
                   x1={hoverPoint.x} y1={PAD_Y}
                   x2={hoverPoint.x} y2={H - PAD_Y}
-                  stroke="#a8a29e" strokeWidth="0.5" strokeDasharray="3,3"
+                  stroke="var(--text-faint)" strokeWidth="0.5" strokeDasharray="3,3"
                 />
                 <circle cx={hoverPoint.x} cy={hoverPoint.y} r="3.5" fill="white" stroke={strokeColor} strokeWidth="2" />
               </>

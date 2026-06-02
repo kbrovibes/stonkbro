@@ -90,26 +90,26 @@ export default function VegaImpact() {
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
         {/* Y-axis */}
-        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="0.5" />
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="0.5" />
 
         {/* X-axis labels */}
         {[10, 20, 30, 40, 50, 60, 70, 80].map((iv) => {
           const x = PAD_L + ((iv - ivRange.min) / (ivRange.max - ivRange.min)) * plotW;
           return (
             <g key={iv}>
-              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="#d1d5db" strokeWidth="0.5" />
-              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="var(--border-strong)" strokeWidth="0.5" />
+              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="var(--text-faint)">
                 {iv}%
               </text>
             </g>
           );
         })}
-        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="#6b7280">
+        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="var(--text-subtle)">
           Implied Volatility
         </text>
 
         {/* Y-axis label */}
-        <text x={6} y={PAD_T + plotH / 2} textAnchor="middle" fontSize="8" fill="#6b7280" transform={`rotate(-90, 6, ${PAD_T + plotH / 2})`}>
+        <text x={6} y={PAD_T + plotH / 2} textAnchor="middle" fontSize="8" fill="var(--text-subtle)" transform={`rotate(-90, 6, ${PAD_T + plotH / 2})`}>
           Option Price
         </text>
 
@@ -133,7 +133,7 @@ export default function VegaImpact() {
             </text>
 
             {/* After point */}
-            <circle cx={crushX2} cy={crushY2} r="5" fill="#ef4444" stroke="white" strokeWidth="2" />
+            <circle cx={crushX2} cy={crushY2} r="5" fill="var(--loss)" stroke="white" strokeWidth="2" />
             <text x={crushX2 - 8} y={crushY2 + 14} fontSize="9" fill="#dc2626" fontWeight="bold" textAnchor="end">
               ${priceAfter.toFixed(2)}
             </text>
@@ -144,14 +144,14 @@ export default function VegaImpact() {
               y1={crushY1}
               x2={crushX2}
               y2={crushY2}
-              stroke="#ef4444"
+              stroke="var(--loss)"
               strokeWidth="1.5"
               strokeDasharray="4,3"
               markerEnd="url(#arrowhead)"
             />
             <defs>
               <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6" fill="none" stroke="#ef4444" strokeWidth="1" />
+                <path d="M0,0 L6,3 L0,6" fill="none" stroke="var(--loss)" strokeWidth="1" />
               </marker>
             </defs>
           </>

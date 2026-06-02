@@ -143,13 +143,13 @@ export default async function LearnPage() {
         <div className="flex items-center justify-center">
           <div className="relative w-20 h-20">
             <svg width={80} height={80} className="-rotate-90">
-              <circle cx={40} cy={40} r={34} fill="none" stroke="#e7e5e4" strokeWidth={6} />
+              <circle cx={40} cy={40} r={34} fill="none" stroke="var(--border)" strokeWidth={6} />
               <circle
                 cx={40}
                 cy={40}
                 r={34}
                 fill="none"
-                stroke="#0284c7"
+                stroke="var(--accent)"
                 strokeWidth={6}
                 strokeDasharray={2 * Math.PI * 34}
                 strokeDashoffset={2 * Math.PI * 34 - (overallPct / 100) * 2 * Math.PI * 34}

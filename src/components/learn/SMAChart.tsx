@@ -177,7 +177,7 @@ export default function SMAChart(_props: Record<string, unknown>) {
             <polygon points="0,6 3,0 6,6" fill="#f59e0b" />
           </marker>
           <marker id="sma-arrow-dn" markerWidth="6" markerHeight="6" refX="3" refY="0" orient="auto">
-            <polygon points="0,0 3,6 6,0" fill="#ef4444" />
+            <polygon points="0,0 3,6 6,0" fill="var(--loss)" />
           </marker>
         </defs>
 
@@ -189,14 +189,14 @@ export default function SMAChart(_props: Record<string, unknown>) {
               x2={PAD_L + plotW} y2={scaleY(gp)}
               stroke="#f3f4f6" strokeWidth="1"
             />
-            <text x={PAD_L - 4} y={scaleY(gp) + 3.5} textAnchor="end" fontSize="8" fill="#9ca3af">
+            <text x={PAD_L - 4} y={scaleY(gp) + 3.5} textAnchor="end" fontSize="8" fill="var(--text-faint)">
               ${gp}
             </text>
           </g>
         ))}
 
         {/* X-axis line */}
-        <line x1={PAD_L} y1={PAD_T + plotH} x2={PAD_L + plotW} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="1" />
+        <line x1={PAD_L} y1={PAD_T + plotH} x2={PAD_L + plotW} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="1" />
 
         {/* X-axis labels */}
         {xLabels.map(({ label, frac }) => (
@@ -206,7 +206,7 @@ export default function SMAChart(_props: Record<string, unknown>) {
             y={PAD_T + plotH + 14}
             textAnchor="middle"
             fontSize="8"
-            fill="#9ca3af"
+            fill="var(--text-faint)"
           >
             {label}
           </text>
@@ -246,7 +246,7 @@ export default function SMAChart(_props: Record<string, unknown>) {
         )}
 
         {/* Price line */}
-        <path d={pricePath} fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+        <path d={pricePath} fill="none" stroke="var(--border-strong)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
 
         {/* SMA 200 — purple (slowest, draw first so others render on top) */}
         {show200 && (

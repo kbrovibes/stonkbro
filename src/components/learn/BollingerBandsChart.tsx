@@ -214,7 +214,7 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
             />
             <polygon
               points={`${sx(breakoutIdx)},${sy(rawPrices[breakoutIdx]) - 22} ${sx(breakoutIdx) - 4},${sy(rawPrices[breakoutIdx]) - 14} ${sx(breakoutIdx) + 4},${sy(rawPrices[breakoutIdx]) - 14}`}
-              fill="#059669"
+              fill="var(--gain)"
             />
             {/* Label box */}
             {(() => {
@@ -225,7 +225,7 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
               return (
                 <>
                   <rect x={bx} y={by} width={boxW} height={boxH} rx="4" fill="rgba(220,252,231,0.95)" stroke="#86efac" strokeWidth="0.8" />
-                  <text x={bx + boxW / 2} y={by + 9} textAnchor="middle" fontSize="7" fill="#059669" fontWeight="700">Upper band touch</text>
+                  <text x={bx + boxW / 2} y={by + 9} textAnchor="middle" fontSize="7" fill="var(--gain)" fontWeight="700">Upper band touch</text>
                   <text x={bx + boxW / 2} y={by + 20} textAnchor="middle" fontSize="6.5" fill="#047857">overbought OR strong trend</text>
                 </>
               );
@@ -268,7 +268,7 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
         {/* Upper band */}
         <path d={upperPath} fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="4,3" />
         {/* Middle band (SMA20) */}
-        <path d={smaPath} fill="none" stroke="#9ca3af" strokeWidth="1" strokeDasharray="3,3" />
+        <path d={smaPath} fill="none" stroke="var(--text-faint)" strokeWidth="1" strokeDasharray="3,3" />
         {/* Lower band */}
         <path d={lowerPath} fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="4,3" />
         {/* Price line */}
@@ -280,14 +280,14 @@ export default function BollingerBandsChart(_props: Record<string, unknown>) {
 
         {/* Y-axis ticks */}
         {yTicks.map((p) => (
-          <text key={p} x={PAD_L - 4} y={sy(p) + 3} textAnchor="end" fontSize="7" fill="#9ca3af">
+          <text key={p} x={PAD_L - 4} y={sy(p) + 3} textAnchor="end" fontSize="7" fill="var(--text-faint)">
             ${Math.round(p)}
           </text>
         ))}
 
         {/* Band labels at right edge */}
         <text x={PAD_L + plotW + 2} y={sy(bands[99].upper) + 3} fontSize="6.5" fill="#60a5fa">UB</text>
-        <text x={PAD_L + plotW + 2} y={sy(bands[99].sma) + 3} fontSize="6.5" fill="#9ca3af">MA</text>
+        <text x={PAD_L + plotW + 2} y={sy(bands[99].sma) + 3} fontSize="6.5" fill="var(--text-faint)">MA</text>
         <text x={PAD_L + plotW + 2} y={sy(bands[99].lower) + 3} fontSize="6.5" fill="#60a5fa">LB</text>
       </svg>
 

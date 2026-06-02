@@ -145,11 +145,11 @@ export default function SupportResistanceChart({
               y1={supportY}
               x2={PAD_L + plotW}
               y2={supportY}
-              stroke="#10b981"
+              stroke="var(--gain)"
               strokeWidth="1.5"
               strokeDasharray="6,3"
             />
-            <text x={PAD_L + 4} y={supportY + 14} fontSize="9" fill="#059669" fontWeight="600">
+            <text x={PAD_L + 4} y={supportY + 14} fontSize="9" fill="var(--gain)" fontWeight="600">
               Support $92
             </text>
           </g>
@@ -170,7 +170,7 @@ export default function SupportResistanceChart({
             y1={resistanceY}
             x2={PAD_L + plotW}
             y2={resistanceY}
-            stroke="#ef4444"
+            stroke="var(--loss)"
             strokeWidth="1.5"
             strokeDasharray="6,3"
           />
@@ -253,7 +253,7 @@ export default function SupportResistanceChart({
               y={scaleY(109) + 14}
               textAnchor="middle"
               fontSize="8"
-              fill="#059669"
+              fill="var(--gain)"
               fontWeight="600"
             >
               Retest as Support
@@ -269,7 +269,7 @@ export default function SupportResistanceChart({
             y={scaleY(price) + 3}
             textAnchor="end"
             fontSize="8"
-            fill="#9ca3af"
+            fill="var(--text-faint)"
           >
             ${price}
           </text>

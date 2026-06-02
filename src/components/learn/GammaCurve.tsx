@@ -65,16 +65,16 @@ export default function GammaCurve() {
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
         {/* Y-axis */}
-        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="0.5" />
-        <text x={PAD_L - 4} y={PAD_T + plotH + 3} textAnchor="end" fontSize="8" fill="#9ca3af">0</text>
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="0.5" />
+        <text x={PAD_L - 4} y={PAD_T + plotH + 3} textAnchor="end" fontSize="8" fill="var(--text-faint)">0</text>
 
         {/* X-axis labels */}
         {[80, 90, 100, 110, 120].map((price) => {
           const x = PAD_L + ((price - priceRange.min) / (priceRange.max - priceRange.min)) * plotW;
           return (
             <g key={price}>
-              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="#d1d5db" strokeWidth="0.5" />
-              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="var(--border-strong)" strokeWidth="0.5" />
+              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="var(--text-faint)">
                 ${price}
               </text>
             </g>
@@ -82,8 +82,8 @@ export default function GammaCurve() {
         })}
 
         {/* ATM line */}
-        <line x1={peakX} y1={PAD_T} x2={peakX} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4,4" />
-        <text x={peakX} y={H - 2} textAnchor="middle" fontSize="8" fill="#6b7280">ATM</text>
+        <line x1={peakX} y1={PAD_T} x2={peakX} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="0.5" strokeDasharray="4,4" />
+        <text x={peakX} y={H - 2} textAnchor="middle" fontSize="8" fill="var(--text-subtle)">ATM</text>
 
         {/* Gamma curve fill */}
         <path

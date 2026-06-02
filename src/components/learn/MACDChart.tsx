@@ -109,35 +109,35 @@ export default function MACDChart(_props: Record<string, unknown>) {
         preserveAspectRatio="xMidYMid meet"
       >
         {/* ── Price panel ──────────────────────────────────────────────────── */}
-        <text x={PAD_L - 4} y={PAD_T + 4} textAnchor="end" fontSize="7" fill="#6b7280" fontWeight="600">
+        <text x={PAD_L - 4} y={PAD_T + 4} textAnchor="end" fontSize="7" fill="var(--text-subtle)" fontWeight="600">
           Price
         </text>
 
         {/* Y-axis ticks */}
         {[priceMin, (priceMin + priceMax) / 2, priceMax].map((p) => (
-          <text key={p} x={PAD_L - 4} y={syPrice(p) + 3} textAnchor="end" fontSize="7" fill="#9ca3af">
+          <text key={p} x={PAD_L - 4} y={syPrice(p) + 3} textAnchor="end" fontSize="7" fill="var(--text-faint)">
             ${Math.round(p)}
           </text>
         ))}
 
         {/* Price line */}
-        <path d={pricePath} fill="none" stroke="#e5e7eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={pricePath} fill="none" stroke="var(--border)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         {/* EMA12 */}
         <path d={ema12Path} fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         {/* EMA26 */}
         <path d={ema26Path} fill="none" stroke="#f97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* ── MACD panel ───────────────────────────────────────────────────── */}
-        <text x={PAD_L - 4} y={macdPanelTop + 4} textAnchor="end" fontSize="7" fill="#6b7280" fontWeight="600">
+        <text x={PAD_L - 4} y={macdPanelTop + 4} textAnchor="end" fontSize="7" fill="var(--text-subtle)" fontWeight="600">
           MACD
         </text>
 
         {/* Zero line */}
         <line
           x1={PAD_L} y1={zeroY} x2={PAD_L + plotW} y2={zeroY}
-          stroke="#6b7280" strokeWidth="0.8" strokeDasharray="3,3"
+          stroke="var(--text-subtle)" strokeWidth="0.8" strokeDasharray="3,3"
         />
-        <text x={PAD_L + plotW + 2} y={zeroY + 3} fontSize="7" fill="#9ca3af">0</text>
+        <text x={PAD_L + plotW + 2} y={zeroY + 3} fontSize="7" fill="var(--text-faint)">0</text>
 
         {/* Histogram bars */}
         {histogram.map((h, i) => {

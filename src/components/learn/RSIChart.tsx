@@ -112,7 +112,7 @@ export default function RSIChart({
         {/* Price panel */}
         {showPrice && (
           <g>
-            <text x={PAD_L - 4} y={PAD_T + 4} textAnchor="end" fontSize="8" fill="#6b7280" fontWeight="600">
+            <text x={PAD_L - 4} y={PAD_T + 4} textAnchor="end" fontSize="8" fill="var(--text-subtle)" fontWeight="600">
               Price
             </text>
 
@@ -121,14 +121,14 @@ export default function RSIChart({
               <>
                 <line
                   x1={PAD_L} y1={scalePriceY(108)} x2={PAD_L + plotW} y2={scalePriceY(108)}
-                  stroke="#ef4444" strokeWidth="1" strokeDasharray="4,3"
+                  stroke="var(--loss)" strokeWidth="1" strokeDasharray="4,3"
                 />
                 <text x={PAD_L + plotW - 2} y={scalePriceY(108) - 4} textAnchor="end" fontSize="7" fill="#dc2626">R: $108</text>
                 <line
                   x1={PAD_L} y1={scalePriceY(93)} x2={PAD_L + plotW} y2={scalePriceY(93)}
-                  stroke="#10b981" strokeWidth="1" strokeDasharray="4,3"
+                  stroke="var(--gain)" strokeWidth="1" strokeDasharray="4,3"
                 />
-                <text x={PAD_L + plotW - 2} y={scalePriceY(93) + 10} textAnchor="end" fontSize="7" fill="#059669">S: $93</text>
+                <text x={PAD_L + plotW - 2} y={scalePriceY(93) + 10} textAnchor="end" fontSize="7" fill="var(--gain)">S: $93</text>
               </>
             )}
 
@@ -142,7 +142,7 @@ export default function RSIChart({
 
             {/* Y-axis prices */}
             {[minPrice, (minPrice + maxPrice) / 2, maxPrice].map((p) => (
-              <text key={p} x={PAD_L - 4} y={scalePriceY(p) + 3} textAnchor="end" fontSize="7" fill="#9ca3af">
+              <text key={p} x={PAD_L - 4} y={scalePriceY(p) + 3} textAnchor="end" fontSize="7" fill="var(--text-faint)">
                 ${Math.round(p)}
               </text>
             ))}
@@ -151,7 +151,7 @@ export default function RSIChart({
 
         {/* RSI panel */}
         <g>
-          <text x={PAD_L - 4} y={PAD_T + H_PRICE + GAP + 4} textAnchor="end" fontSize="8" fill="#6b7280" fontWeight="600">
+          <text x={PAD_L - 4} y={PAD_T + H_PRICE + GAP + 4} textAnchor="end" fontSize="8" fill="var(--text-subtle)" fontWeight="600">
             RSI
           </text>
 
@@ -170,7 +170,7 @@ export default function RSIChart({
                 x1={PAD_L} y1={scaleRSIY(70)} x2={PAD_L + plotW} y2={scaleRSIY(70)}
                 stroke="#fca5a5" strokeWidth="1" strokeDasharray="4,3"
               />
-              <text x={PAD_L + plotW + 2} y={scaleRSIY(70) + 3} fontSize="7" fill="#ef4444">70</text>
+              <text x={PAD_L + plotW + 2} y={scaleRSIY(70) + 3} fontSize="7" fill="var(--loss)">70</text>
 
               {/* Oversold zone (0-30) */}
               <rect
@@ -184,14 +184,14 @@ export default function RSIChart({
                 x1={PAD_L} y1={scaleRSIY(30)} x2={PAD_L + plotW} y2={scaleRSIY(30)}
                 stroke="#86efac" strokeWidth="1" strokeDasharray="4,3"
               />
-              <text x={PAD_L + plotW + 2} y={scaleRSIY(30) + 3} fontSize="7" fill="#10b981">30</text>
+              <text x={PAD_L + plotW + 2} y={scaleRSIY(30) + 3} fontSize="7" fill="var(--gain)">30</text>
 
               {/* 50 line */}
               <line
                 x1={PAD_L} y1={scaleRSIY(50)} x2={PAD_L + plotW} y2={scaleRSIY(50)}
-                stroke="#e5e7eb" strokeWidth="0.5"
+                stroke="var(--border)" strokeWidth="0.5"
               />
-              <text x={PAD_L + plotW + 2} y={scaleRSIY(50) + 3} fontSize="7" fill="#9ca3af">50</text>
+              <text x={PAD_L + plotW + 2} y={scaleRSIY(50) + 3} fontSize="7" fill="var(--text-faint)">50</text>
             </>
           )}
 
@@ -237,25 +237,25 @@ export default function RSIChart({
           {mode === "divergence" && divergenceType === "bullish" && (
             <>
               {/* Price lower low arrow */}
-              <line x1={scaleX(4)} y1={scalePriceY(94) + 4} x2={scaleX(10)} y2={scalePriceY(92) + 4} stroke="#ef4444" strokeWidth="1.5" markerEnd="url(#arrowDown)" />
+              <line x1={scaleX(4)} y1={scalePriceY(94) + 4} x2={scaleX(10)} y2={scalePriceY(92) + 4} stroke="var(--loss)" strokeWidth="1.5" markerEnd="url(#arrowDown)" />
               <text x={(scaleX(4) + scaleX(10)) / 2} y={scalePriceY(91) + 16} textAnchor="middle" fontSize="7" fill="#dc2626" fontWeight="600">Lower Low</text>
 
               {/* RSI higher low arrow */}
-              <line x1={scaleX(4)} y1={scaleRSIY(28) + 4} x2={scaleX(10)} y2={scaleRSIY(32) - 4} stroke="#10b981" strokeWidth="1.5" markerEnd="url(#arrowUp)" />
-              <text x={(scaleX(4) + scaleX(10)) / 2} y={scaleRSIY(25)} textAnchor="middle" fontSize="7" fill="#059669" fontWeight="600">Higher Low</text>
+              <line x1={scaleX(4)} y1={scaleRSIY(28) + 4} x2={scaleX(10)} y2={scaleRSIY(32) - 4} stroke="var(--gain)" strokeWidth="1.5" markerEnd="url(#arrowUp)" />
+              <text x={(scaleX(4) + scaleX(10)) / 2} y={scaleRSIY(25)} textAnchor="middle" fontSize="7" fill="var(--gain)" fontWeight="600">Higher Low</text>
 
               <defs>
                 <marker id="arrowDown" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-                  <path d="M0,0 L6,3 L0,6" fill="none" stroke="#ef4444" strokeWidth="1" />
+                  <path d="M0,0 L6,3 L0,6" fill="none" stroke="var(--loss)" strokeWidth="1" />
                 </marker>
                 <marker id="arrowUp" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-                  <path d="M0,0 L6,3 L0,6" fill="none" stroke="#10b981" strokeWidth="1" />
+                  <path d="M0,0 L6,3 L0,6" fill="none" stroke="var(--gain)" strokeWidth="1" />
                 </marker>
               </defs>
 
               {/* Bullish divergence label */}
               <rect x={scaleX(6) - 35} y={scaleRSIY(50) - 10} width={70} height={16} rx="4" fill="#dcfce7" stroke="#86efac" strokeWidth="0.5" />
-              <text x={scaleX(6)} y={scaleRSIY(50) + 2} textAnchor="middle" fontSize="8" fill="#059669" fontWeight="700">
+              <text x={scaleX(6)} y={scaleRSIY(50) + 2} textAnchor="middle" fontSize="8" fill="var(--gain)" fontWeight="700">
                 Bullish Divergence
               </text>
             </>

@@ -121,7 +121,7 @@ export default function ThetaDecay() {
           y={PAD_T + 12}
           textAnchor="middle"
           fontSize="7"
-          fill="#059669"
+          fill="var(--gain)"
           fontWeight="600"
         >
           Sweet Spot
@@ -132,8 +132,8 @@ export default function ThetaDecay() {
           const x = PAD_L + ((90 - d) / 90) * plotW;
           return (
             <g key={d}>
-              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="#d1d5db" strokeWidth="0.5" />
-              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <line x1={x} y1={PAD_T + plotH} x2={x} y2={PAD_T + plotH + 4} stroke="var(--border-strong)" strokeWidth="0.5" />
+              <text x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="var(--text-faint)">
                 {d}d
               </text>
             </g>
@@ -141,11 +141,11 @@ export default function ThetaDecay() {
         })}
 
         {/* Y-axis */}
-        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="0.5" />
-        <text x={PAD_L - 4} y={PAD_T + plotH + 3} textAnchor="end" fontSize="8" fill="#9ca3af">$0</text>
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="0.5" />
+        <text x={PAD_L - 4} y={PAD_T + plotH + 3} textAnchor="end" fontSize="8" fill="var(--text-faint)">$0</text>
 
         {/* X-axis label */}
-        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="#6b7280">
+        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="var(--text-subtle)">
           Days to Expiration
         </text>
 
@@ -159,15 +159,15 @@ export default function ThetaDecay() {
         <path
           d={pathD}
           fill="none"
-          stroke="#10b981"
+          stroke="var(--gain)"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
         {/* Animated marker */}
-        <circle cx={animX} cy={animY} r="4" fill="#10b981" stroke="white" strokeWidth="2" />
-        <text x={animX + 8} y={animY - 6} fontSize="9" fill="#059669" fontWeight="bold">
+        <circle cx={animX} cy={animY} r="4" fill="var(--gain)" stroke="white" strokeWidth="2" />
+        <text x={animX + 8} y={animY - 6} fontSize="9" fill="var(--gain)" fontWeight="bold">
           ${animVal.toFixed(2)}
         </text>
       </svg>

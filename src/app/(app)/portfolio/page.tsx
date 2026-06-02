@@ -250,14 +250,14 @@ function PnlChart({
       >
         {/* Section labels */}
         <text x={PAD_L + 3} y={collTop + 9} fontSize={7} fill="#d97706" fontWeight="600" letterSpacing="0.04em">COLLATERAL</text>
-        <text x={PAD_L + 3} y={pnlTop + 10} fontSize={7} fill="#78716c" fontWeight="600" letterSpacing="0.04em">P&amp;L</text>
+        <text x={PAD_L + 3} y={pnlTop + 10} fontSize={7} fill="var(--text-subtle)" fontWeight="600" letterSpacing="0.04em">P&amp;L</text>
 
         {/* Collateral zero line */}
         <line x1={PAD_L} y1={collZero} x2={W - PAD_R} y2={collZero} stroke="#fde68a" strokeWidth={1} />
         {/* P&L zero line */}
-        <line x1={PAD_L} y1={pnlMid} x2={W - PAD_R} y2={pnlMid} stroke="#e7e5e4" strokeWidth={1} />
+        <line x1={PAD_L} y1={pnlMid} x2={W - PAD_R} y2={pnlMid} stroke="var(--border)" strokeWidth={1} />
         {/* Section divider */}
-        <line x1={PAD_L} y1={collZero + SEP / 2} x2={W - PAD_R} y2={collZero + SEP / 2} stroke="#f5f5f4" strokeWidth={1} strokeDasharray="3,2" />
+        <line x1={PAD_L} y1={collZero + SEP / 2} x2={W - PAD_R} y2={collZero + SEP / 2} stroke="var(--border-subtle)" strokeWidth={1} strokeDasharray="3,2" />
 
         {/* Collateral Y-axis (right side): 0 at bottom, maxPeak at top */}
         {[0, 0.5, 1].map((f, i) => {
@@ -277,8 +277,8 @@ function PnlChart({
           const y = pnlY(v);
           return (
             <g key={i}>
-              <line x1={PAD_L - 3} y1={y} x2={PAD_L} y2={y} stroke="#d6d3d1" strokeWidth={1} />
-              <text x={PAD_L - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="#a8a29e">{fmtK(v)}</text>
+              <line x1={PAD_L - 3} y1={y} x2={PAD_L} y2={y} stroke="var(--border-strong)" strokeWidth={1} />
+              <text x={PAD_L - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="var(--text-faint)">{fmtK(v)}</text>
             </g>
           );
         })}
@@ -348,7 +348,7 @@ function PnlChart({
           const bY = collTop + 2;
           return (
             <g pointerEvents="none">
-              <rect x={bX} y={bY} width={bW} height={bH} rx={4} fill="white" stroke="#e7e5e4" strokeWidth={1} />
+              <rect x={bX} y={bY} width={bW} height={bH} rx={4} fill="white" stroke="var(--border)" strokeWidth={1} />
               {lines.map((line, j) => (
                 <text key={j} x={bX + 7} y={bY + 14 + j * 13} fontSize={9}
                   fill={j === 0 ? "#1c1917" : "#57534e"} fontWeight={j === 0 ? "bold" : "normal"}>

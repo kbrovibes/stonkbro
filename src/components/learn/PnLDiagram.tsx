@@ -282,8 +282,8 @@ export default function PnLDiagram({ strategy = "long-call" }: PnLDiagramProps) 
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
         {/* Zero line */}
-        <line x1={PAD_L} y1={zeroY} x2={PAD_L + plotW} y2={zeroY} stroke="#d1d5db" strokeWidth="1" />
-        <text x={PAD_L - 4} y={zeroY + 3} textAnchor="end" fontSize="8" fill="#9ca3af">$0</text>
+        <line x1={PAD_L} y1={zeroY} x2={PAD_L + plotW} y2={zeroY} stroke="var(--border-strong)" strokeWidth="1" />
+        <text x={PAD_L - 4} y={zeroY + 3} textAnchor="end" fontSize="8" fill="var(--text-faint)">$0</text>
 
         {/* Green fill (above zero) */}
         {scaledPoints.length > 0 && (
@@ -324,8 +324,8 @@ export default function PnLDiagram({ strategy = "long-call" }: PnLDiagramProps) 
           const x = PAD_L + ((strike - priceRange.min) / (priceRange.max - priceRange.min)) * plotW;
           return (
             <g key={i}>
-              <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + plotH} stroke="#6b7280" strokeWidth="0.5" strokeDasharray="3,3" />
-              <text x={x} y={H - 22} textAnchor="middle" fontSize="8" fill="#6b7280" fontWeight="600">
+              <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + plotH} stroke="var(--text-subtle)" strokeWidth="0.5" strokeDasharray="3,3" />
+              <text x={x} y={H - 22} textAnchor="middle" fontSize="8" fill="var(--text-subtle)" fontWeight="600">
                 K=${strike}
               </text>
             </g>
@@ -350,12 +350,12 @@ export default function PnLDiagram({ strategy = "long-call" }: PnLDiagramProps) 
         {[75, 85, 95, 105, 115, 125].map((price) => {
           const x = PAD_L + ((price - priceRange.min) / (priceRange.max - priceRange.min)) * plotW;
           return (
-            <text key={price} x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#9ca3af">
+            <text key={price} x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="var(--text-faint)">
               ${price}
             </text>
           );
         })}
-        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="#6b7280">
+        <text x={PAD_L + plotW / 2} y={H - 1} textAnchor="middle" fontSize="8" fill="var(--text-subtle)">
           Stock Price at Expiry
         </text>
       </svg>

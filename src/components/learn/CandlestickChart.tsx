@@ -126,8 +126,8 @@ export default function CandlestickChart({
         {showSupportResistance && mode === "context" && (
           <g>
             <rect x={PAD_L} y={scaleY(93) - 4} width={plotW} height={8} fill="rgba(16,185,129,0.1)" rx="2" />
-            <line x1={PAD_L} y1={scaleY(93)} x2={PAD_L + plotW} y2={scaleY(93)} stroke="#10b981" strokeWidth="1.5" strokeDasharray="6,3" />
-            <text x={PAD_L + 4} y={scaleY(93) + 14} fontSize="8" fill="#059669" fontWeight="600">Support $93</text>
+            <line x1={PAD_L} y1={scaleY(93)} x2={PAD_L + plotW} y2={scaleY(93)} stroke="var(--gain)" strokeWidth="1.5" strokeDasharray="6,3" />
+            <text x={PAD_L + 4} y={scaleY(93) + 14} fontSize="8" fill="var(--gain)" fontWeight="600">Support $93</text>
           </g>
         )}
 
@@ -178,36 +178,36 @@ export default function CandlestickChart({
               {mode === "anatomy" && (
                 <>
                   {/* High label */}
-                  <line x1={x + barW / 2 + 4} y1={scaleY(d.high)} x2={x + barW / 2 + 30} y2={scaleY(d.high)} stroke="#6b7280" strokeWidth="0.5" strokeDasharray="2,2" />
-                  <text x={x + barW / 2 + 32} y={scaleY(d.high) + 3} fontSize="10" fill="#374151" fontWeight="600">
+                  <line x1={x + barW / 2 + 4} y1={scaleY(d.high)} x2={x + barW / 2 + 30} y2={scaleY(d.high)} stroke="var(--text-subtle)" strokeWidth="0.5" strokeDasharray="2,2" />
+                  <text x={x + barW / 2 + 32} y={scaleY(d.high) + 3} fontSize="10" fill="var(--text-muted)" fontWeight="600">
                     High ${d.high}
                   </text>
 
                   {/* Close label */}
-                  <line x1={x + barW / 2 + 4} y1={scaleY(d.close)} x2={x + barW / 2 + 30} y2={scaleY(d.close)} stroke="#6b7280" strokeWidth="0.5" strokeDasharray="2,2" />
-                  <text x={x + barW / 2 + 32} y={scaleY(d.close) + 3} fontSize="10" fill="#16a34a" fontWeight="600">
+                  <line x1={x + barW / 2 + 4} y1={scaleY(d.close)} x2={x + barW / 2 + 30} y2={scaleY(d.close)} stroke="var(--text-subtle)" strokeWidth="0.5" strokeDasharray="2,2" />
+                  <text x={x + barW / 2 + 32} y={scaleY(d.close) + 3} fontSize="10" fill="var(--gain)" fontWeight="600">
                     Close ${d.close}
                   </text>
 
                   {/* Open label */}
-                  <line x1={x - barW / 2 - 4} y1={scaleY(d.open)} x2={x - barW / 2 - 30} y2={scaleY(d.open)} stroke="#6b7280" strokeWidth="0.5" strokeDasharray="2,2" />
-                  <text x={x - barW / 2 - 32} y={scaleY(d.open) + 3} fontSize="10" fill="#374151" fontWeight="600" textAnchor="end">
+                  <line x1={x - barW / 2 - 4} y1={scaleY(d.open)} x2={x - barW / 2 - 30} y2={scaleY(d.open)} stroke="var(--text-subtle)" strokeWidth="0.5" strokeDasharray="2,2" />
+                  <text x={x - barW / 2 - 32} y={scaleY(d.open) + 3} fontSize="10" fill="var(--text-muted)" fontWeight="600" textAnchor="end">
                     Open ${d.open}
                   </text>
 
                   {/* Low label */}
-                  <line x1={x - barW / 2 - 4} y1={scaleY(d.low)} x2={x - barW / 2 - 30} y2={scaleY(d.low)} stroke="#6b7280" strokeWidth="0.5" strokeDasharray="2,2" />
-                  <text x={x - barW / 2 - 32} y={scaleY(d.low) + 3} fontSize="10" fill="#374151" fontWeight="600" textAnchor="end">
+                  <line x1={x - barW / 2 - 4} y1={scaleY(d.low)} x2={x - barW / 2 - 30} y2={scaleY(d.low)} stroke="var(--text-subtle)" strokeWidth="0.5" strokeDasharray="2,2" />
+                  <text x={x - barW / 2 - 32} y={scaleY(d.low) + 3} fontSize="10" fill="var(--text-muted)" fontWeight="600" textAnchor="end">
                     Low ${d.low}
                   </text>
 
                   {/* Upper wick label */}
-                  <text x={x + barW / 2 + 10} y={scaleY((d.high + Math.max(d.open, d.close)) / 2) + 3} fontSize="8" fill="#9ca3af">
+                  <text x={x + barW / 2 + 10} y={scaleY((d.high + Math.max(d.open, d.close)) / 2) + 3} fontSize="8" fill="var(--text-faint)">
                     Upper Wick
                   </text>
 
                   {/* Lower wick label */}
-                  <text x={x - barW / 2 - 10} y={scaleY((d.low + Math.min(d.open, d.close)) / 2) + 3} fontSize="8" fill="#9ca3af" textAnchor="end">
+                  <text x={x - barW / 2 - 10} y={scaleY((d.low + Math.min(d.open, d.close)) / 2) + 3} fontSize="8" fill="var(--text-faint)" textAnchor="end">
                     Lower Wick
                   </text>
 
@@ -225,7 +225,7 @@ export default function CandlestickChart({
                   y={scaleY(d.high) - 8}
                   textAnchor="middle"
                   fontSize="7"
-                  fill="#6b7280"
+                  fill="var(--text-subtle)"
                   fontWeight="600"
                 >
                   {d.label}
@@ -239,7 +239,7 @@ export default function CandlestickChart({
         {mode === "multi-patterns" && (
           <>
             <rect x={scaleX(2) - 15} y={scaleY(maxPrice) - 6} width={scaleX(4) - scaleX(2) + 30} height={12} rx="4" fill="#dcfce7" stroke="#86efac" strokeWidth="0.5" />
-            <text x={(scaleX(2) + scaleX(4)) / 2} y={scaleY(maxPrice) + 2} textAnchor="middle" fontSize="8" fill="#059669" fontWeight="700">
+            <text x={(scaleX(2) + scaleX(4)) / 2} y={scaleY(maxPrice) + 2} textAnchor="middle" fontSize="8" fill="var(--gain)" fontWeight="700">
               Morning Star
             </text>
             <rect x={scaleX(8) - 15} y={scaleY(maxPrice) - 6} width={scaleX(10) - scaleX(8) + 30} height={12} rx="4" fill="#dbeafe" stroke="#93c5fd" strokeWidth="0.5" />
@@ -268,10 +268,10 @@ export default function CandlestickChart({
             />
 
             {/* RSI label */}
-            <text x={PAD_L - 4} y={rsiTop + 8} textAnchor="end" fontSize="7" fill="#6b7280" fontWeight="600">RSI</text>
+            <text x={PAD_L - 4} y={rsiTop + 8} textAnchor="end" fontSize="7" fill="var(--text-subtle)" fontWeight="600">RSI</text>
 
             {/* Oversold callout */}
-            <text x={scaleX(7)} y={scaleRSIY(rsiData[7]) + 12} textAnchor="middle" fontSize="7" fill="#059669" fontWeight="600">
+            <text x={scaleX(7)} y={scaleRSIY(rsiData[7]) + 12} textAnchor="middle" fontSize="7" fill="var(--gain)" fontWeight="600">
               Oversold!
             </text>
           </g>
@@ -281,7 +281,7 @@ export default function CandlestickChart({
         {Array.from({ length: 5 }, (_, i) => {
           const price = minPrice + (i / 4) * priceRange;
           return (
-            <text key={i} x={PAD_L - 4} y={scaleY(price) + 3} textAnchor="end" fontSize="7" fill="#9ca3af">
+            <text key={i} x={PAD_L - 4} y={scaleY(price) + 3} textAnchor="end" fontSize="7" fill="var(--text-faint)">
               ${Math.round(price)}
             </text>
           );

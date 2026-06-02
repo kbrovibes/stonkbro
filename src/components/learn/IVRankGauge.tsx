@@ -96,7 +96,7 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
         <path
           d={arcPath(0, 100)}
           fill="none"
-          stroke="#e5e7eb"
+          stroke="var(--border)"
           strokeWidth={STROKE}
           strokeLinecap="round"
         />
@@ -125,7 +125,7 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
         <path
           d={redArc}
           fill="none"
-          stroke="#ef4444"
+          stroke="var(--loss)"
           strokeWidth={STROKE}
           strokeLinecap="butt"
           opacity="0.85"
@@ -142,14 +142,14 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
               <line
                 x1={inner.x} y1={inner.y}
                 x2={outer.x} y2={outer.y}
-                stroke="#6b7280" strokeWidth="1.5"
+                stroke="var(--text-subtle)" strokeWidth="1.5"
               />
               <text
                 x={label.x} y={label.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fontSize="9"
-                fill="#6b7280"
+                fill="var(--text-subtle)"
                 fontWeight="500"
               >
                 {val}
@@ -164,7 +164,7 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
           y={polarToCart(CX, CY, R, valueToAngle(12)).y - 18}
           textAnchor="middle"
           fontSize="8"
-          fill="#16a34a"
+          fill="var(--gain)"
           fontWeight="600"
         >
           Buy Options
@@ -207,7 +207,7 @@ export default function IVRankGauge(_props: Record<string, unknown>) {
           y={CY - 22}
           textAnchor="middle"
           fontSize="13"
-          fill="#374151"
+          fill="var(--text-muted)"
           fontWeight="700"
         >
           IV Rank:

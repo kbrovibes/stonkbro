@@ -448,8 +448,8 @@ function YGrid({ padL, padR, padT, innerH, yMin = 0, yMax, showDollars }: {
         const v = yMin + range * t;
         return (
           <g key={t}>
-            <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e7e5e4" strokeWidth={1} strokeDasharray={t === 0 || t === 1 ? "" : "2,3"} />
-            <text x={padL - 6} y={y + 3} fontSize={9} fill="#a8a29e" textAnchor="end">{showDollars ? fmtCompact(v) : "•••"}</text>
+            <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--border)" strokeWidth={1} strokeDasharray={t === 0 || t === 1 ? "" : "2,3"} />
+            <text x={padL - 6} y={y + 3} fontSize={9} fill="var(--text-faint)" textAnchor="end">{showDollars ? fmtCompact(v) : "•••"}</text>
           </g>
         );
       })}
@@ -468,7 +468,7 @@ function XLabels({
           x={xAt(i)}
           y={ys}
           fontSize={9}
-          fill="#a8a29e"
+          fill="var(--text-faint)"
           textAnchor="middle"
           transform={rotate ? `rotate(-35, ${xAt(i)}, ${ys})` : undefined}
         >
@@ -504,14 +504,14 @@ function LineChart({
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
       <YGrid padL={padL} padR={padR} padT={padT} innerH={innerH} yMin={yMin} yMax={yMax} showDollars={showDollars} />
-      <path d={path("simulation")} fill="none" stroke="#0ea5e9" strokeWidth={2} />
-      <path d={path("actual")} fill="none" stroke="#44403c" strokeWidth={2} />
+      <path d={path("simulation")} fill="none" stroke="var(--accent)" strokeWidth={2} />
+      <path d={path("actual")} fill="none" stroke="var(--text-muted)" strokeWidth={2} />
       {rows.map((r, i) => (
         <g key={r.snapshotDate}>
-          <circle cx={xAt(i)} cy={yAt(r.payload.simulation.total)} r={2.5} fill="#0ea5e9">
+          <circle cx={xAt(i)} cy={yAt(r.payload.simulation.total)} r={2.5} fill="var(--accent)">
             <title>{`${labels[i]} sim: ${fmt(r.payload.simulation.total)}`}</title>
           </circle>
-          <circle cx={xAt(i)} cy={yAt(r.payload.actual.total)} r={2.5} fill="#44403c">
+          <circle cx={xAt(i)} cy={yAt(r.payload.actual.total)} r={2.5} fill="var(--text-muted)">
             <title>{`${labels[i]} actual: ${fmt(r.payload.actual.total)}`}</title>
           </circle>
         </g>
@@ -554,10 +554,10 @@ function DeltaBars({
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke="#a8a29e" strokeWidth={1} />
-      <text x={padL - 6} y={padT + 8} fontSize={9} fill="#a8a29e" textAnchor="end">+{cap}</text>
-      <text x={padL - 6} y={zeroY + 3} fontSize={9} fill="#a8a29e" textAnchor="end">0</text>
-      <text x={padL - 6} y={H - padB + 8} fontSize={9} fill="#a8a29e" textAnchor="end">−{cap}</text>
+      <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke="var(--text-faint)" strokeWidth={1} />
+      <text x={padL - 6} y={padT + 8} fontSize={9} fill="var(--text-faint)" textAnchor="end">+{cap}</text>
+      <text x={padL - 6} y={zeroY + 3} fontSize={9} fill="var(--text-faint)" textAnchor="end">0</text>
+      <text x={padL - 6} y={H - padB + 8} fontSize={9} fill="var(--text-faint)" textAnchor="end">−{cap}</text>
       {rows.map((r, i) => {
         const cx = cxAt(i);
         const x = cx - barW / 2;
@@ -606,14 +606,14 @@ function CumulativeLineChart({
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
       <YGrid padL={padL} padR={padR} padT={padT} innerH={innerH} yMax={yMax} showDollars={showDollars} />
-      <path d={pathFor("realized")} fill="none" stroke="#10b981" strokeWidth={2} />
-      <path d={pathFor("tax")} fill="none" stroke="#f43f5e" strokeWidth={2} />
+      <path d={pathFor("realized")} fill="none" stroke="var(--gain)" strokeWidth={2} />
+      <path d={pathFor("tax")} fill="none" stroke="var(--loss)" strokeWidth={2} />
       {series.map((s, i) => (
         <g key={s.date}>
-          <circle cx={xAt(i)} cy={yAt(s.realized)} r={2.5} fill="#10b981">
+          <circle cx={xAt(i)} cy={yAt(s.realized)} r={2.5} fill="var(--gain)">
             <title>{`${labels[i]} realized: ${fmt(s.realized)}`}</title>
           </circle>
-          <circle cx={xAt(i)} cy={yAt(s.tax)} r={2.5} fill="#f43f5e">
+          <circle cx={xAt(i)} cy={yAt(s.tax)} r={2.5} fill="var(--loss)">
             <title>{`${labels[i]} tax: ${fmt(s.tax)}`}</title>
           </circle>
         </g>

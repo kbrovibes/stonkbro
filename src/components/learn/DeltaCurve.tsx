@@ -105,8 +105,8 @@ export default function DeltaCurve() {
           const y = PAD_T + (1 - yNorm) * plotH;
           return (
             <g key={val}>
-              <line x1={PAD_L} y1={y} x2={PAD_L + plotW} y2={y} stroke="#e5e7eb" strokeWidth="0.5" />
-              <text x={PAD_L - 4} y={y + 3} textAnchor="end" fontSize="9" fill="#9ca3af">
+              <line x1={PAD_L} y1={y} x2={PAD_L + plotW} y2={y} stroke="var(--border)" strokeWidth="0.5" />
+              <text x={PAD_L - 4} y={y + 3} textAnchor="end" fontSize="9" fill="var(--text-faint)">
                 {label}
               </text>
             </g>
@@ -118,11 +118,11 @@ export default function DeltaCurve() {
           const x = PAD_L + ((price - priceRange.min) / (priceRange.max - priceRange.min)) * plotW;
           return (
             <g key={price}>
-              <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + plotH} stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4,4" />
-              <text x={x} y={H - 8} textAnchor="middle" fontSize="8" fill="#6b7280">
+              <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + plotH} stroke="var(--border)" strokeWidth="0.5" strokeDasharray="4,4" />
+              <text x={x} y={H - 8} textAnchor="middle" fontSize="8" fill="var(--text-subtle)">
                 {label}
               </text>
-              <text x={x} y={H - 18} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <text x={x} y={H - 18} textAnchor="middle" fontSize="8" fill="var(--text-faint)">
                 ${price}
               </text>
             </g>

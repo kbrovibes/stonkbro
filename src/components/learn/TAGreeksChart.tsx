@@ -114,9 +114,9 @@ export default function TAGreeksChart({
             />
             <line
               x1={PAD_L} y1={scaleY(supportLevel)} x2={PAD_L + plotW} y2={scaleY(supportLevel)}
-              stroke="#10b981" strokeWidth="1.5" strokeDasharray="6,3"
+              stroke="var(--gain)" strokeWidth="1.5" strokeDasharray="6,3"
             />
-            <text x={PAD_L + 4} y={scaleY(supportLevel) + 14} fontSize="8" fill="#059669" fontWeight="600">
+            <text x={PAD_L + 4} y={scaleY(supportLevel) + 14} fontSize="8" fill="var(--gain)" fontWeight="600">
               Support ${supportLevel}
             </text>
           </g>
@@ -135,7 +135,7 @@ export default function TAGreeksChart({
             />
             <line
               x1={PAD_L} y1={scaleY(resistanceLevel)} x2={PAD_L + plotW} y2={scaleY(resistanceLevel)}
-              stroke="#ef4444" strokeWidth="1.5" strokeDasharray="6,3"
+              stroke="var(--loss)" strokeWidth="1.5" strokeDasharray="6,3"
             />
             <text x={PAD_L + 4} y={scaleY(resistanceLevel) - 8} fontSize="8" fill="#dc2626" fontWeight="600">
               Resistance ${resistanceLevel}
@@ -154,13 +154,13 @@ export default function TAGreeksChart({
         {/* Entry points (CSP sell) */}
         {entryPoints.map((ep, i) => (
           <g key={`entry-${i}`}>
-            <circle cx={scaleX(ep.i)} cy={scaleY(ep.price)} r="6" fill="none" stroke="#10b981" strokeWidth="2" />
+            <circle cx={scaleX(ep.i)} cy={scaleY(ep.price)} r="6" fill="none" stroke="var(--gain)" strokeWidth="2" />
             <text
               x={scaleX(ep.i)}
               y={scaleY(ep.price) + 18}
               textAnchor="middle"
               fontSize="7"
-              fill="#059669"
+              fill="var(--gain)"
               fontWeight="700"
             >
               SELL PUT
@@ -170,7 +170,7 @@ export default function TAGreeksChart({
               y={scaleY(ep.price) + 26}
               textAnchor="middle"
               fontSize="6"
-              fill="#6b7280"
+              fill="var(--text-subtle)"
             >
               RSI: {ep.rsi}
             </text>
@@ -180,7 +180,7 @@ export default function TAGreeksChart({
         {/* Sell call points (at resistance) */}
         {mode === "synergy" && sellPoints.map((sp, i) => (
           <g key={`sell-${i}`}>
-            <circle cx={scaleX(sp.i)} cy={scaleY(sp.price)} r="6" fill="none" stroke="#ef4444" strokeWidth="2" />
+            <circle cx={scaleX(sp.i)} cy={scaleY(sp.price)} r="6" fill="none" stroke="var(--loss)" strokeWidth="2" />
             <text
               x={scaleX(sp.i)}
               y={scaleY(sp.price) - 12}
@@ -196,7 +196,7 @@ export default function TAGreeksChart({
               y={scaleY(sp.price) - 4}
               textAnchor="middle"
               fontSize="6"
-              fill="#6b7280"
+              fill="var(--text-subtle)"
             >
               RSI: {sp.rsi}
             </text>
@@ -205,7 +205,7 @@ export default function TAGreeksChart({
 
         {/* Y-axis */}
         {[minP, (minP + maxP) / 2, maxP].map((p) => (
-          <text key={p} x={PAD_L - 4} y={scaleY(p) + 3} textAnchor="end" fontSize="7" fill="#9ca3af">
+          <text key={p} x={PAD_L - 4} y={scaleY(p) + 3} textAnchor="end" fontSize="7" fill="var(--text-faint)">
             ${Math.round(p)}
           </text>
         ))}
@@ -215,7 +215,7 @@ export default function TAGreeksChart({
           <g>
             <rect x={PAD_L} y={H_PRICE + 10} width={plotW} height={H_GREEK - 10} rx="6" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.5" />
 
-            <text x={PAD_L + 8} y={H_PRICE + 26} fontSize="9" fill="#374151" fontWeight="700">
+            <text x={PAD_L + 8} y={H_PRICE + 26} fontSize="9" fill="var(--text-muted)" fontWeight="700">
               CSP Greeks at Entry (K=${greekAtEntry.strike}, {greekAtEntry.dte} DTE)
             </text>
 
@@ -230,14 +230,14 @@ export default function TAGreeksChart({
               const gx = PAD_L + 12 + g.x * (plotW / 5);
               return (
                 <g key={g.label}>
-                  <text x={gx} y={H_PRICE + 44} fontSize="7" fill="#6b7280">{g.label}</text>
+                  <text x={gx} y={H_PRICE + 44} fontSize="7" fill="var(--text-subtle)">{g.label}</text>
                   <text x={gx} y={H_PRICE + 56} fontSize="10" fill={g.color} fontWeight="700">{g.value}</text>
                 </g>
               );
             })}
 
             {/* Interpretation */}
-            <text x={PAD_L + 8} y={H_PRICE + 72} fontSize="7" fill="#059669" fontWeight="600">
+            <text x={PAD_L + 8} y={H_PRICE + 72} fontSize="7" fill="var(--gain)" fontWeight="600">
               Theta positive = $6/day income | Delta -0.25 = ~75% win rate
             </text>
           </g>
