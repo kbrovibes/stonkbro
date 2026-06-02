@@ -544,6 +544,87 @@ export function reconstructCashAtReverse(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// REVERSE-WALK — cost basis (per symbol).
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface CostBasisAnchor {
+  /** Today's units held for this symbol (aggregated across accounts). */
+  units: number;
+  /** Today's broker-reported total cost basis for this symbol. */
+  totalCost: number;
+}
+
+export interface CostBasisAtSnapshot {
+  units: number;
+  totalCost: number;
+  avgCost: number;
+}
+
+/**
+ * Reverse-walk a per-symbol cost basis snapshot.
+ *
+ * Anchor: today's units + broker-reported total cost basis. Walk txns in
+ * reverse chronological order; SELLs restore avg-cost × units to total
+ * cost (because SELLs don't change avg cost — they just reduce the
+ * basis pool), BUYs un-add their notional cost.
+ *
+ * Symbols fully exited before today cannot be recovered (not in anchor)
+ * and are omitted; callers should fall back to "cost basis unavailable"
+ * for those.
+ */
+export function reconstructStockCostBasisAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  anchor: Map<string, CostBasisAnchor>,
+): Map<string, CostBasisAtSnapshot> {
+  const state = new Map<string, CostBasisAtSnapshot>();
+  for (const [sym, a] of anchor) {
+    state.set(sym, {
+      units: a.units,
+      totalCost: a.totalCost,
+      avgCost: a.units > 0 ? a.totalCost / a.units : 0,
+    });
+  }
+
+  const sorted = sortAscending(txns);
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const tx = sorted[i];
+    const date = txnDate(tx);
+    if (date <= snapshotDate) break;
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    if (isOptionTxn(tx)) continue;
+
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+    const cur = state.get(sym);
+    if (!cur) continue; // not in today's anchor (fully exited symbol)
+
+    if (tx.type === "BUY") {
+      const units = Math.abs(tx.units);
+      // For RSU vests, broker books cost basis at vest market value;
+      // tx.price is the vest price (already set by Fidelity's RSU rule).
+      const cost = isRsuVest(tx)
+        ? (Number(tx.price) || 0) * units
+        : Math.abs(tx.amount);
+      cur.units = Math.max(0, cur.units - units);
+      cur.totalCost = Math.max(0, cur.totalCost - cost);
+    } else if (tx.type === "SELL") {
+      const units = Math.abs(tx.units);
+      const restore = cur.avgCost * units;
+      cur.units += units;
+      cur.totalCost += restore;
+    }
+    cur.avgCost = cur.units > 0 ? cur.totalCost / cur.units : 0;
+  }
+
+  // Drop symbols that reverse-walked to zero units (not held at snapshot).
+  for (const [sym, s] of state) {
+    if (s.units < 1e-6) state.delete(sym);
+  }
+  return state;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Reconciliation — sanity-check the reverse walk by forward-applying
 // post-snapshot txns and verifying we land at today's known state.
 // ─────────────────────────────────────────────────────────────────────────

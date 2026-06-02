@@ -13,6 +13,7 @@
 import {
   reconstructStockPositionsAt,
   reconstructStockPositionsAtReverse,
+  reconstructStockCostBasisAtReverse,
   reconstructOptionPositionsAt,
   reconstructCashAt,
   reconstructCashAtReverse,
@@ -22,7 +23,7 @@ import {
   computeExitAnalysisSinceSnapshot,
   getRsuVestsAfter,
 } from "./reconstruct";
-import type { ReconciliationResult } from "./reconstruct";
+import type { CostBasisAnchor, ReconciliationResult } from "./reconstruct";
 import type { PortfolioData } from "@/lib/snaptrade/client";
 
 /** Bumped whenever the simulator's payload shape or math changes. */
@@ -42,6 +43,22 @@ function aggregatePortfolioUnits(portfolio: PortfolioData): Map<string, number> 
   }
   return units;
 }
+
+/** Aggregate today's cost basis per symbol — anchor for cost-basis reverse walk. */
+function aggregatePortfolioCostBasis(portfolio: PortfolioData): Map<string, CostBasisAnchor> {
+  const map = new Map<string, CostBasisAnchor>();
+  for (const p of portfolio.positions) {
+    if (p.is_option) continue;
+    const cur = map.get(p.symbol);
+    if (cur) {
+      cur.units += p.units;
+      cur.totalCost += p.cost_basis;
+    } else {
+      map.set(p.symbol, { units: p.units, totalCost: p.cost_basis });
+    }
+  }
+  return map;
+}
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
 import {
   getCurrentStockPrices,
@@ -57,7 +74,7 @@ export interface SimulationResult {
   snapshotDate: string;
   todayDate: string;
   snapshot: {
-    positions: { symbol: string; units: number; costBasis: number; snapshotPrice: number }[];
+    positions: { symbol: string; units: number; costBasis: number; avgCost: number; costBasisSource: "broker-reverse" | "approx-snapshot-price"; snapshotPrice: number }[];
     options: { ticker: string; underlying: string; type: "CALL" | "PUT"; strike: number; expiry: string; units: number; premiumCollected: number }[];
     cash: number;
     total: number;
@@ -279,12 +296,33 @@ export async function simulateTimeMachine(args: {
   }));
 
   // ── Step 6: build response ──────────────────────────────────────────
-  const snapshotPositions = snapshotPriceLookups.map((p) => ({
-    symbol: p.sym,
-    units: p.units,
-    costBasis: p.snapshotPrice * Math.abs(p.units), // approximate (no per-tax-lot data)
-    snapshotPrice: p.snapshotPrice,
-  }));
+  // Reverse-walk per-symbol cost basis when we have today's portfolio anchor;
+  // otherwise fall back to the snapshotPrice × units approximation.
+  const cbAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructStockCostBasisAtReverse(snapshotDate, txns, aggregatePortfolioCostBasis(currentPortfolio))
+    : new Map();
+  const snapshotPositions = snapshotPriceLookups.map((p) => {
+    const cb = cbAtSnapshot.get(p.sym);
+    if (cb) {
+      return {
+        symbol: p.sym,
+        units: p.units,
+        costBasis: cb.totalCost,
+        avgCost: cb.avgCost,
+        costBasisSource: "broker-reverse" as const,
+        snapshotPrice: p.snapshotPrice,
+      };
+    }
+    const approxCost = p.snapshotPrice * Math.abs(p.units);
+    return {
+      symbol: p.sym,
+      units: p.units,
+      costBasis: approxCost,
+      avgCost: Math.abs(p.units) > 0 ? approxCost / Math.abs(p.units) : 0,
+      costBasisSource: "approx-snapshot-price" as const,
+      snapshotPrice: p.snapshotPrice,
+    };
+  });
 
   const stockValues = heldStockSymbols.map((sym) => {
     const units = simStockUnits.get(sym) ?? 0;
