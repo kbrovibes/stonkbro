@@ -237,7 +237,6 @@ export default function TimeMachinePage() {
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
   const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);
-  const [showMoreMonths, setShowMoreMonths] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   // Privacy: hide exact dollar deltas on month buttons (for screenshot sharing).
@@ -608,8 +607,8 @@ export default function TimeMachinePage() {
             if (meta) return { kind: "data" as const, meta, monthKey: e.monthKey };
             return { kind: "missing" as const, date: e.date, monthKey: e.monthKey, inProgress: inProgressMonths.has(e.monthKey) };
           });
-          const inline = items.slice(0, 6);
-          const overflow = items.slice(6, 12);  // detail page handles older months
+          // Render every month inline — no fold. The strip wraps naturally
+          // and clicking a tile loads that snapshot below.
           const monthLabel = (iso: string) => {
             const [y, m] = iso.split("-");
             return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
@@ -711,17 +710,7 @@ export default function TimeMachinePage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {inline.map(renderItem)}
-                {showMoreMonths && overflow.map(renderItem)}
-                {overflow.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowMoreMonths((v) => !v)}
-                    className="px-2.5 rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-semibold text-stone-600 hover:bg-stone-100 transition shrink-0 h-10"
-                  >
-                    {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
-                  </button>
-                )}
+                {items.map(renderItem)}
               </div>
               <div className="flex items-center gap-3 text-[9px] text-stone-400 flex-wrap">
                 <span className="flex items-center gap-1">
