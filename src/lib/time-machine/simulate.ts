@@ -25,9 +25,9 @@ import {
 } from "./reconstruct";
 import type { CostBasisAnchor, ReconciliationResult } from "./reconstruct";
 import type { PortfolioData } from "@/lib/snaptrade/client";
+import { PAYLOAD_VERSION } from "./version";
 
-/** Bumped whenever the simulator's payload shape or math changes. */
-export const PAYLOAD_VERSION = 2;
+export { PAYLOAD_VERSION } from "./version";
 
 /** Default engine. Override per-call via args.engine, or globally via
  *  HINDSIGHT_ENGINE=forward to roll back to the legacy forward-walk. */
@@ -148,6 +148,11 @@ export interface SimulationResult {
   payloadVersion: number;
   /** Which reconstruction engine produced this payload. */
   engine: "forward" | "reverse";
+  /** True when caller asked for reverse but didn't supply currentPortfolio,
+   *  forcing a silent forward fallback. Always false when engine="reverse"
+   *  succeeded. UI should surface this — mismatched engines in the wild
+   *  produce structurally different numbers. */
+  engineForcedFallback: boolean;
   /** Sanity check: reverse-walk to snapshot, forward-apply to today,
    *  assert we land back at today's known portfolio. Only present when
    *  engine="reverse". */
@@ -170,9 +175,11 @@ export async function simulateTimeMachine(args: {
 
   // Resolve engine + actualTotal from whichever inputs were provided.
   const requestedEngine = args.engine ?? DEFAULT_ENGINE;
-  const engine: "forward" | "reverse" = currentPortfolio
-    ? requestedEngine
-    : "forward"; // can't reverse-walk without an anchor
+  // We can only reverse-walk when we have today's portfolio anchor.
+  // If the caller asked for reverse without supplying one, fall back to
+  // forward and tag the payload — never let mismatched math ship silently.
+  const engineForcedFallback = requestedEngine === "reverse" && !currentPortfolio;
+  const engine: "forward" | "reverse" = currentPortfolio ? requestedEngine : "forward";
 
   let actualTotal: number;
   if (currentPortfolio) {
@@ -430,6 +437,7 @@ export async function simulateTimeMachine(args: {
     assumptions,
     payloadVersion: PAYLOAD_VERSION,
     engine,
+    engineForcedFallback,
     reconciliation,
   };
 }

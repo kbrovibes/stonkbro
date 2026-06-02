@@ -606,8 +606,8 @@ export function reconstructStockCostBasisAtReverse(
       const cost = isRsuVest(tx)
         ? (Number(tx.price) || 0) * units
         : Math.abs(tx.amount);
-      cur.units = Math.max(0, cur.units - units);
-      cur.totalCost = Math.max(0, cur.totalCost - cost);
+      cur.units -= units;
+      cur.totalCost -= cost;
     } else if (tx.type === "SELL") {
       const units = Math.abs(tx.units);
       const restore = cur.avgCost * units;
@@ -615,6 +615,17 @@ export function reconstructStockCostBasisAtReverse(
       cur.totalCost += restore;
     }
     cur.avgCost = cur.units > 0 ? cur.totalCost / cur.units : 0;
+  }
+
+  // Surface inconsistencies — if reverse walk drove units OR totalCost
+  // negative, the broker-reported anchor doesn't square with the activity
+  // feed (wash sales, lot-specific selling, transferred basis, etc.).
+  // Mark those symbols with sentinel NaN avgCost so the caller can flag
+  // them and avoid downstream math on bad data.
+  for (const [sym, s] of state) {
+    if (s.units < -1e-6 || s.totalCost < -0.01) {
+      s.avgCost = NaN; // signal: broker data doesn't reconcile with feed
+    }
   }
 
   // Drop symbols that reverse-walked to zero units (not held at snapshot).
@@ -730,7 +741,9 @@ export function reconcileSnapshot(
     }
   }
 
-  const tolerance = { shares: 0.001, cash: 1.0 };
+  // Cash tolerance uses max($1, 0.0001 × today's cash) so big portfolios
+  // don't pass with a 1-cent-on-a-dollar drift hiding a real bug.
+  const tolerance = { shares: 0.001, cash: Math.max(1.0, Math.abs(todayCash) * 0.0001) };
   const all = new Set<string>([...units.keys(), ...todayUnits.keys()]);
   const mismatches: ReconciliationResult["mismatches"] = [];
   let maxSharesDelta = 0;

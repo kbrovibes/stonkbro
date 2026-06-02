@@ -187,6 +187,53 @@ for (const exp of expectations) {
   console.log("");
 }
 
+// ─── Adversarial scenario: BUY → SELL → BUY in reverse-iteration order ──
+// The reviewer flagged this as a potential failure mode for the cost-basis
+// reverse walker. Verify with SELF-CONSISTENT broker numbers (forward
+// math must produce today's anchor — which is what reality always is).
+//
+// Forward chain on TSLA:
+//   Original (Jan 1): 5 sh @ $10 = $50 total
+//   Feb 1 BUY 10 @ $30 = $300:    15 sh, $350 total, $23.33 avg
+//   Mar 1 SELL 5 (avg cost $23.33): 10 sh, $233.33 total, $23.33 avg
+//   Apr 1 BUY 2 @ $50 = $100:     12 sh, $333.33 total, $27.78 avg
+//   Today (May 1): 12 sh, $333.33 total, $27.78 avg
+console.log("\x1b[1mAdversarial: BUY → SELL → BUY (round trips) on TSLA\x1b[0m");
+
+const advTxns: SnapTradeTxn[] = [
+  makeBuy("2026-02-01", "TSLA", 10, 30),
+  makeSell("2026-03-01", "TSLA", 5, 100),
+  makeBuy("2026-04-01", "TSLA", 2, 50),
+];
+const advToday = new Map<string, number>([["TSLA", 12]]);
+const advCB = new Map<string, CostBasisAnchor>([
+  ["TSLA", { units: 12, totalCost: 333.333333 }],
+]);
+
+const advFebUnits = reconstructStockPositionsAtReverse("2026-01-15", advTxns, advToday);
+ASSERT(`Jan 15: TSLA = 5 sh`, eqShares(advFebUnits.get("TSLA") ?? 0, 5), `got ${advFebUnits.get("TSLA")}`);
+const advFebCB = reconstructStockCostBasisAtReverse("2026-01-15", advTxns, advCB);
+const gotCB = advFebCB.get("TSLA");
+ASSERT(`Jan 15: TSLA totalCost ≈ $50`, !!gotCB && eqDollars(gotCB.totalCost, 50), `got $${gotCB?.totalCost.toFixed(2) ?? "missing"}`);
+ASSERT(`Jan 15: TSLA avgCost ≈ $10`, !!gotCB && eqDollars(gotCB.avgCost, 10), `got $${gotCB?.avgCost.toFixed(2) ?? "missing"}`);
+
+// Mid-stream snapshot: between BUY and SELL
+const midUnits = reconstructStockPositionsAtReverse("2026-02-15", advTxns, advToday);
+ASSERT(`Feb 15: TSLA = 15 sh`, eqShares(midUnits.get("TSLA") ?? 0, 15), `got ${midUnits.get("TSLA")}`);
+const midCB = reconstructStockCostBasisAtReverse("2026-02-15", advTxns, advCB);
+const gotMid = midCB.get("TSLA");
+ASSERT(`Feb 15: TSLA totalCost ≈ $350`, !!gotMid && eqDollars(gotMid.totalCost, 350), `got $${gotMid?.totalCost.toFixed(2) ?? "missing"}`);
+ASSERT(`Feb 15: TSLA avgCost ≈ $23.33`, !!gotMid && eqDollars(gotMid.avgCost, 23.333333), `got $${gotMid?.avgCost.toFixed(2) ?? "missing"}`);
+
+// Between SELL and second BUY
+const midUnits2 = reconstructStockPositionsAtReverse("2026-03-15", advTxns, advToday);
+ASSERT(`Mar 15: TSLA = 10 sh`, eqShares(midUnits2.get("TSLA") ?? 0, 10), `got ${midUnits2.get("TSLA")}`);
+const midCB2 = reconstructStockCostBasisAtReverse("2026-03-15", advTxns, advCB);
+const gotMid2 = midCB2.get("TSLA");
+ASSERT(`Mar 15: TSLA totalCost ≈ $233.33`, !!gotMid2 && eqDollars(gotMid2.totalCost, 233.333333), `got $${gotMid2?.totalCost.toFixed(2) ?? "missing"}`);
+ASSERT(`Mar 15: TSLA avgCost ≈ $23.33`, !!gotMid2 && eqDollars(gotMid2.avgCost, 23.333333), `got $${gotMid2?.avgCost.toFixed(2) ?? "missing"}`);
+console.log("");
+
 console.log("─────────────────────────────────────────────────────────");
 if (failures === 0) {
   console.log("\x1b[32m✓ all assertions passed\x1b[0m");

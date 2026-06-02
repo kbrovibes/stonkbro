@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
 
 // =========================================================================
 // Types — mirrors GET /api/portfolio/time-machine response shape from spec
@@ -236,7 +237,6 @@ export default function TimeMachinePage() {
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
   const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);
-  const CURRENT_PAYLOAD_VERSION = 2;
   const [showMoreMonths, setShowMoreMonths] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
