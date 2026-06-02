@@ -348,7 +348,7 @@ function EntryCard({
                       key={idx}
                       className={`rounded-xl border bg-white dark:bg-surface-elevated p-3 transition-opacity ${
                         isDismissed ? "opacity-40 border-stone-100 dark:border-border-subtle"
-                          : isAccepted ? "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40/30"
+                          : isAccepted ? "border-emerald-300 bg-emerald-50 dark:bg-gain-bg dark:bg-emerald-950/40/30"
                           : "border-stone-200 dark:border-border-default"
                       }`}
                     >

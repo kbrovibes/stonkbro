@@ -421,7 +421,7 @@ export default function OptionsScannerPage() {
                 ))}
               </div>
 
-              <div className="px-3 py-1 bg-sky-50 dark:bg-sky-950/40/50 border-b border-stone-200 dark:border-border-default">
+              <div className="px-3 py-1 bg-sky-50 dark:bg-accent-bg dark:bg-sky-950/40/50 border-b border-stone-200 dark:border-border-default">
                 <p className="text-[10px] text-sky-700 dark:text-accent-hover">
                   60-120 DTE · slightly OTM · $100K · 1 pick/ticker
                 </p>
@@ -555,7 +555,7 @@ function WeeklyRecapTab({
       {/* CSPs */}
       {cspPicks.length > 0 && (
         <>
-          <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40/60 border-b border-stone-100 dark:border-border-subtle">
+          <div className="px-4 py-2 bg-emerald-50 dark:bg-gain-bg dark:bg-emerald-950/40/60 border-b border-stone-100 dark:border-border-subtle">
             <span className="text-[11px] font-semibold text-emerald-700 dark:text-gain-strong uppercase tracking-wider">
               Cash-Secured Puts ({cspPicks.length})
             </span>
@@ -571,7 +571,7 @@ function WeeklyRecapTab({
       {/* Calls */}
       {callPicks.length > 0 && (
         <>
-          <div className="px-4 py-2 bg-sky-50 dark:bg-sky-950/40/60 border-b border-stone-100 dark:border-border-subtle">
+          <div className="px-4 py-2 bg-sky-50 dark:bg-accent-bg dark:bg-sky-950/40/60 border-b border-stone-100 dark:border-border-subtle">
             <span className="text-[11px] font-semibold text-sky-700 dark:text-accent-hover uppercase tracking-wider">
               Call Buys ({callPicks.length})
             </span>

@@ -63,13 +63,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Actual current total = stock MV + net options MV (signed) + cash
-    const stocksMV = portfolio.summary.total_market_value;
-    const optionsMV = portfolio.options.reduce((s, o) => s + o.market_value, 0);
-    const cashTotal = portfolio.summary.cash;
-    const actualTotal = stocksMV + optionsMV + cashTotal;
-
-    const result = await simulateTimeMachine({ snapshotDate, txns, actualTotal });
+    const result = await simulateTimeMachine({ snapshotDate, txns, currentPortfolio: portfolio });
     // Per-account breakdown so the user can verify only the intended
     // accounts are being summed (SnapTrade-linked vs all Fidelity accounts).
     const perAccount = portfolio.accounts.map((a) => {
@@ -100,9 +94,9 @@ export async function GET(req: Request) {
       actual: {
         ...result.actual,
         breakdown: {
-          stocks: stocksMV,
-          options: optionsMV,
-          cash: cashTotal,
+          stocks: portfolio.summary.total_market_value,
+          options: portfolio.options.reduce((s, o) => s + o.market_value, 0),
+          cash: portfolio.summary.cash,
           accountCount: portfolio.accounts.length,
           stockPositionCount: portfolio.positions.length,
           optionPositionCount: portfolio.options.length,

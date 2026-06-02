@@ -738,7 +738,7 @@ function ScanHistoryPanel({
               <button
                 onClick={() => onSelect(h.id)}
                 disabled={h.status === "running"}
-                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors text-left ${isActive ? "bg-sky-50 dark:bg-sky-950/40/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
+                className={`w-full grid grid-cols-12 gap-2 px-3 py-2 items-center text-xs hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors text-left ${isActive ? "bg-sky-50 dark:bg-accent-bg dark:bg-sky-950/40/60" : ""} ${h.status === "running" ? "cursor-default" : "cursor-pointer"}`}
               >
                 <div className="col-span-2 flex items-center gap-1.5">
                   <StatusDot status={h.status} />

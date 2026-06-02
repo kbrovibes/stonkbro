@@ -12,13 +12,53 @@
 
 import {
   reconstructStockPositionsAt,
+  reconstructStockPositionsAtReverse,
+  reconstructStockCostBasisAtReverse,
   reconstructOptionPositionsAt,
   reconstructCashAt,
+  reconstructCashAtReverse,
+  reconcileSnapshot,
   categorizePostSnapshotCashFlows,
   computeRealizedGainsSinceSnapshot,
   computeExitAnalysisSinceSnapshot,
   getRsuVestsAfter,
 } from "./reconstruct";
+import type { CostBasisAnchor, ReconciliationResult } from "./reconstruct";
+import type { PortfolioData } from "@/lib/snaptrade/client";
+import { PAYLOAD_VERSION } from "./version";
+
+export { PAYLOAD_VERSION } from "./version";
+
+/** Default engine. Override per-call via args.engine, or globally via
+ *  HINDSIGHT_ENGINE=forward to roll back to the legacy forward-walk. */
+const DEFAULT_ENGINE: "forward" | "reverse" =
+  (process.env.HINDSIGHT_ENGINE === "forward" ? "forward" : "reverse");
+
+/** Aggregate today's non-option positions by symbol across accounts. */
+function aggregatePortfolioUnits(portfolio: PortfolioData): Map<string, number> {
+  const units = new Map<string, number>();
+  for (const p of portfolio.positions) {
+    if (p.is_option) continue;
+    units.set(p.symbol, (units.get(p.symbol) ?? 0) + p.units);
+  }
+  return units;
+}
+
+/** Aggregate today's cost basis per symbol — anchor for cost-basis reverse walk. */
+function aggregatePortfolioCostBasis(portfolio: PortfolioData): Map<string, CostBasisAnchor> {
+  const map = new Map<string, CostBasisAnchor>();
+  for (const p of portfolio.positions) {
+    if (p.is_option) continue;
+    const cur = map.get(p.symbol);
+    if (cur) {
+      cur.units += p.units;
+      cur.totalCost += p.cost_basis;
+    } else {
+      map.set(p.symbol, { units: p.units, totalCost: p.cost_basis });
+    }
+  }
+  return map;
+}
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
 import {
   getCurrentStockPrices,
@@ -34,7 +74,7 @@ export interface SimulationResult {
   snapshotDate: string;
   todayDate: string;
   snapshot: {
-    positions: { symbol: string; units: number; costBasis: number; snapshotPrice: number }[];
+    positions: { symbol: string; units: number; costBasis: number; avgCost: number; costBasisSource: "broker-reverse" | "approx-snapshot-price"; snapshotPrice: number }[];
     options: { ticker: string; underlying: string; type: "CALL" | "PUT"; strike: number; expiry: string; units: number; premiumCollected: number }[];
     cash: number;
     total: number;
@@ -104,20 +144,62 @@ export interface SimulationResult {
     monthsWithVests: string[];   // "YYYY-MM"
   };
   assumptions: string[];
+  /** Schema version of this payload. Older snapshots may be missing fields. */
+  payloadVersion: number;
+  /** Which reconstruction engine produced this payload. */
+  engine: "forward" | "reverse";
+  /** True when caller asked for reverse but didn't supply currentPortfolio,
+   *  forcing a silent forward fallback. Always false when engine="reverse"
+   *  succeeded. UI should surface this — mismatched engines in the wild
+   *  produce structurally different numbers. */
+  engineForcedFallback: boolean;
+  /** Sanity check: reverse-walk to snapshot, forward-apply to today,
+   *  assert we land back at today's known portfolio. Only present when
+   *  engine="reverse". */
+  reconciliation?: ReconciliationResult;
 }
 
 export async function simulateTimeMachine(args: {
   snapshotDate: string;
   txns: SnapTradeTxn[];
-  actualTotal: number;
+  /** Today's broker portfolio — anchor for reverse-walk reconstruction
+   *  and source of `actualTotal`. Required for engine="reverse". */
+  currentPortfolio?: PortfolioData;
+  /** Override the default reconstruction engine. Defaults to env-flag. */
+  engine?: "forward" | "reverse";
+  /** Legacy fallback when currentPortfolio is not supplied. */
+  actualTotal?: number;
 }): Promise<SimulationResult> {
-  const { snapshotDate, txns, actualTotal } = args;
+  const { snapshotDate, txns, currentPortfolio } = args;
   const today = new Date().toISOString().split("T")[0];
 
+  // Resolve engine + actualTotal from whichever inputs were provided.
+  const requestedEngine = args.engine ?? DEFAULT_ENGINE;
+  // We can only reverse-walk when we have today's portfolio anchor.
+  // If the caller asked for reverse without supplying one, fall back to
+  // forward and tag the payload — never let mismatched math ship silently.
+  const engineForcedFallback = requestedEngine === "reverse" && !currentPortfolio;
+  const engine: "forward" | "reverse" = currentPortfolio ? requestedEngine : "forward";
+
+  let actualTotal: number;
+  if (currentPortfolio) {
+    const stocksMV = currentPortfolio.summary.total_market_value;
+    const optionsMV = currentPortfolio.options.reduce((s, o) => s + o.market_value, 0);
+    actualTotal = stocksMV + optionsMV + currentPortfolio.summary.cash;
+  } else if (typeof args.actualTotal === "number") {
+    actualTotal = args.actualTotal;
+  } else {
+    throw new Error("simulateTimeMachine: must supply either currentPortfolio or actualTotal");
+  }
+
   // ── Step 1: snapshot reconstruction ─────────────────────────────────
-  const stockUnitsAtSnapshot = reconstructStockPositionsAt(snapshotDate, txns);
+  const stockUnitsAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructStockPositionsAtReverse(snapshotDate, txns, aggregatePortfolioUnits(currentPortfolio))
+    : reconstructStockPositionsAt(snapshotDate, txns);
   const optionsAtSnapshot = reconstructOptionPositionsAt(snapshotDate, txns);
-  const cashAtSnapshot = reconstructCashAt(snapshotDate, txns);
+  const cashAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructCashAtReverse(snapshotDate, txns, currentPortfolio.summary.cash)
+    : reconstructCashAt(snapshotDate, txns);
 
   // ── Step 2: post-snapshot cash flows ────────────────────────────────
   const heldSymbols = new Set(stockUnitsAtSnapshot.keys());
@@ -221,12 +303,33 @@ export async function simulateTimeMachine(args: {
   }));
 
   // ── Step 6: build response ──────────────────────────────────────────
-  const snapshotPositions = snapshotPriceLookups.map((p) => ({
-    symbol: p.sym,
-    units: p.units,
-    costBasis: p.snapshotPrice * Math.abs(p.units), // approximate (no per-tax-lot data)
-    snapshotPrice: p.snapshotPrice,
-  }));
+  // Reverse-walk per-symbol cost basis when we have today's portfolio anchor;
+  // otherwise fall back to the snapshotPrice × units approximation.
+  const cbAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructStockCostBasisAtReverse(snapshotDate, txns, aggregatePortfolioCostBasis(currentPortfolio))
+    : new Map();
+  const snapshotPositions = snapshotPriceLookups.map((p) => {
+    const cb = cbAtSnapshot.get(p.sym);
+    if (cb) {
+      return {
+        symbol: p.sym,
+        units: p.units,
+        costBasis: cb.totalCost,
+        avgCost: cb.avgCost,
+        costBasisSource: "broker-reverse" as const,
+        snapshotPrice: p.snapshotPrice,
+      };
+    }
+    const approxCost = p.snapshotPrice * Math.abs(p.units);
+    return {
+      symbol: p.sym,
+      units: p.units,
+      costBasis: approxCost,
+      avgCost: Math.abs(p.units) > 0 ? approxCost / Math.abs(p.units) : 0,
+      costBasisSource: "approx-snapshot-price" as const,
+      snapshotPrice: p.snapshotPrice,
+    };
+  });
 
   const stockValues = heldStockSymbols.map((sym) => {
     const units = simStockUnits.get(sym) ?? 0;
@@ -244,6 +347,20 @@ export async function simulateTimeMachine(args: {
 
   const delta = simulatedTotal - actualTotal;
   const pct = actualTotal > 0 ? (delta / actualTotal) * 100 : 0;
+
+  // Reconcile: forward-apply post-snapshot txns from the reverse-reconstructed
+  // state and assert we land back at today's broker portfolio.
+  const reconciliation: ReconciliationResult | undefined =
+    engine === "reverse" && currentPortfolio
+      ? reconcileSnapshot(
+          snapshotDate,
+          txns,
+          stockUnitsAtSnapshot,
+          cashAtSnapshot,
+          aggregatePortfolioUnits(currentPortfolio),
+          currentPortfolio.summary.cash,
+        )
+      : undefined;
 
   const assumptions: string[] = [
     "Option expiries between snapshot and today are replayed using Tradier daily closes for the underlying; missing dates fall back to the prior trading day.",
@@ -318,6 +435,10 @@ export async function simulateTimeMachine(args: {
       };
     })(),
     assumptions,
+    payloadVersion: PAYLOAD_VERSION,
+    engine,
+    engineForcedFallback,
+    reconciliation,
   };
 }
 

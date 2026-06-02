@@ -380,6 +380,399 @@ export function reconstructCashAt(
   return cash;
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// REVERSE-WALK reconstruction — anchored to today's broker-reported state.
+// ═════════════════════════════════════════════════════════════════════════
+//
+// The forward walkers above accumulate position state from time 0 forward,
+// which silently undercounts when the SnapTrade activity feed doesn't reach
+// back to the original BUYs (Fidelity ≈ 24mo). The reverse walkers anchor
+// to today's known holdings (PortfolioData) and rewind every post-snapshot
+// txn — mathematically exact for any date within the activity window,
+// regardless of how old the underlying positions are.
+//
+// See docs/hindsight-reverse-walk-example.html for the worked example.
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Reverse-walk version of {@link reconstructStockPositionsAt}.
+ * @param currentUnits Today's units per symbol (from `portfolio.positions`
+ *                     aggregated across accounts). Caller supplies this.
+ */
+export function reconstructStockPositionsAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  currentUnits: Map<string, number>
+): Map<string, number> {
+  const result = new Map(currentUnits);
+  const ensure = (sym: string) => { if (!result.has(sym)) result.set(sym, 0); };
+
+  // Walk all txns chronologically so we know each contract's long/short
+  // state at the time of any assignment (needed to undo the stock delta).
+  const sorted = sortAscending(txns);
+  const optUnits = new Map<string, number>();
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (tx.type === "OPTIONASSIGNMENT" && date > snapshotDate) {
+        const os = tx.option_symbol!;
+        const optionType = (os.option_type ?? "").toUpperCase();
+        const underlying = os.underlying_symbol?.symbol ?? "";
+        if (underlying) {
+          const contracts = Math.abs(prev || tx.units);
+          // SHORT-default when prev is ambiguous (matches forward walker).
+          const wasShort = prev < 0 || prev === 0;
+          let stockDelta = 0;
+          if (optionType === "CALL") {
+            stockDelta = wasShort ? -100 * contracts : +100 * contracts;
+          } else if (optionType === "PUT") {
+            stockDelta = wasShort ? +100 * contracts : -100 * contracts;
+          }
+          // Undo: subtract the delta that landed in today's units.
+          ensure(underlying);
+          result.set(underlying, (result.get(underlying) ?? 0) - stockDelta);
+        }
+        optUnits.set(key, 0);
+      }
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+
+    if (tx.type === "BUY") {
+      ensure(sym);
+      result.set(sym, (result.get(sym) ?? 0) - Math.abs(tx.units));
+    } else if (tx.type === "SELL") {
+      ensure(sym);
+      result.set(sym, (result.get(sym) ?? 0) + Math.abs(tx.units));
+    }
+  }
+
+  for (const [sym, u] of result) {
+    if (Math.abs(u) < 1e-6) result.delete(sym);
+  }
+  return result;
+}
+
+/**
+ * Reverse-walk version of {@link reconstructCashAt}.
+ * @param currentCash Today's cash balance (`portfolio.summary.cash`).
+ */
+export function reconstructCashAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  currentCash: number
+): number {
+  const sorted = sortAscending(txns);
+  const optUnits = new Map<string, number>();
+  let postSnapshotDelta = 0;
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (date > snapshotDate) {
+        if (tx.type === "OPTIONASSIGNMENT") {
+          if (tx.amount !== 0) {
+            postSnapshotDelta += tx.amount;
+          } else {
+            const optionType = (tx.option_symbol?.option_type ?? "").toUpperCase();
+            const strike = Number(tx.option_symbol?.strike_price ?? 0);
+            const contracts = Math.abs(prev || tx.units);
+            const wasShort = prev < 0 || prev === 0;
+            const notional = strike * 100 * contracts;
+            if (optionType === "CALL") postSnapshotDelta += wasShort ? notional : -notional;
+            else if (optionType === "PUT") postSnapshotDelta += wasShort ? -notional : notional;
+          }
+        } else if (tx.type === "BUY" || tx.type === "SELL") {
+          postSnapshotDelta += tx.amount;
+        }
+      }
+      if (tx.type === "OPTIONASSIGNMENT") optUnits.set(key, 0);
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+
+    const sym = extractSymbol(tx);
+    const isMMF = isMoneyMarketSymbol(sym);
+    const isBook = isBookkeepingSymbol(sym);
+
+    switch (tx.type) {
+      case "BUY":
+      case "SELL":
+        if (isMMF || isBook) break;
+        if (tx.type === "BUY" && isRsuVest(tx)) break;
+        postSnapshotDelta += tx.amount;
+        break;
+      case "DEPOSIT":
+      case "CONTRIBUTION":
+      case "DIVIDEND":
+      case "INTEREST":
+        postSnapshotDelta += Math.abs(tx.amount);
+        break;
+      case "WITHDRAWAL":
+      case "FEE":
+      case "TAX":
+        postSnapshotDelta -= Math.abs(tx.amount);
+        break;
+      default:
+        break;
+    }
+  }
+
+  return currentCash - postSnapshotDelta;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// REVERSE-WALK — cost basis (per symbol).
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface CostBasisAnchor {
+  /** Today's units held for this symbol (aggregated across accounts). */
+  units: number;
+  /** Today's broker-reported total cost basis for this symbol. */
+  totalCost: number;
+}
+
+export interface CostBasisAtSnapshot {
+  units: number;
+  totalCost: number;
+  avgCost: number;
+}
+
+/**
+ * Reverse-walk a per-symbol cost basis snapshot.
+ *
+ * Anchor: today's units + broker-reported total cost basis. Walk txns in
+ * reverse chronological order; SELLs restore avg-cost × units to total
+ * cost (because SELLs don't change avg cost — they just reduce the
+ * basis pool), BUYs un-add their notional cost.
+ *
+ * Symbols fully exited before today cannot be recovered (not in anchor)
+ * and are omitted; callers should fall back to "cost basis unavailable"
+ * for those.
+ */
+export function reconstructStockCostBasisAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  anchor: Map<string, CostBasisAnchor>,
+): Map<string, CostBasisAtSnapshot> {
+  const state = new Map<string, CostBasisAtSnapshot>();
+  for (const [sym, a] of anchor) {
+    state.set(sym, {
+      units: a.units,
+      totalCost: a.totalCost,
+      avgCost: a.units > 0 ? a.totalCost / a.units : 0,
+    });
+  }
+
+  const sorted = sortAscending(txns);
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const tx = sorted[i];
+    const date = txnDate(tx);
+    if (date <= snapshotDate) break;
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    if (isOptionTxn(tx)) continue;
+
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+    const cur = state.get(sym);
+    if (!cur) continue; // not in today's anchor (fully exited symbol)
+
+    if (tx.type === "BUY") {
+      const units = Math.abs(tx.units);
+      // For RSU vests, broker books cost basis at vest market value;
+      // tx.price is the vest price (already set by Fidelity's RSU rule).
+      const cost = isRsuVest(tx)
+        ? (Number(tx.price) || 0) * units
+        : Math.abs(tx.amount);
+      cur.units -= units;
+      cur.totalCost -= cost;
+    } else if (tx.type === "SELL") {
+      const units = Math.abs(tx.units);
+      const restore = cur.avgCost * units;
+      cur.units += units;
+      cur.totalCost += restore;
+    }
+    cur.avgCost = cur.units > 0 ? cur.totalCost / cur.units : 0;
+  }
+
+  // Surface inconsistencies — if reverse walk drove units OR totalCost
+  // negative, the broker-reported anchor doesn't square with the activity
+  // feed (wash sales, lot-specific selling, transferred basis, etc.).
+  // Mark those symbols with sentinel NaN avgCost so the caller can flag
+  // them and avoid downstream math on bad data.
+  for (const [sym, s] of state) {
+    if (s.units < -1e-6 || s.totalCost < -0.01) {
+      s.avgCost = NaN; // signal: broker data doesn't reconcile with feed
+    }
+  }
+
+  // Drop symbols that reverse-walked to zero units (not held at snapshot).
+  for (const [sym, s] of state) {
+    if (s.units < 1e-6) state.delete(sym);
+  }
+  return state;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Reconciliation — sanity-check the reverse walk by forward-applying
+// post-snapshot txns and verifying we land at today's known state.
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface ReconciliationResult {
+  passed: boolean;
+  /** Largest |reconstructed − actual| over all symbols. */
+  maxSharesDelta: number;
+  /** Symbol with the worst delta, when > tolerance. */
+  worstSymbol: string | null;
+  /** reconstructed_cash − actual_cash. */
+  cashDelta: number;
+  /** Per-symbol mismatches above tolerance (truncated to 12). */
+  mismatches: Array<{ symbol: string; reconstructed: number; actual: number; delta: number }>;
+  /** Tolerances used for the pass/fail decision. */
+  tolerance: { shares: number; cash: number };
+}
+
+/**
+ * Walk forward from the reverse-reconstructed snapshot state, apply every
+ * post-snapshot txn, and compare to today's known broker portfolio. If
+ * passed=false, the reverse-walk and forward-apply code paths have
+ * diverged — that's a bug, not a data issue.
+ */
+export function reconcileSnapshot(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  snapshotUnits: Map<string, number>,
+  snapshotCash: number,
+  todayUnits: Map<string, number>,
+  todayCash: number,
+): ReconciliationResult {
+  const units = new Map(snapshotUnits);
+  let cash = snapshotCash;
+  const optUnits = new Map<string, number>();
+  const sorted = sortAscending(txns);
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (date > snapshotDate) {
+        if (tx.type === "OPTIONASSIGNMENT") {
+          const optionType = (tx.option_symbol?.option_type ?? "").toUpperCase();
+          const underlying = tx.option_symbol?.underlying_symbol?.symbol ?? "";
+          const strike = Number(tx.option_symbol?.strike_price ?? 0);
+          const contracts = Math.abs(prev || tx.units);
+          const wasShort = prev < 0 || prev === 0;
+          if (underlying) {
+            let stockDelta = 0;
+            if (optionType === "CALL") stockDelta = wasShort ? -100 * contracts : +100 * contracts;
+            else if (optionType === "PUT") stockDelta = wasShort ? +100 * contracts : -100 * contracts;
+            units.set(underlying, (units.get(underlying) ?? 0) + stockDelta);
+          }
+          if (tx.amount !== 0) {
+            cash += tx.amount;
+          } else {
+            const notional = strike * 100 * contracts;
+            if (optionType === "CALL") cash += wasShort ? notional : -notional;
+            else if (optionType === "PUT") cash += wasShort ? -notional : notional;
+          }
+        } else if (tx.type === "BUY" || tx.type === "SELL") {
+          cash += tx.amount;
+        }
+      }
+      if (tx.type === "OPTIONASSIGNMENT") optUnits.set(key, 0);
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+    const sym = extractSymbol(tx);
+    // NOTE: MMF/bookkeeping skips apply only to BUY/SELL — DIVIDEND/INTEREST
+    // on cash-sweep funds (SPAXX, FDRXX, etc.) are real cash inflows that
+    // accumulate in today's broker cash balance, so we MUST forward-apply
+    // them here to land at today's anchor. Symmetric with
+    // reconstructCashAtReverse (which subtracts them when rewinding).
+    const isMMF = isMoneyMarketSymbol(sym);
+    const isBook = isBookkeepingSymbol(sym);
+
+    switch (tx.type) {
+      case "BUY":
+        if (isMMF || isBook) break;
+        units.set(sym, (units.get(sym) ?? 0) + Math.abs(tx.units));
+        if (!isRsuVest(tx)) cash += tx.amount;
+        break;
+      case "SELL":
+        if (isMMF || isBook) break;
+        units.set(sym, (units.get(sym) ?? 0) - Math.abs(tx.units));
+        cash += tx.amount;
+        break;
+      case "DEPOSIT":
+      case "CONTRIBUTION":
+      case "DIVIDEND":
+      case "INTEREST":
+        cash += Math.abs(tx.amount);
+        break;
+      case "WITHDRAWAL":
+      case "FEE":
+      case "TAX":
+        cash -= Math.abs(tx.amount);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Cash tolerance uses max($1, 0.0001 × today's cash) so big portfolios
+  // don't pass with a 1-cent-on-a-dollar drift hiding a real bug.
+  const tolerance = { shares: 0.001, cash: Math.max(1.0, Math.abs(todayCash) * 0.0001) };
+  const all = new Set<string>([...units.keys(), ...todayUnits.keys()]);
+  const mismatches: ReconciliationResult["mismatches"] = [];
+  let maxSharesDelta = 0;
+  let worstSymbol: string | null = null;
+  for (const sym of all) {
+    const r = units.get(sym) ?? 0;
+    const a = todayUnits.get(sym) ?? 0;
+    const d = r - a;
+    if (Math.abs(d) > tolerance.shares) {
+      mismatches.push({ symbol: sym, reconstructed: r, actual: a, delta: d });
+      if (Math.abs(d) > maxSharesDelta) { maxSharesDelta = Math.abs(d); worstSymbol = sym; }
+    }
+  }
+  // Sort by largest absolute delta, truncate.
+  mismatches.sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta));
+  const cashDelta = cash - todayCash;
+  const passed = maxSharesDelta <= tolerance.shares && Math.abs(cashDelta) <= tolerance.cash;
+
+  return { passed, maxSharesDelta, worstSymbol, cashDelta, mismatches: mismatches.slice(0, 12), tolerance };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Post-snapshot cash-flow categorization
 // ─────────────────────────────────────────────────────────────────────────
@@ -446,9 +839,16 @@ export function categorizePostSnapshotCashFlows(
         break;
       }
       case "DIVIDEND": {
-        // Skip money-market sweep dividends (SPAXX/etc) — they're just
-        // interest on cash, not portfolio dividends.
-        if (isMoneyMarketSymbol(sym)) break;
+        if (isMoneyMarketSymbol(sym)) {
+          // Cash-sweep dividends (SPAXX, FDRXX, etc.) accumulate in your
+          // cash balance regardless of trading activity — they're interest
+          // paid on idle cash, so they belong in totalDividends so sim cash
+          // tracks today's broker cash anchor.
+          const entry: CashFlowEntry = { date, amount: mag, symbol: sym, note: "SWEEP_DIVIDEND" };
+          result.dividends.push(entry);
+          result.totalDividends += mag;
+          break;
+        }
         if (!heldSymbols.has(sym)) break; // wasn't held at snapshot
         const entry: CashFlowEntry = { date, amount: mag, symbol: sym, note: "DIVIDEND" };
         result.dividends.push(entry);

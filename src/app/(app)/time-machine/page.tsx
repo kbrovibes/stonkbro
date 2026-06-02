@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
 
 // =========================================================================
 // Types — mirrors GET /api/portfolio/time-machine response shape from spec
@@ -149,6 +150,16 @@ interface TimeMachineResult {
     monthsWithVests: string[];
   };
   assumptions: string[];
+  payloadVersion?: number;
+  engine?: "forward" | "reverse";
+  reconciliation?: {
+    passed: boolean;
+    maxSharesDelta: number;
+    worstSymbol: string | null;
+    cashDelta: number;
+    mismatches: Array<{ symbol: string; reconstructed: number; actual: number; delta: number }>;
+    tolerance: { shares: number; cash: number };
+  };
   /** ISO timestamp injected by the cached route; absent on live ?date= simulation. */
   _computedAt?: string;
 }
@@ -193,7 +204,7 @@ function isoNDaysAgo(days: number): string {
 const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
   "live":         { bg: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",         label: "Live" },
   "exercised":    { bg: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong", label: "Exercised" },
-  "assigned":     { bg: "bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",   label: "Assigned" },
+  "assigned":     { bg: "bg-violet-100 dark:bg-violet-950/40 text-violet-700",   label: "Assigned" },
   "expired-otm":  { bg: "bg-stone-100 dark:bg-surface-muted text-stone-600 dark:text-text-muted",     label: "Expired OTM" },
 };
 
@@ -222,10 +233,10 @@ export default function TimeMachinePage() {
   const [regenerating, setRegenerating] = useState(false);
 
   // Backfilled monthly snapshots — drives the colored month-button strip.
-  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
+  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string; payloadVersion: number | null };
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
-  const [showMoreMonths, setShowMoreMonths] = useState(false);
+  const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   // Privacy: hide exact dollar deltas on month buttons (for screenshot sharing).
@@ -287,6 +298,9 @@ export default function TimeMachinePage() {
         if (cancelled) return;
         setSnapshotList(json.snapshots || []);
         if (json.earliestAvailable) setEarliestAvailableMeta(json.earliestAvailable);
+        if (typeof json.latestPayloadVersion === "number") {
+          setLatestPayloadVersion(json.latestPayloadVersion);
+        }
       } catch { /* silent */ }
     })();
     return () => { cancelled = true; };
@@ -364,6 +378,24 @@ export default function TimeMachinePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshotList, earliestAvailableMeta, autoBatchKickedOff]);
 
+  // Live progress polling — while a backfill is in flight (either the global
+  // "Regenerate all" or per-tile batches), re-fetch the cached metadata
+  // every 5s so the strip + version pills update without a manual refresh.
+  useEffect(() => {
+    if (!backfilling && inProgressMonths.size === 0) return;
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      if (cancelled) return;
+      try {
+        const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json());
+        if (cancelled) return;
+        if (list?.snapshots) setSnapshotList(list.snapshots);
+        if (typeof list?.latestPayloadVersion === "number") setLatestPayloadVersion(list.latestPayloadVersion);
+      } catch { /* silent */ }
+    }, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [backfilling, inProgressMonths.size]);
+
   async function loadCached(date: string) {
     setSelectedDate(date);
     setLoading(true);
@@ -399,21 +431,53 @@ export default function TimeMachinePage() {
     }
   }
 
+  /**
+   * Regenerate every monthly snapshot. Used to live on a single
+   * `?from=2025-01-01` call that ran sequentially inside one function and
+   * regularly tripped the 300s Vercel cap. Now we fan out client-side as
+   * parallel POSTs of up to 6 dates each — same pattern as
+   * runBatchBackfills — so total wall time is bounded by ONE batch's
+   * processing time (~30s), not N × ~21s.
+   */
   async function runBackfill() {
     setBackfilling(true);
     setBackfillResult(null);
     try {
-      const res = await fetch("/api/portfolio/time-machine/backfill?from=2025-01-01", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Backfill failed");
-      setBackfillResult(`Backfilled ${json.ok}/${json.targets} months (skipped ${json.skipped}, errors ${json.errors})`);
-      // Refresh list
+      const earliest = earliestAvailableMeta ?? "2025-01-01";
+      const expected = computeExpectedMonthEnds(earliest);
+      const allDates = expected.map((e) => e.date);
+      if (allDates.length === 0) {
+        setBackfillResult("No months to backfill");
+        return;
+      }
+
+      // Mark every month as in-flight up front so the strip shows progress
+      // before any individual batch returns.
+      setInProgressMonths(new Set(allDates.map((d) => d.slice(0, 7))));
+
+      const BATCH = 6;
+      const batches: string[][] = [];
+      for (let i = 0; i < allDates.length; i += BATCH) batches.push(allDates.slice(i, i + BATCH));
+
+      const results = await Promise.all(
+        batches.map((batch) =>
+          fetch(`/api/portfolio/time-machine/backfill?targets=${batch.join(",")}`, { method: "POST" })
+            .then((r) => r.json().catch(() => null))
+        )
+      );
+      const totalOk = results.reduce((s, r) => s + (Number(r?.ok) || 0), 0);
+      const totalErr = results.reduce((s, r) => s + (Number(r?.errors) || 0), 0);
+      const totalSkip = results.reduce((s, r) => s + (Number(r?.skipped) || 0), 0);
+      setBackfillResult(`Regenerated ${totalOk}/${allDates.length} months in parallel (skipped ${totalSkip}, errors ${totalErr})`);
+
       const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json()).catch(() => null);
       if (list?.snapshots) setSnapshotList(list.snapshots);
+      if (typeof list?.latestPayloadVersion === "number") setLatestPayloadVersion(list.latestPayloadVersion);
     } catch (e) {
       setBackfillResult(e instanceof Error ? e.message : "Backfill failed");
     } finally {
       setBackfilling(false);
+      setInProgressMonths(new Set());
     }
   }
 
@@ -446,6 +510,85 @@ export default function TimeMachinePage() {
           <p className="text-sm text-stone-500 dark:text-text-subtle">If you&apos;d stopped trading on…</p>
         </div>
 
+        {/* Floor banner — explicit about Fidelity activity window */}
+        {earliestAvailableMeta && (
+          <div className="rounded-lg border border-sky-200 dark:border-accent-border bg-sky-50 dark:bg-accent-bg px-3 py-2 flex items-center justify-between gap-3">
+            <div className="text-[11px] text-sky-800 dark:text-accent-hover leading-snug">
+              Hindsight available from <span className="font-semibold">{fmtDate(earliestAvailableMeta)}</span>.
+              Earlier dates fall outside Fidelity&apos;s activity window (typically ~24 months) and cannot be reconstructed accurately.
+            </div>
+          </div>
+        )}
+
+        {/* Stale-version banner — appears when cached snapshots predate v2 */}
+        {latestPayloadVersion !== null && latestPayloadVersion < CURRENT_PAYLOAD_VERSION && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 flex items-center justify-between gap-3">
+            <div className="text-[11px] text-amber-900 leading-snug">
+              <span className="font-semibold">Snapshots are out of date.</span>{" "}
+              They use legacy forward-walk math and may show negative units, wrong cash, or wrong totals.{" "}
+              Regenerate to pick up the reverse-walk fix anchored to today&apos;s broker portfolio.
+            </div>
+            <button
+              type="button"
+              onClick={runBackfill}
+              disabled={backfilling}
+              className="shrink-0 px-3 py-1.5 rounded-md bg-amber-700 text-white text-[11px] font-semibold hover:bg-amber-800 active:bg-amber-900 disabled:opacity-50 transition"
+            >
+              {backfilling ? "Regenerating…" : "Regenerate all"}
+            </button>
+          </div>
+        )}
+
+        {/* Live backfill progress — visible while ANY regeneration is in flight */}
+        {(backfilling || inProgressMonths.size > 0) && (() => {
+          // "Done" = months whose payload_version === CURRENT and are not
+          // explicitly in the in-flight set (because we mark them in-flight
+          // optimistically before the batch returns).
+          const targetMonthKeys = new Set(Array.from(inProgressMonths));
+          // Targets = whatever is currently marked in-flight (set up front by runBackfill).
+          const total = targetMonthKeys.size;
+          const versionByMonth = new Map(
+            snapshotList
+              .filter((s) => targetMonthKeys.has(s.snapshotDate.slice(0, 7)))
+              .map((s) => [s.snapshotDate.slice(0, 7), s.payloadVersion ?? null] as const)
+          );
+          const done = Array.from(targetMonthKeys).filter(
+            (mk) => versionByMonth.get(mk) === CURRENT_PAYLOAD_VERSION,
+          ).length;
+          const inFlightLabel = Array.from(targetMonthKeys)
+            .filter((mk) => versionByMonth.get(mk) !== CURRENT_PAYLOAD_VERSION)
+            .sort()
+            .slice(0, 6)
+            .map((mk) => {
+              const [y, m] = mk.split("-");
+              return new Date(Number(y), Number(m) - 1, 1)
+                .toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+            })
+            .join(" · ");
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          return (
+            <div className="rounded-lg border border-sky-300 bg-sky-50 dark:bg-accent-bg px-3 py-2.5 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[11px] text-sky-900 leading-snug">
+                  <span className="font-semibold">Regenerating snapshots</span>
+                  {" · "}
+                  <span className="tabular-nums">{done} of {total} complete ({pct}%)</span>
+                  {inFlightLabel && (
+                    <span className="text-sky-700 dark:text-accent-hover">{" · in flight: "}{inFlightLabel}{Array.from(targetMonthKeys).filter((mk) => versionByMonth.get(mk) !== CURRENT_PAYLOAD_VERSION).length > 6 ? "…" : ""}</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-sky-700 dark:text-accent-hover font-mono">live · 5s polling</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-sky-100 dark:bg-accent-bg overflow-hidden">
+                <div
+                  className="h-full bg-sky-600 transition-all duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Monthly snapshot strip — expected months, grey/pulse for missing */}
         {(snapshotList.length > 0 || inProgressMonths.size > 0) && (() => {
           // Merge expected months with cached snapshots into a single timeline.
@@ -464,8 +607,8 @@ export default function TimeMachinePage() {
             if (meta) return { kind: "data" as const, meta, monthKey: e.monthKey };
             return { kind: "missing" as const, date: e.date, monthKey: e.monthKey, inProgress: inProgressMonths.has(e.monthKey) };
           });
-          const inline = items.slice(0, 6);
-          const overflow = items.slice(6, 12);  // detail page handles older months
+          // Render every month inline — no fold. The strip wraps naturally
+          // and clicking a tile loads that snapshot below.
           const monthLabel = (iso: string) => {
             const [y, m] = iso.split("-");
             return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
@@ -486,10 +629,10 @@ export default function TimeMachinePage() {
               ? "bg-rose-200 border-rose-300 text-rose-900 hover:bg-rose-300"
               : "bg-emerald-200 border-emerald-300 text-emerald-900 hover:bg-emerald-300";
             if (tier >= 0.25) return isRed
-              ? "bg-rose-100 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 hover:bg-rose-200"
+              ? "bg-rose-100 dark:bg-rose-950/40 border-rose-200 text-rose-800 hover:bg-rose-200"
               : "bg-emerald-100 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-200";
             return isRed
-              ? "bg-rose-50 dark:bg-loss-bg border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 hover:bg-rose-100"
+              ? "bg-rose-50 dark:bg-loss-bg border-rose-200 text-rose-800 hover:bg-rose-100"
               : "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border text-emerald-800 dark:text-gain-strong hover:bg-emerald-100";
           };
           const renderItem = (it: StripItem) => {
@@ -514,7 +657,7 @@ export default function TimeMachinePage() {
             }
             const s = it.meta;
             const sel = selectedDate === s.snapshotDate;
-            const ring = sel ? "ring-2 ring-stone-900 dark:ring-text ring-offset-1" : "";
+            const ring = sel ? "ring-2 ring-stone-900 ring-offset-1" : "";
             return (
               <button
                 key={s.snapshotDate}
@@ -567,17 +710,7 @@ export default function TimeMachinePage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {inline.map(renderItem)}
-                {showMoreMonths && overflow.map(renderItem)}
-                {overflow.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowMoreMonths((v) => !v)}
-                    className="px-2.5 rounded-lg border border-stone-200 dark:border-border-default bg-stone-50 dark:bg-surface text-[10px] font-semibold text-stone-600 dark:text-text-muted hover:bg-stone-100 dark:hover:bg-surface-muted transition shrink-0 h-10"
-                  >
-                    {showMoreMonths ? "▴ Less" : `▾ +${overflow.length}`}
-                  </button>
-                )}
+                {items.map(renderItem)}
               </div>
               <div className="flex items-center gap-3 text-[9px] text-stone-400 dark:text-text-faint flex-wrap">
                 <span className="flex items-center gap-1">
@@ -594,7 +727,7 @@ export default function TimeMachinePage() {
               {/* Center-aligned full-detail CTA, theme-aligned with portfolio buttons */}
               <Link
                 href="/time-machine/detail"
-                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/50 text-violet-800 dark:text-violet-200 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
+                className="mt-1 inline-flex items-center justify-center self-center gap-1.5 px-4 py-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200 text-violet-800 hover:bg-violet-100 active:bg-violet-200 text-xs font-semibold transition-colors"
               >
                 <span>⏰</span> Full Hindsight Snapshot
               </Link>
@@ -647,7 +780,7 @@ export default function TimeMachinePage() {
             History available back to {fmtDate(earliestAvailable)}
           </p>
           {error && (
-            <div className="rounded-lg border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
+            <div className="rounded-lg border border-rose-200 bg-rose-50 dark:bg-loss-bg px-3 py-2 text-xs text-rose-700 dark:text-loss-strong">
               {error} — showing sample data
             </div>
           )}
@@ -666,7 +799,7 @@ export default function TimeMachinePage() {
               className={`rounded-xl border p-5 ${
                 data.delta.favorableToHold
                   ? "bg-emerald-50 dark:bg-gain-bg border-emerald-200 dark:border-gain-border"
-                  : "bg-rose-50 dark:bg-loss-bg border-rose-200 dark:border-rose-800/50"
+                  : "bg-rose-50 dark:bg-loss-bg border-rose-200"
               }`}
             >
               <p className="text-[10px] uppercase tracking-wider text-stone-500 dark:text-text-subtle font-semibold">
@@ -703,11 +836,41 @@ export default function TimeMachinePage() {
                     total <span className="font-semibold text-stone-900 dark:text-text">{fmtCurrency0(data.snapshot.total)}</span>
                   </p>
                   {data._computedAt && (
-                    <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1.5">
-                      Generated {new Date(data._computedAt).toLocaleString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                        hour: "numeric", minute: "2-digit",
-                      })}
+                    <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1.5 flex items-center gap-2 flex-wrap">
+                      <span>
+                        Generated {new Date(data._computedAt).toLocaleString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "numeric", minute: "2-digit",
+                        })}
+                      </span>
+                      {data.engine && (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                          data.engine === "reverse"
+                            ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
+                            : "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"
+                        }`}>
+                          engine: {data.engine}
+                        </span>
+                      )}
+                      {data.payloadVersion != null && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle">
+                          v{data.payloadVersion}
+                        </span>
+                      )}
+                      {data.reconciliation && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                            data.reconciliation.passed
+                              ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"
+                              : "bg-rose-50 dark:bg-loss-bg text-rose-700 dark:text-loss-strong"
+                          }`}
+                          title={data.reconciliation.passed
+                            ? `Reconciled: forward-applying every post-snapshot txn from the reverse-reconstructed state lands at today's broker portfolio (Δ shares ${data.reconciliation.maxSharesDelta.toFixed(4)}, Δ cash ${fmtCurrency(data.reconciliation.cashDelta)}).`
+                            : `Reconciliation failed: worst symbol ${data.reconciliation.worstSymbol ?? "n/a"} (Δ ${data.reconciliation.maxSharesDelta.toFixed(2)} sh), cash Δ ${fmtCurrency(data.reconciliation.cashDelta)}. ${data.reconciliation.mismatches.length} mismatched symbol${data.reconciliation.mismatches.length === 1 ? "" : "s"}.`}
+                        >
+                          {data.reconciliation.passed ? "✓ reconciled" : "⚠ reconcile failed"}
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>
@@ -823,7 +986,7 @@ export default function TimeMachinePage() {
               // Per-accent class literals — Tailwind's purge won't accept dynamic strings.
               const PALETTE = {
                 emerald: {
-                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50 dark:bg-emerald-950/40/40 overflow-hidden",
+                  card: "rounded-xl border border-emerald-200 dark:border-gain-border bg-emerald-50/40 overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-emerald-700 dark:text-gain-strong font-semibold",
                   totalLabel: "text-[10px] text-emerald-700/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-emerald-700 dark:text-gain-strong tabular-nums",
@@ -831,9 +994,9 @@ export default function TimeMachinePage() {
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-emerald-700 dark:text-gain-strong",
                 },
                 rose: {
-                  card: "rounded-xl border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/40/40 overflow-hidden",
+                  card: "rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40/40 overflow-hidden",
                   title: "text-[11px] uppercase tracking-wider text-rose-700 dark:text-loss-strong font-semibold",
-                  totalLabel: "text-[10px] text-rose-700 dark:text-rose-300/80 uppercase tracking-wider font-semibold",
+                  totalLabel: "text-[10px] text-rose-700/80 uppercase tracking-wider font-semibold",
                   totalValue: "text-base font-bold text-rose-700 dark:text-loss-strong tabular-nums",
                   rowPct: "px-2 py-1.5 text-right tabular-nums font-medium text-rose-700 dark:text-loss-strong",
                   rowImpact: "px-2 py-1.5 text-right tabular-nums font-semibold text-rose-700 dark:text-loss-strong",
@@ -1130,11 +1293,11 @@ export default function TimeMachinePage() {
               const hasRsu = !!data.rsuVests && data.rsuVests.items.length > 0;
               if (!hasCash && !hasRsu) {
                 return (
-                  <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 font-semibold">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
                       New deposits added since {fmtDate(data.snapshotDate)}
                     </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-300/60 mt-2">No inflows in this window.</p>
+                    <p className="text-xs text-amber-700/60 mt-2">No inflows in this window.</p>
                   </div>
                 );
               }
@@ -1142,25 +1305,25 @@ export default function TimeMachinePage() {
                 data.simulation.totalDepositsAdded +
                 (data.rsuVests?.totalValueAtVest ?? 0);
               return (
-                <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/40 p-4">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 font-semibold">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
                       New deposits added since {fmtDate(data.snapshotDate)}
                     </p>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-300/70">kept in sim</p>
+                    <p className="text-[10px] text-amber-700/70">kept in sim</p>
                   </div>
 
                   {/* Cash deposits */}
                   {hasCash && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide mb-1">
+                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
                         Cash deposits · +{fmtCurrency(data.simulation.totalDepositsAdded)}
                       </p>
                       <div className="flex flex-col gap-0.5">
                         {data.simulation.deposits.map((d, i) => (
                           <div key={i} className="flex justify-between text-[11px]">
                             <span className="text-amber-900/80">{fmtDateShort(d.date)}</span>
-                            <span className="font-medium text-amber-800 dark:text-amber-200">+{fmtCurrency(d.amount)}</span>
+                            <span className="font-medium text-amber-800">+{fmtCurrency(d.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -1170,7 +1333,7 @@ export default function TimeMachinePage() {
                   {/* RSU vests */}
                   {hasRsu && data.rsuVests && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide mb-1">
+                      <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
                         RSU vests · +{fmtCurrency(data.rsuVests.totalValueAtVest)}
                       </p>
                       <p className="text-[10px] text-amber-900/70 mb-1.5">
@@ -1192,17 +1355,17 @@ export default function TimeMachinePage() {
                             <span className="text-amber-900/80">
                               {fmtDateShort(v.date)} · {v.symbol} × {Math.round(v.units)}
                             </span>
-                            <span className="font-medium text-amber-800 dark:text-amber-200">+{fmtCurrency(v.valueAtVest)}</span>
+                            <span className="font-medium text-amber-800">+{fmtCurrency(v.valueAtVest)}</span>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-amber-800 dark:text-amber-200/60 mt-1.5 italic">
+                      <p className="text-[10px] text-amber-800/60 mt-1.5 italic">
                         Vested shares accrue without cash debit (income event).
                       </p>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200 dark:border-amber-800/50">
+                  <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200">
                     <span className="font-semibold text-amber-900">Total added</span>
                     <span className="font-bold text-amber-900">+{fmtCurrency(totalInflows)}</span>
                   </div>
@@ -1211,28 +1374,28 @@ export default function TimeMachinePage() {
             })()}
 
             {/* Withdrawals — warm orange */}
-            <div className="rounded-xl border border-orange-200 dark:border-orange-800/50 bg-orange-50 dark:bg-orange-950/40 p-4">
+            <div className="rounded-xl border border-orange-200 bg-orange-50 dark:bg-orange-950/40 p-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-orange-700 dark:text-orange-300 font-semibold">
+                <p className="text-[10px] uppercase tracking-wider text-orange-700 font-semibold">
                   Would need to fund elsewhere
                 </p>
-                <p className="text-[10px] text-orange-700 dark:text-orange-300/70">not subtracted</p>
+                <p className="text-[10px] text-orange-700/70">not subtracted</p>
               </div>
               {data.simulation.withdrawals.length === 0 ? (
-                <p className="text-xs text-orange-700 dark:text-orange-300/60 mt-2">No withdrawals in this window.</p>
+                <p className="text-xs text-orange-700/60 mt-2">No withdrawals in this window.</p>
               ) : (
                 <div className="flex flex-col gap-0.5 mt-2">
                   {data.simulation.withdrawals.map((w, i) => (
                     <div key={i} className="flex justify-between text-[11px]">
                       <span className="text-orange-900/80">{fmtDateShort(w.date)}</span>
-                      <span className="font-medium text-orange-800 dark:text-orange-200">−{fmtCurrency(w.amount)}</span>
+                      <span className="font-medium text-orange-800">−{fmtCurrency(w.amount)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-orange-200 dark:border-orange-800/50">
+                  <div className="flex justify-between text-xs pt-2 mt-1 border-t border-orange-200">
                     <span className="font-semibold text-orange-900">Total to fund</span>
                     <span className="font-bold text-orange-900">−{fmtCurrency(data.simulation.totalWithdrawalsFunded)}</span>
                   </div>
-                  <p className="text-[10px] text-orange-700 dark:text-orange-300/70 mt-2 italic">
+                  <p className="text-[10px] text-orange-700/70 mt-2 italic">
                     Note: not subtracted from simulation.
                   </p>
                 </div>
@@ -1241,9 +1404,9 @@ export default function TimeMachinePage() {
 
             {/* Realized gains + tax context (WA-specific) */}
             {data.realizedGains && data.realizedGains.total !== 0 && (
-              <div className="rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50 dark:bg-violet-950/40 p-4">
+              <div className="rounded-xl border border-violet-200 bg-violet-50 dark:bg-violet-950/40 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] uppercase tracking-wider text-violet-700 dark:text-violet-300 font-semibold">
+                  <span className="text-[11px] uppercase tracking-wider text-violet-700 font-semibold">
                     Why you may have withdrawn cash
                   </span>
                 </div>
@@ -1254,9 +1417,9 @@ export default function TimeMachinePage() {
                   withdrawals above were likely real tax obligations from the activity below.
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold">Options (STCG)</div>
+                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Options (STCG)</div>
                       {(data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
                         <button
                           type="button"
@@ -1273,9 +1436,9 @@ export default function TimeMachinePage() {
                       All short-term · net of {data.realizedGains.optionsBreakdown?.length ?? 0} legs
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold">Stocks STCG</div>
+                      <div className="text-[10px] uppercase text-violet-600 font-semibold">Stocks STCG</div>
                       {(data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
                         <button
                           type="button"
@@ -1290,8 +1453,8 @@ export default function TimeMachinePage() {
                     <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held &lt; 1 yr</div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">Stocks LTCG</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks LTCG</div>
                     <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held ≥ 1 yr</div>
                   </div>
@@ -1299,8 +1462,8 @@ export default function TimeMachinePage() {
 
                 {/* Options breakdown — per-leg detail */}
                 {optionsRealizationOpen && (data.realizedGains.optionsBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 border-b border-violet-100 dark:border-violet-800/50 text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-300 font-semibold">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
                       Options legs since {fmtDate(data.snapshotDate)} · {data.realizedGains.optionsBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
@@ -1340,8 +1503,8 @@ export default function TimeMachinePage() {
 
                 {/* Stocks breakdown — per-SELL detail */}
                 {stocksRealizationOpen && (data.realizedGains.stocksBreakdown?.length ?? 0) > 0 && (
-                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 border-b border-violet-100 dark:border-violet-800/50 text-[10px] uppercase tracking-wider text-violet-600 dark:text-violet-300 font-semibold">
+                  <div className="mt-3 bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-violet-100 text-[10px] uppercase tracking-wider text-violet-600 font-semibold">
                       Stock SELLs since {fmtDate(data.snapshotDate)} · {data.realizedGains.stocksBreakdown!.length} rows
                     </div>
                     <div className="max-h-72 overflow-y-auto">
@@ -1375,7 +1538,7 @@ export default function TimeMachinePage() {
                               <td className="px-2 py-1 text-center">
                                 <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${
                                   s.term === "LT" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" :
-                                  s.term === "ST" ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300" :
+                                  s.term === "ST" ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700" :
                                   "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"
                                 }`} title={s.term === "skipped" ? "No in-window BUY — gain not tallied" : `Held ${s.holdDays}d from ${s.earliestBuyDate}`}>
                                   {s.term}
@@ -1392,8 +1555,8 @@ export default function TimeMachinePage() {
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2 text-xs mt-3">
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">STCG tax @ 40.8%</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.stcgTax)}
                     </div>
@@ -1401,8 +1564,8 @@ export default function TimeMachinePage() {
                       on {fmtCurrency0(data.realizedGains.taxBreakdown.stcgBase)}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 dark:border-violet-800/50 rounded-lg p-2.5">
-                    <div className="text-[10px] uppercase text-violet-600 dark:text-violet-300 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
+                  <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+                    <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
                       ~{fmtCurrency0(data.realizedGains.taxBreakdown.ltcgTax)}
                     </div>
@@ -1411,11 +1574,11 @@ export default function TimeMachinePage() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-white dark:bg-surface-elevated border border-violet-200 dark:border-violet-800/50 rounded-lg p-2.5 mt-3 flex items-center justify-between">
-                  <span className="text-[11px] text-violet-700 dark:text-violet-300 font-semibold uppercase tracking-wider">Total est. tax</span>
+                <div className="bg-white dark:bg-surface-elevated border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
+                  <span className="text-[11px] text-violet-700 font-semibold uppercase tracking-wider">Total est. tax</span>
                   <span className="text-base font-bold text-rose-600 dark:text-loss">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
                 </div>
-                <p className="text-[10px] text-violet-700 dark:text-violet-300/80 mt-3 italic leading-snug">
+                <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
                   {data.realizedGains.taxRateLabel}. Stock hold-period uses earliest in-window
                   BUY date; SELLs without an in-window BUY are skipped (incomplete history).
                 </p>
@@ -1449,7 +1612,7 @@ export default function TimeMachinePage() {
                     const sideLabel = isLong ? "LONG" : "SHORT";
                     const sideClass = isLong
                       ? "bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
-                      : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300";
+                      : "bg-amber-50 dark:bg-amber-950/40 text-amber-700";
                     const qty = snap ? Math.abs(snap.units) : null;
                     return (
                       <div key={opt.ticker} className={`px-4 py-3 ${i > 0 ? "border-t border-stone-50 dark:border-border-subtle" : ""}`}>
