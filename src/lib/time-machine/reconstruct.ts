@@ -714,14 +714,22 @@ export function reconcileSnapshot(
 
     if (date <= snapshotDate) continue;
     const sym = extractSymbol(tx);
-    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+    // NOTE: MMF/bookkeeping skips apply only to BUY/SELL — DIVIDEND/INTEREST
+    // on cash-sweep funds (SPAXX, FDRXX, etc.) are real cash inflows that
+    // accumulate in today's broker cash balance, so we MUST forward-apply
+    // them here to land at today's anchor. Symmetric with
+    // reconstructCashAtReverse (which subtracts them when rewinding).
+    const isMMF = isMoneyMarketSymbol(sym);
+    const isBook = isBookkeepingSymbol(sym);
 
     switch (tx.type) {
       case "BUY":
+        if (isMMF || isBook) break;
         units.set(sym, (units.get(sym) ?? 0) + Math.abs(tx.units));
         if (!isRsuVest(tx)) cash += tx.amount;
         break;
       case "SELL":
+        if (isMMF || isBook) break;
         units.set(sym, (units.get(sym) ?? 0) - Math.abs(tx.units));
         cash += tx.amount;
         break;
@@ -831,9 +839,16 @@ export function categorizePostSnapshotCashFlows(
         break;
       }
       case "DIVIDEND": {
-        // Skip money-market sweep dividends (SPAXX/etc) — they're just
-        // interest on cash, not portfolio dividends.
-        if (isMoneyMarketSymbol(sym)) break;
+        if (isMoneyMarketSymbol(sym)) {
+          // Cash-sweep dividends (SPAXX, FDRXX, etc.) accumulate in your
+          // cash balance regardless of trading activity — they're interest
+          // paid on idle cash, so they belong in totalDividends so sim cash
+          // tracks today's broker cash anchor.
+          const entry: CashFlowEntry = { date, amount: mag, symbol: sym, note: "SWEEP_DIVIDEND" };
+          result.dividends.push(entry);
+          result.totalDividends += mag;
+          break;
+        }
         if (!heldSymbols.has(sym)) break; // wasn't held at snapshot
         const entry: CashFlowEntry = { date, amount: mag, symbol: sym, note: "DIVIDEND" };
         result.dividends.push(entry);
