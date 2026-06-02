@@ -645,7 +645,7 @@ export default function TimeMachinePage() {
                   key={it.monthKey}
                   onClick={() => !it.inProgress && runBatchBackfills([it.date])}
                   disabled={it.inProgress}
-                  className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-10 min-w-[60px] ${greyClass}`}
+                  className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-11 w-20 ${greyClass}`}
                   title={it.inProgress ? "Backfilling…" : "Click to backfill this month"}
                 >
                   <span className="font-bold leading-tight">{monthLabel(it.monthKey + "-01")}</span>
@@ -662,7 +662,7 @@ export default function TimeMachinePage() {
               <button
                 key={s.snapshotDate}
                 onClick={() => loadCached(s.snapshotDate)}
-                className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-10 min-w-[60px] ${intensityClass(s)} ${ring}`}
+                className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-11 w-20 ${intensityClass(s)} ${ring}`}
                 title={showDeltas
                   ? `${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`
                   : `${s.snapshotDate}`}
