@@ -1,13 +1,126 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #FAFAF9;
   --foreground: #1C1917;
+
+  /* Semantic surfaces (light defaults map 1:1 to current values) */
+  --surface: #FAFAF9;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F5F5F4;
+  --surface-sunken: #E7E5E4;
+
+  /* Borders */
+  --border: #E7E5E4;
+  --border-subtle: #F5F5F4;
+  --border-strong: #D6D3D1;
+
+  /* Text */
+  --text: #1C1917;
+  --text-muted: #57534E;
+  --text-subtle: #78716C;
+  --text-faint: #A8A29E;
+  --text-inverse: #FAFAF9;
+
+  /* Status — gain/loss */
+  --gain: #059669;
+  --gain-strong: #047857;
+  --gain-bg: #ECFDF5;
+  --gain-border: #A7F3D0;
+
+  --loss: #DC2626;
+  --loss-strong: #B91C1C;
+  --loss-bg: #FEF2F2;
+  --loss-border: #FECACA;
+
+  /* Accent (primary CTA) */
+  --accent: #0284C7;        /* sky-600 */
+  --accent-hover: #0369A1;  /* sky-700 */
+  --accent-bg: #F0F9FF;     /* sky-50 */
+  --accent-border: #BAE6FD; /* sky-200 */
+
+  /* Brand (Robinhood-style green) — same in both modes */
+  --brand: #00C805;
+}
+
+.dark {
+  --background: #0E1014;
+  --foreground: #E6E8EB;
+
+  /* Robinhood-style dark surfaces — true near-black, soft elevation */
+  --surface: #0E1014;
+  --surface-elevated: #16191D;
+  --surface-muted: #1C2026;
+  --surface-sunken: #0A0C10;
+
+  --border: #22272E;
+  --border-subtle: #1C2026;
+  --border-strong: #2B3138;
+
+  /* Off-white text (OLED-friendly, avoids pure white) */
+  --text: #E6E8EB;
+  --text-muted: #B4B9C0;
+  --text-subtle: #8B9098;
+  --text-faint: #6B7178;
+  --text-inverse: #0E1014;
+
+  /* Gain stays bright — brand green pops on dark */
+  --gain: #00D26A;
+  --gain-strong: #00E673;
+  --gain-bg: rgba(0, 200, 5, 0.10);
+  --gain-border: rgba(0, 200, 5, 0.30);
+
+  /* Loss — softer coral, not pure red (easier on OLED) */
+  --loss: #FF5A5F;
+  --loss-strong: #FF7A7F;
+  --loss-bg: rgba(255, 90, 95, 0.10);
+  --loss-border: rgba(255, 90, 95, 0.30);
+
+  /* Sky-400 reads better than sky-600 on dark */
+  --accent: #38BDF8;
+  --accent-hover: #7DD3FC;
+  --accent-bg: rgba(56, 189, 248, 0.10);
+  --accent-border: rgba(56, 189, 248, 0.30);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+
+  --color-border-default: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-text-faint: var(--text-faint);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-gain: var(--gain);
+  --color-gain-strong: var(--gain-strong);
+  --color-gain-bg: var(--gain-bg);
+  --color-gain-border: var(--gain-border);
+
+  --color-loss: var(--loss);
+  --color-loss-strong: var(--loss-strong);
+  --color-loss-bg: var(--loss-bg);
+  --color-loss-border: var(--loss-border);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-border: var(--accent-border);
+
+  --color-brand: var(--brand);
+
   --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-black-ops);

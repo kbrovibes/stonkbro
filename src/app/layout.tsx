@@ -5,6 +5,8 @@ import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import NavigationProgress from "@/components/NavigationProgress";
 import ThemeFontProvider from "@/components/ThemeFontProvider";
+import ThemeProvider from "@/components/ThemeProvider";
+import { PRE_PAINT_THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -61,7 +63,12 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="theme-color" content="#FAFAF9" />
+        <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
+        <ThemeProvider />
         <ThemeFontProvider />
         <NavigationProgress />
         {children}
