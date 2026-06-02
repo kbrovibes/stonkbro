@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.23.0 — Dark Mode (default-on)
+
+- **Robinhood-style dark mode** across the entire app (Header, BottomNav, all pages, charts, badges) with a Light/Dark/Auto toggle in the profile dropdown (top-right initials bubble)
+- **Default is Dark** for new visitors regardless of OS preference; existing Light/Dark/System choices are respected
+- **Semantic token layer** in `globals.css` (surface/text/border/gain/loss/accent) with `@custom-variant dark` and Robinhood palette overrides — light mode is byte-identical to v0.22 by construction (all light values map 1:1 to prior hardcoded values)
+- **Pre-paint script** in `<head>` prevents FOUC; sets `.dark` class before first paint based on `localStorage`
+- **Dynamic `<meta name="theme-color">`** so the iOS PWA status bar matches the active theme on the fly
+- **Brand green `#00C805` preserved** in both modes (Robinhood-style pop on dark); accent CTAs shift sky-600 → sky-400 in dark for legibility
+- **SVG chart strokes/fills** (time-machine, portfolio, learn module candlesticks, sparklines) migrated from hardcoded hex to `var(--token)` so axes/grids/labels flip automatically
+- **Colored badge tints** (amber/violet/indigo/blue/purple/orange/etc.) get `dark:bg-{color}-950/40` overlays so they read as tinted glow on dark instead of near-white blocks
+- **Tooling**: `scripts/add-dark-variants.mjs` — idempotent migration script that adds `dark:` companions to utility classes; re-run after merges that introduce new components
+
 ## v0.22.0 — Portfolio Manager
 
 - **Portfolio Manager** (`/portfolio-manager`): AI-driven daily research and BUY/SELL ratings for every stock in your connected portfolio, plus a $100K reallocation plan

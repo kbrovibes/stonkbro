@@ -22,6 +22,9 @@ No paper trading simulators. No "educational" disclaimers hiding an empty app. T
 
 ## Features
 
+### Dark Mode (default-on, Robinhood-style)
+Full dark mode across every page, with a Light/Dark/Auto toggle in the profile dropdown (top-right initials bubble). Dark is the default for new visitors; existing preferences are respected. Brand green stays loud in both modes; loss reds shift to a softer coral on dark; sky-blue CTAs bump to sky-400 on dark for legibility. Charts, sparklines, and badges all flip automatically.
+
 ### Discovery Dashboard
 Ranked watchlist with a custom scoring algorithm. Stocks are scored on volume ratio, momentum, SMA positioning, and 52-week range. High scores = high explosive potential. All data live from Yahoo Finance.
 
