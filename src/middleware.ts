@@ -28,10 +28,16 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Allow API routes that use their own auth (CRON_SECRET / bearer token)
+  // Allow API routes that use their own auth (CRON_SECRET / bearer token).
+  // For routes with mixed auth (UI session OR admin Bearer), we only let the
+  // Bearer-token path skip middleware — browser sessions still flow through
+  // the standard redirect logic.
+  const hasBearerToken =
+    request.headers.get("authorization")?.startsWith("Bearer ") ?? false;
   const isPublicApi =
     pathname.startsWith("/api/cron") ||
-    pathname.startsWith("/api/push/send");
+    pathname.startsWith("/api/push/send") ||
+    (hasBearerToken && pathname.startsWith("/api/portfolio/time-machine/backfill"));
 
   // Routes accessible without authentication (landing + explore tabs + their API routes)
   const isGuestRoute =
