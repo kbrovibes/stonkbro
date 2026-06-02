@@ -12,13 +12,34 @@
 
 import {
   reconstructStockPositionsAt,
+  reconstructStockPositionsAtReverse,
   reconstructOptionPositionsAt,
   reconstructCashAt,
+  reconstructCashAtReverse,
   categorizePostSnapshotCashFlows,
   computeRealizedGainsSinceSnapshot,
   computeExitAnalysisSinceSnapshot,
   getRsuVestsAfter,
 } from "./reconstruct";
+import type { PortfolioData } from "@/lib/snaptrade/client";
+
+/** Bumped whenever the simulator's payload shape or math changes. */
+export const PAYLOAD_VERSION = 2;
+
+/** Default engine. Override per-call via args.engine, or globally via
+ *  HINDSIGHT_ENGINE=forward to roll back to the legacy forward-walk. */
+const DEFAULT_ENGINE: "forward" | "reverse" =
+  (process.env.HINDSIGHT_ENGINE === "forward" ? "forward" : "reverse");
+
+/** Aggregate today's non-option positions by symbol across accounts. */
+function aggregatePortfolioUnits(portfolio: PortfolioData): Map<string, number> {
+  const units = new Map<string, number>();
+  for (const p of portfolio.positions) {
+    if (p.is_option) continue;
+    units.set(p.symbol, (units.get(p.symbol) ?? 0) + p.units);
+  }
+  return units;
+}
 import { replayOptionExpiries, OptionReplayRecord } from "./replay";
 import {
   getCurrentStockPrices,
@@ -104,20 +125,51 @@ export interface SimulationResult {
     monthsWithVests: string[];   // "YYYY-MM"
   };
   assumptions: string[];
+  /** Schema version of this payload. Older snapshots may be missing fields. */
+  payloadVersion: number;
+  /** Which reconstruction engine produced this payload. */
+  engine: "forward" | "reverse";
 }
 
 export async function simulateTimeMachine(args: {
   snapshotDate: string;
   txns: SnapTradeTxn[];
-  actualTotal: number;
+  /** Today's broker portfolio — anchor for reverse-walk reconstruction
+   *  and source of `actualTotal`. Required for engine="reverse". */
+  currentPortfolio?: PortfolioData;
+  /** Override the default reconstruction engine. Defaults to env-flag. */
+  engine?: "forward" | "reverse";
+  /** Legacy fallback when currentPortfolio is not supplied. */
+  actualTotal?: number;
 }): Promise<SimulationResult> {
-  const { snapshotDate, txns, actualTotal } = args;
+  const { snapshotDate, txns, currentPortfolio } = args;
   const today = new Date().toISOString().split("T")[0];
 
+  // Resolve engine + actualTotal from whichever inputs were provided.
+  const requestedEngine = args.engine ?? DEFAULT_ENGINE;
+  const engine: "forward" | "reverse" = currentPortfolio
+    ? requestedEngine
+    : "forward"; // can't reverse-walk without an anchor
+
+  let actualTotal: number;
+  if (currentPortfolio) {
+    const stocksMV = currentPortfolio.summary.total_market_value;
+    const optionsMV = currentPortfolio.options.reduce((s, o) => s + o.market_value, 0);
+    actualTotal = stocksMV + optionsMV + currentPortfolio.summary.cash;
+  } else if (typeof args.actualTotal === "number") {
+    actualTotal = args.actualTotal;
+  } else {
+    throw new Error("simulateTimeMachine: must supply either currentPortfolio or actualTotal");
+  }
+
   // ── Step 1: snapshot reconstruction ─────────────────────────────────
-  const stockUnitsAtSnapshot = reconstructStockPositionsAt(snapshotDate, txns);
+  const stockUnitsAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructStockPositionsAtReverse(snapshotDate, txns, aggregatePortfolioUnits(currentPortfolio))
+    : reconstructStockPositionsAt(snapshotDate, txns);
   const optionsAtSnapshot = reconstructOptionPositionsAt(snapshotDate, txns);
-  const cashAtSnapshot = reconstructCashAt(snapshotDate, txns);
+  const cashAtSnapshot = engine === "reverse" && currentPortfolio
+    ? reconstructCashAtReverse(snapshotDate, txns, currentPortfolio.summary.cash)
+    : reconstructCashAt(snapshotDate, txns);
 
   // ── Step 2: post-snapshot cash flows ────────────────────────────────
   const heldSymbols = new Set(stockUnitsAtSnapshot.keys());
@@ -318,6 +370,8 @@ export async function simulateTimeMachine(args: {
       };
     })(),
     assumptions,
+    payloadVersion: PAYLOAD_VERSION,
+    engine,
   };
 }
 

@@ -380,6 +380,169 @@ export function reconstructCashAt(
   return cash;
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// REVERSE-WALK reconstruction — anchored to today's broker-reported state.
+// ═════════════════════════════════════════════════════════════════════════
+//
+// The forward walkers above accumulate position state from time 0 forward,
+// which silently undercounts when the SnapTrade activity feed doesn't reach
+// back to the original BUYs (Fidelity ≈ 24mo). The reverse walkers anchor
+// to today's known holdings (PortfolioData) and rewind every post-snapshot
+// txn — mathematically exact for any date within the activity window,
+// regardless of how old the underlying positions are.
+//
+// See docs/hindsight-reverse-walk-example.html for the worked example.
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Reverse-walk version of {@link reconstructStockPositionsAt}.
+ * @param currentUnits Today's units per symbol (from `portfolio.positions`
+ *                     aggregated across accounts). Caller supplies this.
+ */
+export function reconstructStockPositionsAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  currentUnits: Map<string, number>
+): Map<string, number> {
+  const result = new Map(currentUnits);
+  const ensure = (sym: string) => { if (!result.has(sym)) result.set(sym, 0); };
+
+  // Walk all txns chronologically so we know each contract's long/short
+  // state at the time of any assignment (needed to undo the stock delta).
+  const sorted = sortAscending(txns);
+  const optUnits = new Map<string, number>();
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (tx.type === "OPTIONASSIGNMENT" && date > snapshotDate) {
+        const os = tx.option_symbol!;
+        const optionType = (os.option_type ?? "").toUpperCase();
+        const underlying = os.underlying_symbol?.symbol ?? "";
+        if (underlying) {
+          const contracts = Math.abs(prev || tx.units);
+          // SHORT-default when prev is ambiguous (matches forward walker).
+          const wasShort = prev < 0 || prev === 0;
+          let stockDelta = 0;
+          if (optionType === "CALL") {
+            stockDelta = wasShort ? -100 * contracts : +100 * contracts;
+          } else if (optionType === "PUT") {
+            stockDelta = wasShort ? +100 * contracts : -100 * contracts;
+          }
+          // Undo: subtract the delta that landed in today's units.
+          ensure(underlying);
+          result.set(underlying, (result.get(underlying) ?? 0) - stockDelta);
+        }
+        optUnits.set(key, 0);
+      }
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+
+    const sym = extractSymbol(tx);
+    if (isMoneyMarketSymbol(sym) || isBookkeepingSymbol(sym)) continue;
+
+    if (tx.type === "BUY") {
+      ensure(sym);
+      result.set(sym, (result.get(sym) ?? 0) - Math.abs(tx.units));
+    } else if (tx.type === "SELL") {
+      ensure(sym);
+      result.set(sym, (result.get(sym) ?? 0) + Math.abs(tx.units));
+    }
+  }
+
+  for (const [sym, u] of result) {
+    if (Math.abs(u) < 1e-6) result.delete(sym);
+  }
+  return result;
+}
+
+/**
+ * Reverse-walk version of {@link reconstructCashAt}.
+ * @param currentCash Today's cash balance (`portfolio.summary.cash`).
+ */
+export function reconstructCashAtReverse(
+  snapshotDate: string,
+  txns: SnapTradeTxn[],
+  currentCash: number
+): number {
+  const sorted = sortAscending(txns);
+  const optUnits = new Map<string, number>();
+  let postSnapshotDelta = 0;
+
+  for (const tx of sorted) {
+    if (ZERO_EFFECT_TYPES.has(tx.type)) continue;
+    const date = txnDate(tx);
+
+    if (isOptionTxn(tx)) {
+      const key = contractKey(tx);
+      const prev = optUnits.get(key) ?? 0;
+      if (tx.type === "BUY") optUnits.set(key, prev + Math.abs(tx.units));
+      else if (tx.type === "SELL") optUnits.set(key, prev - Math.abs(tx.units));
+      else if (tx.type === "OPTIONEXPIRATION") optUnits.set(key, 0);
+
+      if (date > snapshotDate) {
+        if (tx.type === "OPTIONASSIGNMENT") {
+          if (tx.amount !== 0) {
+            postSnapshotDelta += tx.amount;
+          } else {
+            const optionType = (tx.option_symbol?.option_type ?? "").toUpperCase();
+            const strike = Number(tx.option_symbol?.strike_price ?? 0);
+            const contracts = Math.abs(prev || tx.units);
+            const wasShort = prev < 0 || prev === 0;
+            const notional = strike * 100 * contracts;
+            if (optionType === "CALL") postSnapshotDelta += wasShort ? notional : -notional;
+            else if (optionType === "PUT") postSnapshotDelta += wasShort ? -notional : notional;
+          }
+        } else if (tx.type === "BUY" || tx.type === "SELL") {
+          postSnapshotDelta += tx.amount;
+        }
+      }
+      if (tx.type === "OPTIONASSIGNMENT") optUnits.set(key, 0);
+      continue;
+    }
+
+    if (date <= snapshotDate) continue;
+
+    const sym = extractSymbol(tx);
+    const isMMF = isMoneyMarketSymbol(sym);
+    const isBook = isBookkeepingSymbol(sym);
+
+    switch (tx.type) {
+      case "BUY":
+      case "SELL":
+        if (isMMF || isBook) break;
+        if (tx.type === "BUY" && isRsuVest(tx)) break;
+        postSnapshotDelta += tx.amount;
+        break;
+      case "DEPOSIT":
+      case "CONTRIBUTION":
+      case "DIVIDEND":
+      case "INTEREST":
+        postSnapshotDelta += Math.abs(tx.amount);
+        break;
+      case "WITHDRAWAL":
+      case "FEE":
+      case "TAX":
+        postSnapshotDelta -= Math.abs(tx.amount);
+        break;
+      default:
+        break;
+    }
+  }
+
+  return currentCash - postSnapshotDelta;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Post-snapshot cash-flow categorization
 // ─────────────────────────────────────────────────────────────────────────

@@ -99,11 +99,6 @@ export async function POST(req: Request) {
       if (earliestAvailable === null || d < earliestAvailable) earliestAvailable = d;
     }
 
-    const stocksMV = portfolio.summary.total_market_value;
-    const optionsMV = portfolio.options.reduce((s, o) => s + o.market_value, 0);
-    const cashTotal = portfolio.summary.cash;
-    const actualTotal = stocksMV + optionsMV + cashTotal;
-
     type Outcome = { date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number };
     const ownerEmail = user.email!;
 
@@ -112,7 +107,7 @@ export async function POST(req: Request) {
         return { date, status: "skipped", reason: `before earliest activity (${earliestAvailable})` };
       }
       try {
-        const sim = await simulateTimeMachine({ snapshotDate: date, txns, actualTotal });
+        const sim = await simulateTimeMachine({ snapshotDate: date, txns, currentPortfolio: portfolio });
         const payload = { ...sim, earliestAvailable };
         const { error: upErr } = await supabase
           .from("time_machine_snapshots")
