@@ -149,6 +149,16 @@ interface TimeMachineResult {
     monthsWithVests: string[];
   };
   assumptions: string[];
+  payloadVersion?: number;
+  engine?: "forward" | "reverse";
+  reconciliation?: {
+    passed: boolean;
+    maxSharesDelta: number;
+    worstSymbol: string | null;
+    cashDelta: number;
+    mismatches: Array<{ symbol: string; reconstructed: number; actual: number; delta: number }>;
+    tolerance: { shares: number; cash: number };
+  };
   /** ISO timestamp injected by the cached route; absent on live ?date= simulation. */
   _computedAt?: string;
 }
@@ -225,6 +235,8 @@ export default function TimeMachinePage() {
   type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
+  const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);
+  const CURRENT_PAYLOAD_VERSION = 2;
   const [showMoreMonths, setShowMoreMonths] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
@@ -287,6 +299,9 @@ export default function TimeMachinePage() {
         if (cancelled) return;
         setSnapshotList(json.snapshots || []);
         if (json.earliestAvailable) setEarliestAvailableMeta(json.earliestAvailable);
+        if (typeof json.latestPayloadVersion === "number") {
+          setLatestPayloadVersion(json.latestPayloadVersion);
+        }
       } catch { /* silent */ }
     })();
     return () => { cancelled = true; };
@@ -445,6 +460,35 @@ export default function TimeMachinePage() {
           </h1>
           <p className="text-sm text-stone-500">If you&apos;d stopped trading on…</p>
         </div>
+
+        {/* Floor banner — explicit about Fidelity activity window */}
+        {earliestAvailableMeta && (
+          <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 flex items-center justify-between gap-3">
+            <div className="text-[11px] text-sky-800 leading-snug">
+              Hindsight available from <span className="font-semibold">{fmtDate(earliestAvailableMeta)}</span>.
+              Earlier dates fall outside Fidelity&apos;s activity window (typically ~24 months) and cannot be reconstructed accurately.
+            </div>
+          </div>
+        )}
+
+        {/* Stale-version banner — appears when cached snapshots predate v2 */}
+        {latestPayloadVersion !== null && latestPayloadVersion < CURRENT_PAYLOAD_VERSION && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 flex items-center justify-between gap-3">
+            <div className="text-[11px] text-amber-900 leading-snug">
+              <span className="font-semibold">Snapshots are out of date.</span>{" "}
+              They use legacy forward-walk math and may show negative units, wrong cash, or wrong totals.{" "}
+              Regenerate to pick up the reverse-walk fix anchored to today&apos;s broker portfolio.
+            </div>
+            <button
+              type="button"
+              onClick={runBackfill}
+              disabled={backfilling}
+              className="shrink-0 px-3 py-1.5 rounded-md bg-amber-700 text-white text-[11px] font-semibold hover:bg-amber-800 active:bg-amber-900 disabled:opacity-50 transition"
+            >
+              {backfilling ? "Regenerating…" : "Regenerate all"}
+            </button>
+          </div>
+        )}
 
         {/* Monthly snapshot strip — expected months, grey/pulse for missing */}
         {(snapshotList.length > 0 || inProgressMonths.size > 0) && (() => {
@@ -703,11 +747,41 @@ export default function TimeMachinePage() {
                     total <span className="font-semibold text-stone-900">{fmtCurrency0(data.snapshot.total)}</span>
                   </p>
                   {data._computedAt && (
-                    <p className="text-[10px] text-stone-400 mt-1.5">
-                      Generated {new Date(data._computedAt).toLocaleString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                        hour: "numeric", minute: "2-digit",
-                      })}
+                    <p className="text-[10px] text-stone-400 mt-1.5 flex items-center gap-2 flex-wrap">
+                      <span>
+                        Generated {new Date(data._computedAt).toLocaleString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "numeric", minute: "2-digit",
+                        })}
+                      </span>
+                      {data.engine && (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                          data.engine === "reverse"
+                            ? "bg-sky-50 text-sky-700"
+                            : "bg-stone-100 text-stone-500"
+                        }`}>
+                          engine: {data.engine}
+                        </span>
+                      )}
+                      {data.payloadVersion != null && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-100 text-stone-500">
+                          v{data.payloadVersion}
+                        </span>
+                      )}
+                      {data.reconciliation && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                            data.reconciliation.passed
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-rose-50 text-rose-700"
+                          }`}
+                          title={data.reconciliation.passed
+                            ? `Reconciled: forward-applying every post-snapshot txn from the reverse-reconstructed state lands at today's broker portfolio (Δ shares ${data.reconciliation.maxSharesDelta.toFixed(4)}, Δ cash ${fmtCurrency(data.reconciliation.cashDelta)}).`
+                            : `Reconciliation failed: worst symbol ${data.reconciliation.worstSymbol ?? "n/a"} (Δ ${data.reconciliation.maxSharesDelta.toFixed(2)} sh), cash Δ ${fmtCurrency(data.reconciliation.cashDelta)}. ${data.reconciliation.mismatches.length} mismatched symbol${data.reconciliation.mismatches.length === 1 ? "" : "s"}.`}
+                        >
+                          {data.reconciliation.passed ? "✓ reconciled" : "⚠ reconcile failed"}
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>
