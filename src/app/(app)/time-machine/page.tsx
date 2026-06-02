@@ -233,7 +233,7 @@ export default function TimeMachinePage() {
   const [regenerating, setRegenerating] = useState(false);
 
   // Backfilled monthly snapshots — drives the colored month-button strip.
-  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string };
+  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string; payloadVersion: number | null };
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
   const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);
@@ -379,6 +379,24 @@ export default function TimeMachinePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshotList, earliestAvailableMeta, autoBatchKickedOff]);
 
+  // Live progress polling — while a backfill is in flight (either the global
+  // "Regenerate all" or per-tile batches), re-fetch the cached metadata
+  // every 5s so the strip + version pills update without a manual refresh.
+  useEffect(() => {
+    if (!backfilling && inProgressMonths.size === 0) return;
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      if (cancelled) return;
+      try {
+        const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json());
+        if (cancelled) return;
+        if (list?.snapshots) setSnapshotList(list.snapshots);
+        if (typeof list?.latestPayloadVersion === "number") setLatestPayloadVersion(list.latestPayloadVersion);
+      } catch { /* silent */ }
+    }, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [backfilling, inProgressMonths.size]);
+
   async function loadCached(date: string) {
     setSelectedDate(date);
     setLoading(true);
@@ -414,21 +432,53 @@ export default function TimeMachinePage() {
     }
   }
 
+  /**
+   * Regenerate every monthly snapshot. Used to live on a single
+   * `?from=2025-01-01` call that ran sequentially inside one function and
+   * regularly tripped the 300s Vercel cap. Now we fan out client-side as
+   * parallel POSTs of up to 6 dates each — same pattern as
+   * runBatchBackfills — so total wall time is bounded by ONE batch's
+   * processing time (~30s), not N × ~21s.
+   */
   async function runBackfill() {
     setBackfilling(true);
     setBackfillResult(null);
     try {
-      const res = await fetch("/api/portfolio/time-machine/backfill?from=2025-01-01", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Backfill failed");
-      setBackfillResult(`Backfilled ${json.ok}/${json.targets} months (skipped ${json.skipped}, errors ${json.errors})`);
-      // Refresh list
+      const earliest = earliestAvailableMeta ?? "2025-01-01";
+      const expected = computeExpectedMonthEnds(earliest);
+      const allDates = expected.map((e) => e.date);
+      if (allDates.length === 0) {
+        setBackfillResult("No months to backfill");
+        return;
+      }
+
+      // Mark every month as in-flight up front so the strip shows progress
+      // before any individual batch returns.
+      setInProgressMonths(new Set(allDates.map((d) => d.slice(0, 7))));
+
+      const BATCH = 6;
+      const batches: string[][] = [];
+      for (let i = 0; i < allDates.length; i += BATCH) batches.push(allDates.slice(i, i + BATCH));
+
+      const results = await Promise.all(
+        batches.map((batch) =>
+          fetch(`/api/portfolio/time-machine/backfill?targets=${batch.join(",")}`, { method: "POST" })
+            .then((r) => r.json().catch(() => null))
+        )
+      );
+      const totalOk = results.reduce((s, r) => s + (Number(r?.ok) || 0), 0);
+      const totalErr = results.reduce((s, r) => s + (Number(r?.errors) || 0), 0);
+      const totalSkip = results.reduce((s, r) => s + (Number(r?.skipped) || 0), 0);
+      setBackfillResult(`Regenerated ${totalOk}/${allDates.length} months in parallel (skipped ${totalSkip}, errors ${totalErr})`);
+
       const list = await fetch("/api/portfolio/time-machine/cached").then((r) => r.json()).catch(() => null);
       if (list?.snapshots) setSnapshotList(list.snapshots);
+      if (typeof list?.latestPayloadVersion === "number") setLatestPayloadVersion(list.latestPayloadVersion);
     } catch (e) {
       setBackfillResult(e instanceof Error ? e.message : "Backfill failed");
     } finally {
       setBackfilling(false);
+      setInProgressMonths(new Set());
     }
   }
 
@@ -489,6 +539,56 @@ export default function TimeMachinePage() {
             </button>
           </div>
         )}
+
+        {/* Live backfill progress — visible while ANY regeneration is in flight */}
+        {(backfilling || inProgressMonths.size > 0) && (() => {
+          // "Done" = months whose payload_version === CURRENT and are not
+          // explicitly in the in-flight set (because we mark them in-flight
+          // optimistically before the batch returns).
+          const targetMonthKeys = new Set(Array.from(inProgressMonths));
+          // Targets = whatever is currently marked in-flight (set up front by runBackfill).
+          const total = targetMonthKeys.size;
+          const versionByMonth = new Map(
+            snapshotList
+              .filter((s) => targetMonthKeys.has(s.snapshotDate.slice(0, 7)))
+              .map((s) => [s.snapshotDate.slice(0, 7), s.payloadVersion ?? null] as const)
+          );
+          const done = Array.from(targetMonthKeys).filter(
+            (mk) => versionByMonth.get(mk) === CURRENT_PAYLOAD_VERSION,
+          ).length;
+          const inFlightLabel = Array.from(targetMonthKeys)
+            .filter((mk) => versionByMonth.get(mk) !== CURRENT_PAYLOAD_VERSION)
+            .sort()
+            .slice(0, 6)
+            .map((mk) => {
+              const [y, m] = mk.split("-");
+              return new Date(Number(y), Number(m) - 1, 1)
+                .toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+            })
+            .join(" · ");
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          return (
+            <div className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2.5 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[11px] text-sky-900 leading-snug">
+                  <span className="font-semibold">Regenerating snapshots</span>
+                  {" · "}
+                  <span className="tabular-nums">{done} of {total} complete ({pct}%)</span>
+                  {inFlightLabel && (
+                    <span className="text-sky-700">{" · in flight: "}{inFlightLabel}{Array.from(targetMonthKeys).filter((mk) => versionByMonth.get(mk) !== CURRENT_PAYLOAD_VERSION).length > 6 ? "…" : ""}</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-sky-700 font-mono">live · 5s polling</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-sky-100 overflow-hidden">
+                <div
+                  className="h-full bg-sky-600 transition-all duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Monthly snapshot strip — expected months, grey/pulse for missing */}
         {(snapshotList.length > 0 || inProgressMonths.size > 0) && (() => {

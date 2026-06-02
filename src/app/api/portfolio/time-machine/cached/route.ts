@@ -46,8 +46,8 @@ export async function GET(req: Request) {
 
   // List mode: metadata only by default, full payloads if ?expand=full
   const cols = expand
-    ? "snapshot_date, delta_absolute, favorable_to_hold, computed_at, payload"
-    : "snapshot_date, delta_absolute, favorable_to_hold, computed_at";
+    ? "snapshot_date, delta_absolute, favorable_to_hold, computed_at, payload_version, payload"
+    : "snapshot_date, delta_absolute, favorable_to_hold, computed_at, payload_version";
 
   const { data, error } = await supabase
     .from("time_machine_snapshots")
@@ -91,6 +91,7 @@ export async function GET(req: Request) {
       deltaAbsolute: Number(r.delta_absolute ?? 0),
       favorableToHold: !!r.favorable_to_hold,
       computedAt: r.computed_at,
+      payloadVersion: typeof r.payload_version === "number" ? r.payload_version : null,
       ...(expand ? { payload: r.payload } : {}),
     })),
   });

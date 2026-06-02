@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getAllActivities, getPortfolio } from "@/lib/snaptrade/client";
 import { simulateTimeMachine } from "@/lib/time-machine/simulate";
 import { SnapTradeTxn } from "@/lib/time-machine/types";
@@ -38,13 +39,36 @@ function toWeekday(dateISO: string): string {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   const { searchParams } = new URL(req.url);
+
+  // ── Auth: accept EITHER a logged-in Supabase session (UI path) OR a
+  //         Bearer CRON_SECRET header (CLI / admin path). For the Bearer
+  //         path the caller must provide ?owner_email=<email>. We then
+  //         use the service-role client for upserts.
+  const authHeader = req.headers.get("authorization") ?? "";
+  const cronSecret = process.env.CRON_SECRET ?? "";
+  const isAdminAuth = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+  let ownerEmail: string;
+  let writeClient: ReturnType<typeof supabaseAdmin.from> extends never ? never : typeof supabaseAdmin;
+  if (isAdminAuth) {
+    const emailParam = searchParams.get("owner_email");
+    if (!emailParam) {
+      return NextResponse.json({ error: "owner_email query param required for admin auth" }, { status: 400 });
+    }
+    if (!hasPortfolioAccess(emailParam)) {
+      return NextResponse.json({ error: "Forbidden owner_email" }, { status: 403 });
+    }
+    ownerEmail = emailParam;
+    writeClient = supabaseAdmin;
+  } else {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    ownerEmail = user.email!;
+    writeClient = supabase as unknown as typeof supabaseAdmin;
+  }
+
   const targetsParam = searchParams.get("targets");
   const fromISO = searchParams.get("from") ?? "2025-01-01";
   const today = new Date();
@@ -63,8 +87,8 @@ export async function POST(req: Request) {
     if (targets.length === 0) {
       return NextResponse.json({ error: "targets must contain at least one YYYY-MM-DD date" }, { status: 400 });
     }
-    if (targets.length > 5) {
-      return NextResponse.json({ error: "max 5 targets per request — split into multiple calls" }, { status: 400 });
+    if (targets.length > 8) {
+      return NextResponse.json({ error: "max 8 targets per request — split into multiple calls" }, { status: 400 });
     }
   } else {
     const fromDate = new Date(fromISO);
@@ -100,7 +124,6 @@ export async function POST(req: Request) {
     }
 
     type Outcome = { date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number };
-    const ownerEmail = user.email!;
 
     async function processOne(date: string): Promise<Outcome> {
       if (earliestAvailable && date < earliestAvailable) {
@@ -109,12 +132,13 @@ export async function POST(req: Request) {
       try {
         const sim = await simulateTimeMachine({ snapshotDate: date, txns, currentPortfolio: portfolio });
         const payload = { ...sim, earliestAvailable };
-        const { error: upErr } = await supabase
+        const { error: upErr } = await writeClient
           .from("time_machine_snapshots")
           .upsert({
             snapshot_date: date,
             owner_email: ownerEmail,
             payload,
+            payload_version: sim.payloadVersion,
             delta_absolute: sim.delta.absolute,
             favorable_to_hold: sim.delta.favorableToHold,
             computed_at: new Date().toISOString(),
