@@ -86,13 +86,21 @@ export type CSPScanResult = {
 // Default universe — high-volume, liquid options, good for premium selling
 // ---------------------------------------------------------------------------
 
-const DEFAULT_UNIVERSE = [
+export const DEFAULT_UNIVERSE = [
   // Mega-cap tech
   "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA",
   // Semi & growth
-  "AMD", "INTC", "MU", "QCOM", "AVGO", "MRVL", "ARM",
-  // Cloud / SaaS
-  "CRM", "NOW", "SNOW", "PLTR", "NET", "DDOG", "CRWD",
+  "AMD", "INTC", "MU", "QCOM", "AVGO", "MRVL", "ARM", "SMCI", "TSM", "ANET", "CRDO",
+  // Cloud / SaaS / AI
+  "CRM", "NOW", "SNOW", "PLTR", "NET", "DDOG", "CRWD", "MDB", "S", "AI", "PATH",
+  // High-momentum names users care about
+  "NBIS", "SNDK", "RKLB", "ASTS", "LUNR", "RDW",
+  // Fintech & growth
+  "SOFI", "COIN", "HOOD", "AFRM", "UPST", "MELI",
+  // Nuclear / energy theme
+  "OKLO", "SMR", "NNE", "LEU", "CCJ", "UEC", "VST", "CEG",
+  // Quantum
+  "IONQ", "RGTI", "QBTS", "QUBT",
   // Finance
   "JPM", "GS", "BAC", "V", "MA",
   // Consumer / retail

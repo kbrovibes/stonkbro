@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.23.1 — Research/Options/PM fixes
+
+- **Options page**: refresh timestamp now lives next to the title (e.g. `Refreshed 12m ago`, with a stale flag when >4h old) — no more guessing whether the data is fresh
+- **Options scanner universe**: added NBIS, SNDK, RKLB, ASTS, LUNR, RDW, SOFI/COIN/HOOD, the nuclear basket (OKLO/SMR/NNE/LEU/CCJ/UEC/VST/CEG), quantum (IONQ/RGTI/QBTS/QUBT), SMCI, TSM, ANET, CRDO, MDB, S, AI, PATH so high-conviction names show up; the CSP-hunter API also merges in your watchlist + active position symbols on every manual scan
+- **Research page**: history endpoint now returns the real `status` instead of forcing "completed"; old reports stuck at `running` (RDW/MNTS, LLY, SMR, NVDA) were re-marked as `failed` so they stop pretending to be done; expanded view of an empty completed run shows a Re-run hint instead of blank space
+  - **Root cause**: `research_reports` was missing `ai_provider`/`ai_model`/`error_message` columns, so `completeReport()` UPDATE threw and the report stayed `running` forever. Applied the missing schema columns.
+- **Plays tab**: removed the chronically-empty "Premium Plays" section
+- **Portfolio Manager**: AI was producing JSON that hit the 8k token cap mid-array → "Expected ',' or ']' after array element" failures every scan since June 1. Raised the cap to 16k and added a JSON repair pass that walks back to the last valid array element on parse failure
+- **Portfolio Manager cron**: added a market-close run (`5 20 * * 1-5` UTC ≈ 16:05 ET) in addition to the existing market-open run; both pass `trigger=open|close` so DB rows are labeled correctly
+
 ## v0.23.0 — Dark Mode (default-on)
 
 - **Robinhood-style dark mode** across the entire app (Header, BottomNav, all pages, charts, badges) with a Light/Dark/Auto toggle in the profile dropdown (top-right initials bubble)

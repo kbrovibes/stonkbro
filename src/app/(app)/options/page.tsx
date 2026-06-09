@@ -184,7 +184,20 @@ export default function OptionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-stone-900 dark:text-text">Options Scanner</h1>
-          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">CSP · Calls · LEAPS — live scanner data</p>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
+            CSP · Calls · LEAPS
+            {scan ? (
+              <>
+                {" · Refreshed "}
+                <span className={isStale(scan.createdAt)
+                  ? "font-semibold text-amber-600 dark:text-amber-300"
+                  : "font-semibold text-stone-700 dark:text-text-muted"}>
+                  {formatAge(scan.createdAt)}
+                </span>
+                {isStale(scan.createdAt) && " (stale)"}
+              </>
+            ) : null}
+          </p>
         </div>
         <button
           onClick={handleScanNow}
@@ -222,16 +235,11 @@ export default function OptionsPage() {
 
       {scan ? (
         <div className="flex flex-col gap-4">
-          {/* Timestamp + staleness */}
+          {/* Exact timestamp tooltip target */}
           <div className="flex items-center gap-2 px-1">
-            <span className="text-[10px] font-bold text-stone-400 dark:text-text-faint uppercase tracking-wider">
-              Scanned: {new Date(scan.createdAt).toLocaleString()}
+            <span className="text-[10px] text-stone-400 dark:text-text-faint">
+              {new Date(scan.createdAt).toLocaleString()}
             </span>
-            {isStale(scan.createdAt) && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 uppercase tracking-wide">
-                Stale — data from {formatAge(scan.createdAt)}
-              </span>
-            )}
           </div>
 
           {/* Tabs */}

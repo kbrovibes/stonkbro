@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getRecentScans } from "@/lib/options/csp-delta";
-import { scanForCSPs, scanForCalls, scanForLeaps, CSPScanConfig } from "@/lib/options/csp-scanner";
+import { scanForCSPs, scanForCalls, scanForLeaps, CSPScanConfig, DEFAULT_UNIVERSE } from "@/lib/options/csp-scanner";
 import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-delta";
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
+import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
+import { getPositions } from "@/lib/db/positions";
 
 /** GET — fetch recent scan results (public, no user context needed) */
 export async function GET() {
@@ -45,6 +47,27 @@ export async function POST(request: Request) {
     if (body.maxDTE) config.maxDTE = body.maxDTE;
   } catch {
     // Use defaults
+  }
+
+  // If caller didn't override tickers, merge default universe with the user's
+  // watchlist + active position symbols so high-conviction names (e.g. NBIS,
+  // SNDK) get scanned every run.
+  if (!config.tickers) {
+    try {
+      const [watchlistSymbols, positions] = await Promise.all([
+        getAllWatchlistSymbols(user.id).catch(() => []),
+        getPositions(user.id).catch(() => [] as Array<{ symbol: string }>),
+      ]);
+      const positionSymbols = (positions ?? []).map((p) => p.symbol);
+      const extra = [...new Set([...(watchlistSymbols ?? []), ...positionSymbols])]
+        .filter((s): s is string => typeof s === "string" && s.length > 0)
+        .map((s) => s.toUpperCase());
+      if (extra.length > 0) {
+        config.tickers = Array.from(new Set([...DEFAULT_UNIVERSE, ...extra]));
+      }
+    } catch {
+      // user-data lookup failed — fall back to default universe
+    }
   }
 
   // Run all three scans in parallel

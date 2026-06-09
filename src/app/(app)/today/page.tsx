@@ -404,9 +404,9 @@ export default function TodayPage() {
         )}
       </Section>
 
-      {/* ================================================================= */}
-      {/* Section 2: Premium Plays (Recommendations) */}
-      {/* ================================================================= */}
+      {/* Section 2 (Premium Plays) removed — landed empty too often. State kept
+          to power the AI model badge in the header. */}
+      {false && (
       <Section
         title="Premium Plays"
         badge={
@@ -571,6 +571,7 @@ export default function TodayPage() {
           </div>
         )}
       </Section>
+      )}
 
 
       {/* ================================================================= */}

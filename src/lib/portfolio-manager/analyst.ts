@@ -65,13 +65,80 @@ function extractJson(text: string): unknown {
   // Try fenced ```json blocks first
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const candidate = fenceMatch ? fenceMatch[1] : text;
-  // Find first { and last } to be tolerant of prose around the block
   const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
+  if (start === -1) {
     throw new Error("No JSON object found in AI response");
   }
-  return JSON.parse(candidate.slice(start, end + 1));
+  const end = candidate.lastIndexOf("}");
+  if (end > start) {
+    try {
+      return JSON.parse(candidate.slice(start, end + 1));
+    } catch {
+      // fall through to repair
+    }
+  }
+  // Repair path: model truncated mid-array (common when maxTokens was tight).
+  // Walk back to the last balanced array element we can close cleanly.
+  return repairTruncatedJson(candidate.slice(start));
+}
+
+function repairTruncatedJson(raw: string): unknown {
+  // Strategy: scan forward tracking string state + brace/bracket depth.
+  // When the source ends mid-array/object, close everything that's open and
+  // try to parse. If that still fails, walk back to the last comma and retry.
+  const depth: ("{" | "[")[] = [];
+  let inString = false;
+  let escape = false;
+  let lastSafeIdx = -1; // index pointing at the char just past a top-level array element
+
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === "{" || c === "[") depth.push(c);
+    else if (c === "}" && depth[depth.length - 1] === "{") depth.pop();
+    else if (c === "]" && depth[depth.length - 1] === "[") depth.pop();
+    // Track a "safe" cut point: end of an element inside an array
+    // (top-level array depth >= 1, comma at this position)
+    if (c === "," && depth.length > 0 && depth[depth.length - 1] === "[") {
+      lastSafeIdx = i;
+    }
+  }
+
+  const attempt = (body: string, openStack: typeof depth): unknown => {
+    const closers = openStack.slice().reverse().map((b) => (b === "{" ? "}" : "]")).join("");
+    try {
+      return JSON.parse(body + closers);
+    } catch {
+      return undefined;
+    }
+  };
+
+  const parsed = attempt(raw, depth);
+  if (parsed !== undefined) return parsed;
+
+  // Fall back to trimming at the last comma we saw inside an array.
+  if (lastSafeIdx > 0) {
+    const trimmed = raw.slice(0, lastSafeIdx);
+    // Recompute the open-stack at lastSafeIdx for proper closure.
+    const d: ("{" | "[")[] = [];
+    let s = false, esc = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const c = trimmed[i];
+      if (esc) { esc = false; continue; }
+      if (c === "\\") { esc = true; continue; }
+      if (c === '"') { s = !s; continue; }
+      if (s) continue;
+      if (c === "{" || c === "[") d.push(c);
+      else if (c === "}" && d[d.length - 1] === "{") d.pop();
+      else if (c === "]" && d[d.length - 1] === "[") d.pop();
+    }
+    const retry = attempt(trimmed, d);
+    if (retry !== undefined) return retry;
+  }
+  throw new Error("Could not parse AI JSON response (even after repair)");
 }
 
 const VALID_RATINGS: Rating[] = ["STRONG_BUY", "BUY", "HOLD", "SELL", "STRONG_SELL"];
@@ -212,7 +279,9 @@ export async function analyzeAll(
   const ai = await generateText({
     prompt: userPrompt,
     feature: "portfolio-manager",
-    maxTokens: 8000,
+    // 23-25 tickers blew past the old 8000 cap and truncated the JSON mid-array.
+    // 16k gives ~700 tokens/ticker headroom while staying well under model caps.
+    maxTokens: 16000,
     userId,
   });
 

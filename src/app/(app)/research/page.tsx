@@ -333,6 +333,20 @@ function EntryCard({
       {/* Expanded content */}
       {expanded && entry.status === "completed" && (
         <div className="border-t border-stone-100 dark:border-border-subtle">
+          {/* Empty completed state */}
+          {(!entry.suggestions || entry.suggestions.length === 0) && !entry.report && (
+            <div className="px-4 py-4 text-center">
+              <p className="text-xs text-stone-500 dark:text-text-subtle mb-2">
+                No report or trade suggestions were produced for this run.
+              </p>
+              <button
+                onClick={() => onRedo(entry.symbols)}
+                className="text-xs font-semibold text-sky-600 dark:text-accent hover:underline"
+              >
+                Re-run research →
+              </button>
+            </div>
+          )}
           {/* Trade suggestions */}
           {entry.suggestions && entry.suggestions.length > 0 && (
             <div className="px-4 py-3 border-b border-stone-100 dark:border-border-subtle">
@@ -440,10 +454,14 @@ export default function ResearchPage() {
           mode?: string;
           report: string;
           createdAt: string;
+          status?: "pending" | "running" | "completed" | "failed";
           suggestions: TradeSuggestion[];
+          aiProvider?: string;
+          aiModel?: string;
+          error?: string;
         }) => ({
           id: r.id,
-          status: "completed" as const,
+          status: r.status ?? "completed",
           symbols: r.symbols || [],
           mode: r.mode || "hybrid",
           report: r.report,
@@ -451,6 +469,9 @@ export default function ResearchPage() {
           timestamp: r.createdAt,
           dismissed: new Set<number>(),
           accepted: new Set<number>(),
+          aiProvider: r.aiProvider,
+          aiModel: r.aiModel,
+          error: r.error,
         }));
         setEntries(loaded);
         setLoadingHistory(false);
