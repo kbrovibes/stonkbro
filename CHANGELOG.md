@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.24.0 — Bloodbath (pullback navigator)
+
+- **`/bloodbath`** — new mobile-first page for navigating the market pullback: watchlist tickers + big scan-universe movers ranked by drawdown off their 4-week peak, with tap-to-expand AI verdicts (Buy the dip / Nibble / Wait / Avoid), reasons for the drop from recent headlines, confidence, and a concrete entry idea
+- **`GET /api/bloodbath`** — drawdown scan (watchlist ∪ ~150-symbol universe, Tradier 30-day history, ≤60 history fetches/scan); **`POST /api/bloodbath/verdict`** — one batched AI call for up to 12 tickers with 3 Yahoo headlines each
+- **Home page**: IPO widget removed (Upcoming Catalysts is earnings-only now); added a 3-up feature-card grid at the top — 🩸 Bloodbath, 📊 Portfolio, ⏰ Hindsight
+- **MoreNav**: Bloodbath added under Discover
+- Decisions + iteration candidates recorded in `specs/55-bloodbath.md`
+
 ## v0.23.1 — Research/Options/PM fixes
 
 - **Options page**: refresh timestamp now lives next to the title (e.g. `Refreshed 12m ago`, with a stale flag when >4h old) — no more guessing whether the data is fresh

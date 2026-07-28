@@ -25,6 +25,9 @@ No paper trading simulators. No "educational" disclaimers hiding an empty app. T
 ### Dark Mode (default-on, Robinhood-style)
 Full dark mode across every page, with a Light/Dark/Auto toggle in the profile dropdown (top-right initials bubble). Dark is the default for new visitors; existing preferences are respected. Brand green stays loud in both modes; loss reds shift to a softer coral on dark; sky-blue CTAs bump to sky-400 on dark for legibility. Charts, sparklines, and badges all flip automatically.
 
+### Bloodbath (Pullback Navigator)
+When the market pulls back, `/bloodbath` shows every watchlist ticker plus the biggest scan-universe casualties ranked by drawdown off their 4-week peak. Tap any card for AI-generated reasons for the drop (fed by recent headlines), a dip verdict — Buy the dip / Nibble / Wait / Avoid — with confidence, and a concrete entry idea (limit level or CSP strike). One batched AI call covers up to 12 tickers.
+
 ### Discovery Dashboard
 Ranked watchlist with a custom scoring algorithm. Stocks are scored on volume ratio, momentum, SMA positioning, and 52-week range. High scores = high explosive potential. All data live from Yahoo Finance.
 
@@ -186,6 +189,8 @@ npm run dev
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/research` | POST | Run Claude AI analysis on up to 20 symbols |
+| `/api/bloodbath` | GET | Pullback scan: drawdowns off 4-week peaks (watchlist + universe) |
+| `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
 | `/api/options?symbol=X` | GET | Fetch PMCC setups for a symbol |
 | `/api/signals` | GET | Check active positions for trade alerts |
 | `/api/cron` | GET | Automated daily briefing (Vercel cron) |
@@ -208,6 +213,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.24.0** | Bloodbath (pullback navigator with AI dip verdicts) |
 | **v0.22.0** | Portfolio Manager (AI ratings + $100K reallocation plan) |
 | **v0.21.0** | Portfolio Page (SnapTrade Live Data) |
 | **v0.20.0** | CSP Alpha Hunter |

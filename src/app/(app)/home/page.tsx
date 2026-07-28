@@ -4,7 +4,6 @@ import { getWatchlistsWithItems } from "@/lib/db/watchlists";
 import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
-import { getUpcomingIPOs } from "@/lib/market/ipos";
 import WatchlistWidget from "../WatchlistWidget";
 import UpcomingCatalysts from "../UpcomingCatalysts";
 
@@ -64,8 +63,6 @@ export default async function DiscoverPage() {
     // ignore
   }
 
-  const upcomingIPOs = await getUpcomingIPOs();
-
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,
     name: wl.name,
@@ -76,9 +73,47 @@ export default async function DiscoverPage() {
     })),
   }));
 
+  const FEATURE_CARDS = [
+    {
+      href: "/bloodbath",
+      emoji: "🩸",
+      title: "Bloodbath",
+      description: "Navigate the pullback — drawdowns, reasons, verdicts",
+      accent: "bg-red-50 dark:bg-loss-bg border-red-100 dark:border-loss-bg",
+    },
+    {
+      href: "/portfolio",
+      emoji: "📊",
+      title: "Portfolio",
+      description: "Live P&L across your accounts",
+      accent: "bg-sky-50 dark:bg-accent-bg border-sky-100 dark:border-accent-bg",
+    },
+    {
+      href: "/time-machine",
+      emoji: "⏰",
+      title: "Hindsight",
+      description: "What-if portfolio simulator",
+      accent: "bg-amber-50 dark:bg-amber-950/40 border-amber-100 dark:border-amber-950/40",
+    },
+  ];
+
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      <UpcomingCatalysts earnings={upcomingEarnings} ipos={upcomingIPOs} />
+      <div className="grid grid-cols-3 gap-2">
+        {FEATURE_CARDS.map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className={`flex flex-col gap-1 rounded-xl border p-3 transition-opacity hover:opacity-80 ${card.accent}`}
+          >
+            <span className="text-xl leading-none">{card.emoji}</span>
+            <span className="text-xs font-bold text-stone-900 dark:text-text mt-1">{card.title}</span>
+            <span className="text-[10px] leading-snug text-stone-500 dark:text-text-subtle">{card.description}</span>
+          </Link>
+        ))}
+      </div>
+
+      <UpcomingCatalysts earnings={upcomingEarnings} />
 
       {watchlistWidgetData.length > 0 ? (
         <>

@@ -20,6 +20,7 @@ export const MORE_GROUPS: MoreGroup[] = [
       </svg>
     ),
     links: [
+      { emoji: "🩸", title: "Bloodbath", description: "Pullback drawdowns + dip verdicts", href: "/bloodbath" },
       { emoji: "🔬", title: "Research", description: "AI-powered ticker research", href: "/research" },
       { emoji: "📡", title: "Sector Discovery", description: "Browse stocks by sector theme", href: "/sectors" },
       { emoji: "💥", title: "Explosive Finder", description: "AI search for 10x stocks", href: "/explosive" },
