@@ -41,6 +41,18 @@
       "schedule": "0 21 * * 1-5"
     },
     {
+      "path": "/api/cron/bloodbath",
+      "schedule": "45 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/bloodbath",
+      "schedule": "0 17 * * 1-5"
+    },
+    {
+      "path": "/api/cron/bloodbath",
+      "schedule": "10 20 * * 1-5"
+    },
+    {
       "path": "/api/cron/ipos",
       "schedule": "0 6 * * *"
     },

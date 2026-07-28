@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.24.1 — Bloodbath cron + caching
+
+- **Page loads are now one DB read** (~0.4s vs multi-second live scan): new `bloodbath_scans` table caches the full scan + AI verdicts
+- **`/api/cron/bloodbath`** runs 3× on weekdays (13:45, 17:00, 20:10 UTC ≈ post-open, midday, post-close ET): drawdown scan over all users' watchlist symbols + universe, then the batched AI verdict call — so verdicts ship with the scan and the page no longer spends an AI call per load
+- **`GET /api/bloodbath`** serves the latest completed cached scan (≤72h, covers weekends) with verdicts embedded; `?refresh=1` forces a live scan
+- **Page**: "as of Xm ago" freshness label + Refresh button; verdict generation extracted to `src/lib/analysis/bloodbath-verdict.ts` (shared by cron + on-demand route)
+
 ## v0.24.0 — Bloodbath (pullback navigator)
 
 - **`/bloodbath`** — new mobile-first page for navigating the market pullback: watchlist tickers + big scan-universe movers ranked by drawdown off their 4-week peak, with tap-to-expand AI verdicts (Buy the dip / Nibble / Wait / Avoid), reasons for the drop from recent headlines, confidence, and a concrete entry idea

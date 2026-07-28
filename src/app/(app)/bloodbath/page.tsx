@@ -39,6 +39,15 @@ function fmtPct(v: number): string {
   return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
 }
 
+function fmtAge(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 function TickerCard({
   t,
   verdict,
@@ -145,6 +154,8 @@ export default function BloodbathPage() {
   const [verdictsLoading, setVerdictsLoading] = useState(false);
   const [verdictError, setVerdictError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [timestamp, setTimestamp] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchVerdicts = useCallback(async (tickers: BloodbathTicker[]) => {
     // Watchlist names first (worst drawdown first), then market movers.
@@ -173,30 +184,51 @@ export default function BloodbathPage() {
     }
   }, []);
 
+  const loadScan = useCallback(
+    async (refresh: boolean) => {
+      const res = await fetch(refresh ? "/api/bloodbath?refresh=1" : "/api/bloodbath");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Scan failed");
+      setWatchlist(data.watchlist);
+      setMarket(data.market);
+      setScannedCount(data.scannedCount);
+      setTimestamp(data.timestamp);
+      if (data.verdicts && data.verdicts.length > 0) {
+        // Cron-cached scan ships its verdicts — no AI call needed.
+        setVerdicts(new Map((data.verdicts as Verdict[]).map((v) => [v.symbol, v])));
+        setVerdictError(null);
+      } else {
+        fetchVerdicts([...data.watchlist, ...data.market]);
+      }
+    },
+    [fetchVerdicts]
+  );
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/bloodbath");
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Scan failed");
-        if (cancelled) return;
-        setWatchlist(data.watchlist);
-        setMarket(data.market);
-        setScannedCount(data.scannedCount);
-        setLoading(false);
-        fetchVerdicts([...data.watchlist, ...data.market]);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Scan failed");
-          setLoading(false);
-        }
-      }
-    })();
+    loadScan(false)
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Scan failed");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [fetchVerdicts]);
+  }, [loadScan]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadScan(true);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const all = [...watchlist, ...market];
   const down10 = all.filter((t) => t.drawdownPct <= -10).length;
@@ -204,11 +236,29 @@ export default function BloodbathPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
-      <div>
-        <h1 className="text-lg font-bold text-stone-900 dark:text-text">🩸 Bloodbath</h1>
-        <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
-          Who&apos;s bleeding in this pullback — and whether the dip is worth buying.
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-text">🩸 Bloodbath</h1>
+          <p className="text-xs text-stone-500 dark:text-text-subtle mt-0.5">
+            Who&apos;s bleeding in this pullback — and whether the dip is worth buying.
+          </p>
+        </div>
+        {!loading && (
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-stone-900 dark:bg-surface-elevated text-white dark:text-text hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
+            >
+              {refreshing ? "Scanning…" : "Refresh"}
+            </button>
+            {timestamp && (
+              <span className="text-[9px] text-stone-400 dark:text-text-faint">
+                as of {fmtAge(timestamp)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {loading && (

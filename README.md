@@ -189,7 +189,8 @@ npm run dev
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/research` | POST | Run Claude AI analysis on up to 20 symbols |
-| `/api/bloodbath` | GET | Pullback scan: drawdowns off 4-week peaks (watchlist + universe) |
+| `/api/bloodbath` | GET | Pullback scan: cron-cached drawdowns off 4-week peaks (`?refresh=1` for live) |
+| `/api/cron/bloodbath` | GET | Scheduled scan + AI verdicts, 3× weekdays (Vercel cron) |
 | `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
 | `/api/options?symbol=X` | GET | Fetch PMCC setups for a symbol |
 | `/api/signals` | GET | Check active positions for trade alerts |

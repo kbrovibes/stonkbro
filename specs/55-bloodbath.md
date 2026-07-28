@@ -49,9 +49,18 @@ buying — in a mobile-first view.
 8. **No DB persistence** for scans/verdicts in v1 — always fresh. Caching /
    history is an obvious iteration if AI cost or latency annoys.
 
-## Iteration candidates
+## v0.24.1 — cron + caching (shipped)
 
-- Cache verdicts (30–60 min) so reloads don't re-spend tokens
+- `bloodbath_scans` table caches full scan + verdicts; `/api/cron/bloodbath`
+  runs 3× weekdays (13:45/17:00/20:10 UTC) and includes the batched AI call.
+- `GET /api/bloodbath` serves the latest completed row ≤72h old (weekend
+  coverage) with verdicts embedded; `?refresh=1` forces a live scan (page gets
+  a Refresh button + "as of X ago" label).
+- Cron uses the union of ALL users' watchlist symbols (no session in cron;
+  effectively a single-user app) — the page's "Your Watchlist" section shows
+  that union when served from cache.
+
+## Iteration candidates
 - SPY/QQQ benchmark row ("is this pullback broad or idiosyncratic?")
 - Sector grouping of the drops
 - Push alert when a watchlist name crosses −15% drawdown
