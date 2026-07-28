@@ -11,6 +11,7 @@ export type BloodbathScanRow = {
   scanned_count: number;
   watchlist: BloodbathTicker[];
   market: BloodbathTicker[];
+  benchmarks: BloodbathTicker[];
   verdicts: BloodbathVerdict[] | null;
   ai_provider: string | null;
   ai_model: string | null;
@@ -35,6 +36,7 @@ export async function markComplete(
     scanned_count: number;
     watchlist: BloodbathTicker[];
     market: BloodbathTicker[];
+    benchmarks: BloodbathTicker[];
     verdicts: BloodbathVerdict[] | null;
     ai_provider: string | null;
     ai_model: string | null;

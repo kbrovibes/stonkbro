@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.24.2 — Bloodbath: falling-knife signal + market benchmark
+
+- **Falling-knife detection** per ticker: consecutive-red-day streak and worst-day-of-window flags computed from the daily bars; tickers still falling get a 🔪 badge and the AI is instructed not to say BUY_DIP on a live knife without a compelling company-specific reason (verified: previously-NIBBLE names like SNDK/INTC now come back WAIT while knifing)
+- **Market benchmark strip**: SPY + QQQ drawdown off their 4-week peaks with a one-line read (broad selloff vs idiosyncratic damage); fed to the AI so verdicts separate market damage from company damage ("down 51% vs SPY −2% = 49pts idiosyncratic")
+- `bloodbath_scans.benchmarks` column added (migration applied); cron stores benchmarks with each scan
+- **Compact layout**: full-width stacked cards replaced with a 2-across tile grid (3-across on wider screens) — far less scrolling with a 37-ticker watchlist; tapping a tile opens a bottom-sheet with full stats, AI reasons, entry idea, and ticker link
+- **Sticky quick-nav**: jump buttons for Watchlist / Market sections + an ⓘ Verdicts toggle explaining each verdict (Nibble = small partial entry or a conservative CSP) and the 🔪 flag
+
 ## v0.24.1 — Bloodbath cron + caching
 
 - **Page loads are now one DB read** (~0.4s vs multi-second live scan): new `bloodbath_scans` table caches the full scan + AI verdicts

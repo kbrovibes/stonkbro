@@ -17,6 +17,15 @@ export type VerdictInputTicker = {
   belowFiftySMA: boolean;
   volumeRatio: number;
   isWatchlist: boolean;
+  redStreak?: number;
+  worstDayToday?: boolean;
+  knife?: boolean;
+};
+
+export type BenchmarkContext = {
+  symbol: string;
+  drawdownPct: number;
+  changePct: number;
 };
 
 export type BloodbathVerdict = {
@@ -80,7 +89,8 @@ function parseVerdicts(text: string): BloodbathVerdict[] {
 
 export async function generateBloodbathVerdicts(
   tickers: VerdictInputTicker[],
-  userId?: string
+  userId?: string,
+  benchmarks?: BenchmarkContext[]
 ): Promise<VerdictResult> {
   const targets = tickers.slice(0, MAX_VERDICT_TICKERS);
 
@@ -96,22 +106,37 @@ export async function generateBloodbathVerdicts(
     const headlines = (headlineMap.get(t.symbol) ?? [])
       .map((h) => `  - ${h.title} (${h.publisher ?? "?"}, ${h.published_at})`)
       .join("\n");
+    const knifeLine = t.knife
+      ? `  KNIFE STILL FALLING: ${t.redStreak} straight red day${(t.redStreak ?? 0) > 1 ? "s" : ""}${t.worstDayToday ? ", today is the worst day of the whole window" : ""}`
+      : t.redStreak && t.redStreak > 0
+        ? `  red streak: ${t.redStreak} day${t.redStreak > 1 ? "s" : ""}`
+        : "  today is green — selling may be pausing";
     return [
       `${t.symbol}${t.isWatchlist ? " (on my watchlist)" : ""}:`,
       `  price $${t.price}, today ${t.changePct}%, off 4-week peak ${t.drawdownPct}%, 4-week change ${t.fourWeekChangePct}%`,
       `  ${t.belowFiftySMA ? "below" : "above"} 50-day SMA, volume ${t.volumeRatio}x average`,
+      knifeLine,
       headlines ? `  recent headlines:\n${headlines}` : "  recent headlines: none found",
     ].join("\n");
   });
 
+  const benchmarkLine =
+    benchmarks && benchmarks.length > 0
+      ? `Market context: ${benchmarks
+          .map((b) => `${b.symbol} is ${b.drawdownPct}% off its 4-week peak (${b.changePct}% today)`)
+          .join("; ")}. Use this to judge whether each drop is market-wide or idiosyncratic — a name down 30% while SPY is down 5% has 25 points of company-specific damage.`
+      : "";
+
   const prompt = `The market is in a pullback. For each ticker below, explain briefly WHY it has sold off recently (use the headlines + stats; if unclear, say it's likely macro/sector-driven) and give a dip-buying verdict.
+
+${benchmarkLine}
 
 ${tickerBlocks.join("\n\n")}
 
 Respond with ONLY a JSON array, one object per ticker, in this exact shape:
 [{"symbol":"TICK","verdict":"BUY_DIP|NIBBLE|WAIT|AVOID","confidence":"high|medium|low","reasons":["short reason 1","short reason 2"],"entryIdea":"one concrete entry idea (a limit price level, or a cash-secured put strike/expiry style idea)"}]
 
-Verdict guide: BUY_DIP = quality name, drop looks overdone/macro-driven, good entry. NIBBLE = start a partial position or sell a conservative CSP. WAIT = falling knife or catalyst pending, keep on watch. AVOID = drop is fundamentals-driven, stay away. Keep every reason under 15 words.`;
+Verdict guide: BUY_DIP = quality name, drop looks overdone/macro-driven, good entry. NIBBLE = start a partial position or sell a conservative CSP. WAIT = falling knife or catalyst pending, keep on watch. AVOID = drop is fundamentals-driven, stay away. When a ticker is marked KNIFE STILL FALLING, do not say BUY_DIP unless there is a compelling company-specific reason — default to WAIT or NIBBLE and say what would confirm a floor. Keep every reason under 15 words.`;
 
   const result = await generateText({
     prompt,

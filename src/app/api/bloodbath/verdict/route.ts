@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import {
   generateBloodbathVerdicts,
   MAX_VERDICT_TICKERS,
+  type BenchmarkContext,
   type VerdictInputTicker,
 } from "@/lib/analysis/bloodbath-verdict";
 
@@ -27,7 +28,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "tickers array is required" }, { status: 400 });
     }
 
-    const result = await generateBloodbathVerdicts(tickers, user.id);
+    const benchmarks: BenchmarkContext[] = Array.isArray(body.benchmarks) ? body.benchmarks : [];
+    const result = await generateBloodbathVerdicts(tickers, user.id, benchmarks);
     return NextResponse.json(result);
   } catch (e) {
     console.error("Bloodbath verdict error:", e);

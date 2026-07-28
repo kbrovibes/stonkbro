@@ -21,6 +21,7 @@ export async function GET(request: Request) {
           return NextResponse.json({
             watchlist: cached.watchlist,
             market: cached.market,
+            benchmarks: cached.benchmarks ?? [],
             scannedCount: cached.scanned_count,
             verdicts: cached.verdicts,
             cached: true,

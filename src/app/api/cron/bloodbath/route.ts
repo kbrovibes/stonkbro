@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     const targets = pickVerdictTargets([...scan.watchlist, ...scan.market]);
     if (targets.length > 0) {
       try {
-        const result = await generateBloodbathVerdicts(targets);
+        const result = await generateBloodbathVerdicts(targets, undefined, scan.benchmarks);
         verdicts = result.verdicts;
         aiProvider = result.aiProvider;
         aiModel = result.aiModel;
@@ -67,6 +67,7 @@ export async function GET(request: Request) {
       scanned_count: scan.scannedCount,
       watchlist: scan.watchlist,
       market: scan.market,
+      benchmarks: scan.benchmarks,
       verdicts,
       ai_provider: aiProvider,
       ai_model: aiModel,

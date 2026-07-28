@@ -60,7 +60,14 @@ buying — in a mobile-first view.
   effectively a single-user app) — the page's "Your Watchlist" section shows
   that union when served from cache.
 
+## v0.24.2 — falling knife + benchmark (shipped)
+
+- Per-ticker `redStreak` / `worstDayToday` / `knife` from the existing bars;
+  🔪 badge in UI; AI hard-guardrailed against BUY_DIP on a live knife.
+- SPY/QQQ scanned every run, stored in `bloodbath_scans.benchmarks`, shown as
+  a strip with a computed market read, and injected into the AI prompt so
+  verdicts separate market-wide from idiosyncratic damage.
+
 ## Iteration candidates
-- SPY/QQQ benchmark row ("is this pullback broad or idiosyncratic?")
 - Sector grouping of the drops
 - Push alert when a watchlist name crosses −15% drawdown
