@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/csp-hunter") ||
     pathname.startsWith("/research") ||
     pathname.startsWith("/api/movers") ||
+    pathname.startsWith("/api/bloodbath") ||
     pathname.startsWith("/api/recommendations") ||
     pathname.startsWith("/api/flow") ||
     pathname.startsWith("/api/csp-hunter");

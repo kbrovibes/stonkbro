@@ -163,6 +163,7 @@ export default function BloodbathPage() {
         body: JSON.stringify({ tickers: targets }),
       });
       const data = await res.json();
+      if (res.status === 401) throw new Error("Sign in to get AI verdicts");
       if (!res.ok) throw new Error(data.error || "Verdict request failed");
       setVerdicts(new Map((data.verdicts as Verdict[]).map((v) => [v.symbol, v])));
     } catch (e) {

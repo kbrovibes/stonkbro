@@ -28,7 +28,7 @@ export type BloodbathScan = {
   scannedCount: number;
 };
 
-const LOOKBACK_DAYS = 30; // calendar buffer that yields ~20 trading bars
+const LOOKBACK_DAYS = 20; // trading bars (getHistory returns the last N bars) ≈ 4 weeks
 const MARKET_DRAWDOWN_CUTOFF = -10; // only show non-watchlist names down at least this much
 const MAX_MARKET_ROWS = 15;
 const MAX_HISTORY_FETCHES = 60;
