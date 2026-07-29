@@ -245,10 +245,11 @@ async function fetchActivitiesWindow(
     const endDt = Date.parse(endISO);
     if (endDt - startDt > 86400_000) {
       const midDt = new Date((startDt + endDt) / 2).toISOString().slice(0, 10);
-      const [left, right] = await Promise.all([
-        fetchActivitiesWindow(accountId, startISO, midDt, depth + 1),
-        fetchActivitiesWindow(accountId, midDt, endISO, depth + 1),
-      ]);
+      // Sequential on purpose — parallel halves compound into a request burst
+      // that exceeds SnapTrade's per-minute rate limit once history is deep
+      // enough to need several split levels (SDK gives up after 3 retries).
+      const left = await fetchActivitiesWindow(accountId, startISO, midDt, depth + 1);
+      const right = await fetchActivitiesWindow(accountId, midDt, endISO, depth + 1);
       // Dedupe by id (midpoint day may appear in both halves)
       const seen = new Set<string>();
       const out: any[] = [];
@@ -268,10 +269,11 @@ async function fetchActivitiesWindow(
 export async function getAllActivities(startDate = "2010-01-01"): Promise<any[]> {
   const endDate = new Date().toISOString().slice(0, 10);
   const accounts = await getAccounts();
-  const all = await Promise.all(
-    accounts.map((acct) => fetchActivitiesWindow(acct.id, startDate, endDate))
-  );
-  return all.flat();
+  const all: any[] = [];
+  for (const acct of accounts) {
+    all.push(...(await fetchActivitiesWindow(acct.id, startDate, endDate)));
+  }
+  return all;
 }
 
 export interface OptionLeg {
