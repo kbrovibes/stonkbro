@@ -4,6 +4,7 @@
 
 - **`fetchActivitiesWindow` recursion serialized**: the window-splitter fired both halves of every split in parallel, so a deep 2010→today walk compounded into a request burst that blew SnapTrade's per-minute rate limit (SDK gives up after 3 retries ≈ 15s) — Time Machine backfill 500'd with "Request failed after 3 retries due to 429". Halves now fetch sequentially
 - **`getAllActivities` walks accounts sequentially** for the same reason (shallow per-account fan-outs elsewhere are unchanged)
+- **Split-level calls paced at 2.6s** and a one-time 65s wait-out-the-window retry when the SDK still exhausts its retries — the activities endpoint has a much tighter per-minute limit than the rest of the SnapTrade API (plain serialization still 429'd)
 
 ## v0.24.3 — Portfolio option-chain rebuild: correct rolls, lineage chains, chain trimming
 

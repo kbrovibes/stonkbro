@@ -227,16 +227,34 @@ export async function getTransactions(startDate = "2026-01-01") {
  */
 const ACTIVITIES_CAP = 1000;
 
+// SnapTrade throttles the activities endpoint per-minute, far tighter than
+// the rest of the API. Pace split-level calls to stay under it, and if the
+// SDK still exhausts its own retries (~15s of backoff — shorter than the
+// rate-limit window), wait out a full minute once before giving up.
+const ACTIVITIES_CALL_SPACING_MS = 2600;
+const RATE_LIMIT_WINDOW_WAIT_MS = 65_000;
+
 async function fetchActivitiesWindow(
   accountId: string,
   startISO: string,
   endISO: string,
   depth = 0,
 ): Promise<any[]> {
-  const res = await accountApi.getAccountActivities({
-    userId: UID, userSecret: USEC, accountId,
-    startDate: startISO, endDate: endISO,
-  });
+  if (depth > 0) await new Promise((r) => setTimeout(r, ACTIVITIES_CALL_SPACING_MS));
+  let res;
+  try {
+    res = await accountApi.getAccountActivities({
+      userId: UID, userSecret: USEC, accountId,
+      startDate: startISO, endDate: endISO,
+    });
+  } catch (e) {
+    if (!String(e).includes("429")) throw e;
+    await new Promise((r) => setTimeout(r, RATE_LIMIT_WINDOW_WAIT_MS));
+    res = await accountApi.getAccountActivities({
+      userId: UID, userSecret: USEC, accountId,
+      startDate: startISO, endDate: endISO,
+    });
+  }
   const chunk = ((res.data as any)?.data ?? res.data ?? []) as any[];
 
   // Hit the cap → split unless the window is already a single day or we've recursed too deep.
