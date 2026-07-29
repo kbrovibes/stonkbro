@@ -404,9 +404,24 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
     }
   }
 
-  // ── Step 2: group by underlying+type, roll-chain SHORT contracts ─────────
-  // Only SELL-first (income/short) contracts are roll-chained together.
+  // ── Step 2: group by underlying+type, pair rolls into lineage chains ─────
+  // Only SELL-first (income/short) contracts participate in roll pairing.
   // BUY-first (long/directional) contracts remain standalone.
+  //
+  // A roll = BUY-to-close of one contract followed within ROLL_WINDOW_DAYS by
+  // a SELL (new contract or add-on to an existing one) in the same
+  // underlying+type. Each close pairs with at most one SELL event and each
+  // SELL event is consumed by at most one close, so every contract has at
+  // most one successor — lineages form disjoint trees, each containing
+  // exactly one terminal contract (open, expired, assigned, or an unrolled
+  // close). Expiration/assignment settles a chain; a new sell afterwards
+  // starts a fresh chain. This keeps simultaneous positions at different
+  // strikes in separate chains instead of braiding them together.
+  const ROLL_WINDOW_DAYS = 3;
+  // Chains spanning longer than this get their oldest contracts split off as
+  // settled chains that count toward the month they closed in.
+  const MAX_CHAIN_DAYS = 42;
+
   const displayGroups = new Map<string, ContractChain[]>();
   for (const c of contractChains) {
     const key = `${c.underlying}|${c.option_type}`;
@@ -415,21 +430,26 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   }
 
   const result: OptionChain[] = [];
+  const daysBetween = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) / 86400000;
 
-  const buildChain = (seq: ContractChain[]): OptionChain => {
-    const allLegs = seq.flatMap(c => c.legs).sort((a, b) => a.date.localeCompare(b.date));
-    const last = seq[seq.length - 1];
+  const buildChain = (seq: ContractChain[], root: ContractChain): OptionChain => {
+    const allLegs = seq.flatMap(c => c.legs).sort((a, b) => {
+      const d = a.date.localeCompare(b.date);
+      if (d !== 0) return d;
+      const rank = (t: string) => t === "BUY" ? 1 : 0;
+      return rank(a.type) - rank(b.type);
+    });
     const net_pnl = seq.reduce((s, c) => s + c.net_pnl, 0);
-    const end_date = last.end_date;
+    const end_date = root.end_date;
     return {
-      underlying: seq[0].underlying,
-      option_type: seq[0].option_type,
+      underlying: root.underlying,
+      option_type: root.option_type,
       legs: allLegs,
       net_pnl,
-      status: last.status,
-      start_date: seq[0].start_date,
+      status: root.status,
+      start_date: allLegs[0].date,
       end_date,
-      open_units: last.open_units,
+      open_units: root.open_units,
       roll_count: seq.length - 1,
       close_month: end_date ? end_date.substring(0, 7) : null,
       direction: seq[0].first_action === "BUY" ? "BUY" : "SELL",
@@ -437,26 +457,74 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   };
 
   for (const contracts of displayGroups.values()) {
-    contracts.sort((a, b) => a.start_date.localeCompare(b.start_date));
     const shorts = contracts.filter(c => c.first_action === "SELL");
     const longs  = contracts.filter(c => c.first_action !== "SELL");
 
-    if (shorts.length > 0) {
-      let seq: ContractChain[] = [shorts[0]];
-      for (let i = 1; i < shorts.length; i++) {
-        const prev = seq[seq.length - 1];
-        const curr = shorts[i];
-        if (prev.end_date && prev.status !== "OPEN") {
-          const daysDiff = (new Date(curr.start_date).getTime() - new Date(prev.end_date).getTime()) / 86400000;
-          if (daysDiff <= 3) { seq.push(curr); continue; }
-        }
-        result.push(buildChain(seq));
-        seq = [curr];
+    // Every SELL leg (initial open or add-on) is a potential roll target.
+    type SellEvent = { node: ContractChain; date: string; units: number; consumed: boolean };
+    const sellEvents: SellEvent[] = shorts.flatMap(c =>
+      c.legs
+        .filter(l => l.type === "SELL")
+        .map(l => ({ node: c, date: l.date, units: Math.abs(l.units), consumed: false }))
+    );
+
+    // Pair each BUY-to-close with its most plausible roll target: nearest in
+    // time, then matching contract count, then closest strike.
+    const rollNext = new Map<ContractChain, ContractChain>();
+    const closedShorts = shorts
+      .filter(c => c.status === "CLOSED" && c.end_date)
+      .sort((a, b) => a.end_date!.localeCompare(b.end_date!) || a.strike - b.strike);
+    for (const c of closedShorts) {
+      const soldUnits = c.legs.filter(l => l.type === "SELL").reduce((s, l) => s + Math.abs(l.units), 0);
+      let best: SellEvent | null = null;
+      let bestScore = Infinity;
+      for (const ev of sellEvents) {
+        if (ev.consumed || ev.node === c) continue;
+        const gap = daysBetween(c.end_date!, ev.date);
+        if (gap < 0 || gap > ROLL_WINDOW_DAYS) continue;
+        const score = gap * 10000 + (ev.units === soldUnits ? 0 : 5000) + Math.abs(ev.node.strike - c.strike);
+        if (score < bestScore) { bestScore = score; best = ev; }
       }
-      result.push(buildChain(seq));
+      if (best) { best.consumed = true; rollNext.set(c, best.node); }
     }
 
-    for (const c of longs) result.push(buildChain([c]));
+    // Group contracts into lineage trees by following successors to the root.
+    const rootOf = (c: ContractChain): ContractChain => {
+      let cur = c;
+      const seen = new Set<ContractChain>([cur]);
+      while (rollNext.has(cur)) {
+        const next = rollNext.get(cur)!;
+        if (seen.has(next)) break;
+        seen.add(next);
+        cur = next;
+      }
+      return cur;
+    };
+    const trees = new Map<ContractChain, ContractChain[]>();
+    for (const c of shorts) {
+      const root = rootOf(c);
+      if (!trees.has(root)) trees.set(root, []);
+      trees.get(root)!.push(c);
+    }
+
+    for (const [root, nodes] of trees) {
+      nodes.sort((a, b) => a.start_date.localeCompare(b.start_date));
+      // Settle stale history: split off the oldest contracts until the
+      // remaining chain spans ≤ MAX_CHAIN_DAYS. The live (root) contract is
+      // never split off.
+      const chainEnd = root.end_date ?? today;
+      while (
+        nodes.length > 1 &&
+        nodes[0] !== root &&
+        daysBetween(nodes[0].start_date, chainEnd) > MAX_CHAIN_DAYS
+      ) {
+        const stale = nodes.shift()!;
+        result.push(buildChain([stale], stale));
+      }
+      result.push(buildChain(nodes, root));
+    }
+
+    for (const c of longs) result.push(buildChain([c], c));
   }
 
   return result.sort((a, b) => b.start_date.localeCompare(a.start_date));

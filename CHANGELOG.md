@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.24.2 — Bloodbath: falling-knife signal + market benchmark
+## v0.24.3 — Portfolio option-chain rebuild: correct rolls, lineage chains, chain trimming
+
+- **Roll pairing rewritten** (`getOptionChains` step 2): each BUY-to-close is now paired with its most plausible roll target — a SELL (new contract or add-on) within 3 days, scored by day gap → contract-count match → strike proximity, each SELL consumed at most once. Lineages form disjoint trees with exactly one live contract each, instead of the old "any contract started within 3 days of any close" linear merge that braided simultaneous positions into 20+ leg mega-chains and orphaned same-day rolls (the MU 800 Sep put showed "close ≤ $103.40 → profit" while its $20,991 buy-back sat in another chain; true breakeven is ≤ $75.72)
+- **Expiration/assignment now ends a chain** — re-selling after an expiry starts a fresh chain instead of continuing the settled one
+- **Chain trimming**: chains spanning >6 weeks get their oldest contracts split off as settled chains that count toward the month they closed in — no more months-long chains hiding realized P&L from monthly totals
+- **Breakeven line is direction-aware**: long chains now show "Close ≥ $X → chain profit" (was showing shorts-only "in the hole" math); "if closed now" math signs the close by position direction; collateral shown/summed only for short puts; monthly best-case excludes long chains
+- Verified against live SnapTrade data: total P&L and leg counts identical before/after (nothing lost, only repartitioned)
 
 - **Falling-knife detection** per ticker: consecutive-red-day streak and worst-day-of-window flags computed from the daily bars; tickers still falling get a 🔪 badge and the AI is instructed not to say BUY_DIP on a live knife without a compelling company-specific reason (verified: previously-NIBBLE names like SNDK/INTC now come back WAIT while knifing)
 - **Market benchmark strip**: SPY + QQQ drawdown off their 4-week peaks with a one-line read (broad selloff vs idiosyncratic damage); fed to the AI so verdicts separate market damage from company damage ("down 51% vs SPY −2% = 49pts idiosyncratic")

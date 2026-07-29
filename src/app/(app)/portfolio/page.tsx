@@ -383,14 +383,17 @@ function ChainCard({ chain }: { chain: OptionChain }) {
     : `${fmtDate(chain.start_date)} → now`;
 
   const isOpenWithUnits = chain.status === "OPEN" && chain.open_units !== 0;
+  const isShortChain = chain.open_units < 0;
+  // Per-share price at which closing the open contracts exactly zeroes the
+  // chain P&L. Short: buy back below this → profit. Long: sell above → profit.
   const breakevenClose = isOpenWithUnits
-    ? chain.net_pnl / Math.abs(chain.open_units) / 100
+    ? Math.abs(chain.net_pnl) / Math.abs(chain.open_units) / 100
     : null;
 
   const openLeg = findOpenLeg(chain);
-  // Capital locked only applies to PUTs (covered calls don't require collateral)
+  // Capital locked only applies to short PUTs (calls/longs don't lock collateral)
   const isPut = chain.option_type.toUpperCase() === "PUT";
-  const capitalLocked = isPut && isOpenWithUnits && openLeg
+  const capitalLocked = isPut && isShortChain && isOpenWithUnits && openLeg
     ? openLeg.strike * 100 * Math.abs(chain.open_units)
     : null;
 
@@ -420,8 +423,10 @@ function ChainCard({ chain }: { chain: OptionChain }) {
     }
   }
 
+  // Closing signs the trade by open_units: shorts buy back (pay, units < 0),
+  // longs sell (receive, units > 0).
   const netAfterClose = liveQuote != null
-    ? chain.net_pnl - liveQuote.mid * Math.abs(chain.open_units) * 100
+    ? chain.net_pnl + chain.open_units * liveQuote.mid * 100
     : null;
 
   return (
@@ -454,10 +459,14 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             </div>
           )}
           {breakevenClose != null && (
-            <div className={`text-[11px] mt-0.5 ${chain.net_pnl > 0 ? "text-emerald-600 dark:text-gain" : "text-rose-500"}`}>
-              {chain.net_pnl > 0
-                ? `Close ≤ ${fmtCurrency(breakevenClose)} → chain profit`
-                : `In the hole — close adds ${fmtCurrency(Math.abs(breakevenClose))} more loss`}
+            <div className={`text-[11px] mt-0.5 ${(isShortChain ? chain.net_pnl > 0 : chain.net_pnl >= 0) ? "text-emerald-600 dark:text-gain" : "text-rose-500"}`}>
+              {isShortChain
+                ? (chain.net_pnl > 0
+                    ? `Close ≤ ${fmtCurrency(breakevenClose)} → chain profit`
+                    : `In the hole ${fmtCurrency(Math.abs(chain.net_pnl))} — any buy-back adds to the loss`)
+                : (chain.net_pnl < 0
+                    ? `Close ≥ ${fmtCurrency(breakevenClose)} → chain profit`
+                    : `Any close locks in profit`)}
             </div>
           )}
           {(() => {
@@ -606,6 +615,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
   const bestCaseByMonth = new Map<string, { gain: number; chains: OptionChain[] }>();
   for (const c of chains) {
     if (c.status !== "OPEN" || c.open_units === 0) continue;
+    if (c.open_units > 0) continue; // long chains have no "expire worthless" upside
     const leg = findOpenLeg(c);
     if (!leg || leg.expiry < todayStr) continue;
     const expMonth = leg.expiry.substring(0, 7);
@@ -887,8 +897,8 @@ export default function PortfolioPage() {
     .filter(c => c.end_date?.startsWith(currentYear))
     .reduce((s, c) => s + c.net_pnl, 0);
 
-  // Capital locked = PUT collateral only (covered calls don't lock cash)
-  const openPuts = open.filter(c => c.option_type.toUpperCase() === "PUT");
+  // Capital locked = short PUT collateral only (covered calls/longs don't lock cash)
+  const openPuts = open.filter(c => c.option_type.toUpperCase() === "PUT" && c.open_units < 0);
   const capitalLocked = openPuts.reduce((sum, c) => {
     if (c.open_units === 0) return sum;
     const leg = findOpenLeg(c);
