@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase-server";
 import { getPortfolio, getTransactions, getOptionChains, getAllActivities } from "@/lib/snaptrade/client";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+// Activities fetches are paced 2.6s apart and wait out a full rate-limit
+// window (65s) on 429, so deep option-chain pulls legitimately run minutes.
+export const maxDuration = 300;
 
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 

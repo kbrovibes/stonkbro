@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.24.5 — Fix Portfolio page timeout after v0.24.4 rate-limit pacing
+
+- **`GET /api/portfolio` `maxDuration` 30 → 300**: the option-chains pull (page fetches from 2025-01-01) recurses into several split levels, and v0.24.4's 2.6s pacing + 65s 429-wait makes it legitimately exceed 30s — Vercel was killing the function, which the Portfolio page saw as a timeout
+- **`GET /api/portfolio/time-machine` `maxDuration` 60 → 300**: a single 429 wait alone is 65s, so 60s guaranteed a timeout whenever SnapTrade throttled
+- **`getOptionChains` walks accounts sequentially** (missed by v0.24.4): parallel per-account recursion trees combined could still burst the per-minute cap, triggering the 65s wait
+
 ## v0.24.4 — Fix SnapTrade 429s in deep activity fetches
 
 - **`fetchActivitiesWindow` recursion serialized**: the window-splitter fired both halves of every split in parallel, so a deep 2010→today walk compounded into a request burst that blew SnapTrade's per-minute rate limit (SDK gives up after 3 retries ≈ 15s) — Time Machine backfill 500'd with "Request failed after 3 retries due to 429". Halves now fetch sequentially

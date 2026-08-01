@@ -326,9 +326,12 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   // recursive window-splitter to make sure no option transactions are dropped
   // (especially old LEAPS opens that would otherwise fall off the back of a
   // single overflowing page).
-  const allRaw = await Promise.all(
-    accounts.map((acct) => fetchActivitiesWindow(acct.id, startDate, end))
-  );
+  // Sequential across accounts — parallel recursion trees each pace their own
+  // calls but combined still burst SnapTrade's per-minute activities cap.
+  const allRaw: any[][] = [];
+  for (const acct of accounts) {
+    allRaw.push(await fetchActivitiesWindow(acct.id, startDate, end));
+  }
 
   type ParsedTx = {
     date: string; type: string; underlying: string; option_type: string;

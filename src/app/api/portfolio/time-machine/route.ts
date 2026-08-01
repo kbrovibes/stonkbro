@@ -5,7 +5,9 @@ import { simulateTimeMachine } from "@/lib/time-machine/simulate";
 import { SnapTradeTxn } from "@/lib/time-machine/types";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// A single 429 rate-limit wait in the activities fetcher is 65s, so 60s
+// guaranteed a timeout whenever SnapTrade throttled the full-history pull.
+export const maxDuration = 300;
 
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
