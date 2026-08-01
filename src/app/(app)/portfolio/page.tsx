@@ -92,6 +92,15 @@ function getPutPositionsOnDate(
   return result.filter(p => p.collateral > 0);
 }
 
+function fmtAge(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency", currency: "USD",
@@ -843,9 +852,16 @@ export default function PortfolioPage() {
   type ClosedSort = "date" | "pnl" | "annReturn" | "ticker" | "type";
   const [closedSort, setClosedSort] = useState<ClosedSort>("date");
 
-  const fetchChains = useCallback(() => {
-    setLoading(true);
-    fetch("/api/portfolio?include=option-chains&startDate=2025-01-01")
+  const [chainsAsOf, setChainsAsOf] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+
+  const fetchChains = useCallback((live?: boolean) => {
+    // live=true bypasses the server cache and re-walks SnapTrade — slow (can
+    // run minutes under rate-limit pacing), so keep existing data on screen.
+    if (live === true) { setRefreshing(true); setRefreshError(null); }
+    else setLoading(true);
+    fetch(`/api/portfolio?include=option-chains&startDate=2025-01-01${live === true ? "&refresh=1" : ""}`)
       .then(async (r) => {
         if (r.status === 403) throw new Error("Access restricted");
         if (!r.ok) {
@@ -854,9 +870,16 @@ export default function PortfolioPage() {
         }
         return r.json();
       })
-      .then((d) => setChains(d.chains ?? []))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then((d) => {
+        setChains(d.chains ?? []);
+        setChainsAsOf(d.timestamp ?? null);
+        setError(null);
+      })
+      .catch((e) => {
+        if (live === true) setRefreshError(e.message);
+        else setError(e.message);
+      })
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }, []);
 
   useEffect(() => { fetchChains(); }, [fetchChains]);
@@ -1007,6 +1030,24 @@ export default function PortfolioPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Cache freshness */}
+      <div className="px-4 pt-1 flex items-center justify-end gap-2">
+        {refreshError && (
+          <span className="text-[10px] text-rose-500 truncate">refresh failed: {refreshError}</span>
+        )}
+        {chainsAsOf && (
+          <span className="text-[10px] text-stone-400 dark:text-text-faint">as of {fmtAge(chainsAsOf)}</span>
+        )}
+        <button
+          onClick={() => fetchChains(true)}
+          disabled={refreshing}
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-900 dark:bg-surface-elevated text-white dark:text-text hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
+          title="Bypass the cache and re-fetch live from SnapTrade (slow)"
+        >
+          {refreshing ? "Fetching live…" : "Refresh"}
+        </button>
       </div>
 
       {/* Filter tabs */}

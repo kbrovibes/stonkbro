@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.24.6 — Portfolio chains cache (bloodbath-style)
+
+- **Page loads are one DB read** instead of a live SnapTrade activities walk (worst case minutes under v0.24.4's rate-limit pacing): new `portfolio_chain_scans` table caches the computed `OptionChain[]`; RLS service-role only (personal brokerage data)
+- **`/api/cron/portfolio-chains`** refreshes the cache 2× weekdays (13:15, 20:15 UTC ≈ pre-open/post-close ET)
+- **`GET /api/portfolio?include=option-chains`** serves the cached scan (≤72h) for the standard 2025-01-01 window; `?refresh=1` forces live; live results are stored back
+- **Page**: "as of Xm ago" label + Refresh button — refresh keeps existing data on screen while the slow live fetch runs
+
 ## v0.24.5 — Fix Portfolio page timeout after v0.24.4 rate-limit pacing
 
 - **`GET /api/portfolio` `maxDuration` 30 → 300**: the option-chains pull (page fetches from 2025-01-01) recurses into several split levels, and v0.24.4's 2.6s pacing + 65s 429-wait makes it legitimately exceed 30s — Vercel was killing the function, which the Portfolio page saw as a timeout

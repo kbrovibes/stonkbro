@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getPortfolio, getTransactions, getOptionChains, getAllActivities } from "@/lib/snaptrade/client";
+import {
+  CHAIN_CACHE_START_DATE,
+  getLatestChainScan,
+  insertChainScan,
+  markChainScanComplete,
+  markChainScanFailed,
+} from "@/lib/db/portfolio-chain-scans";
+
+// Serve the cron-cached chain scan up to this age; covers weekends.
+const CHAIN_CACHE_MAX_AGE_HOURS = 72;
 
 export const dynamic = "force-dynamic";
 // Activities fetches are paced 2.6s apart and wait out a full rate-limit
@@ -28,8 +38,42 @@ export async function GET(req: Request) {
 
     if (include === "option-chains") {
       const startDate = searchParams.get("startDate") ?? "2026-01-01";
+      const forceRefresh = searchParams.get("refresh") === "1";
+      const cacheable = startDate === CHAIN_CACHE_START_DATE;
+
+      if (cacheable && !forceRefresh) {
+        try {
+          const cached = await getLatestChainScan(CHAIN_CACHE_MAX_AGE_HOURS);
+          if (cached) {
+            return NextResponse.json({
+              chains: cached.chains,
+              cached: true,
+              timestamp: cached.created_at,
+            });
+          }
+        } catch (e) {
+          console.error("Chain cache read failed, falling back to live fetch:", e);
+        }
+      }
+
+      const started = Date.now();
       const chains = await getOptionChains(startDate);
-      return NextResponse.json({ chains });
+
+      // Store the live result so the next load is a cache hit (best-effort).
+      if (cacheable) {
+        try {
+          const scanId = await insertChainScan("manual");
+          try {
+            await markChainScanComplete(scanId, { chains, duration_ms: Date.now() - started });
+          } catch (e) {
+            await markChainScanFailed(scanId, e instanceof Error ? e.message : String(e));
+          }
+        } catch (e) {
+          console.error("Chain cache write failed:", e);
+        }
+      }
+
+      return NextResponse.json({ chains, cached: false, timestamp: new Date().toISOString() });
     }
 
     if (include === "debug-all-txns") {
