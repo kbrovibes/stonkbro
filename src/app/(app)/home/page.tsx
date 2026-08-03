@@ -31,14 +31,6 @@ export default async function DiscoverPage() {
         watchlists.push({ id: wl.id, name: wl.name, symbols, quotes: [] });
       }
       allSymbols = [...symbolSet];
-
-      if (allSymbols.length > 0) {
-        const allQuotes = await getQuotes(allSymbols);
-        const quoteMap = new Map(allQuotes.map((q) => [q.symbol, q]));
-        for (const wl of watchlists) {
-          wl.quotes = wl.symbols.map((s) => quoteMap.get(s)).filter(Boolean) as QuoteData[];
-        }
-      }
     } catch {
       // Fall back
     }
@@ -53,14 +45,24 @@ export default async function DiscoverPage() {
   ];
   const earningsSymbols = [...new Set([...allSymbols, ...EARNINGS_UNIVERSE])];
   let upcomingEarnings: { symbol: string; earningsDate: string; daysUntil: number; timing: string; category: string }[] = [];
-  try {
-    const earnings = await getEarningsCalendar(earningsSymbols);
-    upcomingEarnings = earnings
-      .filter((e) => e.category === "this_week" || e.category === "next_week")
-      .slice(0, 20);
-  } catch {
-    // ignore
+
+  // Quotes (watchlist symbols) and the earnings calendar both depend only on
+  // the symbol list, not on each other — fetch them concurrently.
+  const [allQuotes, earnings] = await Promise.all([
+    allSymbols.length > 0 ? getQuotes(allSymbols).catch(() => []) : Promise.resolve([]),
+    getEarningsCalendar(earningsSymbols).catch(() => []),
+  ]);
+
+  if (allQuotes.length > 0) {
+    const quoteMap = new Map(allQuotes.map((q) => [q.symbol, q]));
+    for (const wl of watchlists) {
+      wl.quotes = wl.symbols.map((s) => quoteMap.get(s)).filter(Boolean) as QuoteData[];
+    }
   }
+
+  upcomingEarnings = earnings
+    .filter((e) => e.category === "this_week" || e.category === "next_week")
+    .slice(0, 20);
 
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,

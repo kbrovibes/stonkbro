@@ -36,15 +36,12 @@ export default async function IncomePage() {
 
   if (!user) redirect("/login");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let positions: any[] = [];
-  try {
-    positions = await getPositions(user.id);
-  } catch {
-    // If table doesn't exist yet or other error, treat as empty
-  }
-
-  const settings = await getSettings(user.id);
+  // Positions and settings both key off user.id and are independent — fetch together.
+  const [positions, settings] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getPositions(user.id).catch(() => [] as any[]),
+    getSettings(user.id),
+  ]);
   const startingCash = settings?.starting_cash ?? 20000;
 
   // Calculate totals
