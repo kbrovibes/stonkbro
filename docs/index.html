@@ -683,6 +683,20 @@
         </div>
 
         <div class="feature-card">
+          <div class="card-icon bg-red">&#x1F6A8;</div>
+          <h3>Market Monitor (Hourly Push Alerts)</h3>
+          <p>Hourly cron watches SPY plus every portfolio holding and watchlist symbol. Big moves fire plain-English push alerts with severity tiers — critical drops on your holdings include concrete stop-limit levels computed from support. Sticky in-app banner ensures nothing gets missed.</p>
+          <span class="tag bg-red">Push · Cron</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-icon bg-purple">&#x2708;&#xFE0F;</div>
+          <h3>Offline Mode (Airplane-Mode PWA)</h3>
+          <p>Service worker caches every visited page and pre-caches the full knowledge base on each app open — Learn works completely offline. Live-data pages show an offline indicator and resume automatically when connectivity returns.</p>
+          <span class="tag bg-purple">PWA · Offline</span>
+        </div>
+
+        <div class="feature-card">
           <div class="card-icon bg-red">&#x1FA78;</div>
           <h3>Bloodbath (Pullback Navigator)</h3>
           <p>Watchlist tickers + the biggest scan-universe casualties ranked by drawdown off their 4-week peak. Tap-to-expand AI verdicts — Buy the dip / Nibble / Wait / Avoid — with headline-driven reasons, confidence, and a concrete entry idea. One batched AI call for up to 12 tickers.</p>
@@ -1065,6 +1079,16 @@
             <td><code>/api/signals</code></td>
             <td><span class="method-badge method-get">GET</span></td>
             <td>Check active positions for roll/close/profit alerts. Returns urgency-sorted signal list.</td>
+          </tr>
+          <tr>
+            <td><code>/api/alerts</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Recent market-monitor alerts with severity, plain-English context, and stop suggestions; POST acknowledges.</td>
+          </tr>
+          <tr>
+            <td><code>/api/cron/market-monitor</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Hourly market watch — big moves in holdings/watchlist → web-push alerts with actionable steps.</td>
           </tr>
           <tr>
             <td><code>/api/movers</code></td>

@@ -70,6 +70,12 @@ Create named watchlists, add/remove tickers, set a default. Your default watchli
 ### Automated Alerts (Cron)
 Vercel cron job runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks all users' positions, generates alerts, and sends email briefings via Resend. Morning briefing included.
 
+### Market Monitor (Hourly Push Alerts)
+Hourly cron on market days watches SPY plus every portfolio holding and watchlist symbol. Big moves generate plain-English alerts with severity tiers — critical position drops include concrete stop-limit levels computed from support. Alerts push to your phone (Web Push banners) and surface in a sticky in-app banner with per-alert actions.
+
+### Offline Mode (Airplane-Mode PWA)
+The service worker caches every visited page and pre-caches the full knowledge base on every app open — Learn works completely offline. Live-data pages show an offline indicator and resume when you're back online.
+
 ### Google OAuth
 One-click login with Google via Supabase Auth. All routes protected — unauthenticated users redirect to login. Row-level security ensures you only see your own data.
 
@@ -194,6 +200,9 @@ npm run dev
 | `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
 | `/api/options?symbol=X` | GET | Fetch PMCC setups for a symbol |
 | `/api/signals` | GET | Check active positions for trade alerts |
+| `/api/alerts` | GET/POST | Recent market-monitor alerts; acknowledge one or all |
+| `/api/cron/market-monitor` | GET | Hourly market watch: big moves → push alerts with stop suggestions |
+| `/api/learn/manifest` | GET | Knowledge-base paths for offline precaching |
 | `/api/cron` | GET | Automated daily briefing (Vercel cron) |
 
 ---

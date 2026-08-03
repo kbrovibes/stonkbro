@@ -59,3 +59,16 @@ questions deferred.
 - [x] Recon: push infra exists (VAPID live in prod), SW exists (push-only),
       learn curriculum = 3,375-line TS file, reasons come from csp-scanner.ts,
       Plays page = /today ← /api/recommendations, Options ← /api/csp-hunter.
+- [x] Alert engine shipped: `alerts` table (migration applied), hourly
+      `/api/cron/market-monitor` (11:00–23:00 UTC weekdays), severity tiers,
+      stop-limit suggestions from support levels, push with storm cap +
+      summary fallback, sticky in-app AlertBanner, `/api/alerts` GET/ack.
+- [x] Options/Plays conviction overhaul: STRONG/MODERATE/SPECULATIVE tiers,
+      2-sentence plain-English theses with jargon explained inline, explicit
+      "what breaks this trade" risk lines; AI prompts got a mandatory
+      rationale-quality contract; Today + CSP Hunter render chips/risk.
+- [x] Offline mode: SW v2 (static cache-first, pages network-first w/
+      fallback, KB warm on every app open via /api/learn/manifest + chunk
+      parsing), OfflineBanner in shell. KB decision: existing curriculum is
+      good theory — added-value = new fluency/leverage/crash modules rather
+      than rewriting 3,375 lines (two content agents writing them now).

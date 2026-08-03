@@ -1,3 +1,6 @@
+import { FLUENCY_MODULES } from "@/lib/learn/content/fluency";
+import { LEVERAGE_MODULES } from "@/lib/learn/content/leverage";
+
 export type LessonSection =
   | { type: "text"; content: string }
   | { type: "callout"; style: "tip" | "warning" | "key-concept"; content: string }
@@ -3292,6 +3295,10 @@ export const CURRICULUM: Module[] = [
       },
     ],
   },
+  // ─── PRACTICAL TRACKS (2026-08 overhaul) ──────────────────────────────
+  // Trader fluency + toolkit, real-world leverage, crash playbook.
+  ...FLUENCY_MODULES,
+  ...LEVERAGE_MODULES,
 ];
 
 // ─── HELPER FUNCTIONS ─────────────────────────────────────────────────
