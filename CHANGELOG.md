@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.25.0 — Overnight overhaul: push alerts, conviction copy, practical Learn tracks, offline mode, performance
+
+- **Hourly market monitor + push alerts**: `/api/cron/market-monitor` (11:00–23:00 UTC weekdays) watches SPY + every portfolio holding (live SnapTrade positions, chains-cache fallback) + watchlist symbols; plain-English alerts with severity tiers dedupe per day, persist to a new `alerts` table (migration applied), push via Web Push (storm-capped with summary fallback), and surface in a sticky in-app banner. Critical position drops include concrete stop-limit levels computed from nearest support
+- **Conviction + plain-English theses on Options/Plays**: every CSP/call candidate carries STRONG/MODERATE/SPECULATIVE conviction, a 1–2 sentence thesis explaining its jargon inline, and a "what breaks this trade" risk line; AI recommendation prompts get a mandatory rationale-quality contract; Today + CSP Hunter render chips and risk lines
+- **Four practical Learn modules** (~19 lessons): Trader Talk Decoded (decode "do a squeeze", "support at 520", IV crush… with 60-second verify-it-yourself recipes), Your Toolkit (which metric/chart answers which question, reading a chain), Options Leverage in the Real World (the MSFT +2% → call +40% math, LEAPS, how leveraged longs lose), Crashes & Bloodbaths Playbook (stop mechanics, rolling, getting paid for fear)
+- **Offline mode (airplane-mode PWA)**: service worker caches visited pages + pre-caches the full knowledge base on every app open (manifest + chunk parsing); offline banner in the shell; live pages resume when back online
+- **App version shown under the logo** (reads package.json, bumped to 0.25.0)
+- Decisions + technical blockers for review recorded in `journal/2026-08-04-overnight-overhaul.md`
+
 ## v0.25.0 — Performance overhaul
 
 - **Sign-out moved to a server action** (`src/lib/auth-actions.ts`): `ProfileMenu` (rendered in the app shell on every authenticated page) no longer imports the `@supabase/ssr` browser client just to call `signOut()`. That pulled the full ~222 KB (uncompressed) / ~59 KB (gzip) Supabase client SDK into the shared bundle of all 40 app routes. First Load JS now drops by that amount on every page — e.g. `/today` 781 KB → 558 KB raw, `/portfolio` 802 KB → 580 KB. `LogoutButton` converted the same way. Behavior unchanged: cookie session is cleared server-side (middleware already manages the same cookies) and the user is redirected to `/`.

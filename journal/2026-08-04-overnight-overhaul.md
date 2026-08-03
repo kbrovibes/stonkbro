@@ -72,3 +72,22 @@ questions deferred.
       parsing), OfflineBanner in shell. KB decision: existing curriculum is
       good theory — added-value = new fluency/leverage/crash modules rather
       than rewriting 3,375 lines (two content agents writing them now).
+- [x] KB modules integrated: 4 modules / ~19 lessons (trader-talk,
+      trader-toolkit, leverage-lab, crash-playbook), colors fixed to
+      COLOR_MAP keys, wired into CURRICULUM, build green.
+- [x] Version badge under logo (package.json → 0.25.0).
+- [x] Perf overhaul (principal-engineer agent team): −26% avg First Load JS
+      across all 40 app routes (Supabase SDK out of the shell via sign-out
+      server action; lesson page → RSC, −130 KB gzip; auth deduped 3→1
+      round-trips/nav; home/income fetches parallelized). Details in
+      journal/2026-08-04-perf.md and releases/v0.25.0.md.
+
+## Not built tonight (needs your input)
+
+- **Real news feed** for pre-market alerts (provider + cost decision —
+  backlog #33). Current pre-market coverage = price/gap detection + the
+  existing AI morning briefing.
+- **Email escalation for critical alerts** (Resend is wired for briefings;
+  one decision away).
+- **Per-position stop tracking UI** (alerts give levels; a page that tracks
+  which stops you actually set would close the loop).
