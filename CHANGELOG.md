@@ -3,6 +3,7 @@
 ## v0.25.0 — Performance overhaul
 
 - **Sign-out moved to a server action** (`src/lib/auth-actions.ts`): `ProfileMenu` (rendered in the app shell on every authenticated page) no longer imports the `@supabase/ssr` browser client just to call `signOut()`. That pulled the full ~222 KB (uncompressed) / ~59 KB (gzip) Supabase client SDK into the shared bundle of all 40 app routes. First Load JS now drops by that amount on every page — e.g. `/today` 781 KB → 558 KB raw, `/portfolio` 802 KB → 580 KB. `LogoutButton` converted the same way. Behavior unchanged: cookie session is cleared server-side (middleware already manages the same cookies) and the user is redirected to `/`.
+- **Learn lesson page no longer ships the whole curriculum to the browser**: `/learn/[moduleId]/[lessonId]` was a client component that imported the entire ~3,300-line `CURRICULUM` array just to look up one lesson by id. It's now a server component that finds the lesson server-side and passes only that lesson's data to a thin client island (`LessonClient`) for the scroll/progress/completion interactivity. First Load JS 774 KB → 555 KB raw (−219 KB), 231 KB → 159 KB gzip. Rendered output and progress-saving behavior unchanged.
 
 ## v0.24.6 — Portfolio chains cache (bloodbath-style)
 
