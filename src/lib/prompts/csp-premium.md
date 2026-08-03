@@ -39,6 +39,8 @@ Pick exactly 5 stocks. For each, provide a specific CSP trade:
   {
     "symbol": "TICKER",
     "rationale": "2-3 sentences explaining why this is a premium CSP candidate. Reference the trend, support level, IV environment, and why assignment at this strike would be acceptable.",
+    "conviction": "STRONG | MODERATE | SPECULATIVE",
+    "risk": "One plain-English sentence on what invalidates this setup.",
     "action": "Sell 1x $STRIKE put expiring YYYY-MM-DD for ~$X.XX premium",
     "strike": 150.00,
     "expiry": "YYYY-MM-DD",

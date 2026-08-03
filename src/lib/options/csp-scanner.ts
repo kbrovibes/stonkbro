@@ -70,8 +70,10 @@ export type CSPHunterCandidate = {
   // Composite
   juiciness: number; // 0-100 composite score
   priority: "high" | "medium" | "low";
+  conviction: "STRONG" | "MODERATE" | "SPECULATIVE";
   reasoning: string;
-  catalyst: string; // one-liner on WHY this pick made the list today
+  catalyst: string; // 1-2 plain-English sentences on WHY this pick, with context
+  risk: string; // what invalidates the setup, in plain English
 };
 
 export type CSPScanResult = {
@@ -321,8 +323,10 @@ function buildCandidate(
   if (rsi < 30) reasons.push(`RSI oversold (${rsi})`);
   if (rsi > 70) reasons.push(`RSI overbought (${rsi}) — caution`);
 
-  // Catalyst — a smart one-liner on WHY this pick is interesting today
-  const catalyst = generateCatalyst(quote, technicals, earnings, put, aroc, nearSupport, supportLevel, distPct);
+  // Thesis — plain-English WHY with enough context to act on, plus what invalidates it
+  const { thesis: catalyst, risk } = generateThesis(quote, technicals, earnings, put, aroc, nearSupport, supportLevel, distPct);
+  const conviction: "STRONG" | "MODERATE" | "SPECULATIVE" =
+    juiciness >= 75 ? "STRONG" : juiciness >= 50 ? "MODERATE" : "SPECULATIVE";
 
   return {
     symbol: quote.symbol,
@@ -358,16 +362,20 @@ function buildCandidate(
     daysToEarnings,
     juiciness,
     priority,
+    conviction,
     reasoning: reasons.join(" · "),
     catalyst,
+    risk,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Catalyst — smart one-liner on why this pick stands out today
+// Thesis — plain-English "why this pick" with enough context to act on.
+// Two sentences: what's happening (with the jargon explained inline), and
+// what you get paid / what the trade actually is. Risk = what invalidates it.
 // ---------------------------------------------------------------------------
 
-function generateCatalyst(
+function generateThesis(
   quote: QuoteData,
   technicals: TechnicalSignals | null,
   earnings: EarningsEvent | null,
@@ -376,67 +384,107 @@ function generateCatalyst(
   nearSupport: boolean,
   supportLevel: number,
   distPct: number
-): string {
-  // Priority-ordered: pick the most compelling single reason
+): { thesis: string; risk: string } {
   const iv = put.iv ?? put.impliedVolatility;
+  const sym = quote.symbol;
+  const price = quote.price.toFixed(2);
+  // The standard payoff sentence — every thesis ends with what you actually get.
+  const payoff = `You collect $${(put.mid * 100).toFixed(0)} per contract now, yours to keep as long as ${sym} stays above $${put.strike} through expiry (${put.dte} days) — that's ${aroc.toFixed(0)}% annualized on the cash you set aside.`;
+  const assignRisk = `If ${sym} closes below $${put.strike} at expiry you'll be assigned: you buy 100 shares per contract at $${put.strike} (effectively $${(put.strike - put.mid).toFixed(2)} after the premium). Only sell this if you'd be happy owning ${sym} there.`;
 
   // Earnings-driven IV pump
   if (earnings && earnings.daysUntil >= 0 && earnings.daysUntil <= put.dte) {
-    return `Elevated IV from earnings in ${earnings.daysUntil}d — premium inflated, ${aroc.toFixed(0)}% AROC if it stays above $${put.strike}`;
+    return {
+      thesis: `${quote.name} reports earnings in ${earnings.daysUntil} days, and option sellers get paid extra for that uncertainty — premiums are inflated well above normal. ${payoff}`,
+      risk: `Earnings is the risk: a bad report can gap the stock straight through your strike overnight with no chance to react. ${assignRisk}`,
+    };
   }
 
   // RSI oversold bounce play
   if (technicals && technicals.rsi14 < 35) {
-    return `RSI oversold at ${technicals.rsi14} — selling into fear at ${distPct.toFixed(0)}% below price, likely bounce territory`;
+    return {
+      thesis: `${sym} has been sold hard lately — its RSI is ${technicals.rsi14.toFixed(0)}, a "momentum thermometer" where under 30 means the selling is likely overdone and due for a pause or bounce. Selling a put here means being paid for fear: ${payoff}`,
+      risk: `Oversold can stay oversold — if the selling has a real cause (bad news, guidance cut), the bounce never comes. ${assignRisk}`,
+    };
   }
 
   // Bollinger squeeze — breakout imminent, IV expanding
   if (technicals?.bbSqueeze) {
-    return `Bollinger squeeze active — IV expanding, premium rich at ${(iv * 100).toFixed(0)}% IV for a ${put.dte}d hold`;
+    return {
+      thesis: `${sym} has been coiling in an unusually tight price range — a "Bollinger squeeze," which often ends with a sharp move in either direction, so option premiums are rich right now (IV ${(iv * 100).toFixed(0)}%). ${payoff}`,
+      risk: `A squeeze breaks up OR down with roughly equal odds — if it resolves downward, ${sym} can slide fast. ${assignRisk}`,
+    };
   }
 
   // Strong trend + support strike
   if (nearSupport && technicals?.goldenCross) {
-    return `Golden cross trend with strike at $${supportLevel.toFixed(0)} support — strong floor, ${aroc.toFixed(0)}% AROC`;
+    return {
+      thesis: `${sym} is in a confirmed uptrend (its 50-day average price crossed above the 200-day — a "golden cross," one of the classic strength signals) and your $${put.strike} strike sits right on the $${supportLevel.toFixed(0)} level where buyers have repeatedly stepped in. ${payoff}`,
+      risk: `Uptrends fail at support breaks: if ${sym} closes decisively below $${supportLevel.toFixed(0)}, the floor is gone and assignment becomes likely. ${assignRisk}`,
+    };
   }
 
   // Near support without golden cross
   if (nearSupport) {
-    return `Strike sits on $${supportLevel.toFixed(0)} support level — technical floor adds safety to ${aroc.toFixed(0)}% yield`;
+    return {
+      thesis: `Your $${put.strike} strike sits on ${sym}'s $${supportLevel.toFixed(0)} support — a price where buyers have stepped in repeatedly over the past few months, giving the trade a technical floor beneath it. ${payoff}`,
+      risk: `Support is a tendency, not a guarantee — a market-wide selloff or bad news slices through old floors. ${assignRisk}`,
+    };
   }
 
   // High volume spike — something is happening
   if (quote.volumeRatio >= 2.5) {
-    return `${quote.volumeRatio.toFixed(1)}x volume spike today — unusual activity driving up premium to ${aroc.toFixed(0)}% AROC`;
+    return {
+      thesis: `${sym} is trading ${quote.volumeRatio.toFixed(1)}x its normal volume today — that much activity usually means news or big-money repositioning, and it pumps option premiums. ${payoff}`,
+      risk: `You're selling into an event you may not fully understand yet — check the news on ${sym} before entering. ${assignRisk}`,
+    };
   }
 
   // Near 52-week low — contrarian premium play
   if (quote.price < quote.fiftyTwoWeekLow * 1.15) {
-    return `Trading within 15% of 52w low — fear premium elevated, ${distPct.toFixed(0)}% OTM cushion at ${aroc.toFixed(0)}% yield`;
+    return {
+      thesis: `${sym} at $${price} is within 15% of its 52-week low, and beaten-down stocks carry a fear premium — sellers of puts get paid extra while pessimism is high. Your strike adds another ${distPct.toFixed(0)}% cushion below an already-depressed price. ${payoff}`,
+      risk: `Cheap can get cheaper — stocks near lows are often there for a reason, and "the bottom" is only visible in hindsight. ${assignRisk}`,
+    };
   }
 
   // MACD bullish crossover
   if (technicals?.macdCross === "bullish") {
-    return `MACD just crossed bullish — momentum shifting up, selling puts into the trend at ${aroc.toFixed(0)}% AROC`;
+    return {
+      thesis: `${sym}'s momentum just flipped positive (a MACD bullish crossover — short-term price momentum overtaking the longer trend, often an early sign a move up is starting). Selling a put ${distPct.toFixed(0)}% below the price rides that shift while leaving room to be wrong. ${payoff}`,
+      risk: `Momentum signals fail often in choppy markets — a crossover is a lean, not a lock. ${assignRisk}`,
+    };
   }
 
   // Above all MAs — stable uptrend
   if (technicals?.above50sma && technicals?.above200sma) {
-    return `Stable uptrend above all major MAs — low risk of assignment, collecting ${aroc.toFixed(0)}% annualized`;
+    return {
+      thesis: `${sym} is trading above both its 50-day and 200-day average prices — the definition of a stable uptrend, which makes a strike ${distPct.toFixed(0)}% below the market unlikely to be hit. This is the boring, repeatable version of the trade. ${payoff}`,
+      risk: `The premium is modest precisely because the setup is safe — the main risk is an abrupt trend change on macro news. ${assignRisk}`,
+    };
   }
 
   // High IV general
   if (iv > 0.5) {
-    return `IV at ${(iv * 100).toFixed(0)}% pumping premium — ${aroc.toFixed(0)}% AROC with ${distPct.toFixed(0)}% downside cushion`;
+    return {
+      thesis: `${sym}'s options are pricing in big swings (implied volatility ${(iv * 100).toFixed(0)}% — the market expects moves roughly ±${((iv / Math.sqrt(252 / put.dte)) * 100).toFixed(0)}% over your ${put.dte}-day window), and volatility is what put sellers get paid for. ${payoff}`,
+      risk: `High IV exists because the market genuinely expects turbulence — expect the position to swing against you at some point even if it wins. ${assignRisk}`,
+    };
   }
 
   // Good AROC fallback
   if (aroc >= 30) {
-    return `${aroc.toFixed(0)}% AROC stands out — strong risk/reward at ${distPct.toFixed(0)}% OTM with ${put.dte}d to expiry`;
+    return {
+      thesis: `The math is the story here: ${aroc.toFixed(0)}% annualized for agreeing to buy ${quote.name} ${distPct.toFixed(0)}% below today's price is a strong rate for the risk taken. ${payoff}`,
+      risk: `No special technical edge on this one — you're relying on the cushion and the yield, so size it modestly. ${assignRisk}`,
+    };
   }
 
   // Generic but specific
-  return `${distPct.toFixed(0)}% OTM safety buffer with ${aroc.toFixed(0)}% annualized return — solid income play on ${quote.name}`;
+  return {
+    thesis: `A steady income play: ${sym} would have to fall ${distPct.toFixed(0)}% in ${put.dte} days before this trade is even threatened. ${payoff}`,
+    risk: assignRisk,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -577,7 +625,9 @@ export type CallBuyCandidate = {
   // Scoring
   score: number; // 0-100
   priority: "high" | "medium" | "low";
+  conviction: "STRONG" | "MODERATE" | "SPECULATIVE";
   catalyst: string;
+  risk: string;
   reasoning: string;
 };
 
@@ -758,25 +808,32 @@ function buildCallCandidate(
   score = Math.max(0, Math.min(100, Math.round(score)));
   const priority = score >= 70 ? "high" : score >= 50 ? "medium" : "low";
 
-  // Catalyst
+  // Thesis + risk in plain English. The leverage sentence is the key teaching
+  // moment: a modest stock move produces an outsized option move.
+  const leverage = `This is the leverage play: if ${quote.symbol} rises just 10% to $${outcome100.price}, this call returns ${outcome100.returnPct > 0 ? "+" : ""}${outcome100.returnPct}% — the option amplifies the stock's move several times over.`;
+  const callRisk = `The trade-off for that leverage: if ${quote.symbol} is below $${call.strike} in ${call.dte} days, the call expires worthless and you lose 100% of the $${totalCost.toLocaleString()} paid. Never size these like stock.`;
+
   let catalyst = "";
   if (technicals?.macdCross === "bullish") {
-    catalyst = `MACD bullish crossover — momentum building, ${call.dte}d runway to ride the trend`;
+    catalyst = `${quote.symbol}'s momentum just turned up (a MACD bullish crossover — short-term momentum overtaking the longer trend, often an early entry signal), and this call gives you ${call.dte} days for that move to play out. ${leverage}`;
   } else if (technicals?.goldenCross) {
-    catalyst = `Golden cross in play — strong uptrend signal, ${distPct.toFixed(0)}% OTM with ${call.dte}d to run`;
+    catalyst = `${quote.symbol} is in a confirmed uptrend — its 50-day average price recently crossed above the 200-day (a "golden cross," historically one of the more reliable strength signals). Buying a call rides that trend with a fraction of the capital of owning shares. ${leverage}`;
   } else if (rsi < 35) {
-    catalyst = `RSI oversold bounce setup — buying the dip with defined risk at $${call.strike}`;
+    catalyst = `${quote.symbol} has been sold hard — RSI at ${rsi.toFixed(0)} says the selling is likely overdone (below 30 is classic "oversold"). A call is the defined-risk way to bet on the bounce: your maximum loss is capped at the premium no matter how wrong you are. ${leverage}`;
   } else if (earnings && earnings.daysUntil >= 0 && earnings.daysUntil <= call.dte) {
-    catalyst = `Earnings in ${earnings.daysUntil}d could be the catalyst — positioned for upside surprise`;
+    catalyst = `${quote.name} reports earnings in ${earnings.daysUntil} days — a concrete catalyst inside this option's ${call.dte}-day life. A strong report can rerate the stock in a single session. ${leverage}`;
   } else if (quote.volumeRatio >= 2.5) {
-    catalyst = `${quote.volumeRatio.toFixed(1)}x volume spike — unusual buying activity, something brewing`;
+    catalyst = `${quote.symbol} is trading ${quote.volumeRatio.toFixed(1)}x its normal volume today — that kind of activity usually means institutions are repositioning, and calls let you follow the move with defined risk. ${leverage}`;
   } else if (technicals?.above50sma && technicals?.above200sma) {
-    catalyst = `Above all MAs in sustained uptrend — riding momentum with leveraged upside`;
+    catalyst = `${quote.symbol} is above both its 50-day and 200-day average prices — a steady, established uptrend. This call is the patient version of the trade: ${call.dte} days for the trend to keep doing what it's been doing. ${leverage}`;
   } else if (iv < 0.3) {
-    catalyst = `Low IV at ${(iv * 100).toFixed(0)}% — cheap options, high leverage if ${quote.symbol} moves`;
+    catalyst = `${quote.symbol}'s options are unusually cheap right now (implied volatility only ${(iv * 100).toFixed(0)}% — the market expects small moves, so you pay little for the right to a big one). Cheap options are when buying calls makes the most sense. ${leverage}`;
   } else {
-    catalyst = `${distPct.toFixed(0)}% OTM with ${call.dte}d — leveraged bet on ${quote.name} upside`;
+    catalyst = `A defined-risk bet on ${quote.name} upside: ${call.dte} days of exposure for $${totalCost.toLocaleString()}, with losses capped at that premium no matter what. ${leverage}`;
   }
+  const risk = callRisk;
+  const conviction: "STRONG" | "MODERATE" | "SPECULATIVE" =
+    score >= 70 ? "STRONG" : score >= 50 ? "MODERATE" : "SPECULATIVE";
 
   const reasons: string[] = [];
   reasons.push(`${quote.name} $${call.strike} call @ $${call.mid.toFixed(2)} (${call.dte}d)`);
@@ -814,7 +871,9 @@ function buildCallCandidate(
     maxLoss: Math.round(maxLoss),
     score,
     priority,
+    conviction,
     catalyst,
+    risk,
     reasoning: reasons.join(" · "),
   };
 }

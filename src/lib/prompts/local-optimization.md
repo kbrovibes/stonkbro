@@ -33,6 +33,8 @@ Pick exactly 5 stocks. For each, provide:
   {
     "symbol": "TICKER",
     "rationale": "2-3 sentences explaining why this is a local optimization opportunity. Reference the specific pullback metrics — how far has it pulled back, where is support, what signals suggest the dip is ending.",
+    "conviction": "STRONG | MODERATE | SPECULATIVE",
+    "risk": "One plain-English sentence on what invalidates this setup.",
     "action": "Buy shares at $X / Buy $X call expiring YYYY-MM-DD",
     "target": "Expected bounce target (e.g., back to 20 SMA at $X)",
     "risk": "Stop-loss below support at $X, max downside Y%"

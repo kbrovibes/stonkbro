@@ -35,8 +35,10 @@ type Candidate = {
   daysToEarnings: number | null;
   juiciness: number;
   priority: "high" | "medium" | "low";
+  conviction?: "STRONG" | "MODERATE" | "SPECULATIVE";
   reasoning: string;
   catalyst: string;
+  risk?: string;
 };
 
 type CallCandidate = {
@@ -65,9 +67,24 @@ type CallCandidate = {
   maxLoss: number;
   score: number;
   priority: "high" | "medium" | "low";
+  conviction?: "STRONG" | "MODERATE" | "SPECULATIVE";
   catalyst: string;
+  risk?: string;
   reasoning: string;
 };
+
+function ConvictionChip({ conviction }: { conviction: "STRONG" | "MODERATE" | "SPECULATIVE" }) {
+  const styles = {
+    STRONG: "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong",
+    MODERATE: "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover",
+    SPECULATIVE: "bg-stone-200 dark:bg-surface-muted text-stone-600 dark:text-text-subtle",
+  } as const;
+  return (
+    <span className={`inline-block align-middle mr-1 px-1.5 py-px rounded font-bold text-[9px] tracking-wide ${styles[conviction]}`}>
+      {conviction}
+    </span>
+  );
+}
 
 type DeltaChange = {
   symbol: string;
@@ -717,11 +734,18 @@ function CSPCard({ candidate: c, rank }: { candidate: Candidate; rank: number })
       </div>
 
       {c.catalyst && (
-        <p className="text-[10px] text-stone-500 dark:text-text-subtle mt-0.5 ml-6 italic leading-tight truncate">{c.catalyst}</p>
+        <p className={`text-[10px] text-stone-500 dark:text-text-subtle mt-0.5 ml-6 leading-snug ${expanded ? "" : "line-clamp-2"}`}>
+          {c.conviction && <ConvictionChip conviction={c.conviction} />} {c.catalyst}
+        </p>
       )}
 
       {expanded && (
         <div className="mt-2 ml-6 p-2.5 bg-stone-50 dark:bg-surface rounded-lg border border-stone-200 dark:border-border-default text-xs space-y-2">
+          {c.risk && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+              <span className="font-semibold">What breaks this trade:</span> {c.risk}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-stone-500 dark:text-text-subtle">
             <div>Current Price: <span className="text-stone-900 dark:text-text">${c.currentPrice.toFixed(2)}</span></div>
             <div>Strike: <span className="text-stone-900 dark:text-text">${c.strike.toFixed(2)}</span></div>
@@ -785,9 +809,16 @@ function CallCard({ candidate: c, rank }: { candidate: CallCandidate; rank: numb
         </div>
       </div>
 
-      {/* Catalyst — single truncated line */}
+      {/* Thesis — clamped when collapsed, full when expanded */}
       {c.catalyst && (
-        <p className="text-[10px] text-stone-500 dark:text-text-subtle mt-0.5 ml-6 italic leading-tight truncate">{c.catalyst}</p>
+        <p className={`text-[10px] text-stone-500 dark:text-text-subtle mt-0.5 ml-6 leading-snug ${expanded ? "" : "line-clamp-2"}`}>
+          {c.conviction && <ConvictionChip conviction={c.conviction} />} {c.catalyst}
+        </p>
+      )}
+      {expanded && c.risk && (
+        <p className="mt-1 ml-6 text-[10px] text-amber-700 dark:text-amber-300 leading-snug">
+          <span className="font-semibold">What breaks this trade:</span> {c.risk}
+        </p>
       )}
 
       {/* Outcome scenarios — compact inline strip */}

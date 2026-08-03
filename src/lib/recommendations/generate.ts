@@ -10,6 +10,7 @@ export type RecommendationTheme = "moonshot" | "local_optimization" | "csp_premi
 export interface Pick {
   symbol: string;
   rationale: string;
+  conviction?: "STRONG" | "MODERATE" | "SPECULATIVE";
   action: string;
   target?: string;
   risk?: string;

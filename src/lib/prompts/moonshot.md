@@ -33,6 +33,8 @@ Pick exactly 5 stocks. For each, provide:
   {
     "symbol": "TICKER",
     "rationale": "2-3 sentences explaining the specific technical setup. Reference actual numbers (RSI=67, MACD crossed bullish 2 bars ago, volume 2.3x avg). Explain why THIS stock could be a moonshot right now.",
+    "conviction": "STRONG | MODERATE | SPECULATIVE",
+    "risk": "One plain-English sentence on what invalidates this setup.",
     "action": "Buy shares at market / Buy $X call expiring YYYY-MM-DD",
     "target": "Price target with reasoning",
     "risk": "Key risk and stop-loss level"

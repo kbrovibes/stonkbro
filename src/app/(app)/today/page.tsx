@@ -24,6 +24,7 @@ interface Mover {
 interface Pick {
   symbol: string;
   rationale: string;
+  conviction?: "STRONG" | "MODERATE" | "SPECULATIVE";
   action: string;
   target?: string;
   risk?: string;
@@ -520,7 +521,20 @@ export default function TodayPage() {
                           </div>
 
                           {/* Action */}
-                          <p className="text-[9px] font-medium text-stone-800 dark:text-text mb-0.5">{pick.action}</p>
+                          <p className="text-[9px] font-medium text-stone-800 dark:text-text mb-0.5">
+                            {pick.conviction && (
+                              <span className={`inline-block align-middle mr-1 px-1 py-px rounded font-bold text-[8px] tracking-wide ${
+                                pick.conviction === "STRONG"
+                                  ? "bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong"
+                                  : pick.conviction === "MODERATE"
+                                  ? "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
+                                  : "bg-stone-200 dark:bg-surface-muted text-stone-600 dark:text-text-subtle"
+                              }`}>
+                                {pick.conviction}
+                              </span>
+                            )}
+                            {pick.action}
+                          </p>
 
                           {/* Rationale */}
                           <p className="text-[9px] text-stone-500 dark:text-text-subtle leading-snug">{pick.rationale}</p>
