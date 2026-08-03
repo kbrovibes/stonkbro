@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 
 export const dynamic = "force-dynamic";
@@ -227,10 +227,7 @@ function buildWheelData(positions: any[]): WheelSymbol[] {
 }
 
 export default async function WheelPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];

@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/db/admin";
 import ProfileMenu from "./ProfileMenu";
 import { version } from "../../package.json";
 
 export default async function Header() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
 
   const initials = user
     ? (user.user_metadata?.full_name || user.email || "")

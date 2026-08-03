@@ -1,10 +1,9 @@
 import { getVisibleMoreGroups, MoreTile } from "@/components/MoreNav";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
 export default async function MorePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   const groups = getVisibleMoreGroups(hasPortfolioAccess(user?.email));
 
   return (

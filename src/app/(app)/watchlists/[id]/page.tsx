@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getWatchlistWithItems } from "@/lib/db/watchlists";
 import { deleteWatchlistAction, removeTickerAction } from "../actions";
@@ -37,10 +37,7 @@ export default async function WatchlistDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) return null;
 

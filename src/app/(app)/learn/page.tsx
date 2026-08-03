@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { CURRICULUM } from "@/lib/learn/curriculum";
 import { getUserProgress, getOverallStats } from "@/lib/learn/progress";
 import { calculateModuleCompletion } from "@/lib/learn/curriculum";
@@ -64,8 +64,7 @@ const LEVEL_CONFIG = {
 };
 
 export default async function LearnPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
 
   const userId = user?.id ?? "";
   const [progress, stats] = await Promise.all([

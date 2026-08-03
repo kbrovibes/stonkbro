@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getQuote, getOptionsChain, type QuoteData, type OptionContract } from "@/lib/market/yahoo";
 import TickerLookup from "./TickerLookup";
@@ -132,8 +132,7 @@ async function analyzeSymbol(
 }
 
 export default async function CoveredCallsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];

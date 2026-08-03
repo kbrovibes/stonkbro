@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getWatchlistsWithItems } from "@/lib/db/watchlists";
 import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
@@ -10,8 +10,7 @@ import UpcomingCatalysts from "../UpcomingCatalysts";
 export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
 
   interface WatchlistData {
     id: string;

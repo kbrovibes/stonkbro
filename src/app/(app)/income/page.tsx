@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getSettings } from "@/lib/db/settings";
 
@@ -32,10 +32,7 @@ function computePremium(legs: any[]) {
 }
 
 export default async function IncomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) redirect("/login");
 

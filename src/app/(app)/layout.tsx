@@ -3,7 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
 import AlertBanner from "@/components/AlertBanner";
 import OfflineBanner from "@/components/OfflineBanner";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
 export default async function AppLayout({
@@ -11,8 +11,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   const showPortfolio = hasPortfolioAccess(user?.email);
   const isGuest = !user;
 

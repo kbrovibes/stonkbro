@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPosition } from "@/lib/db/positions";
 import { getQuote } from "@/lib/market/yahoo";
 import { notFound } from "next/navigation";
@@ -60,10 +60,7 @@ export default async function PositionDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     notFound();

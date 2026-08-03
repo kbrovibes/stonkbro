@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import PositionFilters from "./PositionFilters";
 
@@ -70,10 +70,7 @@ function computeIncome(legs: any[]) {
 }
 
 export default async function PositionsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];

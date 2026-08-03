@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getQuotes } from "@/lib/market/yahoo";
 import Link from "next/link";
@@ -20,10 +20,7 @@ type RiskPosition = {
 };
 
 export default async function RiskDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     return (

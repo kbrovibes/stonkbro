@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { getWatchlists } from "@/lib/db/watchlists";
 import WatchlistCard from "@/components/WatchlistCard";
 
 export default async function WatchlistsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) return null;
 

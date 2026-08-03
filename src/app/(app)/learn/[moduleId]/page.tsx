@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase-server";
+import { getUser } from "@/lib/auth";
 import { CURRICULUM } from "@/lib/learn/curriculum";
 import { getUserProgress } from "@/lib/learn/progress";
 
@@ -30,8 +30,7 @@ export default async function ModulePage({
   const mod = CURRICULUM.find((m) => m.id === moduleId);
   if (!mod) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   const userId = user?.id ?? "";
   const progress = await getUserProgress(userId);
   const moduleProgress = progress.filter((p) => p.module_id === moduleId);
