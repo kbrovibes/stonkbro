@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.25.0 — Performance overhaul
+
+- **Sign-out moved to a server action** (`src/lib/auth-actions.ts`): `ProfileMenu` (rendered in the app shell on every authenticated page) no longer imports the `@supabase/ssr` browser client just to call `signOut()`. That pulled the full ~222 KB (uncompressed) / ~59 KB (gzip) Supabase client SDK into the shared bundle of all 40 app routes. First Load JS now drops by that amount on every page — e.g. `/today` 781 KB → 558 KB raw, `/portfolio` 802 KB → 580 KB. `LogoutButton` converted the same way. Behavior unchanged: cookie session is cleared server-side (middleware already manages the same cookies) and the user is redirected to `/`.
+
 ## v0.24.6 — Portfolio chains cache (bloodbath-style)
 
 - **Page loads are one DB read** instead of a live SnapTrade activities walk (worst case minutes under v0.24.4's rate-limit pacing): new `portfolio_chain_scans` table caches the computed `OptionChain[]`; RLS service-role only (personal brokerage data)
