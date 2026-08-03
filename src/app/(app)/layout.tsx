@@ -1,6 +1,8 @@
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
+import AlertBanner from "@/components/AlertBanner";
+import OfflineBanner from "@/components/OfflineBanner";
 import { createClient } from "@/lib/supabase-server";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 
@@ -17,6 +19,8 @@ export default async function AppLayout({
   return (
     <>
       <Header />
+      <OfflineBanner />
+      {!isGuest && <AlertBanner />}
       <main className="flex flex-col flex-1 pt-16 pb-16 max-w-2xl mx-auto w-full">
         <PullToRefresh>
           {children}
