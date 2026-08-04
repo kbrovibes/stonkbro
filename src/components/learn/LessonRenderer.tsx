@@ -33,6 +33,10 @@ const MACDChart = lazy(() => import("./MACDChart"));
 const BollingerBandsChart = lazy(() => import("./BollingerBandsChart"));
 const IVRankGauge = lazy(() => import("./IVRankGauge"));
 const DecisionTreeWidget = lazy(() => import("./DecisionTreeWidget"));
+const LevelFinder = lazy(() => import("./LevelFinder"));
+const IndicatorPlayground = lazy(() => import("./IndicatorPlayground"));
+const StrikeExplorer = lazy(() => import("./StrikeExplorer"));
+const ChartQuiz = lazy(() => import("./ChartQuiz"));
 
 type LazyComp = React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>;
 
@@ -55,12 +59,17 @@ const componentMap: Record<string, LazyComp> = {
   "bollinger-bands-chart": BollingerBandsChart as LazyComp,
   "iv-rank-gauge": IVRankGauge as LazyComp,
   "decision-tree-widget": DecisionTreeWidget as LazyComp,
-  // interactive components — map to existing widgets
-  "strike-slider": DeltaCurve as LazyComp,
-  "dte-slider": GammaCurve as LazyComp,
-  "vol-slider": VegaImpact as LazyComp,
-  "position-builder": PnLDiagram as LazyComp,
-  "greek-calculator": GreekTable as LazyComp,
+  // real interactivity suite (2026-08)
+  "level-finder": LevelFinder as LazyComp,
+  "indicator-playground": IndicatorPlayground as LazyComp,
+  "strike-explorer": StrikeExplorer as LazyComp,
+  "chart-quiz": ChartQuiz as LazyComp,
+  // StrikeExplorer subsumes the old fake option sliders
+  "strike-slider": StrikeExplorer as LazyComp,
+  "dte-slider": StrikeExplorer as LazyComp,
+  "vol-slider": StrikeExplorer as LazyComp,
+  "position-builder": StrikeExplorer as LazyComp,
+  "greek-calculator": StrikeExplorer as LazyComp,
 };
 
 function renderInline(text: string): React.ReactNode {
