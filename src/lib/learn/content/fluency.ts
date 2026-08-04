@@ -590,7 +590,7 @@ export const FLUENCY_MODULES: Module[] = [
           {
             type: "interactive",
             component: "indicator-playground",
-            props: { preset: "rsi" },
+            props: { preset: "meanreversion" },
           },
           {
             type: "callout",
@@ -685,7 +685,7 @@ export const FLUENCY_MODULES: Module[] = [
           {
             type: "interactive",
             component: "indicator-playground",
-            props: { preset: "sma" },
+            props: { preset: "trend" },
           },
           {
             type: "callout",

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.25.1 — Learn overhaul: real interactivity + practice-first TA coursework
+
+- **Four real interactive components** (seeded, offline-capable SVG): LevelFinder (scored support/resistance placement drills), IndicatorPlayground (toggleable SMA/EMA/RSI/MACD/Bollinger with sliders + auto-annotated signals), StrikeExplorer (live Black-Scholes strike/DTE/IV sandbox with payoff diagram), ChartQuiz (spot-the-setup on rendered charts). Fake interactive aliases retired
+- **TA track rewritten 31 → 37 lessons** on a fixed arc: mechanic → exact plotting steps → 3+ worked examples incl. a labeled failure → interactive reps → how to trade it → honest failure modes → quiz; support/resistance deepest (graded drawing practice); 41 interactive sections
+- **Greeks + practical tracks enriched**: guided StrikeExplorer task in every Greeks module + 11 worked examples; chart-quiz practice matched to each fluency phrase; leverage lessons reproduce their math in the sandbox
+- **Offline lessons fixed**: manifest lists all ~115 lesson paths (content is RSC-side since the perf pass); SW v3 with 6h warm throttle
+- **Refactor**: curriculum.ts → thin assembler; content in per-track files; all prior lesson ids stable (progress preserved)
+
 ## v0.25.0 — Overnight overhaul: push alerts, conviction copy, practical Learn tracks, offline mode, performance
 
 - **Hourly market monitor + push alerts**: `/api/cron/market-monitor` (11:00–23:00 UTC weekdays) watches SPY + every portfolio holding (live SnapTrade positions, chains-cache fallback) + watchlist symbols; plain-English alerts with severity tiers dedupe per day, persist to a new `alerts` table (migration applied), push via Web Push (storm-capped with summary fallback), and surface in a sticky in-app banner. Critical position drops include concrete stop-limit levels computed from nearest support
