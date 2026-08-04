@@ -5,9 +5,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * Paths the service worker should precache so the knowledge base works fully
- * offline (airplane mode). Includes every module page plus the learn index.
+ * offline (airplane mode). Lesson content renders server-side (RSC), so every
+ * individual lesson page must be cached — not just the module indexes.
  */
 export async function GET() {
-  const paths = ["/learn", ...CURRICULUM.map((m) => `/learn/${m.id}`)];
+  const paths = [
+    "/learn",
+    ...CURRICULUM.flatMap((m) => [
+      `/learn/${m.id}`,
+      ...m.lessons.map((l) => `/learn/${m.id}/${l.id}`),
+    ]),
+  ];
   return NextResponse.json({ paths, version: paths.length });
 }

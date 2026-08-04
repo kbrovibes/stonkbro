@@ -9,7 +9,7 @@
 //     learn manifest, cache every /learn page's HTML, and parse each page for
 //     its /_next/static chunk URLs so a hard reload works in airplane mode.
 
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `stonkbro-static-${VERSION}`;
 const PAGES_CACHE = `stonkbro-pages-${VERSION}`;
 
@@ -55,13 +55,24 @@ async function cacheChunksFromHtml(html, staticCache) {
   );
 }
 
+// Re-warm at most every 6h unless the manifest changed (new lessons deployed).
+const WARM_MARKER = "/__kb-warm-marker";
+const WARM_TTL_MS = 6 * 3600_000;
+
 async function warmKnowledgeBase() {
   try {
     const res = await fetch("/api/learn/manifest", { credentials: "include" });
     if (!res.ok) return;
-    const { paths } = await res.json();
+    const { paths, version } = await res.json();
     const pages = await caches.open(PAGES_CACHE);
     const statics = await caches.open(STATIC_CACHE);
+
+    const marker = await pages.match(WARM_MARKER);
+    if (marker) {
+      const meta = await marker.json().catch(() => null);
+      if (meta && meta.version === version && Date.now() - meta.at < WARM_TTL_MS) return;
+    }
+
     for (const path of paths) {
       try {
         const pageRes = await fetch(path, { credentials: "include" });
@@ -73,6 +84,12 @@ async function warmKnowledgeBase() {
         // skip page, keep warming the rest
       }
     }
+    await pages.put(
+      WARM_MARKER,
+      new Response(JSON.stringify({ version, at: Date.now() }), {
+        headers: { "Content-Type": "application/json" },
+      })
+    );
   } catch {
     // manifest unreachable (offline) — nothing to do
   }
