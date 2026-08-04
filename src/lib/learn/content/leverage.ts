@@ -64,6 +64,22 @@ export const LEVERAGE_MODULES: Module[] = [
           {
             type: "text",
             content:
+              "**Recreate the $510 call yourself.** In the Strike Explorer below, set **DTE 30** and **IV ~25%**, then drag the strike until **delta reads ≈ 0.40** — that's the ~2%-OTM ($510) strike from the example. Check two things against the numbers above:\n\n1. Compute **delta × spot ÷ premium** — you should land near the **25×** leverage.\n2. Now nudge the stock up ~2% with the spot control and watch the option's **percentage** gain balloon past +50% while the stock barely moved.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If a 2% stock nudge threw off a ~50%+ option gain, you've just reproduced the day your calls 'ripped' from first principles — no magic, just delta × spot ÷ premium. Slide the strike further OTM and watch that leverage number climb even higher (and the odds quietly fall).",
+          },
+          {
+            type: "text",
+            content:
               "**Now the trade-off: leverage versus probability.** Same +$10 MSFT move, three different strikes. Deeper in-the-money = more delta, higher cost, lower leverage, but higher odds of paying off. Further out-of-the-money = less delta, cheaper, higher leverage, but lower odds.\n\n| Strike | Type | Delta | Premium | $ gain on MSFT +2% | % gain | Effective leverage | Odds of finishing ITM |\n|---|---|---|---|---|---|---|---|\n| $470 | Deep ITM | 0.85 | $34.00 | +$8.80 | **+26%** | ~12× | High |\n| $510 | Near ATM | 0.40 | $8.00 | +$4.50 | **+56%** | ~25× | Medium |\n| $530 | OTM | 0.15 | $2.50 | +$1.75 | **+70%** | ~30× | Low |\n\nRead it left to right: the $530 call posts the biggest *percentage* pop, but it is a low-probability bet that needs the move to actually reach it. The $470 call is boring and expensive, but it behaves almost like the stock and rarely disappoints. The $510 call is the balanced middle — the one most people mean when they say 'my calls ripped.'",
           },
           {
@@ -123,6 +139,22 @@ export const LEVERAGE_MODULES: Module[] = [
             style: "key-concept",
             content:
               "**Why deep-ITM (delta 0.70–0.80) is the standard for stock replacement.** The deeper ITM you go, the *smaller* the time-value slice as a share of premium — so **less theta bleed and less IV sensitivity**. A 0.75-delta LEAPS tracks the stock closely and behaves like a discounted share. A 0.40-delta long-dated call is a *speculation*, not a stock replacement — it decays faster and needs a real move to work.",
+          },
+          {
+            type: "text",
+            content:
+              "**Build the LEAPS in the tool.** In the Strike Explorer, push **DTE to its maximum**, set **IV ~30%**, and drag the strike **deep in the money** (well below spot) until **delta ≈ 0.75**. Two things to read off it:\n\n1. Subtract intrinsic (spot − strike) from the premium — the leftover is the **time value**, i.e. your annual 'rent.' Notice how *small* that slice is at deep-ITM.\n2. Now drag DTE downward and watch that time-value slice shrink toward zero, slowly at first. That slow bleed is exactly why a deep-ITM LEAPS behaves like a discounted share.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If your 0.75-delta LEAPS carried only a thin sliver of time value while a hypothetical 0.40-delta strike carried a fat one, you've proven why deep-ITM is the stock-replacement standard: you're paying for movement, not for a lottery ticket that theta eats. That thin rent is what a monthly PMCC call is designed to cover.",
           },
           {
             type: "text",
@@ -238,6 +270,22 @@ export const LEVERAGE_MODULES: Module[] = [
             props: { ivRank: 72 },
           },
           {
+            type: "text",
+            content:
+              "**Feel the three delta bands in your hands.** Before the paper exercise, walk the bands in the Strike Explorer. Set **DTE 60**, **IV 30%**, then drag the strike to hit each band in turn:\n\n• Deep ITM until **delta ≈ 0.75** — the high-conviction stock replacement.\n• Near the money until **delta ≈ 0.45** — the balanced Lesson-1 sweet spot.\n• Far OTM until **delta ≈ 0.20** — the lottery ticket.\n\nAt each stop, read the premium and compute delta × spot ÷ premium. Watch cost fall and leverage rise as you step down the bands.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If the deep-ITM strike felt expensive and boring while the far-OTM one was cheap and thrilling, you've felt the beginner's trap in your hands: people spend their *best* ideas on the cheap thrill and hand the edge to theta. Higher conviction earns *more* delta, not less.",
+          },
+          {
             type: "callout",
             style: "tip",
             content:
@@ -349,6 +397,35 @@ export const LEVERAGE_MODULES: Module[] = [
             type: "text",
             content:
               "**Why your stock down 5% on a market down 2% is mostly beta, not news.** **Beta** measures how much a stock amplifies the market's move. Expected stock move ≈ **beta × market move**.\n\n*Illustrative:* your stock has a beta of **1.4**. Market is **−2%**, so its *expected* move is 1.4 × −2% = **−2.8%** for no company-specific reason at all. If it's actually down **−5%**, only about **−2.2%** is idiosyncratic (its own story). Most of the pain is just the market yanking a high-beta name around. Before you sell in fear, subtract the beta portion — often there's no news at all.",
+          },
+          {
+            type: "text",
+            content:
+              "**Read the rollover.** Stage one of a drawdown is the trend quietly turning over — the leaders crack and the long-term trend rolls down. Here's a chart at that moment.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "death-cross",
+              question:
+                "The 50-day moving average has just crossed below the 200-day as this name rolls over off its highs. What is this, and how much weight does it carry here?",
+              options: [
+                "A golden cross — the selloff is over",
+                "A death cross — the short-term trend has dropped beneath the long-term one, a bearish context signal that confirms a rollover already underway (it lags, so it's not a precise top)",
+                "A capitulation bottom — buy aggressively",
+                "A Bollinger squeeze",
+              ],
+              correctIndex: 1,
+              explanation:
+                "50-day crossing below the 200-day is a death cross: the trend has rolled over. In a genuine drawdown (not a choppy range) it's meaningful context, but it lags — it confirms damage already done rather than calling the exact top.",
+            },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you read that as a trend that has already rolled over — context, not a precise timing signal — you're placing it correctly in the drawdown sequence: leaders crack and the averages cross *after* the damage starts, which is why the next stages (correlations to 1, then capitulation) still lie ahead.",
           },
           {
             type: "callout",
@@ -463,6 +540,35 @@ export const LEVERAGE_MODULES: Module[] = [
             type: "visual",
             component: "rsi-chart",
             props: { rsi: 24 },
+          },
+          {
+            type: "text",
+            content:
+              "**Question 1 of the checklist — is it at support?** Before you catch any knife, you have to judge whether it's falling into a floor or into thin air. Read the chart below.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "support-bounce",
+              question:
+                "A hard-selling stock has dropped into a level it has bounced from several times before, and buying is appearing again. For a put-seller running the falling-knife checklist, what does this satisfy?",
+              options: [
+                "Nothing — a stock in a selloff can never be at support",
+                "Checklist question 1 (is it at support?) is a yes — it's falling into a tested floor, not thin air, which is one of the three green lights for selling a cash-secured put here",
+                "It's a death cross, so avoid it",
+                "It guarantees the bottom is in",
+              ],
+              correctIndex: 1,
+              explanation:
+                "Falling into a repeatedly-tested support level (not free-falling with nothing beneath it) satisfies question 1 of the knife checklist. Combined with a market-wide drop and a washed-out RSI, that's the BUY_DIP profile where selling a cash-secured put pays you the fear premium.",
+            },
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If you recognized the tested floor as a green light — while remembering it's only one of three checks (support, market-wide vs idiosyncratic, washed-out RSI) — you're running the checklist the way /bloodbath does. A support bounce alone isn't the trade; support plus beta-driven fear plus oversold is.",
           },
           {
             type: "callout",

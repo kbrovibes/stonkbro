@@ -63,6 +63,35 @@ export const FLUENCY_MODULES: Module[] = [
           {
             type: "text",
             content:
+              "**Now spot one yourself.** The chart below is generated fresh each time. Look at the Bollinger Bands and decide what the stock is telling you before you answer.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "bb-squeeze",
+              question:
+                "The Bollinger Bands on this chart have pinched to their narrowest in months. What does that tell you?",
+              options: [
+                "A short squeeze is underway — buy calls, the shorts are trapped",
+                "Volatility has collapsed and the stock is coiling — a big move is likely soon, direction unknown",
+                "The stock is guaranteed to break out upward",
+                "Volatility is high right now, so options are expensive",
+              ],
+              correctIndex: 1,
+              explanation:
+                "Narrow bands = low recent volatility = a coiled spring. That's a Bollinger (volatility) squeeze: it says a large move is building, but not which way. It has nothing to do with short interest, and it doesn't promise direction.",
+            },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you read that as a volatility squeeze (not a short squeeze) with unknown direction, you've internalized meaning #1 — the coil, not the release, and not the short-interest story. That's the exact distinction that trips people up at dinner.",
+          },
+          {
+            type: "text",
+            content:
               "**Meaning #2 — the short squeeze (forced buying).**\n\nSome traders bet a stock will *fall*. They \"short\" it: borrow shares, sell them now, and plan to buy them back cheaper later. Their nightmare is the stock going *up* — because they're on the hook to buy those shares back at any price. If enough of them panic and buy at once, their buying itself drives the price higher, which triggers even more panic buying. That feedback loop is a **short squeeze**.\n\nYou check the fuel for a squeeze with two numbers:\n\n• **Short interest %** — what fraction of the tradable shares are currently sold short. Above ~20% is high; above 50% is extreme.\n• **Days to cover** — how many normal trading days it would take all the short sellers to buy back their shares. A high number (say 5+) means they can't all exit quickly, which makes a squeeze more violent.",
           },
           {
@@ -113,6 +142,22 @@ export const FLUENCY_MODULES: Module[] = [
               "**How the line actually gets drawn.** There's no official source — traders draw it themselves. The common ingredients:\n\n1. **Swing lows / swing highs** — obvious dips the price bounced off before (support) or peaks it got rejected from (resistance). Connect them.\n2. **Touch count** — the more times price has bounced off a level, the more traders respect it. Two touches is a maybe; four is a level people watch.\n3. **Round numbers** — humans cluster orders at round figures. $500, $520, $50, $100 act as magnets purely because they're psychologically tidy.\n4. **Volume shelves** — prices where a *huge* amount of shares changed hands. Lots of owners at that price means lots of memory. Charts show this as a \"volume profile\" — a fat bar marks a shelf.\n5. **Moving averages as dynamic support** — the 50-day and 200-day average lines slope with the trend and often act as a *moving* floor. \"It bounced off its 200-day\" is a support claim about a sloped line, not a flat one.",
           },
           {
+            type: "text",
+            content:
+              "**Try it — draw the level yourself.** Reading a support claim and *placing* one are different skills. On the chart below, drag the line to where you think support sits — the price the stock keeps bouncing off — and get scored on how close you are to the level the crowd is actually watching.",
+          },
+          {
+            type: "interactive",
+            component: "level-finder",
+            props: { mode: "support", difficulty: "easy" },
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If you anchored your line on the swing lows the stock bounced from — not on the latest candle or a random round number — you've got the core instinct. A good level connects multiple touches; that's what makes it 'crowd memory' rather than a guess.",
+          },
+          {
             type: "callout",
             style: "tip",
             content:
@@ -127,6 +172,35 @@ export const FLUENCY_MODULES: Module[] = [
             type: "text",
             content:
               "**Worked example 1 — a level that holds.** Suppose META dipped to about $518–$522 three separate times over four months, bouncing each time. A friend saying \"support at 520\" is describing a real, triple-tested shelf. If it dips there a fourth time, buyers who watched the first three bounces are primed to step in — the claim is grounded.\n\n**Worked example 2 — a level that breaks.** Now suppose bad guidance sends META straight through $520 on heavy volume to $505. The floor failed. Watch what happens on the next rally: it often stalls right back at ~$520, because the people who bought at $520 and rode it down just want their money back. The old support is now resistance.",
+          },
+          {
+            type: "text",
+            content:
+              "**Now read a live example.** The chart below shows a stock approaching a level. Decide what's happening before you answer.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "support-bounce",
+              question:
+                "Price has fallen to a level it has bounced off several times before, and buyers are stepping in again. What is this, and what does it imply?",
+              options: [
+                "A breakdown — the floor has failed and will become resistance",
+                "A support bounce — a repeatedly-tested level where buyers show up, so a reaction here is likely (though never guaranteed)",
+                "A short squeeze forcing the price up",
+                "A golden cross",
+              ],
+              correctIndex: 1,
+              explanation:
+                "Multiple prior touches plus buyers re-appearing is a support bounce: the crowd remembers this price and acts on it. It's a grounded, watched level — not a guarantee, since support does eventually break, but a real reaction zone.",
+            },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you called it a bounce because the level had been tested before, you're reading support the way pros do — as crowd memory measured in touch count, not as a magic number.",
           },
           {
             type: "callout",
@@ -245,6 +319,53 @@ export const FLUENCY_MODULES: Module[] = [
           {
             type: "text",
             content:
+              "**Spot the cross.** Two fresh charts. Name each crossover and, just as importantly, judge how much it's really telling you.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "golden-cross",
+              question:
+                "On this chart the 50-day moving average has just crossed above the 200-day. What is it, and what's the honest caveat?",
+              options: [
+                "A death cross — bearish, sell immediately",
+                "A golden cross — read as bullish momentum, but it lags, so much of the move has usually already happened",
+                "A short squeeze",
+                "A Bollinger squeeze signalling low volatility",
+              ],
+              correctIndex: 1,
+              explanation:
+                "50-day crossing above the 200-day is a golden cross, read as bullish. The caveat: it's a lagging signal confirming a trend already underway, and it whipsaws in choppy markets. Use it as context, not a trigger.",
+            },
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "death-cross",
+              question:
+                "Here the 50-day has crossed below the 200-day while price has been chopping sideways in a tight range. What's the best read?",
+              options: [
+                "A death cross — but in a sideways market crossovers whipsaw, so treat it as weak context, not a short signal",
+                "A guaranteed crash is coming",
+                "A golden cross forming",
+                "An IV crush",
+              ],
+              correctIndex: 0,
+              explanation:
+                "The 50-day below the 200-day is a death cross, nominally bearish — but in a flat, choppy market the averages tangle and produce whipsaws. Without a real trend behind it, it's noise, not a trigger.",
+            },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you named both crosses AND flagged the death cross as a likely whipsaw because price was ranging, you're already ahead of most: the signal only means something when there's a genuine trend for it to confirm.",
+          },
+          {
+            type: "text",
+            content:
               "**\"Riding the 21 EMA.\"** The EMA (exponential moving average) is a moving average that weights recent days more heavily, so it hugs the price more tightly than a plain average. In a strong trend, a stock will often pull back just to its 21-day EMA and bounce, over and over. Momentum traders \"ride the 21 EMA\" — staying in as long as the stock keeps holding that fast line, and getting out when it decisively breaks below it.",
           },
           {
@@ -292,6 +413,35 @@ export const FLUENCY_MODULES: Module[] = [
             type: "text",
             content:
               "**Worked-out divergence example.** A stock rallies to $100, pulls back, then pushes to a new high of $104. Price clearly made a higher high ($104 > $100). But RSI printed 78 at the $100 peak and only 68 at the $104 peak — a *lower* high on the meter. That gap is bearish divergence: the second push to a new price high had noticeably weaker momentum. It's a caution flag, not a sell button — it says \"this rally is tiring,\" and you'd want price confirmation (like a break below a support level) before acting.",
+          },
+          {
+            type: "text",
+            content:
+              "**Now read one off a chart.** The panel below plots price against its RSI. Compare the two most recent peaks before you answer.",
+          },
+          {
+            type: "interactive",
+            component: "chart-quiz",
+            props: {
+              scenario: "rsi-divergence",
+              question:
+                "Price on this chart makes a higher high, but RSI makes a lower high at the same moment. What is this, and what should you do with it?",
+              options: [
+                "Bullish divergence — back up the truck and buy",
+                "Bearish divergence — the new price high came with weaker momentum, a caution flag that wants price confirmation before you act",
+                "It means the stock is oversold",
+                "It's a golden cross",
+              ],
+              correctIndex: 1,
+              explanation:
+                "Higher high in price + lower high in RSI is bearish divergence: the rally reached a new peak on less momentum. It flags a tiring move, but it's not a sell button on its own — wait for price confirmation like a break of support.",
+            },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you read the price/RSI disagreement as a warning that wants confirmation — rather than an instant sell — you're using divergence the way it's meant to be used: to add or subtract conviction, never as the whole trade.",
           },
           {
             type: "text",
@@ -433,6 +583,22 @@ export const FLUENCY_MODULES: Module[] = [
               "**Where to check outside stonkbro (TradingView free tier):**\n\n1. Go to the chart and type the ticker.\n2. Click the **Indicators** button (top toolbar), search the indicator by name (e.g. \"RSI\", \"Bollinger Bands\", \"Moving Average\"), and click it to add.\n3. Change the **timeframe** with the buttons near the top: \"D\" = daily (each candle is one day), \"W\" = weekly, \"1h\" = hourly.\n4. **Why timeframe matters:** a claim is only true on a specific timeframe. \"Oversold\" on the *hourly* chart can be totally different from the *daily*. Most casual claims mean the **daily** chart unless someone says otherwise. If a friend is vague, assume daily.",
           },
           {
+            type: "text",
+            content:
+              "**Try it — add and adjust indicators without leaving the page.** The playground below is a stand-in for that Indicators button. Toggle the **RSI**, **Bollinger Bands**, and a **moving average** on and off, and drag the period sliders. Get a feel for what each overlay adds before you go do it on a live TradingView chart.",
+          },
+          {
+            type: "interactive",
+            component: "indicator-playground",
+            props: { preset: "rsi" },
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "That toggle-and-read loop is the entire verification skill: plot the specific thing a claim depends on, then read a yes/no answer off it. If you could turn RSI on and immediately see whether it was below 30, you can check any \"oversold\" claim in seconds.",
+          },
+          {
             type: "callout",
             style: "tip",
             content:
@@ -510,6 +676,22 @@ export const FLUENCY_MODULES: Module[] = [
             style: "tip",
             content:
               "Keep this cheat-sheet in your head:\n\n• Trend? → price vs 50/200-day SMA\n• Move brewing? → Bollinger width + IV Rank\n• Overextended? → RSI + distance from SMA\n• Where's the floor? → support levels + volume shelves\n• Options cheap or dear? → IV Rank vs realized volatility\n\nWhen a friend makes a claim, first figure out which question it is — then you know exactly what to pull up.",
+          },
+          {
+            type: "text",
+            content:
+              "**Try it — match the question to the overlay.** Use the playground below. For the trend question, turn on the **50 and 200-day moving averages** and see whether price sits above or below them. For the overextended question, turn on **RSI** and read whether it's near 70 or 30. Practice pulling up the *right* tool for the question in your head, not every tool at once.",
+          },
+          {
+            type: "interactive",
+            component: "indicator-playground",
+            props: { preset: "sma" },
+          },
+          {
+            type: "callout",
+            style: "key-concept",
+            content:
+              "If you reached for the moving averages when the question was \"what's the trend?\" and RSI when it was \"is it overextended?\", you've got the map working the right direction: question first, indicator second. That's what keeps a chart from turning into a wall of noise.",
           },
           {
             type: "text",

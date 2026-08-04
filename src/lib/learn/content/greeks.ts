@@ -42,6 +42,11 @@ export const GREEKS_MODULES: Module[] = [
               "**Intrinsic value** = the real, exercise-now value. For a $100 call with stock at $105, intrinsic = $5.\n\n**Extrinsic value** = everything else — time value + volatility premium. This is the part the Greeks help you understand and manage.",
           },
           {
+            type: "text",
+            content:
+              "**Worked example.** AAPL trades at $195. You buy the $190 call for $8.50. Intrinsic value = $195 − $190 = **$5.00** — the exercise-now value. The remaining **$3.50** is extrinsic: time value plus volatility premium. If AAPL sat flat at $195 into expiration, that $3.50 bleeds to zero and you're left holding $5.00 of intrinsic. Every Greek you're about to learn describes how that $3.50 moves — day to day, and as the stock, volatility, and clock all shift.",
+          },
+          {
             type: "callout",
             style: "key-concept",
             content:
@@ -75,6 +80,27 @@ export const GREEKS_MODULES: Module[] = [
             style: "key-concept",
             content:
               "The Greeks aren't abstract math — they're your dashboard gauges. Each one tells you a specific risk you're taking (or selling) with every position.",
+          },
+          {
+            type: "text",
+            content:
+              "**Try it — feel the five inputs move a real price.** The Strike Explorer below is a live Black-Scholes engine driven by the exact inputs you just met. Do this in order:\n\n1. Set the stock reference near **$100**, **DTE 30**, **IV 30%**, and drag the strike to at-the-money (~$100). Note the premium.\n2. Now, changing nothing else, slide **IV from 30% up to 50%**. Watch the premium climb even though the stock and strike never moved.\n3. Slide **DTE from 30 down to 7**. Watch the premium shrink as time drains out.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If the premium rose when you lifted IV alone, and fell when you cut DTE alone, you've just proven to yourself that an option's price answers to all five inputs — not just where the stock is. That is the whole reason the Greeks exist: to tell you how much each input matters.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** A $100 call, 30 DTE, 30% IV might price near $2.10. Bump IV to 50% and it jumps toward $3.40 — a +60% move in the option with the stock stone still. Cut DTE to 7 instead and it drops toward $1.00. Same strike, same stock, wildly different prices — because volatility and time are inputs #4 and #3, and they move money.",
           },
           {
             type: "text",
@@ -155,6 +181,27 @@ export const GREEKS_MODULES: Module[] = [
             content:
               "**Selling** an option flips the delta sign. Selling a 0.30 delta call gives you -0.30 delta exposure — you now profit slightly when the stock drops or stays flat.",
           },
+          {
+            type: "text",
+            content:
+              "**Try it — watch delta fall as you walk a strike out of the money.** In the Strike Explorer below: set **DTE to 30**, stock near **$100**, and drag the strike from at-the-money ($100) out to about 10% OTM ($110). Watch the call's delta fall from roughly **0.50 to about 0.25**.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If your delta dropped from ~0.50 to ~0.25 as you pushed the strike 10% OTM, you've just proven the next lesson's big idea to yourself: delta ≈ the probability of finishing in the money. Your 0.25-delta strike is roughly a 25%-chance-ITM strike — which is exactly how a premium seller would pick it.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** You want to sell a cash-secured put on a $100 stock and you're targeting a strike with about a 70% chance of expiring worthless. In the explorer, that's the strike where the put's delta reads about **-0.30** — roughly $95 at 30 DTE, 30% IV. Sell it for, say, $1.40 and you collect **$140** per contract against $9,500 of collateral, keeping it ~70% of the time. That single delta number just sized the whole trade — the same math stonkbro's CSP scanner runs for you.",
+          },
         ],
       },
       {
@@ -178,6 +225,11 @@ export const GREEKS_MODULES: Module[] = [
             type: "text",
             content:
               "**Why this matters for CSPs and covered calls:**\n\n• Selling a 0.16 delta put → ~84% win rate, but smaller premium\n• Selling a 0.30 delta put → ~70% win rate, larger premium\n• Selling a 0.50 delta put → ~50% win rate, maximum extrinsic value\n\nThe delta you choose is a direct trade-off between probability of profit and premium collected.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example — building a covered call with delta.** You own 100 shares of a $100 stock and want an ~80% chance the call you sell expires worthless (so you keep the shares and the premium). You pick the strike showing a **0.20 delta** — about $108 at 30 DTE. Sell it for $0.90 and you pocket **$90**. Eight times out of ten the stock stays under $108, the call expires, and you sell another next month. The other two times you're called away at $108 — a price you already decided you'd happily sell at. Delta turned \"pick a strike\" into a probability decision.",
           },
           {
             type: "text",
@@ -217,6 +269,11 @@ export const GREEKS_MODULES: Module[] = [
             style: "tip",
             content:
               "When you see the delta curve flatten with more time, that's telling you: longer-dated options respond more smoothly to stock moves. Shorter-dated options become binary — either worthless or fully ITM.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example — same strike, two expirations.** A $105 call on a $100 stock reads **0.28 delta at 90 DTE** but only **0.18 delta at 7 DTE**. Identical strike; the far-dated one has more delta because there's still time for the stock to climb the $5. This is why a PMCC uses a *long-dated deep-ITM* LEAPS as its stock stand-in (delta ~0.80, smooth and stock-like) while selling *short-dated OTM* calls against it (low, fast-decaying delta). The chain's delta column is really a time-and-distance map.",
           },
         ],
       },
@@ -334,6 +391,27 @@ export const GREEKS_MODULES: Module[] = [
             content:
               "**Why gamma matters:**\n\n• **Long gamma** (you own options): Your position self-adjusts favorably. If the stock rises, your delta increases (more bullish). If it falls, your delta decreases (less bullish). You accelerate into winners and decelerate into losers.\n• **Short gamma** (you sold options): The opposite. Your position self-adjusts against you. Winners slow down, losers accelerate.",
           },
+          {
+            type: "text",
+            content:
+              "**Try it — see delta change fastest at the money.** Gamma is the *size of delta's jump* when the stock moves, so measure it directly in the Strike Explorer. Set **DTE 30**, stock **$100**. Park the strike at-the-money ($100) and note the delta (~0.50). Now nudge the strike $5 either way and see how much delta moves. Then repeat far out-of-the-money (strike ~$130): the same $5 nudge barely changes delta. That difference in responsiveness is gamma — biggest at the money, tiny in the wings.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If delta lurched around your ATM strike but sat nearly frozen out in the wings, you've felt gamma without a single formula: it's the curvature of the delta line, and it peaks at the money. That's exactly why ATM short options near expiration are the most dangerous — their delta won't hold still.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** You're short a $100 call, delta 0.45, gamma 0.06. The stock jumps $3 to $103. Delta doesn't stay at 0.45 — it climbs by roughly gamma × move = 0.06 × 3 ≈ 0.18, landing near **0.63**. So you started the day risking ~45 shares' worth of upside and now you're on the hook for ~63 shares' worth, and it happened while you slept. That involuntary drift is precisely why covered-call and CSP sellers watch gamma, not just delta.",
+          },
         ],
       },
       {
@@ -391,6 +469,11 @@ export const GREEKS_MODULES: Module[] = [
             style: "key-concept",
             content:
               "Gamma and theta are natural enemies. Long gamma positions pay theta. Short gamma positions collect theta. This is the core trade-off in options: do you want to pay for acceleration (gamma) or collect rent (theta)?",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example — one day of gamma scalping.** You buy a $100 straddle (long call + long put) for $6.00 on a $100 stock; it's delta-neutral but long gamma. The stock rallies to $102, and your positive gamma has pushed net delta to about +25. You sell 25 shares against it to flatten back to neutral, locking in the gain. The stock then slips back to $100; delta swings to −25, so you buy 25 shares back — again pocketing the difference. Each swing you harvest a little. The bill for all this is theta: if the straddle bleeds ~$15/day, your scalps have to out-earn that decay or the trade loses. That's the long-gamma/short-theta tug-of-war in one session.",
           },
           {
             type: "quiz",
@@ -474,6 +557,27 @@ export const GREEKS_MODULES: Module[] = [
             style: "key-concept",
             content:
               "Theta is not constant — it accelerates as expiration approaches. An option that loses $3 of time value over 60 days doesn't lose $0.05/day uniformly. It might lose $0.02/day in the first month and $0.08/day in the last week.",
+          },
+          {
+            type: "text",
+            content:
+              "**Try it — watch theta accelerate into expiration.** In the Strike Explorer, set the strike at-the-money (~$100), stock **$100**, IV **30%**, and start at **DTE 45**. Read the **theta/day** figure. Now drag DTE down to **30**, then **14**, then **7**, pausing to read theta/day at each stop. Notice it doesn't creep up linearly — it roughly doubles as you go from 45 to 7 days.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If theta/day was small at 45 DTE and much larger at 7 DTE, you've just seen why premium sellers *sell* around 30–45 days and *close* before the final week: you want to be collecting the fat, accelerating decay — not the buyer paying it, and not the seller still exposed when gamma spikes alongside it.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** You sell a 30-DTE cash-secured put with theta −0.10. That's **$10/day** of decay working in your favor, every calendar day, as long as the stock cooperates. Hold it 15 days and cut it at 50% profit and you've harvested roughly the meat of that decay while sidestepping the last two weeks, where theta is largest but gamma risk is worst. This is the engine under every covered call and CSP stonkbro surfaces.",
           },
         ],
       },
@@ -635,6 +739,27 @@ export const GREEKS_MODULES: Module[] = [
             component: "vega-impact",
             props: { showVegaByStrike: true },
           },
+          {
+            type: "text",
+            content:
+              "**Try it — isolate volatility and watch it move the price.** In the Strike Explorer, hold the strike at-the-money (~$100), stock **$100**, **DTE 30**, and change *only* the IV slider. Step it from **20% → 30% → 40% → 50%** and read the premium at each stop. The stock never moves, the clock never moves — yet the price climbs steadily. The size of each step up is vega in action.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If a pure IV change moved the premium while everything else sat still, you've isolated vega. Now run it in reverse in your head: buy that option at 50% IV, and if IV falls back to 30% you lose that whole stack of premium even if the stock is unchanged. That reverse move is IV crush — the subject of the next lesson.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** A 30-DTE ATM call on a $100 stock with vega 0.12 is worth about $2.10 at 30% IV. Push IV to 45% and it's worth roughly $2.10 + 0.12 × 15 = **$3.90** — up 85% on volatility alone. Buy it rich at 45% and watch IV mean-revert to 30%, and you hand back that $1.80 per share ($180/contract) with the stock frozen. Vega is why *when* you buy matters as much as *what* you buy.",
+          },
         ],
       },
       {
@@ -692,6 +817,11 @@ export const GREEKS_MODULES: Module[] = [
             type: "text",
             content:
               "**Vega vs theta — the dual income:**\n\nWhen you sell options in high IV, you benefit twice:\n1. **Theta:** Time decay collects premium daily\n2. **Vega:** If IV drops (mean-reverts), you profit from the vega contraction too\n\nThis is why selling premium in high IV environments is the bread and butter of most options income strategies.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example — getting paid twice.** A quality name sells off with the market and its IV Rank jumps to 85%. You sell a 30-DTE cash-secured put for $6.00 — fat because IV is elevated. Over the next two weeks the panic fades: IV mean-reverts, and with vega 0.10 a 20-point IV drop hands you 0.10 × 20 = **$2.00** of that back, while theta quietly collects another ~$1.50. You buy the put back at $2.50 for a **$3.50 profit** without the stock going anywhere. That double tailwind — theta plus collapsing vega — is exactly what stonkbro's /bloodbath 'get paid for fear' setups are built to catch.",
           },
           {
             type: "quiz",
@@ -796,6 +926,27 @@ export const GREEKS_MODULES: Module[] = [
               "These matter for advanced multi-leg positions and institutional-scale portfolios. For individual trades, focus on delta, gamma, theta, and vega. Come back to these once you're managing 10+ positions simultaneously.",
           },
           {
+            type: "text",
+            content:
+              "**Try it — see charm (delta decaying with time).** Charm is delta drifting as the calendar turns, with nothing else changing. Watch it directly in the Strike Explorer: set a strike about **5% out of the money** (~$105 on a $100 stock), IV **30%**, **DTE 60**, and note the delta. Now, changing *only* DTE, drag it down to **30**, then **10**. Watch the OTM delta drift toward zero even though the stock hasn't budged.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If your OTM strike's delta faded toward 0 as the days ran out, you've just watched charm — the reason a short OTM call you sold gets *safer* on its own as expiration nears (its delta, and its odds of finishing ITM, drift down with time). Run it deep ITM instead and you'd see the mirror image: delta drifting up toward 1.0.",
+          },
+          {
+            type: "text",
+            content:
+              "**Worked example.** You're short a $105 call on a $100 stock, 45 DTE, delta 0.30. The stock does nothing for three weeks. Thanks to charm, that call's delta drifts down to roughly 0.18 with no help from you — it's less likely to finish ITM simply because there's less time left to travel the $5. Combined with the theta you're collecting, standing still is quietly working in your favor. That drift is why a slightly OTM covered call that 'goes nowhere' still marches toward a win.",
+          },
+          {
             type: "quiz",
             questions: [
               {
@@ -874,6 +1025,11 @@ export const GREEKS_MODULES: Module[] = [
             content:
               "The best traders don't optimize one Greek in isolation. They build positions with a target Greek profile: desired directional exposure (delta), acceptable acceleration risk (gamma), positive daily income (theta), and appropriate volatility exposure (vega).",
           },
+          {
+            type: "text",
+            content:
+              "**Worked example — one event, four Greeks moving at once.** You're short a $105 call on a $100 stock (30 DTE) as the call leg of a covered call. Overnight the stock gaps to $104 *and* IV spikes on the news. Trace it: **delta** (say −0.35 on your short call) means the $4 move costs you about 0.35 × 4 = $1.40/share; **gamma** then makes that short delta steeper, so your loss is accelerating; **vega** bites too, since the IV pop lifts the call you're short; only **theta** is on your side, and one day of it can't offset the rest. Four Greeks, one headline — which is why you read the whole profile, not just delta, before you sleep on a position.",
+          },
         ],
       },
       {
@@ -930,6 +1086,22 @@ export const GREEKS_MODULES: Module[] = [
             type: "text",
             content:
               "**Iron Condor** (short put spread + short call spread):\n• Delta: Near zero (direction neutral)\n• Gamma: Negative (short gamma on both sides)\n• Theta: Positive (maximum theta collection)\n• Vega: Negative (profits from falling IV)\n\nProfile: Range-bound, income-focused, wants the stock to stay between strikes. Best in high IV environments.",
+          },
+          {
+            type: "text",
+            content:
+              "**Try it — build one leg of a real CSP and read its Greeks.** These profiles come from adding up single-option Greeks, so let's read one straight off the tool. In the Strike Explorer, recreate the short leg of a cash-secured put: stock **$100**, strike **$95** (5% OTM), **DTE 30**, IV **30%**. Read the delta (about 0.30 on the tool's long-call convention — you'd hold the *short* side, so flip the sign to about **−0.30**), the theta, and the premium.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If that $95 strike showed roughly 0.30 delta and a healthy theta, you've just hand-built a cash-secured put's Greek profile: slightly bullish delta (you lean long the stock), positive theta once you're short it (you collect the decay you just read), and negative vega. That's the exact CSP row stonkbro's scanner ranks — now you know where every number in it comes from.",
           },
           {
             type: "quiz",
@@ -1021,6 +1193,22 @@ export const GREEKS_MODULES: Module[] = [
             type: "interactive",
             component: "position-builder",
             props: { strategy: "pmcc", stockPrice: 100 },
+          },
+          {
+            type: "text",
+            content:
+              "**Try it — read both PMCC legs off one tool.** Before the aggregated view, build each leg by hand in the Strike Explorer so you own the numbers.\n\n1. **The LEAPS leg:** stock **$100**, strike **$80** (deep ITM), push **DTE to its maximum**, IV **30%**. Confirm delta reads about **0.80** and note the small theta — that's your stock stand-in.\n2. **The short call leg:** now set strike **$110** (OTM), **DTE 30**. Read its delta (~0.25) and its much larger theta per dollar of premium.\n\nSubtract: net delta ≈ 0.80 − 0.25 = **0.55**, and the short call's fast theta is what pays down the LEAPS's slow theta.",
+          },
+          {
+            type: "interactive",
+            component: "strike-explorer",
+            props: {},
+          },
+          {
+            type: "callout",
+            style: "tip",
+            content:
+              "If the $80 LEAPS showed ~0.80 delta with tiny theta, and the $110 monthly showed ~0.25 delta with big theta-per-premium, you've just proven why the structure works: you hold a cheap, stock-like, slowly-decaying long and rent it out to a fast-decaying short each month. That's the whole PMCC — and exactly what stonkbro's PMCC pages assemble for you.",
           },
           {
             type: "text",
