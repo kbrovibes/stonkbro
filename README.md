@@ -70,6 +70,9 @@ Create named watchlists, add/remove tickers, set a default. Your default watchli
 ### Automated Alerts (Cron)
 Vercel cron job runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks all users' positions, generates alerts, and sends email briefings via Resend. Morning briefing included.
 
+### Learn (Interactive Coursework)
+22 modules / ~120 lessons across Greeks, technical analysis, trader fluency, leverage, and crash playbooks — built practice-first: scored support/resistance drawing drills (LevelFinder), a live indicator playground (SMA/EMA/RSI/MACD/Bollinger with auto-annotated signals), a Black-Scholes strike/DTE/IV sandbox with payoff diagrams, and spot-the-setup chart quizzes. Every concept: worked examples (including failure cases), exact plotting steps, options-seller trade rules, and quizzes. Fully offline.
+
 ### Market Monitor (Hourly Push Alerts)
 Hourly cron on market days watches SPY plus every portfolio holding and watchlist symbol. Big moves generate plain-English alerts with severity tiers — critical position drops include concrete stop-limit levels computed from support. Alerts push to your phone (Web Push banners) and surface in a sticky in-app banner with per-alert actions.
 
