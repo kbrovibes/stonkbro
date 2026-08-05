@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Learn v2 groundwork**: committed real historical option-chain snapshot dataset (`src/lib/learn/v2-data/`, 15 tickers, 2026-05-01 → 2026-08-05, from CSP Hunter scan history + Tradier daily bars) and specs 56 (Learn v2 case studies) + 57 (offline mode hardening)
+
 ## v0.25.1 — Learn overhaul: real interactivity + practice-first TA coursework
 
 - **Four real interactive components** (seeded, offline-capable SVG): LevelFinder (scored support/resistance placement drills), IndicatorPlayground (toggleable SMA/EMA/RSI/MACD/Bollinger with sliders + auto-annotated signals), StrikeExplorer (live Black-Scholes strike/DTE/IV sandbox with payoff diagram), ChartQuiz (spot-the-setup on rendered charts). Fake interactive aliases retired

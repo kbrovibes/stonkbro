@@ -1,0 +1,118 @@
+{
+  "generatedAt": "2026-08-05",
+  "traded": [
+    "PLTR",
+    "SOFI",
+    "NBIS",
+    "MRVL",
+    "TSLA",
+    "TSM",
+    "ASTS",
+    "SNDK",
+    "META",
+    "RKLB"
+  ],
+  "opportunity": [
+    "NVDA",
+    "AMD",
+    "CRWD",
+    "HOOD",
+    "IWM"
+  ],
+  "window": {
+    "start": "2026-05-01",
+    "end": "2026-08-05"
+  },
+  "files": [
+    {
+      "sym": "PLTR",
+      "prices": 66,
+      "snapshotDays": 62,
+      "kb": 41
+    },
+    {
+      "sym": "SOFI",
+      "prices": 66,
+      "snapshotDays": 54,
+      "kb": 27
+    },
+    {
+      "sym": "NBIS",
+      "prices": 66,
+      "snapshotDays": 63,
+      "kb": 31
+    },
+    {
+      "sym": "MRVL",
+      "prices": 66,
+      "snapshotDays": 86,
+      "kb": 50
+    },
+    {
+      "sym": "TSLA",
+      "prices": 66,
+      "snapshotDays": 80,
+      "kb": 48
+    },
+    {
+      "sym": "TSM",
+      "prices": 66,
+      "snapshotDays": 49,
+      "kb": 25
+    },
+    {
+      "sym": "ASTS",
+      "prices": 66,
+      "snapshotDays": 41,
+      "kb": 22
+    },
+    {
+      "sym": "SNDK",
+      "prices": 66,
+      "snapshotDays": 29,
+      "kb": 18
+    },
+    {
+      "sym": "META",
+      "prices": 66,
+      "snapshotDays": 24,
+      "kb": 27
+    },
+    {
+      "sym": "RKLB",
+      "prices": 66,
+      "snapshotDays": 10,
+      "kb": 10
+    },
+    {
+      "sym": "NVDA",
+      "prices": 66,
+      "snapshotDays": 105,
+      "kb": 62
+    },
+    {
+      "sym": "AMD",
+      "prices": 66,
+      "snapshotDays": 111,
+      "kb": 60
+    },
+    {
+      "sym": "CRWD",
+      "prices": 66,
+      "snapshotDays": 43,
+      "kb": 33
+    },
+    {
+      "sym": "HOOD",
+      "prices": 66,
+      "snapshotDays": 26,
+      "kb": 16
+    },
+    {
+      "sym": "IWM",
+      "prices": 66,
+      "snapshotDays": 176,
+      "kb": 113
+    }
+  ]
+}
