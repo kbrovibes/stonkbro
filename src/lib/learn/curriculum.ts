@@ -2,6 +2,7 @@ import { GREEKS_MODULES } from "@/lib/learn/content/greeks";
 import { TA_MODULES } from "@/lib/learn/content/ta";
 import { FLUENCY_MODULES } from "@/lib/learn/content/fluency";
 import { LEVERAGE_MODULES } from "@/lib/learn/content/leverage";
+import { CASE_STUDY_MODULES } from "@/lib/learn/content/case-studies";
 
 export type LessonSection =
   | { type: "text"; content: string }
@@ -25,7 +26,9 @@ export type LessonSection =
         | "macd-chart"
         | "bollinger-bands-chart"
         | "iv-rank-gauge"
-        | "decision-tree-widget";
+        | "decision-tree-widget"
+        // 2026-08 Learn v2 case studies (real chain-snapshot data):
+        | "case-price-chart"; // real OHLC series + strike/stop lines + event markers
       props?: Record<string, unknown>;
     }
   | {
@@ -46,7 +49,11 @@ export type LessonSection =
         | "level-finder" // place a support/resistance line on a chart, get scored
         | "indicator-playground" // toggle SMA/EMA/RSI/MACD/BB overlays with period sliders
         | "strike-explorer" // strike/DTE/IV sliders -> premium, delta, breakeven, payoff
-        | "chart-quiz"; // scenario chart + multiple-choice "what's happening here"
+        | "chart-quiz" // scenario chart + multiple-choice "what's happening here"
+        // 2026-08 Learn v2 case studies (real chain-snapshot data):
+        | "place-the-stop" // set a stop on the real chart, then reveal what happened
+        | "contract-picker" // A/B pick between two real scanned contracts
+        | "premium-decay-scrubber"; // scrub a real contract's observed premium/IV path
       props?: Record<string, unknown>;
     }
   | { type: "quiz"; questions: QuizQuestion[] };
@@ -75,6 +82,10 @@ export type Module = {
   color: string;
   level: 1 | 2;
   lessons: Lesson[];
+  /** Learn v2: case-study modules render as a ticker grid, not level lists */
+  track?: "case-study";
+  ticker?: string;
+  universe?: "traded" | "opportunity";
 };
 
 export const CURRICULUM: Module[] = [
@@ -84,6 +95,8 @@ export const CURRICULUM: Module[] = [
   ...TA_MODULES,
   ...FLUENCY_MODULES,
   ...LEVERAGE_MODULES,
+  // ─── CASE STUDIES (Learn v2, real chain-snapshot data) ────────────────
+  ...CASE_STUDY_MODULES,
 ];
 
 // ─── HELPER FUNCTIONS ─────────────────────────────────────────────────

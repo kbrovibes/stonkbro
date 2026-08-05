@@ -34,6 +34,10 @@ const BollingerBandsChart = lazy(() => import("./BollingerBandsChart"));
 const IVRankGauge = lazy(() => import("./IVRankGauge"));
 const DecisionTreeWidget = lazy(() => import("./DecisionTreeWidget"));
 const LevelFinder = lazy(() => import("./LevelFinder"));
+const CasePriceChart = lazy(() => import("./CasePriceChart"));
+const PlaceTheStop = lazy(() => import("./PlaceTheStop"));
+const ContractPicker = lazy(() => import("./ContractPicker"));
+const PremiumDecayScrubber = lazy(() => import("./PremiumDecayScrubber"));
 const IndicatorPlayground = lazy(() => import("./IndicatorPlayground"));
 const StrikeExplorer = lazy(() => import("./StrikeExplorer"));
 const ChartQuiz = lazy(() => import("./ChartQuiz"));
@@ -61,6 +65,11 @@ const componentMap: Record<string, LazyComp> = {
   "decision-tree-widget": DecisionTreeWidget as LazyComp,
   // real interactivity suite (2026-08)
   "level-finder": LevelFinder as LazyComp,
+  // Learn v2 case studies (2026-08)
+  "case-price-chart": CasePriceChart as LazyComp,
+  "place-the-stop": PlaceTheStop as LazyComp,
+  "contract-picker": ContractPicker as LazyComp,
+  "premium-decay-scrubber": PremiumDecayScrubber as LazyComp,
   "indicator-playground": IndicatorPlayground as LazyComp,
   "strike-explorer": StrikeExplorer as LazyComp,
   "chart-quiz": ChartQuiz as LazyComp,

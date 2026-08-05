@@ -80,8 +80,9 @@ export default async function LearnPage() {
     CURRICULUM.map((mod) => calculateModuleCompletion(progress, mod.id, mod))
   );
 
-  const level1Modules = CURRICULUM.filter((m) => m.level === 1);
-  const level2Modules = CURRICULUM.filter((m) => m.level === 2);
+  const level1Modules = CURRICULUM.filter((m) => m.level === 1 && m.track !== "case-study");
+  const level2Modules = CURRICULUM.filter((m) => m.level === 2 && m.track !== "case-study");
+  const caseStudyModules = CURRICULUM.filter((m) => m.track === "case-study");
 
   function ModuleCard({ mod, i }: { mod: typeof CURRICULUM[0]; i: number }) {
     const pct = moduleCompletions[i];
@@ -198,6 +199,47 @@ export default async function LearnPage() {
             {level2Modules.map((mod) => {
               const i = CURRICULUM.findIndex((m) => m.id === mod.id);
               return <ModuleCard key={mod.id} mod={mod} i={i} />;
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Case Studies — Learn v2, real chain-snapshot data */}
+      {caseStudyModules.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-emerald-100 dark:bg-gain-bg text-emerald-700 dark:text-gain border-emerald-200 dark:border-gain-border">
+              CS
+            </span>
+            <h2 className="text-sm font-semibold text-stone-700 dark:text-text-muted">Case Studies — Real Trades, Real Data</h2>
+          </div>
+          <p className="text-xs text-stone-400 dark:text-text-faint mb-4">
+            Every number comes from actual scanner snapshots (May–Aug 2026). Stops, rolls, strike
+            selection — studied on what really happened.
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {caseStudyModules.map((mod) => {
+              const i = CURRICULUM.findIndex((m) => m.id === mod.id);
+              const pct = moduleCompletions[i];
+              const isTraded = mod.universe === "traded";
+              return (
+                <Link
+                  key={mod.id}
+                  href={`/learn/${mod.id}`}
+                  className="bg-white dark:bg-surface-elevated rounded-xl border border-stone-100 dark:border-border-subtle shadow-sm hover:shadow-md transition-shadow p-3 text-center"
+                >
+                  <p className="text-sm font-bold text-stone-900 dark:text-text">{mod.ticker ?? mod.title}</p>
+                  <p className={`text-[10px] font-medium mt-0.5 ${isTraded ? "text-sky-600 dark:text-accent" : "text-violet-600 dark:text-violet-300"}`}>
+                    {isTraded ? "traded" : "opportunity"}
+                  </p>
+                  <div className="h-1 bg-stone-100 dark:bg-surface-muted rounded-full overflow-hidden mt-2">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">
+                    {mod.lessons.length} {mod.lessons.length === 1 ? "study" : "studies"}
+                  </p>
+                </Link>
+              );
             })}
           </div>
         </div>
