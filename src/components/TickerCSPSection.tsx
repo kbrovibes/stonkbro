@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import OfflineGate from "@/components/OfflineGate";
 
 type CSPPick = {
   strike: number;
@@ -26,6 +27,14 @@ type CSPPick = {
 };
 
 export default function TickerCSPSection({ symbol }: { symbol: string }) {
+  return (
+    <OfflineGate label="Cash secured puts" inline>
+      <TickerCSPPicks symbol={symbol} />
+    </OfflineGate>
+  );
+}
+
+function TickerCSPPicks({ symbol }: { symbol: string }) {
   const [picks, setPicks] = useState<CSPPick[]>([]);
   const [loading, setLoading] = useState(true);
 

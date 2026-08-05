@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 interface EarningsEvent {
   symbol: string;
@@ -125,6 +126,14 @@ function MiniCalendar({
 // ---------------------------------------------------------------------------
 
 export default function EarningsCalendarPage() {
+  return (
+    <OfflineGate label="The earnings calendar">
+      <EarningsCalendarView />
+    </OfflineGate>
+  );
+}
+
+function EarningsCalendarView() {
   const [events, setEvents] = useState<EarningsEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

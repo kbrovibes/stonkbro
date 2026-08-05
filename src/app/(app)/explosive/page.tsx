@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 type Pick = {
   symbol: string;
@@ -116,7 +117,9 @@ function MarkdownReport({ content }: { content: string }) {
 export default function ExplosivePageWrapper() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center flex-1 py-20"><span className="text-sm text-stone-400 dark:text-text-faint">Loading...</span></div>}>
-      <ExplosivePage />
+      <OfflineGate label="Explosive discovery">
+        <ExplosivePage />
+      </OfflineGate>
     </Suspense>
   );
 }

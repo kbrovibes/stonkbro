@@ -3,7 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRefreshEvent } from "@/hooks/useRefreshEvent";
+import { OfflineNotice } from "@/components/OfflineGate";
+import { readSnapshot, saveSnapshot } from "@/lib/client-cache";
+import { useOffline } from "@/lib/offline";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
+
+// Last successful payload, kept in localStorage so the page is readable in
+// airplane mode. Browser-local only — never synced anywhere.
+const SNAPSHOT_KEY = "portfolio-chains";
+type PortfolioSnapshot = { chains: OptionChain[]; timestamp: string | null };
 
 function findOpenLeg(chain: OptionChain): { strike: number; expiry: string } | null {
   if (chain.status !== "OPEN" || chain.open_units === 0) return null;
@@ -855,8 +863,25 @@ export default function PortfolioPage() {
   const [chainsAsOf, setChainsAsOf] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [fromSnapshot, setFromSnapshot] = useState(false);
+
+  const offline = useOffline();
 
   const fetchChains = useCallback((live?: boolean) => {
+    // Offline: don't hang on a fetch that can't succeed — fall back to the
+    // last snapshot, read-only.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const snap = readSnapshot<PortfolioSnapshot>(SNAPSHOT_KEY);
+      if (snap) {
+        setChains(snap.data.chains);
+        setChainsAsOf(snap.data.timestamp ?? new Date(snap.ts).toISOString());
+        setFromSnapshot(true);
+        setError(null);
+      }
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     // live=true bypasses the server cache and re-walks SnapTrade — slow (can
     // run minutes under rate-limit pacing), so keep existing data on screen.
     if (live === true) { setRefreshing(true); setRefreshError(null); }
@@ -873,7 +898,12 @@ export default function PortfolioPage() {
       .then((d) => {
         setChains(d.chains ?? []);
         setChainsAsOf(d.timestamp ?? null);
+        setFromSnapshot(false);
         setError(null);
+        saveSnapshot<PortfolioSnapshot>(SNAPSHOT_KEY, {
+          chains: d.chains ?? [],
+          timestamp: d.timestamp ?? null,
+        });
       })
       .catch((e) => {
         if (live === true) setRefreshError(e.message);
@@ -884,6 +914,13 @@ export default function PortfolioPage() {
 
   useEffect(() => { fetchChains(); }, [fetchChains]);
   useRefreshEvent(fetchChains);
+
+  // Back online — replace the snapshot with the live payload.
+  useEffect(() => {
+    const onOnline = () => fetchChains();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [fetchChains]);
 
   if (loading) {
     return (
@@ -909,7 +946,7 @@ export default function PortfolioPage() {
     );
   }
 
-  if (!chains) return null;
+  if (!chains) return offline ? <OfflineNotice label="Portfolio" /> : null;
 
   const open     = chains.filter(c => c.status === "OPEN");
   const currentYear = new Date().getFullYear().toString();
@@ -1038,11 +1075,13 @@ export default function PortfolioPage() {
           <span className="text-[10px] text-rose-500 truncate">refresh failed: {refreshError}</span>
         )}
         {chainsAsOf && (
-          <span className="text-[10px] text-stone-400 dark:text-text-faint">as of {fmtAge(chainsAsOf)}</span>
+          <span className={`text-[10px] ${fromSnapshot ? "text-amber-600 dark:text-amber-300 font-medium" : "text-stone-400 dark:text-text-faint"}`}>
+            {fromSnapshot ? "offline snapshot — " : ""}as of {fmtAge(chainsAsOf)}
+          </span>
         )}
         <button
           onClick={() => fetchChains(true)}
-          disabled={refreshing}
+          disabled={refreshing || offline}
           className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-900 dark:bg-surface-elevated text-white dark:text-text hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
           title="Bypass the cache and re-fetch live from SnapTrade (slow)"
         >

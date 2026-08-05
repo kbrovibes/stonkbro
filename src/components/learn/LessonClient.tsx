@@ -12,6 +12,9 @@ function useDebouncedSave(delay: number) {
     (data: Record<string, unknown>) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(async () => {
+        // Offline: skip the round-trip entirely. Progress is best-effort and
+        // resyncs on the next section change once the connection is back.
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
         try {
           await fetch("/api/learn/progress", {
             method: "POST",

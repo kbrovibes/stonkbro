@@ -14,8 +14,10 @@
  */
 
 import { useEffect, useRef } from "react";
+import { reportNetworkError, reportNetworkOk } from "@/lib/offline";
 
 const NS = "ckch:";  // sessionStorage namespace
+const SNAP_NS = "cksnap:";  // localStorage namespace — survives across sessions
 
 type Entry<T> = { ts: number; data: T };
 
@@ -48,7 +50,14 @@ export async function cachedFetchJson<T>(
   const ttlMs = opts.ttlMs ?? 5 * 60_000;
   const cached = readCache<T>(url, ttlMs);
   if (cached != null) return cached;
-  const res = await fetch(url, opts.init);
+  let res: Response;
+  try {
+    res = await fetch(url, opts.init);
+  } catch (e) {
+    reportNetworkError();
+    throw e;
+  }
+  reportNetworkOk();
   if (!res.ok) throw new Error(`Fetch failed (${res.status})`);
   const data = (await res.json()) as T;
   writeCache(url, data);
@@ -79,15 +88,22 @@ export function useCachedJson<T>(
     if (cached != null && !cancelled) apply(cached, true);
 
     (async () => {
+      let res: Response;
       try {
-        const res = await fetch(url);
+        res = await fetch(url);
+      } catch {
+        reportNetworkError();
+        return;  // cache (if any) already applied
+      }
+      reportNetworkOk();
+      try {
         if (!res.ok) return;
         const data = (await res.json()) as T;
         if (cancelled) return;
         writeCache(url, data);
         apply(data, false);
       } catch {
-        // ignore, cache (if any) already applied
+        // malformed payload — keep whatever is on screen
       }
     })();
 
@@ -101,4 +117,33 @@ export function useCachedJson<T>(
 export function invalidateCache(url: string): void {
   if (typeof window === "undefined") return;
   try { sessionStorage.removeItem(NS + url); } catch { /* ignore */ }
+}
+
+// ---- Last-known snapshots --------------------------------------------------
+//
+// Unlike the session cache above, snapshots live in localStorage so they
+// survive a relaunch — that's what makes a page readable in airplane mode.
+// Browser-local only: never synced, never leaves the device.
+
+export type Snapshot<T> = { data: T; ts: number };
+
+export function saveSnapshot<T>(key: string, data: T): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(SNAP_NS + key, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // Quota — a missing snapshot just means no offline view
+  }
+}
+
+export function readSnapshot<T>(key: string): Snapshot<T> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SNAP_NS + key);
+    if (!raw) return null;
+    const e = JSON.parse(raw) as Snapshot<T>;
+    return e && e.data !== undefined ? e : null;
+  } catch {
+    return null;
+  }
 }

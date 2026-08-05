@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AIModelBadge } from "@/components/AIModelBadge";
+import OfflineGate from "@/components/OfflineGate";
 import { cachedFetchJson, invalidateCache } from "@/lib/client-cache";
 
 type Candidate = {
@@ -143,6 +144,14 @@ type WeeklyRecap = {
 };
 
 export default function OptionsScannerPage() {
+  return (
+    <OfflineGate label="The CSP hunter">
+      <OptionsScannerView />
+    </OfflineGate>
+  );
+}
+
+function OptionsScannerView() {
   const [scans, setScans] = useState<ScanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);

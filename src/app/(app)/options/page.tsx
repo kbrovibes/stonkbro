@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRefreshEvent } from "@/hooks/useRefreshEvent";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 type Candidate = {
   symbol: string;
@@ -106,6 +107,14 @@ function isStale(isoDate: string): boolean {
 }
 
 export default function OptionsPage() {
+  return (
+    <OfflineGate label="Options">
+      <OptionsView />
+    </OfflineGate>
+  );
+}
+
+function OptionsView() {
   const [scan, setScan] = useState<ScanRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);

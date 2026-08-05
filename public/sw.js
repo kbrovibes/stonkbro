@@ -9,7 +9,7 @@
 //     learn manifest, cache every /learn page's HTML, and parse each page for
 //     its /_next/static chunk URLs so a hard reload works in airplane mode.
 
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `stonkbro-static-${VERSION}`;
 const PAGES_CACHE = `stonkbro-pages-${VERSION}`;
 

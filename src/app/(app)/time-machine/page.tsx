@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
 
 // =========================================================================
@@ -213,6 +214,14 @@ const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
 // =========================================================================
 
 export default function TimeMachinePage() {
+  return (
+    <OfflineGate label="Time Machine">
+      <TimeMachineView />
+    </OfflineGate>
+  );
+}
+
+function TimeMachineView() {
   const [selectedDate, setSelectedDate] = useState<string>(isoNDaysAgo(180));
   const [data, setData] = useState<TimeMachineResult | null>(null);
   const [loading, setLoading] = useState(false);

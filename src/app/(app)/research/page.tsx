@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { AIModelBadge } from "@/components/AIModelBadge";
+import OfflineGate from "@/components/OfflineGate";
 
 const ALL_TICKERS = [
   "AAPL","ABNB","AEHR","AFRM","AI","AMD","AMZN","ANET","ARM","ARQQ","ASTS",
@@ -436,6 +437,14 @@ function EntryCard({
 // ---------------------------------------------------------------------------
 
 export default function ResearchPage() {
+  return (
+    <OfflineGate label="Research">
+      <ResearchView />
+    </OfflineGate>
+  );
+}
+
+function ResearchView() {
   const [tickers, setTickers] = useState<string[]>([]);
   const [mode, setMode] = useState<"hybrid" | "deep">("hybrid");
   const [entries, setEntries] = useState<ResearchEntry[]>([]);

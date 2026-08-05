@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 type PMCCSetup = {
   symbol: string;
@@ -50,6 +51,14 @@ function formatDollar(n: number) {
 }
 
 export default function ScannerPage() {
+  return (
+    <OfflineGate label="The scanner">
+      <ScannerView />
+    </OfflineGate>
+  );
+}
+
+function ScannerView() {
   const [results, setResults] = useState<ScanResult[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scannedCount, setScannedCount] = useState(0);

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 // Mirrors GET /api/bloodbath + POST /api/bloodbath/verdict response shapes
 interface BloodbathTicker {
@@ -227,6 +228,14 @@ function DetailSheet({
 }
 
 export default function BloodbathPage() {
+  return (
+    <OfflineGate label="Bloodbath">
+      <BloodbathView />
+    </OfflineGate>
+  );
+}
+
+function BloodbathView() {
   const [watchlist, setWatchlist] = useState<BloodbathTicker[]>([]);
   const [market, setMarket] = useState<BloodbathTicker[]>([]);
   const [scannedCount, setScannedCount] = useState(0);

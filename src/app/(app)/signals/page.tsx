@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import OfflineGate from "@/components/OfflineGate";
 
 type Alert = {
   action: "CLOSE" | "ROLL" | "SELL" | "BUY" | "WARNING";
@@ -23,6 +24,14 @@ const actionColors: Record<string, string> = {
 const urgencyOrder = { high: 0, medium: 1, low: 2 };
 
 export default function SignalsPage() {
+  return (
+    <OfflineGate label="Signals">
+      <SignalsView />
+    </OfflineGate>
+  );
+}
+
+function SignalsView() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
