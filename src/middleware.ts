@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
   // Routes accessible without authentication (landing + explore tabs + their API routes)
   const isGuestRoute =
     pathname === "/" ||
+    pathname.startsWith("/plays") ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/csp-hunter") ||
     pathname.startsWith("/research") ||

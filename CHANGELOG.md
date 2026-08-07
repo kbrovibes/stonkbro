@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.26.1 — Nav consolidation: Plays absorbs Options, Learn goes top-level
+
+- **`/plays` merges `/today` + `/csp-hunter`** into one page with sub-tabs Market (movers + options flow) · CSPs · Calls · LEAPS · Weekly; both sections stay mounted across tab switches so a running scan survives; old routes redirect
+- **Bottom nav**: Home · Plays · Learn · Portfolio · More — Learn is top-level (graduation-cap icon); the Hindsight tab is dropped (the Portfolio page header already links it); guest nav becomes Plays · Research
+- **More menu de-duplicated**: Learn and CSP Hunter entries removed (both now bottom-nav reachable); landing/login entry links point at `/plays`
+
 ## v0.26.0 — Learn v2: real-data case studies + offline mode hardening
 
 - **Case Studies track (Learn v2, spec 56)**: 15 ticker modules / 80 case studies built entirely from the committed real chain-snapshot dataset (`src/lib/learn/v2-data/`, May–Aug 2026 scanner history) — 10 traded-universe tickers (PLTR, SOFI, NBIS, MRVL, TSLA, TSM, ASTS, SNDK, META, RKLB) + 5 "opportunities you weren't watching" (NVDA, AMD, CRWD, HOOD, IWM). Every number is traceable to a snapshot row or price bar; typed lookups (`src/lib/learn/v2.ts`) throw at build time on any fabricated figure

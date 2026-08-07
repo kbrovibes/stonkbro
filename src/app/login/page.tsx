@@ -82,7 +82,7 @@ function LoginForm() {
         </div>
 
         <Link
-          href="/today"
+          href="/plays"
           className="flex items-center justify-center gap-1.5 text-sm font-medium text-stone-500 dark:text-text-subtle hover:text-stone-700 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

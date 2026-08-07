@@ -26,7 +26,6 @@ export const MORE_GROUPS: MoreGroup[] = [
       { emoji: "💥", title: "Explosive Finder", description: "AI search for 10x stocks", href: "/explosive" },
       { emoji: "📅", title: "Earnings Calendar", description: "Earnings plays this week", href: "/earnings" },
       { emoji: "⭐", title: "Watchlists", description: "Organize tickers", href: "/watchlists" },
-      { emoji: "🎓", title: "Learn", description: "Options & strategy lessons", href: "/learn" },
     ],
   },
   {
@@ -43,7 +42,6 @@ export const MORE_GROUPS: MoreGroup[] = [
       { emoji: "📞", title: "Covered Calls", description: "Find optimal CCs", href: "/covered-calls" },
       { emoji: "🔄", title: "The Wheel", description: "Track wheel income", href: "/wheel" },
       { emoji: "🚦", title: "Trade Signals", description: "Roll/close alerts", href: "/signals" },
-      { emoji: "🎣", title: "CSP Hunter", description: "Juicy cash-secured puts", href: "/csp-hunter" },
     ],
   },
   {

@@ -188,7 +188,7 @@ export default async function LandingPage() {
             <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-stone-600 dark:text-text-muted hover:text-stone-900 transition-colors">
               Sign in
             </Link>
-            <Link href="/today" className="px-4 py-1.5 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition-colors">
+            <Link href="/plays" className="px-4 py-1.5 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition-colors">
               Explore
             </Link>
           </div>
@@ -224,7 +224,7 @@ export default async function LandingPage() {
                   Sign in with Google
                 </Link>
                 <Link
-                  href="/today"
+                  href="/plays"
                   className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 dark:border-border-default text-stone-700 dark:text-text-muted text-sm font-semibold hover:border-stone-300 hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors"
                 >
                   Explore the app
