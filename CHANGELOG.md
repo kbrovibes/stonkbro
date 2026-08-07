@@ -1,8 +1,13 @@
 # Changelog
 
-## Unreleased
+## v0.26.0 — Learn v2: real-data case studies + offline mode hardening
 
-- **Learn v2 groundwork**: committed real historical option-chain snapshot dataset (`src/lib/learn/v2-data/`, 15 tickers, 2026-05-01 → 2026-08-05, from CSP Hunter scan history + Tradier daily bars) and specs 56 (Learn v2 case studies) + 57 (offline mode hardening)
+- **Case Studies track (Learn v2, spec 56)**: 15 ticker modules / 80 case studies built entirely from the committed real chain-snapshot dataset (`src/lib/learn/v2-data/`, May–Aug 2026 scanner history) — 10 traded-universe tickers (PLTR, SOFI, NBIS, MRVL, TSLA, TSM, ASTS, SNDK, META, RKLB) + 5 "opportunities you weren't watching" (NVDA, AMD, CRWD, HOOD, IWM). Every number is traceable to a snapshot row or price bar; typed lookups (`src/lib/learn/v2.ts`) throw at build time on any fabricated figure
+- **Four new interactive components**: CasePriceChart (real OHLC + strike/stop lines + event markers), PlaceTheStop (set your stop on the real chart, then see what happened), ContractPicker (A/B pick between two real scanned contracts), PremiumDecayScrubber (scrub a contract's observed premium/IV path across scan days). 41 interactive sections + 62 quizzes across the track
+- **Case-study archetypes**: stop-loss discipline on real drawdowns (ASTS -60%, MRVL -48%, SNDK -56%), stop-market vs stop-limit through real wide spreads, poor contract selection, verified winners, roll-vs-assignment (incl. TSLA's no-recovery counterexample), covered-call strike regret, observed theta/IV drift (IWM/AMD multi-day series)
+- **Learn landing**: new Case Studies ticker grid with traded/opportunity badges and per-module progress; existing `learn_progress` tracks completion
+- **Offline mode hardening (spec 57)**: shared `useOffline` hook + `OfflineGate` fail-fast ("needs a connection" + retry, no hung spinners) on 10 network pages (scanner, CSP Hunter, research, portfolio-manager, bloodbath, time-machine, options, signals, earnings, explosive); global banner also trips on failed fetches (flaky connections register); Portfolio renders a browser-local last-known snapshot with "as of" timestamp when offline; SW bumped to v4 — case-study routes pre-cache automatically via the learn manifest
+- **Groundwork** (previously unreleased): real historical option-chain snapshot dataset (`src/lib/learn/v2-data/`, 15 tickers, 2026-05-01 → 2026-08-05, from CSP Hunter scan history + Tradier daily bars) + `scripts/mine-v2-data.mjs` setup miner + specs 56/57
 
 ## v0.25.1 — Learn overhaul: real interactivity + practice-first TA coursework
 

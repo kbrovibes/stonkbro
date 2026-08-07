@@ -73,11 +73,14 @@ Vercel cron job runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks a
 ### Learn (Interactive Coursework)
 22 modules / ~120 lessons across Greeks, technical analysis, trader fluency, leverage, and crash playbooks — built practice-first: scored support/resistance drawing drills (LevelFinder), a live indicator playground (SMA/EMA/RSI/MACD/Bollinger with auto-annotated signals), a Black-Scholes strike/DTE/IV sandbox with payoff diagrams, and spot-the-setup chart quizzes. Every concept: worked examples (including failure cases), exact plotting steps, options-seller trade rules, and quizzes. Fully offline.
 
+### Learn v2: Case Studies (Real Chain Data)
+15 ticker modules / 80 case studies built **entirely from real scanner history** (May–Aug 2026 option-chain snapshots committed to the repo) — 10 wheel tickers plus 5 "opportunities you weren't watching". Stop-loss discipline on real -50% drawdowns, stop-market vs stop-limit through real wide spreads, roll-vs-assignment decisions (including the one that never recovered), covered-call strike regret, and observed theta/IV decay. Interactive: place your stop on the real chart before seeing what happened, A/B-pick between two real contracts, scrub actual premium decay. Every number is traceable to a dataset row — fabricated figures fail the build.
+
 ### Market Monitor (Hourly Push Alerts)
 Hourly cron on market days watches SPY plus every portfolio holding and watchlist symbol. Big moves generate plain-English alerts with severity tiers — critical position drops include concrete stop-limit levels computed from support. Alerts push to your phone (Web Push banners) and surface in a sticky in-app banner with per-alert actions.
 
 ### Offline Mode (Airplane-Mode PWA)
-The service worker caches every visited page and pre-caches the full knowledge base on every app open — Learn works completely offline. Live-data pages show an offline indicator and resume when you're back online.
+The service worker caches every visited page and pre-caches the full knowledge base (Learn v1 + v2 case studies) on every app open — Learn works completely offline. Network-dependent pages fail fast with a friendly "needs a connection" state and retry button instead of hanging; Portfolio shows your last-known snapshot read-only with an "as of" timestamp; a global banner tracks connectivity (including flaky connections that report online but fail).
 
 ### Google OAuth
 One-click login with Google via Supabase Auth. All routes protected — unauthenticated users redirect to login. Row-level security ensures you only see your own data.
@@ -226,6 +229,8 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.26.0** | Learn v2 Case Studies (80 studies from real chain data) + offline hardening |
+| **v0.25.0** | Market monitor push alerts, practical Learn tracks, real interactivity, offline PWA |
 | **v0.24.0** | Bloodbath (pullback navigator with AI dip verdicts) |
 | **v0.22.0** | Portfolio Manager (AI ratings + $100K reallocation plan) |
 | **v0.21.0** | Portfolio Page (SnapTrade Live Data) |

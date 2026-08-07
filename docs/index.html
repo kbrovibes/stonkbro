@@ -690,6 +690,13 @@
         </div>
 
         <div class="feature-card">
+          <div class="card-icon bg-purple">&#x1F4D2;</div>
+          <h3>Learn v2: Case Studies (Real Chain Data)</h3>
+          <p>15 ticker modules / 80 case studies mined from real scanner history (May&ndash;Aug 2026 option-chain snapshots): stop-loss discipline on real -50% drawdowns, stop-market vs stop-limit through real wide spreads, roll-vs-assignment, covered-call strike regret, observed theta decay. Place your stop on the real chart before the reveal; A/B-pick between two real contracts. Fabricated numbers fail the build.</p>
+          <span class="tag bg-purple">Education · Real Data</span>
+        </div>
+
+        <div class="feature-card">
           <div class="card-icon bg-red">&#x1F6A8;</div>
           <h3>Market Monitor (Hourly Push Alerts)</h3>
           <p>Hourly cron watches SPY plus every portfolio holding and watchlist symbol. Big moves fire plain-English push alerts with severity tiers — critical drops on your holdings include concrete stop-limit levels computed from support. Sticky in-app banner ensures nothing gets missed.</p>
@@ -699,7 +706,7 @@
         <div class="feature-card">
           <div class="card-icon bg-purple">&#x2708;&#xFE0F;</div>
           <h3>Offline Mode (Airplane-Mode PWA)</h3>
-          <p>Service worker caches every visited page and pre-caches the full knowledge base on each app open — Learn works completely offline. Live-data pages show an offline indicator and resume automatically when connectivity returns.</p>
+          <p>Service worker pre-caches the full knowledge base (Learn v1 + v2 case studies) on each app open — Learn works completely offline. Network pages fail fast with a retry state instead of hanging, Portfolio shows a read-only last-known snapshot with an "as of" note, and the global banner also catches flaky connections that report online but fail.</p>
           <span class="tag bg-purple">PWA · Offline</span>
         </div>
 
@@ -1135,6 +1142,13 @@
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.26</div>
+          <div class="tl-content">
+            <h4>Learn v2 Case Studies + Offline Hardening</h4>
+            <p>80 case studies across 15 tickers built entirely from real May&ndash;Aug 2026 scanner snapshots, with place-the-stop / contract-picker / premium-decay interactives. Offline fail-fast on network pages, portfolio last-known snapshot, SW v4.</p>
+          </div>
+        </div>
         <div class="tl-item">
           <div class="tl-dot" style="font-size:0.55rem;">0.10</div>
           <div class="tl-content">
