@@ -162,8 +162,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "stonkbro";
   const options = {
     body: data.body || "New update",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
     tag: data.tag || "stonkbro-notification",
     data: { url: data.url || "/" },
   };

@@ -4,10 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { getStoredTheme, setTheme, type ThemeMode } from "@/lib/theme";
 import { signOutAction } from "@/lib/auth-actions";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import PinModal from "@/components/PinModal";
 
 export default function ProfileMenu({ initials, email, isAdmin }: { initials: string; email: string; isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const [theme, setThemeState] = useState<ThemeMode>("system");
+  const [showUnlock, setShowUnlock] = useState(false);
+  const { locked, lock, unlock } = usePrivacy();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,6 +86,30 @@ export default function ProfileMenu({ initials, email, isAdmin }: { initials: st
             </Link>
           )}
 
+          <button
+            onClick={() => {
+              if (locked) {
+                setShowUnlock(true);
+              } else {
+                lock();
+              }
+              setOpen(false);
+            }}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-muted hover:bg-surface-muted active:bg-accent-bg transition-colors"
+          >
+            {locked ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-500">
+                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-text-faint">
+                <path d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9h9V5.5A4.5 4.5 0 0 0 10 1Zm-3 8V5.5a3 3 0 1 1 6 0V9h-6Z" opacity="0" />
+                <path fillRule="evenodd" d="M14.5 1A4.5 4.5 0 0 0 10 5.5V9H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1.5V5.5a3 3 0 1 1 6 0v2.75a.75.75 0 0 0 1.5 0V5.5A4.5 4.5 0 0 0 14.5 1Z" clipRule="evenodd" />
+              </svg>
+            )}
+            {locked ? "Unlock private info…" : "Lock private info"}
+          </button>
+
           <div className="border-t border-border-subtle mt-1 pt-2 pb-1 px-3">
             <p className="text-[10px] uppercase tracking-wider text-text-faint font-semibold mb-1.5 px-1">Theme</p>
             <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-surface-muted">
@@ -110,6 +138,15 @@ export default function ProfileMenu({ initials, email, isAdmin }: { initials: st
             </button>
           </form>
         </div>
+      )}
+
+      {showUnlock && (
+        <PinModal
+          title="Unlock private info"
+          subtitle="Enter your privacy PIN to show portfolio values again"
+          onSubmit={unlock}
+          onClose={() => setShowUnlock(false)}
+        />
       )}
     </div>
   );

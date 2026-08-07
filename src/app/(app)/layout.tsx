@@ -3,8 +3,10 @@ import BottomNav from "@/components/BottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
 import AlertBanner from "@/components/AlertBanner";
 import OfflineBanner from "@/components/OfflineBanner";
+import PrivacyProvider from "@/components/PrivacyProvider";
 import { getUser } from "@/lib/auth";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
+import { isPiiLocked } from "@/lib/privacy-server";
 
 export default async function AppLayout({
   children,
@@ -14,9 +16,10 @@ export default async function AppLayout({
   const user = await getUser();
   const showPortfolio = hasPortfolioAccess(user?.email);
   const isGuest = !user;
+  const piiLocked = await isPiiLocked();
 
   return (
-    <>
+    <PrivacyProvider initialLocked={piiLocked}>
       <Header />
       <OfflineBanner />
       {!isGuest && <AlertBanner />}
@@ -26,6 +29,6 @@ export default async function AppLayout({
         </PullToRefresh>
       </main>
       <BottomNav showPortfolio={showPortfolio} isGuest={isGuest} />
-    </>
+    </PrivacyProvider>
   );
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.26.2 — Push notifications actually work + privacy-lock groundwork
+
+- **Deploys unblocked**: the hourly market-monitor cron (`0 11-23 * * 1-5`) exceeded the Vercel Hobby once-daily limit and had **failed every production deploy since Aug 4** — now `0 17 * * 1-5` (10am PT daily; restore hourly by upgrading to Vercel Pro and reverting this line)
+- **Service worker unblocked**: `/sw.js` + `/manifest.json` were caught by the auth middleware matcher and returned a CDN-cacheable 307 → fatal SW registration error since the first auth commit (April) — the root cause of pushes never arriving; both (and `/icons/`) now bypass auth; registration failures are logged instead of swallowed
+- **Notification icon 404 fixed** (`/icon-192.png` → `/icons/icon-192.png`)
+- **Real push test**: new authed `POST /api/push/test` sends only to your own devices and reports sent/failed; Settings button added; the "Enabled" badge is now driven by an actual `PushSubscription`, not just `Notification.permission`, with a re-subscribe path and surfaced errors; push send failures now log status + body
+- **Privacy-lock groundwork (spec: PII lock)**: `privacy_pin` column + Settings "Privacy Lock" PIN section; "Lock/Unlock private info" in the profile menu with in-app PIN modal; server-verified unlock via httpOnly `pii_lock` cookie; settings API never returns the PIN and refuses PIN changes while locked. Value masking across pages lands next release.
+
 ## v0.26.1 — Nav consolidation: Plays absorbs Options, Learn goes top-level
 
 - **`/plays` merges `/today` + `/csp-hunter`** into one page with sub-tabs Market (movers + options flow) · CSPs · Calls · LEAPS · Weekly; both sections stay mounted across tab switches so a running scan survives; old routes redirect

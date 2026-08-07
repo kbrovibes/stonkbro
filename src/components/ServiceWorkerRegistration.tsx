@@ -17,7 +17,10 @@ export default function ServiceWorkerRegistration() {
         if (reg.active) warm();
         else navigator.serviceWorker.ready.then(warm).catch(() => {});
       })
-      .catch(() => {});
+      .catch((err) => {
+        // Registration failure kills offline mode AND push — never swallow it.
+        console.error("[sw] registration failed:", err);
+      });
   }, []);
   return null;
 }

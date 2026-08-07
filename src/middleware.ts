@@ -84,6 +84,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // sw.js + manifest.json MUST bypass auth: a 307 on a service-worker
+    // script fetch is a fatal registration error (and the redirect was being
+    // CDN-cached as public). Push notifications were dead because of this.
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

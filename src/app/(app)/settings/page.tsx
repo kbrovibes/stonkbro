@@ -20,6 +20,10 @@ export default function SettingsPage() {
   const [pingResult, setPingResult] = useState("");
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const [subscribing, setSubscribing] = useState(false);
+  // Truth = an actual PushSubscription on this device, not just permission.
+  const [pushSubscribed, setPushSubscribed] = useState<boolean | null>(null);
+  const [pushError, setPushError] = useState("");
+  const [pushTest, setPushTest] = useState<"idle" | "sending" | string>("idle");
   const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
   const [activeErrorTooltip, setActiveErrorTooltip] = useState<string | null>(null);
@@ -28,6 +32,14 @@ export default function SettingsPage() {
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotifPermission(Notification.permission);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready
+          .then((reg) => reg.pushManager.getSubscription())
+          .then((sub) => setPushSubscribed(!!sub))
+          .catch(() => setPushSubscribed(false));
+      } else {
+        setPushSubscribed(false);
+      }
     } else {
       setNotifPermission("unsupported");
     }
@@ -80,6 +92,7 @@ export default function SettingsPage() {
 
   async function handleEnableNotifications() {
     setSubscribing(true);
+    setPushError("");
     try {
       const permission = await Notification.requestPermission();
       setNotifPermission(permission);
@@ -94,15 +107,34 @@ export default function SettingsPage() {
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       });
 
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: subscription.toJSON() }),
       });
-    } catch {
-      // silent
+      if (!res.ok) throw new Error(`subscribe save failed (${res.status})`);
+      setPushSubscribed(true);
+    } catch (e) {
+      setPushError(e instanceof Error ? e.message : "Subscription failed — see console");
+      console.error("[push] enable failed:", e);
+      setPushSubscribed(false);
     } finally {
       setSubscribing(false);
+    }
+  }
+
+  async function handleTestPush() {
+    setPushTest("sending");
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" });
+      const data = await res.json();
+      setPushTest(
+        data.ok
+          ? `Sent to ${data.sent}/${data.subscriptions} device${data.subscriptions !== 1 ? "s" : ""} — check your phone`
+          : data.reason || `Failed: sent ${data.sent}, failed ${data.failed}`
+      );
+    } catch {
+      setPushTest("Network error");
     }
   }
 
@@ -302,6 +334,8 @@ export default function SettingsPage() {
             {saveError && <p className="text-xs text-red-500 dark:text-loss">{saveError}</p>}
           </div>
         </div>
+
+        <PrivacyPinSection />
 
         {/* AI Configuration */}
         <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
@@ -505,15 +539,39 @@ export default function SettingsPage() {
           <div className="mt-3 flex flex-col gap-2">
             {notifPermission === "unsupported" ? (
               <p className="text-xs text-stone-400 dark:text-text-faint">Push notifications are not supported in this browser.</p>
-            ) : notifPermission === "granted" ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-green-700 dark:text-gain-strong bg-green-50 dark:bg-gain-bg px-2.5 py-1 rounded-full">Enabled</span>
+            ) : notifPermission === "granted" && pushSubscribed ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-medium text-green-700 dark:text-gain-strong bg-green-50 dark:bg-gain-bg px-2.5 py-1 rounded-full">Enabled on this device</span>
+                <button
+                  onClick={handleTestPush}
+                  disabled={pushTest === "sending"}
+                  className="text-xs font-medium text-purple-600 dark:text-violet-300 hover:text-purple-800 underline underline-offset-2 disabled:opacity-50"
+                >
+                  {pushTest === "sending" ? "Sending..." : "Send test push"}
+                </button>
                 <button
                   onClick={handleDisableNotifications}
                   disabled={subscribing}
                   className="text-xs text-stone-500 dark:text-text-subtle hover:text-stone-700 underline underline-offset-2 disabled:opacity-50"
                 >
                   {subscribing ? "..." : "Disable"}
+                </button>
+                {pushTest !== "idle" && pushTest !== "sending" && (
+                  <p className="w-full text-xs text-stone-500 dark:text-text-subtle">{pushTest}</p>
+                )}
+              </div>
+            ) : notifPermission === "granted" && pushSubscribed === false ? (
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs text-amber-600 dark:text-amber-300">
+                  Permission granted, but this device has no push subscription — likely a service-worker
+                  registration failure.
+                </p>
+                <button
+                  onClick={handleEnableNotifications}
+                  disabled={subscribing}
+                  className="self-start rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-500 transition-colors disabled:opacity-50"
+                >
+                  {subscribing ? "Subscribing..." : "Re-subscribe this device"}
                 </button>
               </div>
             ) : notifPermission === "denied" ? (
@@ -529,6 +587,7 @@ export default function SettingsPage() {
                 {subscribing ? "Enabling..." : "Enable Notifications"}
               </button>
             )}
+            {pushError && <p className="text-xs text-red-500 dark:text-loss">{pushError}</p>}
           </div>
         </div>
 
@@ -542,6 +601,106 @@ export default function SettingsPage() {
             Coming soon
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Privacy PIN — gates the "Lock private info" feature (ProfileMenu).
+// ---------------------------------------------------------------------------
+
+function PrivacyPinSection() {
+  const [hasPin, setHasPin] = useState<boolean | null>(null);
+  const [pin, setPin] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setHasPin(!!d.settings?.has_privacy_pin))
+      .catch(() => setHasPin(false));
+  }, []);
+
+  async function savePin() {
+    if (!/^\d{4,8}$/.test(pin)) {
+      setError("PIN must be 4-8 digits");
+      setStatus("error");
+      return;
+    }
+    if (pin !== confirm) {
+      setError("PINs don't match");
+      setStatus("error");
+      return;
+    }
+    setStatus("saving");
+    setError("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ privacy_pin: pin }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Save failed (${res.status})`);
+        setStatus("error");
+        return;
+      }
+      setStatus("saved");
+      setHasPin(true);
+      setPin("");
+      setConfirm("");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch {
+      setError("Network error — check your connection");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
+      <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Privacy Lock</h3>
+      <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
+        Set a PIN, then use &ldquo;Lock private info&rdquo; in the profile menu before handing
+        your phone to someone. While locked, portfolio dollar values and position sizes are
+        hidden everywhere; the PIN unlocks them.
+        {hasPin && <span className="text-emerald-600 dark:text-gain font-medium"> A PIN is set.</span>}
+      </p>
+
+      <div className="mt-3 flex flex-col gap-2.5">
+        <div className="flex gap-2">
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            className="w-32 rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            placeholder={hasPin ? "New PIN" : "PIN (4-8 digits)"}
+          />
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ""))}
+            className="w-32 rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            placeholder="Confirm"
+          />
+        </div>
+        <button
+          onClick={savePin}
+          disabled={status === "saving" || pin.length < 4}
+          className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
+        >
+          {status === "saved" ? "Saved!" : status === "saving" ? "Saving..." : hasPin ? "Change PIN" : "Set PIN"}
+        </button>
+        {status === "error" && <p className="text-xs text-red-500 dark:text-loss">{error}</p>}
       </div>
     </div>
   );
