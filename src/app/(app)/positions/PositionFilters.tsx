@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import { maskValue } from "@/lib/privacy";
 
 type Filter = "all" | "active" | "closed";
 
@@ -51,6 +53,7 @@ function daysSince(dateStr: string) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function PositionFilters({ positions }: { positions: any[]; children?: React.ReactNode }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const { locked } = usePrivacy();
 
   if (positions.length === 0) return null;
 
@@ -125,7 +128,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
                     className="flex items-center justify-between text-xs"
                   >
                     <span className="text-stone-500 dark:text-text-subtle">
-                      {legLabel(leg.type)} ${leg.strike} exp{" "}
+                      {legLabel(leg.type)} {maskValue(locked, `$${leg.strike}`)} exp{" "}
                       {new Date(leg.expiry).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -133,7 +136,7 @@ export default function PositionFilters({ positions }: { positions: any[]; child
                       })}
                     </span>
                     <span className="font-medium text-stone-600 dark:text-text-muted">
-                      ${Math.abs(leg.entry_price).toFixed(2)}
+                      {maskValue(locked, `$${Math.abs(leg.entry_price).toFixed(2)}`)}
                     </span>
                   </div>
                 ))}

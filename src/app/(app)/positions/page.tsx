@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import PositionFilters from "./PositionFilters";
+import { maskValue } from "@/lib/privacy";
+import { isPiiLocked } from "@/lib/privacy-server";
 
 function formatCurrency(n: number) {
   const prefix = n >= 0 ? "+$" : "-$";
@@ -71,6 +73,7 @@ function computeIncome(legs: any[]) {
 
 export default async function PositionsPage() {
   const user = await getUser();
+  const locked = await isPiiLocked();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];
@@ -133,7 +136,7 @@ export default async function PositionsPage() {
             Income
           </p>
           <p className="text-lg font-bold mt-1 text-stone-900 dark:text-text">
-            ${totalIncome.toLocaleString()}
+            {maskValue(locked, `$${totalIncome.toLocaleString()}`)}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">

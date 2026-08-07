@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getSettings } from "@/lib/db/settings";
+import { maskValue } from "@/lib/privacy";
+import { isPiiLocked } from "@/lib/privacy-server";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,8 @@ export default async function IncomePage() {
   const user = await getUser();
 
   if (!user) redirect("/login");
+
+  const locked = await isPiiLocked();
 
   // Positions and settings both key off user.id and are independent — fetch together.
   const [positions, settings] = await Promise.all([
@@ -131,11 +135,11 @@ export default async function IncomePage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-sky-800 dark:text-accent-hover">Starting Capital</p>
-            <p className="text-2xl font-extrabold text-sky-900 mt-0.5">${fmt(startingCash)}</p>
+            <p className="text-2xl font-extrabold text-sky-900 mt-0.5">{maskValue(locked, `$${fmt(startingCash)}`)}</p>
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold text-sky-800 dark:text-accent-hover">Total Premium</p>
-            <p className="text-2xl font-extrabold text-emerald-700 dark:text-gain-strong mt-0.5">+${fmt(totalPremium)}</p>
+            <p className="text-2xl font-extrabold text-emerald-700 dark:text-gain-strong mt-0.5">+{maskValue(locked, `$${fmt(totalPremium)}`)}</p>
           </div>
         </div>
         {totalPremium > 0 && (
@@ -155,8 +159,8 @@ export default async function IncomePage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Total Premium" value={`$${fmt(totalPremium)}`} sub="all time" />
-        <StatCard label="Monthly Avg" value={`$${fmt(monthlyAvg)}`} sub="per month" />
+        <StatCard label="Total Premium" value={maskValue(locked, `$${fmt(totalPremium)}`)} sub="all time" />
+        <StatCard label="Monthly Avg" value={maskValue(locked, `$${fmt(monthlyAvg)}`)} sub="per month" />
         <StatCard label="Ann. Yield" value={`${annualizedYield}%`} sub="on starting capital" />
         <StatCard label="Active" value={`${activePositions.length}`} sub="open trades" />
         <StatCard label="Completed" value={`${closedPositions.length}`} sub="closed trades" />
@@ -177,7 +181,7 @@ export default async function IncomePage() {
                 />
               </div>
               <span className="text-xs font-bold text-stone-900 dark:text-text w-14 text-right">
-                ${fmt(m.premium)}
+                {maskValue(locked, `$${fmt(m.premium)}`)}
               </span>
             </div>
           ))}

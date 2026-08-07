@@ -3,6 +3,8 @@ import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getQuote, getOptionsChain, type QuoteData, type OptionContract } from "@/lib/market/yahoo";
 import TickerLookup from "./TickerLookup";
+import { isPiiLocked } from "@/lib/privacy-server";
+import { maskValue, privateCount } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +135,7 @@ async function analyzeSymbol(
 
 export default async function CoveredCallsPage() {
   const user = await getUser();
+  const locked = await isPiiLocked();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];
@@ -241,7 +244,7 @@ export default async function CoveredCallsPage() {
                 {analysis.symbol}
               </Link>
               <span className="text-xs text-stone-400 dark:text-text-faint">
-                {analysis.sharesOwned} {analysis.sharesOwned === 1 ? "contract" : "shares"} @ {formatDollar(analysis.costBasis)}
+                {privateCount(locked, analysis.sharesOwned)} {!locked && analysis.sharesOwned === 1 ? "contract" : "shares"} @ {maskValue(locked, formatDollar(analysis.costBasis))}
               </span>
             </div>
             <span className="text-sm font-semibold text-stone-700 dark:text-text-muted">

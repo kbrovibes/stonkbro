@@ -82,6 +82,9 @@ Hourly cron on market days watches SPY plus every portfolio holding and watchlis
 ### Offline Mode (Airplane-Mode PWA)
 The service worker caches every visited page and pre-caches the full knowledge base (Learn v1 + v2 case studies) on every app open — Learn works completely offline. Network-dependent pages fail fast with a friendly "needs a connection" state and retry button instead of hanging; Portfolio shows your last-known snapshot read-only with an "as of" timestamp; a global banner tracks connectivity (including flaky connections that report online but fail).
 
+### Privacy Lock (hand-your-phone mode)
+Tap "Lock private info" in the profile menu before handing your phone over: every wealth-revealing number — portfolio value, P&L, collateral, real position sizes and strikes, income totals, account balances — masks to `•••••` app-wide, while market data, percentages, the scanner, and Learn stay fully usable. Unlock with a per-user PIN (set in Settings), verified server-side with an httpOnly cookie so even server-rendered pages are masked.
+
 ### Google OAuth
 One-click login with Google via Supabase Auth. All routes protected — unauthenticated users redirect to login. Row-level security ensures you only see your own data.
 

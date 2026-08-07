@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import OfflineGate from "@/components/OfflineGate";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import { maskValue, privateCount } from "@/lib/privacy";
 import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
 
 // =========================================================================
@@ -254,9 +256,13 @@ function TimeMachineView() {
   const [inProgressMonths, setInProgressMonths] = useState<Set<string>>(new Set());
   const [autoBatchKickedOff, setAutoBatchKickedOff] = useState(false);
 
-  // Helper: page-wide currency formatting that honors the privacy toggle.
-  const $ = (n: number) => (showDeltas ? fmtCurrency(n) : "$•••");
-  const $0 = (n: number) => (showDeltas ? fmtCurrency0(n) : "$•••");
+  const { locked } = usePrivacy();
+
+  // Page-wide currency formatting that honors the privacy lock.
+  const $ = (n: number) => maskValue(locked, fmtCurrency(n));
+  const $0 = (n: number) => maskValue(locked, fmtCurrency0(n));
+  // Month-button deltas have their own toggle, but the lock always wins.
+  const deltasVisible = showDeltas && !locked;
 
   // Restore persisted column order on mount; persist on change.
   useEffect(() => {
@@ -656,12 +662,12 @@ function TimeMachineView() {
                 key={s.snapshotDate}
                 onClick={() => loadCached(s.snapshotDate)}
                 className={`flex flex-col items-center justify-center px-2.5 rounded-lg border text-[10px] font-medium transition-colors shrink-0 h-11 w-20 ${intensityClass(s)} ${ring}`}
-                title={showDeltas
+                title={deltasVisible
                   ? `${s.snapshotDate} · delta ${s.deltaAbsolute >= 0 ? "+" : ""}${fmtCurrency0(s.deltaAbsolute)}`
                   : `${s.snapshotDate}`}
               >
                 <span className="font-bold leading-tight">{monthLabel(s.snapshotDate)}</span>
-                {showDeltas && (
+                {deltasVisible && (
                   <span className="text-[9px] opacity-70 leading-tight">
                     {s.deltaAbsolute >= 0 ? "+" : ""}{fmtCurrency0(s.deltaAbsolute)}
                   </span>
@@ -676,8 +682,9 @@ function TimeMachineView() {
                   Monthly snapshots · click to load
                 </span>
                 <div className="flex items-center gap-3">
-                  {/* iOS-style toggle for delta visibility (screenshot-safe mode) */}
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  {/* iOS-style toggle for delta visibility (screenshot-safe mode).
+                      Hidden while the privacy lock is on — it has nothing to toggle. */}
+                  <label className={`flex items-center gap-1.5 cursor-pointer select-none ${locked ? "hidden" : ""}`}>
                     <span className="text-[10px] text-stone-500 dark:text-text-subtle">$</span>
                     <button
                       type="button"
@@ -780,7 +787,7 @@ function TimeMachineView() {
                   data.delta.favorableToHold ? "text-emerald-700 dark:text-gain-strong" : "text-rose-700 dark:text-loss-strong"
                 }`}
               >
-                You&apos;d have {fmtCurrency0(Math.abs(data.delta.absolute))}{" "}
+                You&apos;d have {$0(Math.abs(data.delta.absolute))}{" "}
                 {data.delta.favorableToHold ? "more" : "less"}
               </p>
               <p
@@ -802,8 +809,8 @@ function TimeMachineView() {
                     On <span className="font-semibold text-stone-900 dark:text-text">{fmtDate(data.snapshotDate)}</span>:
                     held <span className="font-semibold text-stone-900 dark:text-text">{data.snapshot.positions.length}</span> stocks,{" "}
                     <span className="font-semibold text-stone-900 dark:text-text">{data.snapshot.options.length}</span> options,{" "}
-                    <span className="font-semibold text-stone-900 dark:text-text">{fmtCurrency0(data.snapshot.cash)}</span> cash,
-                    total <span className="font-semibold text-stone-900 dark:text-text">{fmtCurrency0(data.snapshot.total)}</span>
+                    <span className="font-semibold text-stone-900 dark:text-text">{$0(data.snapshot.cash)}</span> cash,
+                    total <span className="font-semibold text-stone-900 dark:text-text">{$0(data.snapshot.total)}</span>
                   </p>
                   {data._computedAt && (
                     <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1.5 flex items-center gap-2 flex-wrap">
@@ -835,8 +842,8 @@ function TimeMachineView() {
                               : "bg-rose-50 dark:bg-loss-bg text-rose-700 dark:text-loss-strong"
                           }`}
                           title={data.reconciliation.passed
-                            ? `Reconciled: forward-applying every post-snapshot txn from the reverse-reconstructed state lands at today's broker portfolio (Δ shares ${data.reconciliation.maxSharesDelta.toFixed(4)}, Δ cash ${fmtCurrency(data.reconciliation.cashDelta)}).`
-                            : `Reconciliation failed: worst symbol ${data.reconciliation.worstSymbol ?? "n/a"} (Δ ${data.reconciliation.maxSharesDelta.toFixed(2)} sh), cash Δ ${fmtCurrency(data.reconciliation.cashDelta)}. ${data.reconciliation.mismatches.length} mismatched symbol${data.reconciliation.mismatches.length === 1 ? "" : "s"}.`}
+                            ? `Reconciled: forward-applying every post-snapshot txn from the reverse-reconstructed state lands at today's broker portfolio (Δ shares ${data.reconciliation.maxSharesDelta.toFixed(4)}, Δ cash ${$(data.reconciliation.cashDelta)}).`
+                            : `Reconciliation failed: worst symbol ${data.reconciliation.worstSymbol ?? "n/a"} (Δ ${data.reconciliation.maxSharesDelta.toFixed(2)} sh), cash Δ ${$(data.reconciliation.cashDelta)}. ${data.reconciliation.mismatches.length} mismatched symbol${data.reconciliation.mismatches.length === 1 ? "" : "s"}.`}
                         >
                           {data.reconciliation.passed ? "✓ reconciled" : "⚠ reconcile failed"}
                         </span>
@@ -872,12 +879,12 @@ function TimeMachineView() {
                     </button>
                   )}
                 </div>
-                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{fmtCurrency0(data.actual.total)}</p>
+                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{$0(data.actual.total)}</p>
                 {breakdownOpen && data.actual.breakdown && (
                   <div className="mt-2 pt-2 border-t border-stone-100 dark:border-border-subtle text-[10px] text-stone-500 dark:text-text-subtle space-y-0.5 tabular-nums">
-                    <div className="flex justify-between"><span>Stocks ({data.actual.breakdown.stockPositionCount})</span><span>{fmtCurrency0(data.actual.breakdown.stocks)}</span></div>
-                    <div className="flex justify-between"><span>Options ({data.actual.breakdown.optionPositionCount}, net of shorts)</span><span>{fmtCurrency0(data.actual.breakdown.options)}</span></div>
-                    <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(data.actual.breakdown.cash)}</span></div>
+                    <div className="flex justify-between"><span>Stocks ({data.actual.breakdown.stockPositionCount})</span><span>{$0(data.actual.breakdown.stocks)}</span></div>
+                    <div className="flex justify-between"><span>Options ({data.actual.breakdown.optionPositionCount}, net of shorts)</span><span>{$0(data.actual.breakdown.options)}</span></div>
+                    <div className="flex justify-between"><span>Cash</span><span>{$0(data.actual.breakdown.cash)}</span></div>
                     <div className="pt-1.5 mt-1.5 border-t border-stone-100 dark:border-border-subtle">
                       <div className="text-stone-400 dark:text-text-faint mb-1">
                         {data.actual.breakdown.accountCount} account{data.actual.breakdown.accountCount === 1 ? "" : "s"} linked via SnapTrade
@@ -886,9 +893,9 @@ function TimeMachineView() {
                         <div key={a.id} className="flex justify-between py-0.5 border-t border-stone-50 dark:border-border-subtle">
                           <span className="truncate pr-2 text-stone-600 dark:text-text-muted">
                             {a.institution} · {a.name}
-                            {a.number ? ` (${a.number.slice(-4)})` : ""}
+                            {a.number ? ` (${maskValue(locked, a.number.slice(-4))})` : ""}
                           </span>
-                          <span className="text-stone-700 dark:text-text-muted font-medium">{fmtCurrency0(a.total)}</span>
+                          <span className="text-stone-700 dark:text-text-muted font-medium">{$0(a.total)}</span>
                         </div>
                       ))}
                     </div>
@@ -906,7 +913,7 @@ function TimeMachineView() {
                     {simBreakdownOpen ? "hide" : "details"}
                   </button>
                 </div>
-                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{fmtCurrency0(data.simulation.total)}</p>
+                <p className="text-xl font-bold text-stone-900 dark:text-text mt-1">{$0(data.simulation.total)}</p>
                 {simBreakdownOpen && (() => {
                   const stockSum = data.simulation.stockValues.reduce((a, v) => a + v.value, 0);
                   const optionSum = data.simulation.optionValues.reduce((a, v) => a + v.value, 0);
@@ -915,25 +922,25 @@ function TimeMachineView() {
                   const cb = data.simulation.cashBreakdown;
                   return (
                     <div className="mt-2 pt-2 border-t border-stone-100 dark:border-border-subtle text-[10px] text-stone-500 dark:text-text-subtle space-y-0.5 tabular-nums">
-                      <div className="flex justify-between"><span>Stocks ({data.simulation.stockValues.length})</span><span>{fmtCurrency0(stockSum)}</span></div>
+                      <div className="flex justify-between"><span>Stocks ({data.simulation.stockValues.length})</span><span>{$0(stockSum)}</span></div>
                       <div className="flex justify-between">
                         <span>Live options MTM ({data.simulation.optionValues.filter((o) => o.status === "live").length})</span>
-                        <span className={optionSum < 0 ? "text-rose-600 dark:text-loss" : ""}>{fmtCurrency0(optionSum)}</span>
+                        <span className={optionSum < 0 ? "text-rose-600 dark:text-loss" : ""}>{$0(optionSum)}</span>
                       </div>
-                      <div className="flex justify-between"><span>Cash</span><span>{fmtCurrency0(cashFinal)}</span></div>
+                      <div className="flex justify-between"><span>Cash</span><span>{$0(cashFinal)}</span></div>
                       {cb && (
                         <div className="pt-1.5 mt-1.5 border-t border-stone-100 dark:border-border-subtle text-[9px] text-stone-400 dark:text-text-faint space-y-0.5">
                           <div className="text-stone-500 dark:text-text-subtle mb-0.5">Cash chain</div>
-                          <div className="flex justify-between"><span>· at snapshot</span><span>{fmtCurrency0(cb.atSnapshot)}</span></div>
+                          <div className="flex justify-between"><span>· at snapshot</span><span>{$0(cb.atSnapshot)}</span></div>
                           <div className="flex justify-between">
                             <span>· from option replay</span>
                             <span className={cb.fromOptionReplay < 0 ? "text-rose-600 dark:text-loss" : cb.fromOptionReplay > 0 ? "text-emerald-700 dark:text-gain-strong" : ""}>
-                              {cb.fromOptionReplay >= 0 ? "+" : ""}{fmtCurrency0(cb.fromOptionReplay)}
+                              {cb.fromOptionReplay >= 0 ? "+" : ""}{$0(cb.fromOptionReplay)}
                             </span>
                           </div>
-                          <div className="flex justify-between"><span>· + deposits</span><span>+{fmtCurrency0(cb.fromDeposits)}</span></div>
-                          <div className="flex justify-between"><span>· + dividends</span><span>+{fmtCurrency0(cb.fromDividends)}</span></div>
-                          <div className="flex justify-between"><span>· + interest</span><span>+{fmtCurrency0(cb.fromInterest)}</span></div>
+                          <div className="flex justify-between"><span>· + deposits</span><span>+{$0(cb.fromDeposits)}</span></div>
+                          <div className="flex justify-between"><span>· + dividends</span><span>+{$0(cb.fromDividends)}</span></div>
+                          <div className="flex justify-between"><span>· + interest</span><span>+{$0(cb.fromInterest)}</span></div>
                         </div>
                       )}
                     </div>
@@ -979,11 +986,11 @@ function TimeMachineView() {
                 return (
                   <tr key={e.symbol} className="border-t border-stone-50 dark:border-border-subtle">
                     <td className="px-2 py-1.5 font-semibold text-stone-900 dark:text-text">{e.symbol}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtSh(e.unitsSold)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-500 dark:text-text-subtle">{fmtCurrency(e.avgExitPrice)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtCurrency(e.todayPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{privateCount(locked, fmtSh(e.unitsSold))}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-500 dark:text-text-subtle">{$(e.avgExitPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-stone-700 dark:text-text-muted">{$(e.todayPrice)}</td>
                     <td className={p.rowPct}>{e.changePct >= 0 ? "+" : ""}{e.changePct.toFixed(1)}%</td>
-                    <td className={p.rowImpact}>{e.totalDiff >= 0 ? "+" : ""}{fmtCurrency0(e.totalDiff)}</td>
+                    <td className={p.rowImpact}>{e.totalDiff >= 0 ? "+" : ""}{$0(e.totalDiff)}</td>
                   </tr>
                 );
               };
@@ -1004,7 +1011,7 @@ function TimeMachineView() {
                       </div>
                       <div className="text-right">
                         <p className={p.totalLabel}>{totalLabel}</p>
-                        <p className={p.totalValue}>{total >= 0 ? "+" : ""}{fmtCurrency0(total)}</p>
+                        <p className={p.totalValue}>{total >= 0 ? "+" : ""}{$0(total)}</p>
                       </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -1125,26 +1132,26 @@ function TimeMachineView() {
                   foot: <span className="font-bold text-stone-900 dark:text-text">Total</span>,
                 },
                 units: { label: "Units", align: "right",
-                  body: (r) => r.isCash ? "—" : Math.round(r.units),
+                  body: (r) => r.isCash ? "—" : privateCount(locked, Math.round(r.units)),
                   bodyClass: () => "text-stone-700 dark:text-text-muted tabular-nums",
                 },
                 snapshotPrice: { label: "Snap $", align: "right",
-                  body: (r) => r.isCash ? "—" : (r.snapshotPrice > 0 ? fmtCurrency(r.snapshotPrice) : "—"),
+                  body: (r) => r.isCash ? "—" : (r.snapshotPrice > 0 ? $(r.snapshotPrice) : "—"),
                   bodyClass: () => "text-stone-500 dark:text-text-subtle tabular-nums",
                 },
                 todayPrice: { label: "Today $", align: "right",
-                  body: (r) => r.isCash ? "—" : fmtCurrency(r.todayPrice),
+                  body: (r) => r.isCash ? "—" : $(r.todayPrice),
                   bodyClass: () => "text-stone-700 dark:text-text-muted tabular-nums",
                 },
                 snapshotValue: { label: "Snap value", align: "right",
-                  body: (r) => fmtCurrency0(r.snapshotValue),
+                  body: (r) => $0(r.snapshotValue),
                   bodyClass: () => "text-stone-500 dark:text-text-subtle tabular-nums",
-                  foot: <span className="font-bold text-stone-700 dark:text-text-muted tabular-nums">{fmtCurrency0(data.snapshot.total)}</span>,
+                  foot: <span className="font-bold text-stone-700 dark:text-text-muted tabular-nums">{$0(data.snapshot.total)}</span>,
                 },
                 todayValue: { label: "Today value", align: "right",
-                  body: (r) => fmtCurrency0(r.todayValue),
+                  body: (r) => $0(r.todayValue),
                   bodyClass: () => "font-medium text-stone-900 dark:text-text tabular-nums",
-                  foot: <span className="font-bold text-stone-900 dark:text-text tabular-nums">{fmtCurrency0(totalToday)}</span>,
+                  foot: <span className="font-bold text-stone-900 dark:text-text tabular-nums">{$0(totalToday)}</span>,
                 },
                 returnPct: { label: "Return", align: "right",
                   body: (r) => r.returnPct == null ? "—" : `${r.returnPct >= 0 ? "+" : ""}${r.returnPct.toFixed(1)}%`,
@@ -1289,13 +1296,13 @@ function TimeMachineView() {
                   {hasCash && (
                     <div className="mt-3">
                       <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
-                        Cash deposits · +{fmtCurrency(data.simulation.totalDepositsAdded)}
+                        Cash deposits · +{$(data.simulation.totalDepositsAdded)}
                       </p>
                       <div className="flex flex-col gap-0.5">
                         {data.simulation.deposits.map((d, i) => (
                           <div key={i} className="flex justify-between text-[11px]">
                             <span className="text-amber-900/80">{fmtDateShort(d.date)}</span>
-                            <span className="font-medium text-amber-800">+{fmtCurrency(d.amount)}</span>
+                            <span className="font-medium text-amber-800">+{$(d.amount)}</span>
                           </div>
                         ))}
                       </div>
@@ -1306,7 +1313,7 @@ function TimeMachineView() {
                   {hasRsu && data.rsuVests && (
                     <div className="mt-3">
                       <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wide mb-1">
-                        RSU vests · +{fmtCurrency(data.rsuVests.totalValueAtVest)}
+                        RSU vests · +{$(data.rsuVests.totalValueAtVest)}
                       </p>
                       <p className="text-[10px] text-amber-900/70 mb-1.5">
                         Vests in {data.rsuVests.monthsWithVests.length} month
@@ -1325,9 +1332,9 @@ function TimeMachineView() {
                         {data.rsuVests.items.map((v, i) => (
                           <div key={i} className="flex justify-between text-[11px]">
                             <span className="text-amber-900/80">
-                              {fmtDateShort(v.date)} · {v.symbol} × {Math.round(v.units)}
+                              {fmtDateShort(v.date)} · {v.symbol} × {privateCount(locked, Math.round(v.units))}
                             </span>
-                            <span className="font-medium text-amber-800">+{fmtCurrency(v.valueAtVest)}</span>
+                            <span className="font-medium text-amber-800">+{$(v.valueAtVest)}</span>
                           </div>
                         ))}
                       </div>
@@ -1339,7 +1346,7 @@ function TimeMachineView() {
 
                   <div className="flex justify-between text-xs pt-2 mt-3 border-t border-amber-200">
                     <span className="font-semibold text-amber-900">Total added</span>
-                    <span className="font-bold text-amber-900">+{fmtCurrency(totalInflows)}</span>
+                    <span className="font-bold text-amber-900">+{$(totalInflows)}</span>
                   </div>
                 </div>
               );
@@ -1360,12 +1367,12 @@ function TimeMachineView() {
                   {data.simulation.withdrawals.map((w, i) => (
                     <div key={i} className="flex justify-between text-[11px]">
                       <span className="text-orange-900/80">{fmtDateShort(w.date)}</span>
-                      <span className="font-medium text-orange-800">−{fmtCurrency(w.amount)}</span>
+                      <span className="font-medium text-orange-800">−{$(w.amount)}</span>
                     </div>
                   ))}
                   <div className="flex justify-between text-xs pt-2 mt-1 border-t border-orange-200">
                     <span className="font-semibold text-orange-900">Total to fund</span>
-                    <span className="font-bold text-orange-900">−{fmtCurrency(data.simulation.totalWithdrawalsFunded)}</span>
+                    <span className="font-bold text-orange-900">−{$(data.simulation.totalWithdrawalsFunded)}</span>
                   </div>
                   <p className="text-[10px] text-orange-700/70 mt-2 italic">
                     Note: not subtracted from simulation.
@@ -1403,7 +1410,7 @@ function TimeMachineView() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.options)}</div>
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{$0(data.realizedGains.options)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
                       All short-term · net of {data.realizedGains.optionsBreakdown?.length ?? 0} legs
                     </div>
@@ -1422,12 +1429,12 @@ function TimeMachineView() {
                         </button>
                       )}
                     </div>
-                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksShortTerm)}</div>
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{$0(data.realizedGains.stocksShortTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held &lt; 1 yr</div>
                   </div>
                   <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">Stocks LTCG</div>
-                    <div className="text-sm font-bold text-stone-900 dark:text-text">{fmtCurrency0(data.realizedGains.stocksLongTerm)}</div>
+                    <div className="text-sm font-bold text-stone-900 dark:text-text">{$0(data.realizedGains.stocksLongTerm)}</div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">Held ≥ 1 yr</div>
                   </div>
                 </div>
@@ -1459,11 +1466,11 @@ function TimeMachineView() {
                                 </span>
                               </td>
                               <td className="px-2 py-1 text-stone-700 dark:text-text-muted truncate">
-                                {o.underlying} {o.optionType} ${o.strike} <span className="text-stone-400 dark:text-text-faint">· exp {fmtDateShort(o.expiry)}</span>
+                                {o.underlying} {o.optionType} ${maskValue(locked, String(o.strike))} <span className="text-stone-400 dark:text-text-faint">· exp {fmtDateShort(o.expiry)}</span>
                               </td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{o.units}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{privateCount(locked, o.units)}</td>
                               <td className={`px-2 py-1 text-right tabular-nums font-medium ${o.amount > 0 ? "text-emerald-700 dark:text-gain-strong" : o.amount < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"}`}>
-                                {o.amount > 0 ? "+" : ""}{fmtCurrency(o.amount)}
+                                {o.amount > 0 ? "+" : ""}{$(o.amount)}
                               </td>
                             </tr>
                           ))}
@@ -1497,15 +1504,15 @@ function TimeMachineView() {
                             <tr key={i} className="border-t border-stone-50 dark:border-border-subtle">
                               <td className="px-2 py-1 text-stone-600 dark:text-text-muted tabular-nums">{fmtDateShort(s.date)}</td>
                               <td className="px-2 py-1 font-semibold text-stone-900 dark:text-text">{s.symbol}</td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{Math.round(s.units)}</td>
-                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{fmtCurrency0(s.proceeds)}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{privateCount(locked, Math.round(s.units))}</td>
+                              <td className="px-2 py-1 text-right tabular-nums text-stone-700 dark:text-text-muted">{$0(s.proceeds)}</td>
                               <td className="px-2 py-1 text-right tabular-nums text-stone-500 dark:text-text-subtle">
-                                {s.term === "skipped" ? "—" : fmtCurrency(s.avgCost)}
+                                {s.term === "skipped" ? "—" : $(s.avgCost)}
                               </td>
                               <td className={`px-2 py-1 text-right tabular-nums font-medium ${
                                 s.term === "skipped" ? "text-stone-400 dark:text-text-faint" : s.gain > 0 ? "text-emerald-700 dark:text-gain-strong" : s.gain < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"
                               }`}>
-                                {s.term === "skipped" ? "skipped" : `${s.gain > 0 ? "+" : ""}${fmtCurrency0(s.gain)}`}
+                                {s.term === "skipped" ? "skipped" : `${s.gain > 0 ? "+" : ""}${$0(s.gain)}`}
                               </td>
                               <td className="px-2 py-1 text-center">
                                 <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded ${
@@ -1530,25 +1537,25 @@ function TimeMachineView() {
                   <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">STCG tax @ 40.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
-                      ~{fmtCurrency0(data.realizedGains.taxBreakdown.stcgTax)}
+                      ~{$0(data.realizedGains.taxBreakdown.stcgTax)}
                     </div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
-                      on {fmtCurrency0(data.realizedGains.taxBreakdown.stcgBase)}
+                      on {$0(data.realizedGains.taxBreakdown.stcgBase)}
                     </div>
                   </div>
                   <div className="bg-white dark:bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
                     <div className="text-[10px] uppercase text-violet-600 font-semibold mb-0.5">LTCG tax @ 30.8%</div>
                     <div className="text-sm font-bold text-rose-600 dark:text-loss">
-                      ~{fmtCurrency0(data.realizedGains.taxBreakdown.ltcgTax)}
+                      ~{$0(data.realizedGains.taxBreakdown.ltcgTax)}
                     </div>
                     <div className="text-[10px] text-stone-500 dark:text-text-subtle mt-1">
-                      on {fmtCurrency0(data.realizedGains.taxBreakdown.ltcgBase)}
+                      on {$0(data.realizedGains.taxBreakdown.ltcgBase)}
                     </div>
                   </div>
                 </div>
                 <div className="bg-white dark:bg-surface-elevated border border-violet-200 rounded-lg p-2.5 mt-3 flex items-center justify-between">
                   <span className="text-[11px] text-violet-700 font-semibold uppercase tracking-wider">Total est. tax</span>
-                  <span className="text-base font-bold text-rose-600 dark:text-loss">~{fmtCurrency0(data.realizedGains.estimatedTax)}</span>
+                  <span className="text-base font-bold text-rose-600 dark:text-loss">~{$0(data.realizedGains.estimatedTax)}</span>
                 </div>
                 <p className="text-[10px] text-violet-700/80 mt-3 italic leading-snug">
                   {data.realizedGains.taxRateLabel}. Stock hold-period uses earliest in-window
@@ -1574,9 +1581,9 @@ function TimeMachineView() {
                     const premium = opt.premiumCollected ?? snap?.premiumCollected ?? 0;
                     const premiumLabel =
                       premium > 0
-                        ? `Premium received +${fmtCurrency(premium)}`
+                        ? `Premium received +${$(premium)}`
                         : premium < 0
-                          ? `Premium paid −${fmtCurrency(Math.abs(premium))}`
+                          ? `Premium paid −${$(Math.abs(premium))}`
                           : "Premium —";
                     // Direction: snap.units is signed (+long, −short). If snap missing,
                     // fall back to premium sign (credit ≈ short, debit ≈ long).
@@ -1599,8 +1606,8 @@ function TimeMachineView() {
                             <span className="text-xs font-medium text-stone-900 dark:text-text truncate">
                               {snap ? (
                                 <>
-                                  {qty != null && qty !== 1 && <span className="text-stone-500 dark:text-text-subtle">{qty}× </span>}
-                                  {snap.underlying} · {snap.type} ${snap.strike} ·{" "}
+                                  {qty != null && qty !== 1 && <span className="text-stone-500 dark:text-text-subtle">{privateCount(locked, qty)}× </span>}
+                                  {snap.underlying} · {snap.type} ${maskValue(locked, String(snap.strike))} ·{" "}
                                   <span className="text-stone-500 dark:text-text-subtle">exp {fmtDateShort(snap.expiry)}</span>
                                 </>
                               ) : opt.ticker}
@@ -1609,7 +1616,7 @@ function TimeMachineView() {
                           <span className={`text-xs font-semibold whitespace-nowrap ${
                             opt.value > 0 ? "text-emerald-600 dark:text-gain" : opt.value < 0 ? "text-rose-600 dark:text-loss" : "text-stone-500 dark:text-text-subtle"
                           }`}>
-                            {opt.value > 0 ? "+" : ""}{fmtCurrency(opt.value)}
+                            {opt.value > 0 ? "+" : ""}{$(opt.value)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 ml-1 flex-wrap">

@@ -6,6 +6,8 @@ import { useRefreshEvent } from "@/hooks/useRefreshEvent";
 import { OfflineNotice } from "@/components/OfflineGate";
 import { readSnapshot, saveSnapshot } from "@/lib/client-cache";
 import { useOffline } from "@/lib/offline";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import { maskValue, privateCount } from "@/lib/privacy";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
 // Last successful payload, kept in localStorage so the page is readable in
@@ -211,6 +213,7 @@ function PnlChart({
   title?: string;
 }) {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const { locked } = usePrivacy();
   if (periods.length === 0) return null;
 
   const maxAbsPnl = Math.max(...pnlValues.map(Math.abs), 1);
@@ -283,7 +286,7 @@ function PnlChart({
           return (
             <g key={i}>
               <line x1={W - PAD_R} y1={y} x2={W - PAD_R + 3} y2={y} stroke="#fcd34d" strokeWidth={1} />
-              <text x={W - PAD_R + 5} y={y + 3.5} textAnchor="start" fontSize={8} fill="#d97706">{fmtK(v)}</text>
+              <text x={W - PAD_R + 5} y={y + 3.5} textAnchor="start" fontSize={8} fill="#d97706">{maskValue(locked, fmtK(v))}</text>
             </g>
           );
         })}
@@ -295,7 +298,7 @@ function PnlChart({
           return (
             <g key={i}>
               <line x1={PAD_L - 3} y1={y} x2={PAD_L} y2={y} stroke="var(--border-strong)" strokeWidth={1} />
-              <text x={PAD_L - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="var(--text-faint)">{fmtK(v)}</text>
+              <text x={PAD_L - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="var(--text-faint)">{maskValue(locked, fmtK(v))}</text>
             </g>
           );
         })}
@@ -354,8 +357,8 @@ function PnlChart({
           const flipLeft = x > W * 0.6;
           const lines = [
             fmtLabel(tooltip.period),
-            `P&L: ${tooltip.pnl >= 0 ? "+" : ""}${fmtCurrency(tooltip.pnl)}`,
-            tooltip.collateral > 0 ? `Collateral: ${fmtCurrency(tooltip.collateral)}` : null,
+            `P&L: ${tooltip.pnl >= 0 ? "+" : ""}${maskValue(locked, fmtCurrency(tooltip.pnl))}`,
+            tooltip.collateral > 0 ? `Collateral: ${maskValue(locked, fmtCurrency(tooltip.collateral))}` : null,
             tooltip.peakDate ? `Peak: ${fmtDate(tooltip.peakDate)}` : null,
             tooltip.returnPct !== null ? `Return: ${tooltip.returnPct.toFixed(1)}%` : null,
           ].filter(Boolean) as string[];
@@ -394,6 +397,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
   const [liveQuote, setLiveQuote] = useState<{ bid: number; mid: number; ask: number } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const { locked } = usePrivacy();
 
   const dateRange = chain.end_date
     ? `${fmtDate(chain.start_date)} → ${fmtDate(chain.end_date)}`
@@ -472,17 +476,17 @@ function ChainCard({ chain }: { chain: OptionChain }) {
           <div className="text-xs text-stone-400 dark:text-text-faint mt-0.5">{dateRange}</div>
           {capitalLocked != null && (
             <div className="text-[11px] text-amber-600 dark:text-amber-300 mt-0.5">
-              {fmtCurrency(capitalLocked)} collateral · {Math.abs(chain.open_units)} contract{Math.abs(chain.open_units) !== 1 ? "s" : ""}
+              {maskValue(locked, fmtCurrency(capitalLocked))} collateral · {privateCount(locked, Math.abs(chain.open_units))} contract{Math.abs(chain.open_units) !== 1 ? "s" : ""}
             </div>
           )}
           {breakevenClose != null && (
             <div className={`text-[11px] mt-0.5 ${(isShortChain ? chain.net_pnl > 0 : chain.net_pnl >= 0) ? "text-emerald-600 dark:text-gain" : "text-rose-500"}`}>
               {isShortChain
                 ? (chain.net_pnl > 0
-                    ? `Close ≤ ${fmtCurrency(breakevenClose)} → chain profit`
-                    : `In the hole ${fmtCurrency(Math.abs(chain.net_pnl))} — any buy-back adds to the loss`)
+                    ? `Close ≤ ${maskValue(locked, fmtCurrency(breakevenClose))} → chain profit`
+                    : `In the hole ${maskValue(locked, fmtCurrency(Math.abs(chain.net_pnl)))} — any buy-back adds to the loss`)
                 : (chain.net_pnl < 0
-                    ? `Close ≥ ${fmtCurrency(breakevenClose)} → chain profit`
+                    ? `Close ≥ ${maskValue(locked, fmtCurrency(breakevenClose))} → chain profit`
                     : `Any close locks in profit`)}
             </div>
           )}
@@ -501,7 +505,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
         </div>
         <div className="text-right flex-shrink-0">
           <div className={`font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-            {chain.net_pnl >= 0 ? "+" : ""}{fmtCurrency(chain.net_pnl)}
+            {chain.net_pnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(chain.net_pnl))}
           </div>
           <div className="text-[10px] text-stone-300 dark:text-text-faint mt-0.5">{expanded ? "▲" : "▼"}</div>
         </div>
@@ -531,12 +535,12 @@ function ChainCard({ chain }: { chain: OptionChain }) {
                       <span className="ml-1 bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 px-1 py-0.5 rounded text-[10px] font-bold">ROLL</span>
                     )}
                   </td>
-                  <td className="py-1.5 text-right text-stone-700 dark:text-text-muted">${leg.strike}</td>
+                  <td className="py-1.5 text-right text-stone-700 dark:text-text-muted">${privateCount(locked, leg.strike)}</td>
                   <td className="py-1.5 text-right text-stone-500 dark:text-text-subtle">{fmtDate(leg.expiry)}</td>
-                  <td className="py-1.5 text-right text-stone-700 dark:text-text-muted">{leg.units > 0 ? "+" : ""}{leg.units}</td>
-                  <td className="py-1.5 text-right text-stone-500 dark:text-text-subtle">{leg.price > 0 ? fmtCurrency(leg.price) : "—"}</td>
+                  <td className="py-1.5 text-right text-stone-700 dark:text-text-muted">{leg.units > 0 ? "+" : ""}{privateCount(locked, leg.units)}</td>
+                  <td className="py-1.5 text-right text-stone-500 dark:text-text-subtle">{leg.price > 0 ? maskValue(locked, fmtCurrency(leg.price)) : "—"}</td>
                   <td className={`py-1.5 text-right font-semibold ${leg.amount >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-                    {leg.amount !== 0 ? (leg.amount >= 0 ? "+" : "") + fmtCurrency(leg.amount) : "—"}
+                    {leg.amount !== 0 ? (leg.amount >= 0 ? "+" : "") + maskValue(locked, fmtCurrency(leg.amount)) : "—"}
                   </td>
                 </tr>
               ))}
@@ -545,7 +549,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
           <div className="flex justify-between items-center mt-2 pt-2 border-t border-stone-100 dark:border-border-subtle">
             <span className="text-xs text-stone-400 dark:text-text-faint">{chain.legs.length} leg{chain.legs.length !== 1 ? "s" : ""}</span>
             <span className={`font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-              Net {chain.net_pnl >= 0 ? "+" : ""}{fmtCurrency(chain.net_pnl)}
+              Net {chain.net_pnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(chain.net_pnl))}
             </span>
           </div>
 
@@ -553,7 +557,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-stone-400 dark:text-text-faint">
-                  Open: ${openLeg.strike} {fmtDate(openLeg.expiry)}
+                  Open: ${privateCount(locked, openLeg.strike)} {fmtDate(openLeg.expiry)}
                 </span>
                 <button
                   onClick={fetchLiveQuote}
@@ -573,7 +577,7 @@ function ChainCard({ chain }: { chain: OptionChain }) {
                   <div className="flex justify-between text-xs">
                     <span className="text-stone-400 dark:text-text-faint">Bid / Mid / Ask</span>
                     <span className="text-stone-700 dark:text-text-muted font-medium">
-                      {fmtCurrency(liveQuote.bid)} / {fmtCurrency(liveQuote.mid)} / {fmtCurrency(liveQuote.ask)}
+                      {maskValue(locked, fmtCurrency(liveQuote.bid))} / {maskValue(locked, fmtCurrency(liveQuote.mid))} / {maskValue(locked, fmtCurrency(liveQuote.ask))}
                     </span>
                   </div>
                   {netAfterClose != null && (
@@ -581,8 +585,8 @@ function ChainCard({ chain }: { chain: OptionChain }) {
                       <span className="text-stone-400 dark:text-text-faint">If closed now</span>
                       <span className={`font-semibold ${netAfterClose >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
                         {netAfterClose >= 0
-                          ? `Chain profit of +${fmtCurrency(netAfterClose)}`
-                          : `Still ${fmtCurrency(Math.abs(netAfterClose))} in the hole`}
+                          ? `Chain profit of +${maskValue(locked, fmtCurrency(netAfterClose))}`
+                          : `Still ${maskValue(locked, fmtCurrency(Math.abs(netAfterClose)))} in the hole`}
                       </span>
                     </div>
                   )}
@@ -604,6 +608,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
   const [expandedFuture, setExpandedFuture] = useState<Set<string>>(new Set([currentMonthStr]));
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [expandedCollateral, setExpandedCollateral] = useState<Set<string>>(new Set());
+  const { locked } = usePrivacy();
 
   // When yearFilter is set, restrict every chain set to that year only.
   const inYear = (m: string | null | undefined) => !yearFilter || (m != null && m.startsWith(yearFilter));
@@ -679,7 +684,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                     <div className="text-xs text-amber-600 dark:text-amber-300">{data.chains.length} open · best case</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-base text-amber-700 dark:text-amber-300">+{fmtCurrency(data.gain)}</span>
+                    <span className="font-bold text-base text-amber-700 dark:text-amber-300">+{maskValue(locked, fmtCurrency(data.gain))}</span>
                     {!isThisMonth && <span className="text-stone-400 dark:text-text-faint text-xs">{isExpanded ? "▲" : "▼"}</span>}
                   </div>
                 </button>
@@ -690,11 +695,11 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                       return (
                         <div key={i} className="flex justify-between text-xs">
                           <span className="text-stone-500 dark:text-text-subtle">
-                            {c.underlying} {c.option_type} ${leg?.strike}
-                            {Math.abs(c.open_units) > 1 && <span className="text-stone-400 dark:text-text-faint"> ×{Math.abs(c.open_units)}</span>}
+                            {c.underlying} {c.option_type} ${privateCount(locked, leg?.strike ?? "")}
+                            {Math.abs(c.open_units) > 1 && <span className="text-stone-400 dark:text-text-faint"> ×{privateCount(locked, Math.abs(c.open_units))}</span>}
                             {" "}exp {fmtDate(leg?.expiry ?? null)}
                           </span>
-                          <span className="font-medium text-amber-700 dark:text-amber-300">+{fmtCurrency(c.net_pnl)}</span>
+                          <span className="font-medium text-amber-700 dark:text-amber-300">+{maskValue(locked, fmtCurrency(c.net_pnl))}</span>
                         </div>
                       );
                     })}
@@ -721,7 +726,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
         <div className="bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl px-4 py-3 flex items-center justify-between">
           <span className="text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">All Realized</span>
           <span className={`font-bold text-lg ${totalPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
+            {totalPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(totalPnl))}
           </span>
         </div>
       )}
@@ -770,7 +775,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <div className={`font-bold text-base ${pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-                      {pnl >= 0 ? "+" : ""}{fmtCurrency(pnl)}
+                      {pnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(pnl))}
                     </div>
                     {monthReturnPct !== null && (
                       <div className="text-[11px] text-stone-400 dark:text-text-faint">
@@ -793,7 +798,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                         <div key={key} className="flex justify-between text-xs">
                           <span className="text-stone-500 dark:text-text-subtle">{key}</span>
                           <span className={`font-medium ${val >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-                            {val >= 0 ? "+" : ""}{fmtCurrency(val)}
+                            {val >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(val))}
                           </span>
                         </div>
                       ))}
@@ -810,7 +815,7 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                           Peak PUT collateral · {fmtDate(capData.peakDate)}
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{fmtCurrency(capData.peak)}</span>
+                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{maskValue(locked, fmtCurrency(capData.peak))}</span>
                           <span className="text-stone-300 dark:text-text-faint text-xs">{isCollOpen ? "▲" : "▼"}</span>
                         </div>
                       </button>
@@ -822,16 +827,16 @@ function MonthlyView({ chains, yearFilter = null }: { chains: OptionChain[]; yea
                           {peakPositions.map((pos, j) => (
                             <div key={j} className="flex justify-between text-[10px] pl-2">
                               <span className="text-stone-400 dark:text-text-faint">
-                                {pos.underlying} PUT ${pos.strike} × {pos.units} contract{pos.units !== 1 ? "s" : ""}
+                                {pos.underlying} PUT ${privateCount(locked, pos.strike)} × {privateCount(locked, pos.units)} contract{pos.units !== 1 ? "s" : ""}
                               </span>
-                              <span className="text-amber-600 dark:text-amber-300 font-medium">{fmtCurrency(pos.collateral)}</span>
+                              <span className="text-amber-600 dark:text-amber-300 font-medium">{maskValue(locked, fmtCurrency(pos.collateral))}</span>
                             </div>
                           ))}
                           {peakPositions.length > 1 && (
                             <div className="flex justify-between text-[10px] pl-2 pt-0.5 border-t border-stone-50 dark:border-border-subtle mt-0.5">
                               <span className="text-stone-400 dark:text-text-faint">Total</span>
                               <span className="text-amber-700 dark:text-amber-300 font-semibold">
-                                {fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0))}
+                                {maskValue(locked, fmtCurrency(peakPositions.reduce((s, p) => s + p.collateral, 0)))}
                               </span>
                             </div>
                           )}
@@ -866,6 +871,7 @@ export default function PortfolioPage() {
   const [fromSnapshot, setFromSnapshot] = useState(false);
 
   const offline = useOffline();
+  const { locked } = usePrivacy();
 
   const fetchChains = useCallback((live?: boolean) => {
     // Offline: don't hang on a fetch that can't succeed — fall back to the
@@ -1039,7 +1045,7 @@ export default function PortfolioPage() {
                 </Link>
               </div>
               <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-                {closedPnl >= 0 ? "+" : ""}{fmtCurrency(closedPnl)}
+                {closedPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(closedPnl))}
               </div>
             </div>
             <div className="flex gap-4 text-right">
@@ -1063,7 +1069,7 @@ export default function PortfolioPage() {
                 <div className="text-xs text-amber-600 dark:text-amber-300 font-medium">PUT Collateral Locked</div>
                 <div className="text-[11px] text-stone-400 dark:text-text-faint">{openPuts.length} open put{openPuts.length !== 1 ? "s" : ""}</div>
               </div>
-              <div className="text-base font-bold text-amber-700 dark:text-amber-300">{fmtCurrency(capitalLocked)}</div>
+              <div className="text-base font-bold text-amber-700 dark:text-amber-300">{maskValue(locked, fmtCurrency(capitalLocked))}</div>
             </div>
           )}
         </div>
@@ -1176,6 +1182,7 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
   // Always call hooks unconditionally — bail-out render must come after.
   const today = new Date().toISOString().slice(0, 10);
   const [entryPrices, setEntryPrices] = useState<Record<string, number | null>>({});
+  const { locked } = usePrivacy();
 
   useEffect(() => {
     if (leaps.length === 0) return;
@@ -1218,7 +1225,7 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
         <div className="text-right">
           <div className="text-[10px] text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Net P&L</div>
           <div className={`text-base font-bold ${totalPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-            {totalPnl >= 0 ? "+" : ""}{fmtCurrency(totalPnl)}
+            {totalPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(totalPnl))}
           </div>
         </div>
       </div>
@@ -1257,13 +1264,13 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
                   {c.option_type.toUpperCase()}
                 </span>
               </div>
-              <div className="col-span-1 text-right tabular-nums text-stone-700 dark:text-text-muted">${strike.toFixed(0)}</div>
+              <div className="col-span-1 text-right tabular-nums text-stone-700 dark:text-text-muted">${privateCount(locked, strike.toFixed(0))}</div>
               <div className="col-span-2 text-right">
                 {entryPrice == null ? (
                   <span className="text-stone-300 dark:text-text-faint">—</span>
                 ) : (
                   <div>
-                    <div className="tabular-nums text-stone-700 dark:text-text-muted">${entryPrice.toFixed(2)}</div>
+                    <div className="tabular-nums text-stone-700 dark:text-text-muted">${privateCount(locked, entryPrice.toFixed(2))}</div>
                     {moneyness && (
                       <div className={`text-[10px] font-bold ${moneyness.color}`}>
                         {moneyness.label}
@@ -1286,7 +1293,7 @@ function LeapsView({ leaps }: { leaps: OptionChain[] }) {
                 {c.roll_count > 0 && <span className="ml-1 text-[10px] text-stone-500 dark:text-text-subtle">×{c.roll_count + 1}</span>}
               </div>
               <div className={`col-span-2 text-right tabular-nums font-semibold ${c.net_pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
-                {c.net_pnl >= 0 ? "+" : ""}{fmtCurrency(c.net_pnl)}
+                {c.net_pnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(c.net_pnl))}
               </div>
             </div>
           );

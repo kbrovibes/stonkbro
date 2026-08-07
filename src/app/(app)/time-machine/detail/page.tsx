@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import { MASK } from "@/lib/privacy";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types — minimal slice of TimeMachineResult we actually consume here.
@@ -97,14 +99,19 @@ export default function TimeMachineDetailPage() {
   const [sortCol, setSortCol] = useState<SortCol>("snapshotDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const fmt = (n: number) =>
-    showDollars
-      ? new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits: 0,
-        }).format(n)
-      : "$•••";
+  const { locked } = usePrivacy();
+  // The privacy lock overrides the local toggle — it can only ever hide more.
+  const dollarsVisible = showDollars && !locked;
+
+  const fmt = (n: number) => {
+    if (locked) return MASK;
+    if (!showDollars) return "$•••";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(n);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -234,7 +241,7 @@ export default function TimeMachineDetailPage() {
             <p className="text-sm text-stone-500 dark:text-text-subtle">Trade-by-trade trajectory of trading vs. holding</p>
             <Link href="/time-machine" className="text-[11px] text-sky-600 dark:text-accent hover:text-sky-800 mt-1 underline underline-offset-2">← Back to Hindsight</Link>
           </div>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
+          <label className={`flex items-center gap-1.5 cursor-pointer select-none shrink-0 ${locked ? "hidden" : ""}`}>
             <span className="text-[10px] text-stone-500 dark:text-text-subtle">$</span>
             <button type="button" role="switch" aria-checked={showDollars} onClick={() => setShowDollars((v) => !v)}
               className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${showDollars ? "bg-sky-500" : "bg-stone-300 dark:bg-border-strong"}`}>
@@ -265,12 +272,12 @@ export default function TimeMachineDetailPage() {
                 tone={lifetimeStats.net >= 0 ? "emerald" : "rose"} />
               <StatCard label="Best stop date" tone="rose"
                 value={lifetimeStats.bestStop
-                  ? `${monthLabel(lifetimeStats.bestStop.snapshotDate)} · ${showDollars ? "+" + fmt(Math.abs(lifetimeStats.bestStop.deltaAbsolute)) : "+$•••"}`
+                  ? `${monthLabel(lifetimeStats.bestStop.snapshotDate)} · ${dollarsVisible ? "+" : ""}${fmt(Math.abs(lifetimeStats.bestStop.deltaAbsolute))}`
                   : "—"} />
             </div>
 
             <ChartCard title="Simulated vs. actual portfolio over time" subtitle="If you'd frozen on each date">
-              <LineChart rows={chronological} showDollars={showDollars} fmt={fmt} />
+              <LineChart rows={chronological} showDollars={dollarsVisible} fmt={fmt} />
               <Legend items={[
                 { color: "bg-sky-500", label: "Simulated (if frozen)" },
                 { color: "bg-stone-700", label: "Actual (you kept trading)" },
@@ -278,11 +285,11 @@ export default function TimeMachineDetailPage() {
             </ChartCard>
 
             <ChartCard title="Monthly delta — would-be benefit of stopping" subtitle="Green = trading worked · Red = should've stopped">
-              <DeltaBars rows={chronological} showDollars={showDollars} fmt={fmt} />
+              <DeltaBars rows={chronological} showDollars={dollarsVisible} fmt={fmt} />
             </ChartCard>
 
             <ChartCard title="Cumulative realized gains vs. tax drag" subtitle="Each snapshot's realized total vs. estimated tax">
-              <CumulativeLineChart rows={chronological} showDollars={showDollars} fmt={fmt} />
+              <CumulativeLineChart rows={chronological} showDollars={dollarsVisible} fmt={fmt} />
               <Legend items={[
                 { color: "bg-emerald-500", label: "Realized gains" },
                 { color: "bg-rose-500", label: "Estimated tax" },
@@ -290,7 +297,7 @@ export default function TimeMachineDetailPage() {
             </ChartCard>
 
             <ChartCard title="Inflows per period — cash + RSU vests" subtitle="Per-snapshot incremental deposits + vesting">
-              <InflowBars rows={rows} showDollars={showDollars} fmt={fmt} />
+              <InflowBars rows={rows} showDollars={dollarsVisible} fmt={fmt} />
               <Legend items={[
                 { color: "bg-amber-500", label: "Cash deposits" },
                 { color: "bg-teal-500", label: "RSU vests" },
@@ -333,7 +340,7 @@ export default function TimeMachineDetailPage() {
                     {sortedTableRows.map((r) => {
                       const isRed = r.favorability === 1;
                       const cell = "px-2 py-2 text-right tabular-nums";
-                      const sign = showDollars && r.deltaAbsolute >= 0 ? "+" : "";
+                      const sign = dollarsVisible && r.deltaAbsolute >= 0 ? "+" : "";
                       return (
                         <tr key={r.snapshotDate} className="border-t border-stone-50 dark:border-border-subtle hover:bg-stone-50/60 dark:hover:bg-surface-muted/60 transition">
                           <td className="px-2 py-2">

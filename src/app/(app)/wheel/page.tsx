@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
+import { isPiiLocked } from "@/lib/privacy-server";
+import { privateCurrency } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,15 @@ type WheelSymbol = {
 function formatDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/**
+ * Timeline descriptions embed real strikes and share counts, so redact those
+ * at render time — the raw text is still needed by buildWheelData.
+ */
+function redactDollars(locked: boolean, text: string) {
+  if (!locked) return text;
+  return text.replace(/\$[\d.,]+/g, "$•••").replace(/\d+ shares/g, "•• shares");
 }
 
 function formatExpiry(iso: string) {
@@ -228,6 +239,7 @@ function buildWheelData(positions: any[]): WheelSymbol[] {
 
 export default async function WheelPage() {
   const user = await getUser();
+  const locked = await isPiiLocked();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];
@@ -306,7 +318,7 @@ export default async function WheelPage() {
                 Total Wheel Income
               </p>
               <p className="text-lg font-extrabold text-emerald-700 dark:text-gain-strong">
-                +${overallIncome.toLocaleString()}
+                +{privateCurrency(locked, overallIncome)}
               </p>
             </div>
             <div className="text-right">
@@ -390,7 +402,7 @@ export default async function WheelPage() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-emerald-700 dark:text-gain-strong">
-                  +${pos.totalIncome.toLocaleString()}
+                  +{privateCurrency(locked, pos.totalIncome)}
                 </p>
                 <p className="text-[10px] text-stone-400 dark:text-text-faint">
                   {pos.annualizedReturn}% ann.
@@ -424,7 +436,7 @@ export default async function WheelPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-xs font-semibold text-stone-800 dark:text-text">
-                            {cycle.description}
+                            {redactDollars(locked, cycle.description)}
                           </p>
                           <p className="text-[10px] text-stone-400 dark:text-text-faint mt-0.5">
                             {cycle.date}
@@ -434,7 +446,7 @@ export default async function WheelPage() {
                           <span
                             className={`text-xs font-semibold ${cycle.step === "assigned" ? "text-stone-500 dark:text-text-subtle" : "text-emerald-600 dark:text-gain"}`}
                           >
-                            +${cycle.premium.toLocaleString()}
+                            +{privateCurrency(locked, cycle.premium)}
                           </span>
                         )}
                       </div>
@@ -450,7 +462,7 @@ export default async function WheelPage() {
                           />
                         </div>
                         <span className="text-[10px] text-stone-400 dark:text-text-faint">
-                          ${cycle.cumulativeIncome.toLocaleString()}
+                          {privateCurrency(locked, cycle.cumulativeIncome)}
                         </span>
                       </div>
                     </div>
@@ -471,7 +483,7 @@ export default async function WheelPage() {
             <div className="px-3 py-2.5 text-center border-x border-stone-100 dark:border-border-subtle">
               <p className="text-[10px] text-stone-400 dark:text-text-faint">Avg/Cycle</p>
               <p className="text-xs font-bold text-stone-900 dark:text-text">
-                ${pos.avgCycleReturn.toLocaleString()}
+                {privateCurrency(locked, pos.avgCycleReturn)}
               </p>
             </div>
             <div className="px-3 py-2.5 text-center">

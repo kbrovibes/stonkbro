@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.27.0 — Privacy lock: hand your phone to a friend
+
+- **Lock private info** from the profile-menu dropdown; unlock via in-app PIN modal. PIN (4-8 digits) set per-user in Settings → Privacy Lock, persisted in `user_settings`, verified server-side; the lock rides an httpOnly cookie so even server-rendered HTML is masked, and the settings API refuses PIN changes while locked
+- **When locked, every wealth-revealing value renders as `•••••`** across Portfolio (P&L, collateral, per-leg amounts, strikes and contract counts of real positions, chart axes/tooltips), Hindsight/Time Machine (account balances incl. account last-4, holdings tables, deposits/withdrawals/RSUs, tax estimates), Income (starting capital, premium totals), Dashboard, Positions, Wheel (incomes + cycle strike history), Covered Calls (real share counts + cost basis), and the in-app alert banner ("you hold this"-style alerts hide behind the lock)
+- **Deliberately visible while locked**: percentages/ratios, market quotes, hypothetical $100K scanner math, the ticker roster itself, and forms mid-entry — the app stays fully browsable
+- Hindsight detail's existing show/hide-dollars toggle now forces hidden while locked
+
 ## v0.26.2 — Push notifications actually work + privacy-lock groundwork
 
 - **Deploys unblocked**: the hourly market-monitor cron (`0 11-23 * * 1-5`) exceeded the Vercel Hobby once-daily limit and had **failed every production deploy since Aug 4** — now `0 17 * * 1-5` (10am PT daily; restore hourly by upgrading to Vercel Pro and reverting this line)

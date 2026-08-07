@@ -5,6 +5,8 @@ import { getQuote } from "@/lib/market/yahoo";
 import { notFound } from "next/navigation";
 import StatusActions from "./StatusActions";
 import TrailingStopConfig from "./TrailingStopConfig";
+import { maskValue, privateCount } from "@/lib/privacy";
+import { isPiiLocked } from "@/lib/privacy-server";
 
 function legLabel(type: string) {
   const map: Record<string, string> = {
@@ -65,6 +67,8 @@ export default async function PositionDetailPage({
   if (!user) {
     notFound();
   }
+
+  const locked = await isPiiLocked();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let position: any;
@@ -158,7 +162,7 @@ export default async function PositionDetailPage({
             Premium
           </p>
           <p className="text-base font-bold mt-1 text-stone-900 dark:text-text">
-            ${totalPremium.toLocaleString()}
+            {maskValue(locked, `$${totalPremium.toLocaleString()}`)}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
@@ -230,7 +234,7 @@ export default async function PositionDetailPage({
                       )}
                     </div>
                     <span className="text-xs font-medium text-stone-400 dark:text-text-faint">
-                      x{leg.quantity ?? 1}
+                      x{privateCount(locked, leg.quantity ?? 1)}
                     </span>
                   </div>
 
@@ -239,7 +243,7 @@ export default async function PositionDetailPage({
                       <div>
                         <p className="text-[10px] text-stone-400 dark:text-text-faint">Strike</p>
                         <p className="text-sm font-bold text-stone-900 dark:text-text">
-                          ${leg.strike}
+                          {maskValue(locked, `$${leg.strike}`)}
                         </p>
                       </div>
                     )}
@@ -260,7 +264,7 @@ export default async function PositionDetailPage({
                         {leg.type === "shares" ? "Cost Basis" : "Entry"}
                       </p>
                       <p className="text-sm font-bold text-stone-900 dark:text-text">
-                        ${Math.abs(leg.entry_price).toFixed(2)}
+                        {maskValue(locked, `$${Math.abs(leg.entry_price).toFixed(2)}`)}
                       </p>
                     </div>
                   </div>

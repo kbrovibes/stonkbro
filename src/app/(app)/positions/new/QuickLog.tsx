@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { createPositionAction } from "../actions";
+import { usePrivacy } from "@/components/PrivacyProvider";
+import { maskValue } from "@/lib/privacy";
 
 type LegData = {
   type: string;
@@ -45,6 +47,7 @@ export default function QuickLog({
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const { locked } = usePrivacy();
 
   function handleConfirm() {
     setError("");
@@ -182,7 +185,7 @@ export default function QuickLog({
             <p className="text-xs text-stone-500 dark:text-text-subtle">
               Income:{" "}
               <span className="font-bold text-emerald-600 dark:text-gain">
-                ${totalIncome.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                {maskValue(locked, `$${totalIncome.toLocaleString("en-US", { minimumFractionDigits: 0 })}`)}
               </span>{" "}
               per contract
             </p>

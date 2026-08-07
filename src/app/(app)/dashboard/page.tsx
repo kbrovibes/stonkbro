@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { getPositions } from "@/lib/db/positions";
 import { getQuotes, type QuoteData } from "@/lib/market/yahoo";
+import { MASK, maskValue } from "@/lib/privacy";
+import { isPiiLocked } from "@/lib/privacy-server";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +45,8 @@ function computeLegPnl(
 export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
+
+  const locked = await isPiiLocked();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let positions: any[] = [];
@@ -104,12 +108,12 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
           <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Total P&L</p>
           <p className={`text-xl font-bold mt-1 ${totalPnl >= 0 ? "text-emerald-700 dark:text-gain-strong" : "text-red-600 dark:text-loss"}`}>
-            {formatCurrency(totalPnl)}
+            {locked ? `${totalPnl >= 0 ? "+" : "-"}${MASK}` : formatCurrency(totalPnl)}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3">
           <p className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider">Income</p>
-          <p className="text-xl font-bold mt-1 text-stone-900 dark:text-text">${totalPremium.toLocaleString()}</p>
+          <p className="text-xl font-bold mt-1 text-stone-900 dark:text-text">{maskValue(locked, `$${totalPremium.toLocaleString()}`)}</p>
         </div>
       </div>
 

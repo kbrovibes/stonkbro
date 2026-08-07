@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePrivacy } from "@/components/PrivacyProvider";
 
 type Alert = {
   id: string;
@@ -17,6 +18,10 @@ type Alert = {
 
 const POLL_MS = 5 * 60_000;
 
+// Alert copy can name holdings and dollar levels, so the whole message is
+// withheld under the privacy lock — only the fact that alerts exist shows.
+const HIDDEN_ALERT = "🔒 Alert hidden — unlock private info to view";
+
 /**
  * Sticky banner for unacknowledged critical/warning alerts so a market event
  * is impossible to miss even with push notifications swiped away.
@@ -24,6 +29,7 @@ const POLL_MS = 5 * 60_000;
 export default function AlertBanner() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const { locked } = usePrivacy();
 
   const load = useCallback(() => {
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
@@ -86,7 +92,9 @@ export default function AlertBanner() {
           className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-2"
         >
           <div className="min-w-0">
-            <div className="text-sm font-bold truncate">{top.title}</div>
+            <div className="text-sm font-bold truncate">
+              {locked ? HIDDEN_ALERT : top.title}
+            </div>
             {!expanded && (
               <div className="text-[11px] opacity-90 truncate">
                 {alerts.length > 1 ? `+${alerts.length - 1} more — tap to expand` : "Tap for details"}
@@ -100,9 +108,13 @@ export default function AlertBanner() {
           <div className="px-4 pb-3 flex flex-col gap-3">
             {alerts.map((a) => (
               <div key={a.id} className="border-t border-white/20 pt-2.5">
-                <div className="text-[13px] font-semibold">{a.title}</div>
-                <p className="text-[12px] opacity-95 mt-0.5 leading-snug">{a.body}</p>
-                {a.action && (
+                <div className="text-[13px] font-semibold">
+                  {locked ? HIDDEN_ALERT : a.title}
+                </div>
+                {!locked && (
+                  <p className="text-[12px] opacity-95 mt-0.5 leading-snug">{a.body}</p>
+                )}
+                {!locked && a.action && (
                   <p className="text-[12px] font-semibold mt-1.5 bg-white/15 rounded-lg px-2.5 py-1.5 leading-snug">
                     👉 {a.action}
                   </p>
