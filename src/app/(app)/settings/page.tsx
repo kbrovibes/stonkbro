@@ -1,10 +1,123 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 
 import { CLAUDE_MODELS, GEMINI_MODELS } from "@/lib/ai/constants";
 import { THEME_FONTS, DEFAULT_THEME_FONT_KEY, THEME_FONT_STORAGE_KEY, applyThemeFont } from "@/lib/theme-fonts";
+
+// ---------------------------------------------------------------------------
+// iOS-style grouped list primitives
+// ---------------------------------------------------------------------------
+
+function Group({
+  header,
+  footer,
+  children,
+}: {
+  header?: string;
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section>
+      {header && (
+        <h3 className="px-4 pb-1.5 text-[12px] font-semibold uppercase tracking-wider text-stone-400 dark:text-text-faint">
+          {header}
+        </h3>
+      )}
+      <div className="rounded-2xl bg-white dark:bg-surface-elevated shadow-sm overflow-hidden divide-y divide-stone-100 dark:divide-border-subtle">
+        {children}
+      </div>
+      {footer && (
+        <p className="px-4 pt-1.5 text-[12px] leading-snug text-stone-400 dark:text-text-faint">
+          {footer}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Row({
+  label,
+  sub,
+  children,
+}: {
+  label: ReactNode;
+  sub?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 min-h-[44px] py-2">
+      <div className="min-w-0">
+        <div className="text-[15px] text-stone-900 dark:text-text">{label}</div>
+        {sub && <div className="text-[12px] text-stone-400 dark:text-text-faint">{sub}</div>}
+      </div>
+      {children && <div className="flex items-center gap-2 shrink-0 text-right">{children}</div>}
+    </div>
+  );
+}
+
+function ActionRow({
+  onClick,
+  disabled,
+  destructive,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full text-left px-4 min-h-[44px] py-2 text-[15px] transition-colors active:bg-stone-50 dark:active:bg-surface-muted disabled:opacity-40 ${
+        destructive ? "text-red-500 dark:text-loss" : "text-sky-600 dark:text-accent"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Toggle({
+  on,
+  busy,
+  onChange,
+}: {
+  on: boolean;
+  busy?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      onClick={onChange}
+      disabled={busy}
+      className={`relative w-[51px] h-[31px] rounded-full transition-colors duration-200 disabled:opacity-60 ${
+        on ? "bg-[#34C759] dark:bg-gain" : "bg-stone-200 dark:bg-surface-muted"
+      }`}
+    >
+      <span
+        className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow transition-transform duration-200 ${
+          on ? "translate-x-[20px]" : ""
+        }`}
+      />
+    </button>
+  );
+}
+
+const inputClass =
+  "bg-transparent text-right text-[15px] text-stone-500 dark:text-text-subtle placeholder:text-stone-300 dark:placeholder:text-text-faint focus:outline-none focus:text-stone-900 dark:focus:text-text";
+
+const selectClass =
+  "appearance-none bg-transparent text-right text-[15px] text-stone-500 dark:text-text-subtle pr-4 focus:outline-none cursor-pointer " +
+  "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2216%22%20viewBox%3D%220%200%2010%2016%22%3E%3Cpath%20d%3D%22M1.5%206l3.5-3.5L8.5%206M1.5%2010l3.5%203.5L8.5%2010%22%20stroke%3D%22%23a8a29e%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-right";
+
+// ---------------------------------------------------------------------------
 
 export default function SettingsPage() {
   const [startingCash, setStartingCash] = useState("20000");
@@ -12,7 +125,6 @@ export default function SettingsPage() {
   const [preferredProvider, setPreferredProvider] = useState<"claude" | "gemini">("gemini");
   const [preferredModel, setPreferredModel] = useState("gemini-2.0-flash");
   const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [testError, setTestError] = useState("");
@@ -26,7 +138,7 @@ export default function SettingsPage() {
   const [pushTest, setPushTest] = useState<"idle" | "sending" | string>("idle");
   const [healthStatus, setHealthStatus] = useState<Record<string, "idle" | "checking" | "healthy" | "error">>({});
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
-  const [activeErrorTooltip, setActiveErrorTooltip] = useState<string | null>(null);
+  const [activeError, setActiveError] = useState<string | null>(null);
   const [themeFont, setThemeFont] = useState<string>(DEFAULT_THEME_FONT_KEY);
 
   useEffect(() => {
@@ -62,8 +174,9 @@ export default function SettingsPage() {
       .catch(() => {});
   }, []);
 
-  async function handleSave() {
-    setSaving(true);
+  // Auto-save (iOS style: no Save buttons). Pass overrides for values that
+  // were just set via setState and aren't in state yet.
+  async function save(overrides: Record<string, unknown> = {}) {
     setSaveError("");
     try {
       const res = await fetch("/api/settings", {
@@ -74,6 +187,7 @@ export default function SettingsPage() {
           alert_email: alertEmail || null,
           preferred_ai_provider: preferredProvider,
           preferred_ai_model: preferredModel,
+          ...overrides,
         }),
       });
       if (!res.ok) {
@@ -82,11 +196,9 @@ export default function SettingsPage() {
         return;
       }
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 1500);
     } catch {
-      setSaveError("Network error — check your connection");
-    } finally {
-      setSaving(false);
+      setSaveError("Network error — changes not saved");
     }
   }
 
@@ -152,6 +264,7 @@ export default function SettingsPage() {
         await subscription.unsubscribe();
       }
       setNotifPermission("default");
+      setPushSubscribed(false);
     } catch {
       // silent
     } finally {
@@ -198,13 +311,11 @@ export default function SettingsPage() {
       ...CLAUDE_MODELS.map(m => ({ ...m, provider: "claude" as const }))
     ];
 
-    // Reset status
     const initial: Record<string, "checking"> = {};
     allModels.forEach(m => initial[m.id] = "checking");
     setHealthStatus(initial);
     setHealthErrors({});
 
-    // Check all in parallel
     await Promise.all(allModels.map(async (model) => {
       try {
         const res = await fetch("/api/admin/ai-health", {
@@ -227,9 +338,14 @@ export default function SettingsPage() {
     }));
   }
 
+  const checking = Object.values(healthStatus).some(s => s === "checking");
+  const healthStarted = Object.keys(healthStatus).length > 0;
+  const currentFont = THEME_FONTS.find((f) => f.key === themeFont) ?? THEME_FONTS[0];
+  const pushOn = notifPermission === "granted" && pushSubscribed === true;
+
   return (
     <div className="flex flex-col flex-1 px-4 py-6">
-      <div className="max-w-2xl mx-auto w-full flex flex-col gap-5">
+      <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
         {/* Back + Title */}
         <div className="flex items-center gap-3">
           <Link
@@ -241,366 +357,208 @@ export default function SettingsPage() {
             </svg>
           </Link>
           <h2 className="text-lg font-bold text-stone-900 dark:text-text">Settings</h2>
+          <span
+            className={`ml-auto text-[12px] font-medium text-stone-400 dark:text-text-faint transition-opacity duration-300 ${
+              saved ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            Saved
+          </span>
         </div>
 
-        {/* Theme */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Theme</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Switch the font used across the whole app, including the title bar.
-            Choice is saved locally on this device.
-          </p>
-          <div className="mt-4">
-            <label htmlFor="theme-font" className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1">
-              Font
-            </label>
+        {saveError && (
+          <p className="px-4 -mt-3 text-[12px] text-red-500 dark:text-loss">{saveError}</p>
+        )}
+
+        <Group
+          header="Appearance"
+          footer={
+            <span style={{ fontFamily: currentFont.family }}>
+              stonk<span className="text-[#00C805] font-black">BRO</span> · The quick brown fox jumps over $1,234.56
+            </span>
+          }
+        >
+          <Row label="Font">
             <select
-              id="theme-font"
               value={themeFont}
               onChange={(e) => {
                 const next = e.target.value;
                 setThemeFont(next);
                 applyThemeFont(next);
               }}
-              className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+              className={selectClass}
             >
               {THEME_FONTS.map((f) => (
                 <option key={f.key} value={f.key}>{f.label}</option>
               ))}
             </select>
-            <p className="mt-2 text-[11px] text-stone-400 dark:text-text-faint">
-              Preview: <span style={{ fontFamily: (THEME_FONTS.find((f) => f.key === themeFont) ?? THEME_FONTS[0]).family }}>
-                stonk<span className="text-[#00C805] font-black">BRO</span> · The quick brown fox jumps over $1,234.56
-              </span>
-            </p>
-          </div>
-        </div>
+          </Row>
+        </Group>
 
-        {/* Account Settings */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Account Settings</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Configure your trading account defaults.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-4">
-            <div>
-              <label
-                htmlFor="starting-cash"
-                className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1"
-              >
-                Starting Cash
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400 dark:text-text-faint">
-                  $
-                </span>
-                <input
-                  id="starting-cash"
-                  type="text"
-                  inputMode="numeric"
-                  value={startingCash}
-                  onChange={(e) => setStartingCash(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 pl-7 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  placeholder="20000"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="alert-email"
-                className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1"
-              >
-                Alert Email
-              </label>
-              <input
-                id="alert-email"
-                type="email"
-                value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted active:bg-stone-700 dark:active:bg-surface-muted transition-colors disabled:opacity-50"
-            >
-              {saved ? "Saved!" : saving ? "Saving..." : "Save Settings"}
-            </button>
-            {saveError && <p className="text-xs text-red-500 dark:text-loss">{saveError}</p>}
-          </div>
-        </div>
+        <Group header="Account">
+          <Row label="Starting Cash">
+            <span className="text-[15px] text-stone-300 dark:text-text-faint">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={startingCash}
+              onChange={(e) => setStartingCash(e.target.value)}
+              onBlur={() => save()}
+              className={`w-24 ${inputClass}`}
+              placeholder="20000"
+            />
+          </Row>
+          <Row label="Alert Email">
+            <input
+              type="email"
+              value={alertEmail}
+              onChange={(e) => setAlertEmail(e.target.value)}
+              onBlur={() => save()}
+              className={`w-48 ${inputClass}`}
+              placeholder="you@example.com"
+            />
+          </Row>
+        </Group>
 
         <PrivacyPinSection />
 
-        {/* AI Configuration */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">AI Configuration</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Choose which AI engine powers your research, scans, and risk analysis.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-4">
-            <div>
-              <label className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-2">
-                Primary AI Provider
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+        <Group
+          header="AI"
+          footer="If your provider hits its rate limit, the system fails over to the other provider and notifies you."
+        >
+          <Row label="Provider">
+            <div className="flex rounded-lg bg-stone-100 dark:bg-surface-muted p-0.5">
+              {(["gemini", "claude"] as const).map((p) => (
                 <button
+                  key={p}
                   onClick={() => {
-                    setPreferredProvider("gemini");
-                    setPreferredModel(GEMINI_MODELS[0].id);
+                    const model = p === "gemini" ? GEMINI_MODELS[0].id : CLAUDE_MODELS[0].id;
+                    setPreferredProvider(p);
+                    setPreferredModel(model);
+                    save({ preferred_ai_provider: p, preferred_ai_model: model });
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
-                    preferredProvider === "gemini"
-                      ? "border-sky-600 bg-sky-50 dark:bg-accent-bg text-sky-700 dark:text-accent-hover"
-                      : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-600 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted"
+                  className={`px-3 py-1 rounded-md text-[13px] font-medium capitalize transition-colors ${
+                    preferredProvider === p
+                      ? "bg-white dark:bg-surface-elevated text-stone-900 dark:text-text shadow-sm"
+                      : "text-stone-500 dark:text-text-subtle"
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                  Gemini (Default)
+                  {p}
                 </button>
-                <button
-                  onClick={() => {
-                    setPreferredProvider("claude");
-                    setPreferredModel(CLAUDE_MODELS[0].id);
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 px-3 text-sm font-medium transition-colors ${
-                    preferredProvider === "claude"
-                      ? "border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300"
-                      : "border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-stone-600 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted"
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  Claude
-                </button>
-              </div>
+              ))}
             </div>
-
-            <div>
-              <label htmlFor="ai-model" className="block text-xs font-medium text-stone-700 dark:text-text-muted mb-1">
-                Model Selection
-              </label>
-              <select
-                id="ai-model"
-                value={preferredModel}
-                onChange={(e) => setPreferredModel(e.target.value)}
-                className="w-full rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text focus:outline-none focus:ring-2 focus:ring-sky-500"
-              >
-                {preferredProvider === "gemini"
-                  ? GEMINI_MODELS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))
-                  : CLAUDE_MODELS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-              </select>
-              <p className="mt-2 text-[10px] text-stone-400 dark:text-text-faint italic">
-                * If your preferred provider reaches its rate limit, the system will automatically failover to the other provider and notify you.
-              </p>
-            </div>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted active:bg-stone-700 dark:active:bg-surface-muted transition-colors disabled:opacity-50"
+          </Row>
+          <Row label="Model">
+            <select
+              value={preferredModel}
+              onChange={(e) => {
+                setPreferredModel(e.target.value);
+                save({ preferred_ai_model: e.target.value });
+              }}
+              className={selectClass}
             >
-              {saved ? "Saved!" : saving ? "Saving..." : "Update AI Preferences"}
-            </button>
-            {saveError && <p className="text-xs text-red-500 dark:text-loss">{saveError}</p>}
-          </div>
-        </div>
-
-        {/* AI Model Health Check */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 dark:text-text">AI Model Health</h3>
-            <button
-              onClick={checkAIHealth}
-              disabled={Object.values(healthStatus).some(s => s === "checking")}
-              className="text-xs font-bold text-sky-600 dark:text-accent hover:text-sky-700 disabled:text-stone-300 transition-colors"
-            >
-              {Object.values(healthStatus).some(s => s === "checking") ? "Checking..." : "Check All Models"}
-            </button>
-          </div>
-          <p className="text-sm text-stone-500 dark:text-text-subtle mb-4">
-            Verify that your API keys are valid and models are responding.
-          </p>
-
-          <div className="grid grid-cols-1 gap-2">
-            {[...GEMINI_MODELS, ...CLAUDE_MODELS].map((model) => {
+              {(preferredProvider === "gemini" ? GEMINI_MODELS : CLAUDE_MODELS).map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </Row>
+          <ActionRow onClick={checkAIHealth} disabled={checking}>
+            {checking ? "Checking model health…" : "Check Model Health"}
+          </ActionRow>
+          {healthStarted &&
+            [...GEMINI_MODELS, ...CLAUDE_MODELS].map((model) => {
               const status = healthStatus[model.id] || "idle";
               const isGemini = GEMINI_MODELS.some(m => m.id === model.id);
-              
               return (
-                <div key={model.id} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 dark:border-border-subtle bg-stone-50/30 dark:bg-surface-muted/30">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-2 h-2 rounded-full ${isGemini ? "bg-sky-500" : "bg-purple-500"}`} />
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-stone-800 dark:text-text">{model.name}</span>
-                      <span className="text-[10px] text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">
-                        {isGemini ? "Google Gemini" : "Anthropic Claude"}
+                <div key={model.id}>
+                  <Row
+                    label={
+                      <span className="flex items-center gap-2 text-[13px]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isGemini ? "bg-sky-500" : "bg-purple-500"}`} />
+                        {model.name}
                       </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center">
+                    }
+                  >
                     {status === "checking" ? (
-                      <div className="w-4 h-4 border-2 border-stone-200 dark:border-border-default border-t-stone-500 rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-stone-200 dark:border-border-default border-t-stone-500 rounded-full animate-spin" />
                     ) : status === "healthy" ? (
-                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-gain">
-                        <span className="text-[10px] font-bold">Healthy</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4.13-5.689Z" clipRule="evenodd" />
-                        </svg>
-                      </div>
+                      <span className="text-[12px] font-medium text-emerald-600 dark:text-gain">Healthy</span>
                     ) : status === "error" ? (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setActiveErrorTooltip(activeErrorTooltip === model.id ? null : model.id)}
-                          className="flex items-center gap-1 text-red-500 dark:text-loss active:opacity-70"
-                        >
-                          <span className="text-[10px] font-bold">Failed</span>
-                          <span className="text-sm leading-none">✕</span>
-                        </button>
-                        {activeErrorTooltip === model.id && healthErrors[model.id] && (
-                          <div className="absolute right-0 top-6 z-50 w-56 rounded-lg border border-red-100 dark:border-loss-border bg-white dark:bg-surface-elevated shadow-lg px-3 py-2">
-                            <p className="text-[10px] text-red-500 dark:text-loss leading-snug">{healthErrors[model.id]}</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] font-bold text-stone-300 dark:text-text-faint">Not checked</span>
-                    )}
-                  </div>
+                      <button
+                        onClick={() => setActiveError(activeError === model.id ? null : model.id)}
+                        className="text-[12px] font-medium text-red-500 dark:text-loss"
+                      >
+                        Failed
+                      </button>
+                    ) : null}
+                  </Row>
+                  {activeError === model.id && healthErrors[model.id] && (
+                    <p className="px-4 pb-2 -mt-1 text-[11px] text-red-500 dark:text-loss leading-snug">
+                      {healthErrors[model.id]}
+                    </p>
+                  )}
                 </div>
               );
             })}
-          </div>
-        </div>
+        </Group>
 
-        {/* Alert Preferences */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Alert Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Configure how you want to be notified about breakout signals and
-            position triggers.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <button
-              onClick={handleTestEmail}
-              disabled={!alertEmail || testStatus === "sending"}
-              className="self-start rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 active:bg-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {testStatus === "sending"
-                ? "Sending..."
-                : testStatus === "sent"
-                ? "Sent! Check your inbox"
-                : "Send Daily Summary"}
-            </button>
-            {!alertEmail && (
-              <p className="text-xs text-stone-400 dark:text-text-faint">Save an alert email above first.</p>
+        <Group
+          header="Notifications"
+          footer={
+            notifPermission === "unsupported"
+              ? "Push notifications are not supported in this browser."
+              : notifPermission === "denied"
+              ? "Notifications are blocked. Re-enable them for this site in your browser settings."
+              : notifPermission === "granted" && pushSubscribed === false
+              ? "Permission granted but this device has no push subscription — toggle on to re-subscribe."
+              : "Push fires when positions need action or explosive movers are detected."
+          }
+        >
+          <Row label="Push Notifications">
+            {notifPermission !== "unsupported" && notifPermission !== "denied" && (
+              <Toggle
+                on={pushOn}
+                busy={subscribing || pushSubscribed === null}
+                onChange={pushOn ? handleDisableNotifications : handleEnableNotifications}
+              />
             )}
-            {testStatus === "error" && (
-              <p className="text-xs text-red-500 dark:text-loss">{testError}</p>
-            )}
+          </Row>
+          {pushOn && (
+            <ActionRow onClick={handleTestPush} disabled={pushTest === "sending"}>
+              {pushTest === "sending" ? "Sending…" : "Send Test Push"}
+            </ActionRow>
+          )}
+          {pushTest !== "idle" && pushTest !== "sending" && (
+            <p className="px-4 py-2 text-[12px] text-stone-500 dark:text-text-subtle">{pushTest}</p>
+          )}
+          {pushError && <p className="px-4 py-2 text-[12px] text-red-500 dark:text-loss">{pushError}</p>}
+          <ActionRow onClick={handleTestEmail} disabled={!alertEmail || testStatus === "sending"}>
+            {testStatus === "sending"
+              ? "Sending…"
+              : testStatus === "sent"
+              ? "Sent — check your inbox"
+              : "Send Daily Summary Email"}
+          </ActionRow>
+          {testStatus === "error" && (
+            <p className="px-4 py-2 text-[12px] text-red-500 dark:text-loss">{testError}</p>
+          )}
+          <ActionRow onClick={handlePingEmail} disabled={pingStatus === "sending"}>
+            <span className="text-stone-400 dark:text-text-faint">
+              {pingStatus === "sending" ? "Testing Resend…" : "Test Resend (Debug)"}
+            </span>
+          </ActionRow>
+          {pingResult && (
+            <pre className="mx-4 my-2 text-[11px] bg-stone-50 dark:bg-surface rounded-lg p-3 overflow-x-auto text-stone-700 dark:text-text-muted whitespace-pre-wrap">
+              {pingResult}
+            </pre>
+          )}
+        </Group>
 
-            <div className="border-t border-stone-100 dark:border-border-subtle pt-3 mt-1">
-              <button
-                onClick={handlePingEmail}
-                disabled={pingStatus === "sending"}
-                className="self-start rounded-xl bg-stone-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-600 active:bg-stone-500 transition-colors disabled:opacity-50"
-              >
-                {pingStatus === "sending" ? "Sending..." : "Test Resend (Debug)"}
-              </button>
-              <p className="text-[10px] text-stone-400 dark:text-text-faint mt-1">Sends a static test email and shows the raw API response.</p>
-              {pingResult && (
-                <pre className="mt-2 text-[11px] bg-stone-50 dark:bg-surface rounded-lg p-3 overflow-x-auto text-stone-700 dark:text-text-muted whitespace-pre-wrap">{pingResult}</pre>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Push Notifications */}
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Push Notifications</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Get notified on your phone when positions need action or explosive movers are detected.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            {notifPermission === "unsupported" ? (
-              <p className="text-xs text-stone-400 dark:text-text-faint">Push notifications are not supported in this browser.</p>
-            ) : notifPermission === "granted" && pushSubscribed ? (
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-medium text-green-700 dark:text-gain-strong bg-green-50 dark:bg-gain-bg px-2.5 py-1 rounded-full">Enabled on this device</span>
-                <button
-                  onClick={handleTestPush}
-                  disabled={pushTest === "sending"}
-                  className="text-xs font-medium text-purple-600 dark:text-violet-300 hover:text-purple-800 underline underline-offset-2 disabled:opacity-50"
-                >
-                  {pushTest === "sending" ? "Sending..." : "Send test push"}
-                </button>
-                <button
-                  onClick={handleDisableNotifications}
-                  disabled={subscribing}
-                  className="text-xs text-stone-500 dark:text-text-subtle hover:text-stone-700 underline underline-offset-2 disabled:opacity-50"
-                >
-                  {subscribing ? "..." : "Disable"}
-                </button>
-                {pushTest !== "idle" && pushTest !== "sending" && (
-                  <p className="w-full text-xs text-stone-500 dark:text-text-subtle">{pushTest}</p>
-                )}
-              </div>
-            ) : notifPermission === "granted" && pushSubscribed === false ? (
-              <div className="flex flex-col gap-1.5">
-                <p className="text-xs text-amber-600 dark:text-amber-300">
-                  Permission granted, but this device has no push subscription — likely a service-worker
-                  registration failure.
-                </p>
-                <button
-                  onClick={handleEnableNotifications}
-                  disabled={subscribing}
-                  className="self-start rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-500 transition-colors disabled:opacity-50"
-                >
-                  {subscribing ? "Subscribing..." : "Re-subscribe this device"}
-                </button>
-              </div>
-            ) : notifPermission === "denied" ? (
-              <p className="text-xs text-red-500 dark:text-loss">
-                Notifications blocked. Open your browser settings to re-enable them for this site.
-              </p>
-            ) : (
-              <button
-                onClick={handleEnableNotifications}
-                disabled={subscribing}
-                className="self-start rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-500 active:bg-purple-400 transition-colors disabled:opacity-50"
-              >
-                {subscribing ? "Enabling..." : "Enable Notifications"}
-              </button>
-            )}
-            {pushError && <p className="text-xs text-red-500 dark:text-loss">{pushError}</p>}
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-          <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Scoring Preferences</h3>
-          <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-            Tune the weights for technical indicators in the explosive stock
-            scoring engine.
-          </p>
-          <div className="mt-3 px-3 py-2 rounded-lg bg-stone-50 dark:bg-surface text-xs text-stone-400 dark:text-text-faint font-medium">
-            Coming soon
-          </div>
-        </div>
+        <Group header="Scoring" footer="Tune weights for the explosive stock scoring engine.">
+          <Row label="Scoring Weights">
+            <span className="text-[13px] text-stone-300 dark:text-text-faint">Coming soon</span>
+          </Row>
+        </Group>
       </div>
     </div>
   );
@@ -660,48 +618,50 @@ function PrivacyPinSection() {
     }
   }
 
-  return (
-    <div className="rounded-xl bg-white dark:bg-surface-elevated shadow-sm px-4 py-3">
-      <h3 className="text-sm font-semibold text-stone-900 dark:text-text">Privacy Lock</h3>
-      <p className="mt-1 text-sm text-stone-500 dark:text-text-subtle">
-        Set a PIN, then use &ldquo;Lock private info&rdquo; in the profile menu before handing
-        your phone to someone. While locked, portfolio dollar values and position sizes are
-        hidden everywhere; the PIN unlocks them.
-        {hasPin && <span className="text-emerald-600 dark:text-gain font-medium"> A PIN is set.</span>}
-      </p>
+  const pinInput =
+    "w-24 bg-transparent text-right text-[15px] text-stone-900 dark:text-text placeholder:text-stone-300 dark:placeholder:text-text-faint focus:outline-none tracking-widest";
 
-      <div className="mt-3 flex flex-col gap-2.5">
-        <div className="flex gap-2">
-          <input
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={8}
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-            className="w-32 rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-            placeholder={hasPin ? "New PIN" : "PIN (4-8 digits)"}
-          />
-          <input
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={8}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ""))}
-            className="w-32 rounded-lg border border-stone-300 dark:border-border-strong bg-white dark:bg-surface-elevated px-3 py-2 text-sm text-stone-900 dark:text-text placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-            placeholder="Confirm"
-          />
-        </div>
-        <button
-          onClick={savePin}
-          disabled={status === "saving" || pin.length < 4}
-          className="self-start rounded-xl bg-stone-900 dark:bg-surface-elevated px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
-        >
-          {status === "saved" ? "Saved!" : status === "saving" ? "Saving..." : hasPin ? "Change PIN" : "Set PIN"}
-        </button>
-        {status === "error" && <p className="text-xs text-red-500 dark:text-loss">{error}</p>}
-      </div>
-    </div>
+  return (
+    <Group
+      header="Privacy"
+      footer={
+        <>
+          Use &ldquo;Lock private info&rdquo; in the profile menu before handing your phone to
+          someone — dollar values and position sizes hide everywhere until the PIN unlocks them.
+          {hasPin && <span className="text-emerald-600 dark:text-gain font-medium"> A PIN is set.</span>}
+        </>
+      }
+    >
+      <Row label={hasPin ? "New PIN" : "PIN"}>
+        <input
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={8}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+          className={pinInput}
+          placeholder="4-8 digits"
+        />
+      </Row>
+      <Row label="Confirm">
+        <input
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={8}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ""))}
+          className={pinInput}
+          placeholder="Repeat PIN"
+        />
+      </Row>
+      <ActionRow onClick={savePin} disabled={status === "saving" || pin.length < 4}>
+        {status === "saved" ? "Saved" : status === "saving" ? "Saving…" : hasPin ? "Change PIN" : "Set PIN"}
+      </ActionRow>
+      {status === "error" && (
+        <p className="px-4 py-2 text-[12px] text-red-500 dark:text-loss">{error}</p>
+      )}
+    </Group>
   );
 }
