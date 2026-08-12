@@ -1102,6 +1102,11 @@
             <td>Check active positions for roll/close/profit alerts. Returns urgency-sorted signal list.</td>
           </tr>
           <tr>
+            <td><code>/api/portfolio/connections</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>SnapTrade brokerage connections — list linked brokers + accounts; POST generates a Connection Portal link to add or fix one.</td>
+          </tr>
+          <tr>
             <td><code>/api/alerts</code></td>
             <td><span class="method-badge method-get">GET</span></td>
             <td>Recent market-monitor alerts with severity, plain-English context, and stop suggestions; POST acknowledges.</td>
@@ -1149,6 +1154,13 @@
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.28</div>
+          <div class="tl-content">
+            <h4>Multi-Brokerage Connections</h4>
+            <p>Settings &rarr; Brokerages lists SnapTrade connections and opens the Connection Portal to link Chase or any supported broker. One-tap rebuild re-pulls 2026 chains and monthly snapshots so new accounts backfill into portfolio math.</p>
+          </div>
+        </div>
         <div class="tl-item">
           <div class="tl-dot" style="font-size:0.55rem;">0.26</div>
           <div class="tl-content">

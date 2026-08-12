@@ -8,6 +8,8 @@
 import {
   Configuration,
   AccountInformationApi,
+  AuthenticationApi,
+  ConnectionsApi,
   OptionsApi,
 } from "snaptrade-typescript-sdk";
 
@@ -18,6 +20,8 @@ const config = new Configuration({
 
 const accountApi = new AccountInformationApi(config);
 const optApi = new OptionsApi(config);
+const authApi = new AuthenticationApi(config);
+const connApi = new ConnectionsApi(config);
 
 const UID = process.env.SNAPTRADE_USER_ID!;
 const USEC = process.env.SNAPTRADE_USER_SECRET!;
@@ -77,6 +81,48 @@ export interface PortfolioData {
     cash: number;
   };
   fetched_at: string;
+}
+
+export interface BrokerageConnection {
+  id: string;
+  brokerage: string;
+  slug: string;
+  type: string; // "read" | "trade"
+  disabled: boolean;
+  created_date: string;
+}
+
+export async function listConnections(): Promise<BrokerageConnection[]> {
+  const res = await connApi.listBrokerageAuthorizations({ userId: UID, userSecret: USEC });
+  return ((res.data as any[]) ?? []).map((c: any) => ({
+    id: c.id ?? "",
+    brokerage: c.brokerage?.display_name ?? c.brokerage?.name ?? c.name ?? "Unknown",
+    slug: c.brokerage?.slug ?? "",
+    type: c.type ?? "read",
+    disabled: !!c.disabled,
+    created_date: c.created_date ?? "",
+  }));
+}
+
+/**
+ * Returns a SnapTrade Connection Portal URL for the app's SnapTrade user.
+ * The URL expires in 5 minutes. Opening it lets the user link a new
+ * brokerage (e.g. Chase) to the same user, or fix a disabled connection
+ * via `reconnect`. Accounts on the new connection flow into every existing
+ * portfolio function automatically — they all iterate getAccounts().
+ */
+export async function getConnectPortalUrl(opts: { broker?: string; reconnect?: string } = {}): Promise<string> {
+  const res = await authApi.loginSnapTradeUser({
+    userId: UID,
+    userSecret: USEC,
+    ...(opts.broker ? { broker: opts.broker } : {}),
+    ...(opts.reconnect ? { reconnect: opts.reconnect } : {}),
+    connectionType: "read",
+    connectionPortalVersion: "v4",
+  });
+  const url = (res.data as any)?.redirectURI;
+  if (!url) throw new Error("SnapTrade did not return a portal URL");
+  return url;
 }
 
 export async function getAccounts(): Promise<Account[]> {

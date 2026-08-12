@@ -41,7 +41,7 @@ Feed it up to 20 symbols and Claude AI analyzes the market context, individual t
 Log your trades with full multi-leg support. PMCC with a LEAPS call and short call? Wheel strategy cycling through puts and calls? Every leg gets tracked with strike, expiry, entry price, and quantity. Positions flow through active → rolled → closed lifecycle.
 
 ### Portfolio (Live P&L)
-See your actual P&L calculated from Supabase positions + live Yahoo Finance quotes. Summary cards for total P&L, premium collected, and active position count. Each position card breaks down individual leg performance.
+See your actual P&L calculated from Supabase positions + live Yahoo Finance quotes. Summary cards for total P&L, premium collected, and active position count. Each position card breaks down individual leg performance. Multiple brokerages (Fidelity, Chase, …) link through SnapTrade from Settings → Brokerages and aggregate into one portfolio.
 
 ### Portfolio Manager
 AI-driven daily research for every stock in your connected SnapTrade portfolio. Each ticker gets a STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL rating with confidence, thesis, reasons, risks, and a suggested action — pulled from a single batched AI call that also produces a $100K reallocation plan (SELL/TRIM/HOLD/ADD/BUY) treating your current holdings as redeployable capital. Runs at market open and ride-alongs on the close cron; "Re-run now" button for on-demand. Expandable-row table with color-coded ratings, RSI/SMA/MACD/52w technicals, and Yahoo Finance headlines per ticker.
@@ -209,6 +209,7 @@ npm run dev
 | `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
 | `/api/options?symbol=X` | GET | Fetch PMCC setups for a symbol |
 | `/api/signals` | GET | Check active positions for trade alerts |
+| `/api/portfolio/connections` | GET/POST | List SnapTrade brokerage connections; generate a Connection Portal link to add/fix one |
 | `/api/alerts` | GET/POST | Recent market-monitor alerts; acknowledge one or all |
 | `/api/cron/market-monitor` | GET | Hourly market watch: big moves → push alerts with stop suggestions |
 | `/api/learn/manifest` | GET | Knowledge-base paths for offline precaching |
@@ -232,6 +233,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.28.0** | Multi-brokerage connections — link Chase or any SnapTrade broker from Settings |
 | **v0.26.0** | Learn v2 Case Studies (80 studies from real chain data) + offline hardening |
 | **v0.25.0** | Market monitor push alerts, practical Learn tracks, real interactivity, offline PWA |
 | **v0.24.0** | Bloodbath (pullback navigator with AI dip verdicts) |

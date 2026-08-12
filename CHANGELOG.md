@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.28.0 — Multi-brokerage: connect Chase (or any broker) from Settings
+
+- **Settings → Brokerages**: lists every SnapTrade connection with its accounts and live/disabled status; "Connect a Brokerage…" opens the SnapTrade Connection Portal (link generated server-side, expires in 5 min) to link Chase or any other supported broker to the same SnapTrade user — no more ad-hoc scripts. Disabled connections get a one-tap "Fix" reconnect
+- **New API route `/api/portfolio/connections`**: GET lists connections + accounts, POST generates a portal link (optional `broker` slug / `reconnect` id); gated by the same portfolio-access check as `/api/portfolio`
+- **"Rebuild 2026 Data" action**: after linking a new broker, one tap force-refreshes the option-chain scan (from the 2025-01-01 cache epoch, so the cron cache the portfolio page reads is actually overwritten) and re-runs the idempotent Time Machine monthly-snapshot backfill — income, chains, and Hindsight math then include the new accounts' history
+- All portfolio/options/transactions functions already iterate every account under the SnapTrade user, so newly connected brokerages flow into existing pages with zero further changes
+- Settings list primitives (Group/Row/ActionRow/Toggle) extracted to `settings/ui.tsx` for reuse
+
 ## v0.27.0 — Privacy lock: hand your phone to a friend
 
 - **Lock private info** from the profile-menu dropdown; unlock via in-app PIN modal. PIN (4-8 digits) set per-user in Settings → Privacy Lock, persisted in `user_settings`, verified server-side; the lock rides an httpOnly cookie so even server-rendered HTML is masked, and the settings API refuses PIN changes while locked
