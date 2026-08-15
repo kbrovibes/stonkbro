@@ -108,7 +108,9 @@ export default function ExplosivePageWrapper() {
   );
 }
 
-const SECTOR_SLUGS = SECTORS.map((s) => s.slug);
+// "all" runs LAST in Research All: it's the combined cross-sector summary,
+// so the per-sector reports tick through first.
+const SECTOR_SLUGS = [...SECTORS.filter((s) => s.slug !== "all").map((s) => s.slug), "all"];
 
 function ExplosivePage() {
   const searchParams = useSearchParams();
@@ -125,16 +127,24 @@ function ExplosivePage() {
     }
   }, [sectorParam]);
 
-  // Show any cached result for the current selection instantly
+  // Show cached results instantly — for every sector, so the per-sector
+  // reports section under "All Sectors" populates on load.
   useEffect(() => {
-    loadCache(selectedSector);
-  }, [selectedSector, loadCache]);
+    SECTOR_SLUGS.forEach((s) => void loadCache(s));
+  }, [loadCache]);
 
   const scan = scans[selectedSector] ?? { status: "idle" as const };
   const loading = scan.status === "running";
   const checkingCache = scan.status === "loading-cache";
   const error = scan.status === "error" ? (scan.error ?? "Unknown error") : null;
   const result = !loading && scan.data ? scan.data : null;
+
+  // Per-sector results shown under "All Sectors" (the "all" scan itself is
+  // one combined cross-sector report — these are the individual ones).
+  const sectorResults = SECTORS.filter(
+    (s) => s.slug !== "all" && (scans[s.slug]?.data || scans[s.slug]?.status === "running")
+  );
+  const showSectorList = selectedSector === "all" && sectorResults.length > 0;
 
   const runAnalysis = () => {
     // With a result on screen the button forces a fresh run past the cache
@@ -266,6 +276,9 @@ function ExplosivePage() {
             <div>
               <p className="text-xs font-semibold text-stone-500 dark:text-text-subtle uppercase tracking-wide">
                 {result.sector}
+                {selectedSector === "all" && (
+                  <span className="normal-case font-normal text-stone-400 dark:text-text-faint"> · combined cross-sector summary</span>
+                )}
               </p>
               <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">
                 {new Date(result.timestamp).toLocaleString()} — {result.tickersAnalyzed.length} tickers analyzed
@@ -359,8 +372,62 @@ function ExplosivePage() {
         </div>
       )}
 
+      {/* Per-sector reports — visible on "All Sectors" */}
+      {showSectorList && (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-xs font-semibold text-stone-500 dark:text-text-subtle uppercase tracking-wide">
+            Sector Reports ({sectorResults.filter((s) => scans[s.slug]?.data).length})
+          </p>
+          {sectorResults.map((s) => {
+            const st = scans[s.slug]!;
+            const data = st.data;
+            return (
+              <div
+                key={s.slug}
+                className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated overflow-hidden"
+              >
+                <button
+                  onClick={() => setSelectedSector(s.slug)}
+                  className="w-full px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-stone-50 dark:hover:bg-surface-muted transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-stone-900 dark:text-text">{s.name}</p>
+                    {st.status === "running" ? (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-300">Analyzing…</p>
+                    ) : data ? (
+                      <p className="text-[11px] text-stone-400 dark:text-text-faint">
+                        Scanned {formatAge(st.scannedAt ?? data.timestamp)} · {data.tickersAnalyzed.length} tickers
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {st.status === "running" ? (
+                      <div className="w-3.5 h-3.5 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                    ) : (
+                      data && (
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          {data.picks.slice(0, 4).map((p) => (
+                            <span
+                              key={p.symbol}
+                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${convictionColor(p.conviction)}`}
+                            >
+                              {p.symbol}
+                            </span>
+                          ))}
+                        </div>
+                      )
+                    )}
+                    <span className="text-stone-300 dark:text-text-faint text-xs">›</span>
+                  </div>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Empty state */}
-      {!loading && !checkingCache && !result && !error && (
+      {!loading && !checkingCache && !result && !error && !showSectorList && (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
           <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center mb-4">
             <svg

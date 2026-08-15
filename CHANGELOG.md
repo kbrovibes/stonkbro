@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.32.1 — Explosive finder fixes: deep links + per-sector reports view
+
+- **Actions rows deep-link to the right sector**: clicking a "space-defense" explosive job now opens `/explosive?sector=space-defense` (the job's selection rides its meta), not the page's default view
+- **Per-sector reports are now visible**: on "All Sectors", a **Sector Reports** list shows every sector's scan (pick chips, age, tap → full report), so Research All yields a report per sector *plus* the combined summary — previously the per-sector results were hidden behind the dropdown. All sector caches load on page open; the combined "all" result is labeled "combined cross-sector summary"
+- Research All now runs the 8 sectors first and the combined summary last
+
 ## v0.32.0 — Explosive finder: per-sector state, Research All, 24h cache
 
 - **Dropdown never blocks**: each sector keeps its own scan state — switching the dropdown while one sector is scanning shows the new sector's cached result or its own Start button; the in-flight scan lands when done

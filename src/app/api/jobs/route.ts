@@ -24,7 +24,12 @@ export async function GET(req: Request) {
     const { jobs, running } = await listJobs(limit);
     const enriched = jobs.map((j) => {
       const info = jobKindInfo(j.kind);
-      return { ...j, cancellable: info.cancellable, href: info.href ?? null };
+      let href = info.href ?? null;
+      // Deep-link to the exact output where the job carries a selection.
+      if (j.kind === "explosive-scan" && typeof j.meta?.selection === "string" && j.meta.selection) {
+        href = `/explosive?sector=${encodeURIComponent(j.meta.selection)}`;
+      }
+      return { ...j, cancellable: info.cancellable, href };
     });
     return NextResponse.json({ jobs: enriched, running });
   } catch (e) {
