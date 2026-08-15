@@ -4,23 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import OfflineGate from "@/components/OfflineGate";
-
-type Pick = {
-  symbol: string;
-  thesis: string;
-  catalyst: string;
-  risk: string;
-  entryStrategy: string;
-  conviction: string;
-};
-
-type Result = {
-  report: string;
-  picks: Pick[];
-  sector: string;
-  tickersAnalyzed: string[];
-  timestamp: string;
-};
+import { useExplosiveScans, formatAge } from "./useExplosiveScans";
 
 const SECTORS = [
   { slug: "all", name: "All Sectors" },
@@ -124,50 +108,38 @@ export default function ExplosivePageWrapper() {
   );
 }
 
+const SECTOR_SLUGS = SECTORS.map((s) => s.slug);
+
 function ExplosivePage() {
   const searchParams = useSearchParams();
   const sectorParam = searchParams.get("sector");
 
   const [selectedSector, setSelectedSector] = useState(sectorParam || "all");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
   const [showReport, setShowReport] = useState(true);
+  const { scans, researchAll, loadCache, runScan, runAll } = useExplosiveScans(SECTOR_SLUGS);
 
-  // Auto-run if sector param provided
+  // Auto-select if sector param provided
   useEffect(() => {
     if (sectorParam && sectorParam !== "all") {
       setSelectedSector(sectorParam);
     }
   }, [sectorParam]);
 
-  const runAnalysis = async () => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
+  // Show any cached result for the current selection instantly
+  useEffect(() => {
+    loadCache(selectedSector);
+  }, [selectedSector, loadCache]);
 
-    try {
-      const res = await fetch("/api/explosive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sector: selectedSector === "all" ? undefined : selectedSector,
-        }),
-      });
+  const scan = scans[selectedSector] ?? { status: "idle" as const };
+  const loading = scan.status === "running";
+  const checkingCache = scan.status === "loading-cache";
+  const error = scan.status === "error" ? (scan.error ?? "Unknown error") : null;
+  const result = !loading && scan.data ? scan.data : null;
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || `Request failed with status ${res.status}`);
-      }
-
-      const data: Result = await res.json();
-      setResult(data);
-      setShowReport(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
+  const runAnalysis = () => {
+    // With a result on screen the button forces a fresh run past the cache
+    void runScan(selectedSector, !!scan.data);
+    setShowReport(true);
   };
 
   return (
@@ -201,7 +173,7 @@ function ExplosivePage() {
 
         <button
           onClick={runAnalysis}
-          disabled={loading}
+          disabled={loading || checkingCache}
           className="w-full py-3 rounded-xl bg-stone-900 dark:bg-surface-elevated text-white text-sm font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
           {loading ? (
@@ -209,16 +181,58 @@ function ExplosivePage() {
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Analyzing...
             </>
+          ) : checkingCache ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Checking for recent scan...
+            </>
           ) : (
             <>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z" />
               </svg>
-              Find Explosive Stocks
+              {scan.data ? "Re-scan" : "Find Explosive Stocks"}
             </>
           )}
         </button>
+
+        <button
+          onClick={() => void runAll()}
+          disabled={!!researchAll?.running}
+          className="w-full py-2.5 rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated text-sm font-semibold text-stone-700 dark:text-text-muted hover:bg-stone-50 dark:hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        >
+          {researchAll?.running ? (
+            <>
+              <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 dark:border-border-default dark:border-t-text-muted rounded-full animate-spin" />
+              Researching {researchAll.current}/{researchAll.total} sectors...
+            </>
+          ) : (
+            "Research All Sectors"
+          )}
+        </button>
+
+        {researchAll?.running && (
+          <div className="rounded-xl border border-stone-200 dark:border-border-default bg-white dark:bg-surface-elevated p-3 flex flex-col gap-1.5">
+            {SECTORS.map((s) => {
+              const st = scans[s.slug]?.status ?? "idle";
+              return (
+                <div key={s.slug} className="flex items-center justify-between">
+                  <span className="text-xs text-stone-600 dark:text-text-muted">{s.name}</span>
+                  {st === "running" ? (
+                    <div className="w-3 h-3 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
+                  ) : st === "done" ? (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-gain-strong">✓</span>
+                  ) : st === "error" ? (
+                    <span className="text-xs font-bold text-red-500 dark:text-loss">!</span>
+                  ) : (
+                    <span className="text-xs text-stone-300 dark:text-text-faint">·</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Loading state */}
@@ -255,6 +269,10 @@ function ExplosivePage() {
               </p>
               <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">
                 {new Date(result.timestamp).toLocaleString()} — {result.tickersAnalyzed.length} tickers analyzed
+              </p>
+              <p className="text-xs text-stone-400 dark:text-text-faint mt-0.5">
+                Scanned {formatAge(scan.scannedAt ?? result.timestamp)}
+                {scan.cached ? " (cached — Re-scan for a fresh run)" : ""}
               </p>
             </div>
             <button
@@ -342,7 +360,7 @@ function ExplosivePage() {
       )}
 
       {/* Empty state */}
-      {!loading && !result && !error && (
+      {!loading && !checkingCache && !result && !error && (
         <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
           <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center mb-4">
             <svg
