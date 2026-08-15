@@ -392,7 +392,7 @@ function PnlChart({
   );
 }
 
-function ChainCard({ chain }: { chain: OptionChain }) {
+function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstitutionClick?: (inst: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [liveQuote, setLiveQuote] = useState<{ bid: number; mid: number; ask: number } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -470,6 +470,16 @@ function ChainCard({ chain }: { chain: OptionChain }) {
             {chain.roll_count > 0 && (
               <span className="text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded font-medium">
                 {chain.roll_count} roll{chain.roll_count !== 1 ? "s" : ""}
+              </span>
+            )}
+            {chain.institution && (
+              <span
+                role={onInstitutionClick ? "button" : undefined}
+                onClick={onInstitutionClick ? (e) => { e.stopPropagation(); onInstitutionClick(chain.institution!); } : undefined}
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 ${onInstitutionClick ? "cursor-pointer hover:bg-violet-100 dark:hover:bg-violet-900/50" : ""}`}
+                title={onInstitutionClick ? `Filter by ${chain.institution}` : chain.institution}
+              >
+                {chain.institution}
               </span>
             )}
           </div>
@@ -862,6 +872,7 @@ export default function PortfolioPage() {
   const [filter, setFilter] = useState<FilterTab>("Monthly");
   type OpenSort = "expiry" | "collateral" | "pnl" | "type" | "ticker";
   const [openSort, setOpenSort] = useState<OpenSort>("expiry");
+  const [instFilter, setInstFilter] = useState<string | null>(null);
   type ClosedSort = "date" | "pnl" | "annReturn" | "ticker" | "type";
   const [closedSort, setClosedSort] = useState<ClosedSort>("date");
 
@@ -963,6 +974,22 @@ export default function PortfolioPage() {
     .filter(c => c.end_date?.startsWith(currentYear))
     .reduce((s, c) => s + c.net_pnl, 0);
 
+  // Potential year total: realized YTD + open short premium, assuming every
+  // open short (CSP/CC) expires worthless in our favor. Long chains have no
+  // "expire worthless" upside, and shorts expiring next year realize outside
+  // this tax/calendar year, so both are excluded.
+  const todayStr = new Date().toISOString().split("T")[0];
+  const favorableShorts = open.filter(c => {
+    if (c.open_units >= 0) return false;
+    const leg = findOpenLeg(c);
+    return !!leg && leg.expiry >= todayStr && leg.expiry.startsWith(currentYear);
+  });
+  const openFavorablePnl = favorableShorts.reduce((s, c) => s + c.net_pnl, 0);
+  const potentialYearPnl = closedPnl + openFavorablePnl;
+
+  // Brokerages present among open chains (absent until a post-v0.29 scan)
+  const institutions = Array.from(new Set(open.map(c => c.institution).filter((x): x is string => !!x))).sort();
+
   // Capital locked = short PUT collateral only (covered calls/longs don't lock cash)
   const openPuts = open.filter(c => c.option_type.toUpperCase() === "PUT" && c.open_units < 0);
   const capitalLocked = openPuts.reduce((sum, c) => {
@@ -1023,7 +1050,7 @@ export default function PortfolioPage() {
   });
 
   const filtered =
-    filter === "Open"     ? sortedOpen :
+    filter === "Open"     ? sortedOpen.filter(c => !instFilter || c.institution === instFilter) :
     filter === "Closed"   ? sortedClosed :
     filter === "Assigned" ? assigned : [];
 
@@ -1063,6 +1090,19 @@ export default function PortfolioPage() {
               </div>
             </div>
           </div>
+          {favorableShorts.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle flex items-center justify-between">
+              <div>
+                <div className="text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Potential Year Total</div>
+                <div className="text-[11px] text-stone-400 dark:text-text-faint">
+                  if all {favorableShorts.length} open short{favorableShorts.length !== 1 ? "s" : ""} expire worthless · +{maskValue(locked, fmtCurrency(openFavorablePnl))} unsettled
+                </div>
+              </div>
+              <div className={`text-base font-bold ${potentialYearPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
+                {potentialYearPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(potentialYearPnl))}
+              </div>
+            </div>
+          )}
           {capitalLocked > 0 && (
             <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle flex items-center justify-between">
               <div>
@@ -1135,6 +1175,26 @@ export default function PortfolioPage() {
         </div>
       )}
 
+      {/* Brokerage filter — Open tab, only when scans carry institution */}
+      {filter === "Open" && institutions.length > 0 && (
+        <div className="px-4 pb-1 pt-0.5 flex gap-1.5 items-center overflow-x-auto scrollbar-hide">
+          <span className="text-[10px] text-stone-400 dark:text-text-faint uppercase tracking-wider flex-shrink-0">Broker</span>
+          {institutions.map(inst => (
+            <button
+              key={inst}
+              onClick={() => setInstFilter(instFilter === inst ? null : inst)}
+              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+                instFilter === inst
+                  ? "bg-violet-600 text-white"
+                  : "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100"
+              }`}
+            >
+              {inst}{instFilter === inst ? " ✕" : ""}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Sort bar — Closed tab */}
       {filter === "Closed" && closed.length > 0 && (
         <div className="px-4 pb-1 flex gap-1.5 overflow-x-auto scrollbar-hide">
@@ -1171,7 +1231,13 @@ export default function PortfolioPage() {
         ) : filtered.length === 0 ? (
           <p className="text-sm text-stone-400 dark:text-text-faint text-center py-8">No {filter.toLowerCase()} positions</p>
         ) : (
-          filtered.map((c, i) => <ChainCard key={i} chain={c} />)
+          filtered.map((c, i) => (
+            <ChainCard
+              key={i}
+              chain={c}
+              onInstitutionClick={filter === "Open" ? (inst) => setInstFilter(prev => prev === inst ? null : inst) : undefined}
+            />
+          ))
         )}
       </div>
     </div>

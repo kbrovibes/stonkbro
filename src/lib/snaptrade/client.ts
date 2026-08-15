@@ -353,6 +353,7 @@ export interface OptionLeg {
 export interface OptionChain {
   underlying: string;
   option_type: string;  // "CALL" | "PUT"
+  institution?: string; // brokerage the contract lives at; absent on pre-v0.29 cached scans
   legs: OptionLeg[];
   net_pnl: number;
   status: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED";
@@ -376,12 +377,15 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   // calls but combined still burst SnapTrade's per-minute activities cap.
   const allRaw: any[][] = [];
   for (const acct of accounts) {
-    allRaw.push(await fetchActivitiesWindow(acct.id, startDate, end));
+    const txs = await fetchActivitiesWindow(acct.id, startDate, end);
+    for (const t of txs) t._institution = acct.institution;
+    allRaw.push(txs);
   }
 
   type ParsedTx = {
     date: string; type: string; underlying: string; option_type: string;
     strike: number; expiry: string; units: number; price: number; amount: number;
+    institution: string;
   };
 
   const optionTxns: ParsedTx[] = allRaw.flat()
@@ -398,6 +402,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
         units: Number(t.units ?? 0),
         price: Number(t.price ?? 0),
         amount: Number(t.amount ?? 0),
+        institution: t._institution ?? "Unknown",
       };
     })
     // Sort by date; on ties, SELL/OPTIONEXPIRATION/OPTIONASSIGNMENT before BUY
@@ -413,15 +418,18 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   // Prevents mixing of simultaneous positions at different strikes/expiries.
   type ContractChain = {
     underlying: string; option_type: string; strike: number; expiry: string;
+    institution: string;
     legs: OptionLeg[]; net_pnl: number;
     status: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED";
     start_date: string; end_date: string | null; open_units: number;
     first_action: string; // "BUY" or "SELL"
   };
 
+  // Institution is part of the key so identical contracts held at two
+  // brokerages stay separate, and roll pairing below never crosses brokers.
   const contractMap = new Map<string, ParsedTx[]>();
   for (const tx of optionTxns) {
-    const key = `${tx.underlying}|${tx.option_type}|${tx.strike}|${tx.expiry}`;
+    const key = `${tx.underlying}|${tx.option_type}|${tx.strike}|${tx.expiry}|${tx.institution}`;
     if (!contractMap.has(key)) contractMap.set(key, []);
     contractMap.get(key)!.push(tx);
   }
@@ -429,7 +437,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   const contractChains: ContractChain[] = [];
 
   for (const txns of contractMap.values()) {
-    const { underlying, option_type, strike, expiry } = txns[0];
+    const { underlying, option_type, strike, expiry, institution } = txns[0];
     let runningUnits = 0;
     let currentLegs: OptionLeg[] = [];
 
@@ -437,7 +445,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
       if (!currentLegs.length) return;
       const firstAction = currentLegs.find(l => l.type === "BUY" || l.type === "SELL")?.type ?? "SELL";
       contractChains.push({
-        underlying, option_type, strike, expiry,
+        underlying, option_type, strike, expiry, institution,
         legs: [...currentLegs],
         net_pnl: currentLegs.filter(l => l.type === "BUY" || l.type === "SELL").reduce((s, l) => s + l.amount, 0),
         status,
@@ -493,7 +501,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
 
   const displayGroups = new Map<string, ContractChain[]>();
   for (const c of contractChains) {
-    const key = `${c.underlying}|${c.option_type}`;
+    const key = `${c.underlying}|${c.option_type}|${c.institution}`;
     if (!displayGroups.has(key)) displayGroups.set(key, []);
     displayGroups.get(key)!.push(c);
   }
@@ -513,6 +521,7 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
     return {
       underlying: root.underlying,
       option_type: root.option_type,
+      institution: root.institution,
       legs: allLegs,
       net_pnl,
       status: root.status,

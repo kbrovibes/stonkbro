@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.29.0 — Potential year total + per-brokerage chains
+
+- **Potential Year Total** row in the Portfolio summary card, directly under "Year so far": realized YTD plus every open short (CSP/CC) assumed to expire worthless in your favor. Long chains are excluded (no expire-worthless upside), as are shorts expiring next calendar year (they realize outside this year). Shows the unsettled premium component and respects the privacy lock
+- **Brokerage on every chain**: option chains now carry the institution they live at (Fidelity, Chase, …). Chain building and roll pairing are keyed per-brokerage, so identical contracts at two brokers can never braid into one roll chain
+- **Open tab: brokerage badge + filter**: each open contract shows a violet brokerage badge — tap it (or the Broker pill row) to filter the Open tab to that brokerage; tap again to clear. Badges appear on cached scans only after the next chain refresh (older cached scans predate the field)
+
 ## v0.28.0 — Multi-brokerage: connect Chase (or any broker) from Settings
 
 - **Settings → Brokerages**: lists every SnapTrade connection with its accounts and live/disabled status; "Connect a Brokerage…" opens the SnapTrade Connection Portal (link generated server-side, expires in 5 min) to link Chase or any other supported broker to the same SnapTrade user — no more ad-hoc scripts. Disabled connections get a one-tap "Fix" reconnect
