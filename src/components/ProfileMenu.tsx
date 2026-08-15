@@ -63,6 +63,17 @@ export default function ProfileMenu({ initials, email, isAdmin }: { initials: st
           </Link>
 
           <Link
+            href="/taxes"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-muted hover:bg-surface-muted active:bg-accent-bg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-text-faint">
+              <path fillRule="evenodd" d="M4.93 1.31a41.401 41.401 0 0 1 10.14 0C16.194 1.45 17 2.414 17 3.517V18.25a.75.75 0 0 1-1.075.676l-2.8-1.344-2.8 1.344a.75.75 0 0 1-.65 0l-2.8-1.344-2.8 1.344A.75.75 0 0 1 3 18.25V3.517c0-1.103.806-2.068 1.93-2.207Zm8.85 5.97a.75.75 0 0 0-1.06-1.06l-5.5 5.5a.75.75 0 1 0 1.06 1.06l5.5-5.5ZM9 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm4 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clipRule="evenodd" />
+            </svg>
+            Tax Center
+          </Link>
+
+          <Link
             href="/settings"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-muted hover:bg-surface-muted active:bg-accent-bg transition-colors"
