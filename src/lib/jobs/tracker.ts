@@ -125,14 +125,12 @@ export async function sweepStaleJobs(): Promise<void> {
 }
 
 export async function listJobs(limit = 100): Promise<{ jobs: JobRecord[]; running: number }> {
-  const { data, error } = await supabaseAdmin
-    .from("app_jobs")
-    .select("*")
-    .order("started_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  const jobs = (data ?? []) as JobRecord[];
-  return { jobs, running: jobs.filter((j) => j.status === "running").length };
+  const [listRes, countRes] = await Promise.all([
+    supabaseAdmin.from("app_jobs").select("*").order("started_at", { ascending: false }).limit(limit),
+    supabaseAdmin.from("app_jobs").select("id", { count: "exact", head: true }).eq("status", "running"),
+  ]);
+  if (listRes.error) throw listRes.error;
+  return { jobs: (listRes.data ?? []) as JobRecord[], running: countRes.count ?? 0 };
 }
 
 export interface JobContext {
