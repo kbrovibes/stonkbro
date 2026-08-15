@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.29.0 — Potential year total + per-brokerage chains
+## v0.29.0 — Tax Center, potential year total, per-brokerage chains
+
+- **Tax Center (`/taxes`, in the profile menu)**: personal-CPA view of quarterly estimated taxes on trading gains, assuming ~$700K W-2 income already covered by employer withholding. Per IRS estimated-tax period (Q1–Q4 with real due dates, not calendar quarters): realized gains/losses/net from closed chains, STCG/LTCG split (short options are always short-term per §1234(b); long chains go LTCG only past 365 days), tax at 40.8% STCG / 23.8% LTCG (+WA 7% only on LTCG above the ~$280K exemption), and a **recommended one-off payment** computed cumulatively so later losses and earlier overpayments shrink later recommendations — the current period shows "Pay $X by <due date>"
+- **Record payments you've made** (date, amount, note; new `tax_payments` table with RLS) and the remaining quarters re-adjust; past periods show under/overpaid deltas, overpayments carry forward as credit
+- Year summary (net realized, est. tax, paid, remaining), top-5 contributors by underlying, collapsible assumptions panel (rates, WA rules, safe-harbor explainer, "estimates only — not tax advice"), privacy-lock masking on all dollar values
+- New API `GET/POST/DELETE /api/taxes` (portfolio-access gated; reads the cron-cached chain scan, live fallback)
+- Known limits: assignment stock-side P&L, wash sales, and the $3K ordinary-loss offset are not modeled
 
 - **Potential Year Total** row in the Portfolio summary card, directly under "Year so far": realized YTD plus every open short (CSP/CC) assumed to expire worthless in your favor. Long chains are excluded (no expire-worthless upside), as are shorts expiring next calendar year (they realize outside this year). Shows the unsettled premium component and respects the privacy lock
 - **Brokerage on every chain**: option chains now carry the institution they live at (Fidelity, Chase, …). Chain building and roll pairing are keyed per-brokerage, so identical contracts at two brokers can never braid into one roll chain
