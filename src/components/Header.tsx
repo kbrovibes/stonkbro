@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/db/admin";
 import ProfileMenu from "./ProfileMenu";
+import JobsIndicator from "./JobsIndicator";
 import { version } from "../../package.json";
 
 export default async function Header() {
@@ -28,9 +29,12 @@ export default async function Header() {
           </span>
           <span className="text-[9px] font-medium text-text-faint leading-none mt-0.5">v{version}</span>
         </Link>
-        <div className="absolute right-4">
+        <div className="absolute right-4 flex items-center gap-1">
           {user ? (
-            <ProfileMenu initials={initials} email={user.email || ""} isAdmin={adminFlag} />
+            <>
+              <JobsIndicator />
+              <ProfileMenu initials={initials} email={user.email || ""} isAdmin={adminFlag} />
+            </>
           ) : (
             <a
               href="/login"
