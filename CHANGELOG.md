@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.30.0 — Jobs Center: every async operation tracked, queryable, cancellable
+
+- **Header indicator** next to the profile badge: activity icon with a live count of running jobs (exact global count, 20s poll + focus refresh, hidden for guests), linking to the new **/jobs** page (also in the profile menu)
+- **/jobs page**: historic + ongoing jobs grouped by day — status dots (running pulses with live elapsed timer and progress text), trigger badges (CRON amber / MANUAL sky / AUTO violet), relative start times, durations, expandable errors, filter pills (All/Running/Completed/Failed), and a **Cancel** button on cancellable running jobs
+- **Every real async operation now registers in `app_jobs`** via a `runTracked()` wrapper: chain scans (manual + cron), Hindsight backfill, AI research, explosive finder, bloodbath (manual + cron), CSP hunter, PMCC scan, portfolio manager (manual + cron ride-along), market monitor, daily briefing, recommendations refresh. Cache-served responses never create job rows; tracking is best-effort and never changes an API's behavior
+- **Cooperative cancellation**: serverless functions can't be killed mid-flight, so cancel flags the row and the job stops at its next checkpoint — the chain scan checks between accounts/activity windows; the Hindsight backfill checks between months and returns a partial-success result for completed months
+- **Stale sweep**: any job "running" >15 min with no completion (function timeout/crash/redeploy) is auto-marked failed, so the header count can't stick
+- New API `GET/POST /api/jobs` (list + exact running count + cancel), auth-gated
+
 ## v0.29.0 — Tax Center, potential year total, per-brokerage chains
 
 - **Tax Center (`/taxes`, in the profile menu)**: personal-CPA view of quarterly estimated taxes on trading gains, assuming ~$700K W-2 income already covered by employer withholding. Per IRS estimated-tax period (Q1–Q4 with real due dates, not calendar quarters): realized gains/losses/net from closed chains, STCG/LTCG split (short options are always short-term per §1234(b); long chains go LTCG only past 365 days), tax at 40.8% STCG / 23.8% LTCG (+WA 7% only on LTCG above the ~$280K exemption), and a **recommended one-off payment** computed cumulatively so later losses and earlier overpayments shrink later recommendations — the current period shows "Pay $X by <due date>"

@@ -1102,6 +1102,11 @@
             <td>Check active positions for roll/close/profit alerts. Returns urgency-sorted signal list.</td>
           </tr>
           <tr>
+            <td><code>/api/jobs</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Jobs Center — list historic + running async jobs with exact running count; POST requests cooperative cancellation.</td>
+          </tr>
+          <tr>
             <td><code>/api/taxes</code></td>
             <td><span class="method-badge method-get">GET</span></td>
             <td>Tax Center — per-IRS-quarter realized gains, estimated tax at marginal rates, recommended one-off payments; POST records a payment, DELETE removes one.</td>
@@ -1159,6 +1164,13 @@
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.30</div>
+          <div class="tl-content">
+            <h4>Jobs Center</h4>
+            <p>Unified tracking for every async operation and cron — header indicator with live running count, /jobs page with trigger badges, timing, progress, and cooperative cancellation for long scans.</p>
+          </div>
+        </div>
         <div class="tl-item">
           <div class="tl-dot" style="font-size:0.55rem;">0.29</div>
           <div class="tl-content">

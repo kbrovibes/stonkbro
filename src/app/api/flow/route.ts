@@ -3,7 +3,6 @@ import { getQuotes, getAllOptionsChains } from "@/lib/market/yahoo";
 import { analyzeFlow, type FlowSummary } from "@/lib/options/flow-scanner";
 import { createClient } from "@/lib/supabase-server";
 import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
-import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -40,39 +39,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await runTracked(
-      {
-        kind: "flow-scan",
-        label: "Options flow scan",
-        trigger: "manual",
-        meta: { tickers: tickers.length },
-      },
-      async (ctx) => {
-        // Fetch quotes for all tickers
-        const quotes = await getQuotes(tickers);
-        const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+    // Fetch quotes for all tickers
+    const quotes = await getQuotes(tickers);
+    const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
 
-        // Analyze each ticker sequentially (rate limit friendly)
-        const results: FlowSummary[] = [];
-        let i = 0;
-        for (const symbol of tickers) {
-          i++;
-          const quote = quoteMap.get(symbol);
-          if (!quote) continue;
+    // Analyze each ticker sequentially (rate limit friendly)
+    const results: FlowSummary[] = [];
+    for (const symbol of tickers) {
+      const quote = quoteMap.get(symbol);
+      if (!quote) continue;
 
-          await ctx.progress(`${symbol} (${i}/${tickers.length})`);
-          const chain = await getAllOptionsChains(symbol);
-          if (!chain) continue;
+      const chain = await getAllOptionsChains(symbol);
+      if (!chain) continue;
 
-          const summary = analyzeFlow(symbol, quote, chain);
-          // Only include tickers with actual signals
-          if (summary.signals.length > 0 || summary.activityScore > 0) {
-            results.push(summary);
-          }
-        }
-        return results;
+      const summary = analyzeFlow(symbol, quote, chain);
+      // Only include tickers with actual signals
+      if (summary.signals.length > 0 || summary.activityScore > 0) {
+        results.push(summary);
       }
-    );
+    }
 
     // Sort by activity score
     results.sort((a, b) => b.activityScore - a.activityScore);
