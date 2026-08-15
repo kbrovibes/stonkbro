@@ -4,10 +4,35 @@ import { createClient } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { getSector, getAllSectorTickers } from "@/lib/market/sectors";
 import { saveResearchReport } from "@/lib/db/research";
+import { getLatestExplosiveScan, insertExplosiveScan } from "@/lib/db/explosive-scans";
 import { runTracked } from "@/lib/jobs/tracker";
 import type { QuoteData } from "@/lib/market/yahoo";
 
 export const maxDuration = 120;
+
+// Serve cached scans per selection up to this age; "Re-scan" bypasses with ?refresh=1.
+const MAX_CACHE_AGE_HOURS = 24;
+
+/** Cache-only lookup: returns the cached scan for a selection, never runs a scan. */
+export async function GET(request: Request) {
+  const selection = new URL(request.url).searchParams.get("sector") || "all";
+  try {
+    const cached = await getLatestExplosiveScan(selection, MAX_CACHE_AGE_HOURS);
+    if (!cached) {
+      return NextResponse.json({ cached: false });
+    }
+    return NextResponse.json({
+      ...cached.results,
+      cached: true,
+      scannedAt: cached.created_at,
+      timestamp: cached.created_at,
+    });
+  } catch (e) {
+    console.error("Explosive cache read error:", e);
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 function formatQuoteContext(quotes: QuoteData[]): string {
   return quotes
@@ -25,6 +50,8 @@ function formatQuoteContext(quotes: QuoteData[]): string {
 
 export async function POST(request: Request) {
   try {
+    const forceRefresh =
+      new URL(request.url).searchParams.get("refresh") === "1";
     const body = await request.json();
     const { sector, tickers: rawTickers } = body as {
       sector?: string;
@@ -33,6 +60,32 @@ export async function POST(request: Request) {
 
     let tickerList: string[];
     let sectorName = "All Sectors";
+
+    // Cache key: the dropdown selection (sector slug or "all"). Custom ticker
+    // lists aren't cached.
+    const selectionKey =
+      rawTickers && rawTickers.length > 0 && (!sector || sector === "all")
+        ? null
+        : sector && sector !== "all"
+          ? sector
+          : "all";
+
+    // Cache path: no job row is created for cache-served responses.
+    if (selectionKey && !forceRefresh) {
+      try {
+        const cached = await getLatestExplosiveScan(selectionKey, MAX_CACHE_AGE_HOURS);
+        if (cached) {
+          return NextResponse.json({
+            ...cached.results,
+            cached: true,
+            scannedAt: cached.created_at,
+            timestamp: cached.created_at,
+          });
+        }
+      } catch (e) {
+        console.error("Explosive cache read failed, falling back to live scan:", e);
+      }
+    }
 
     if (sector && sector !== "all") {
       const sectorData = getSector(sector);
@@ -120,7 +173,11 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
         label: `Explosive scan: ${sectorName}`,
         trigger: "manual",
         createdBy: user?.email ?? null,
-        meta: { sector: sectorName, symbols: quotes.map((q) => q.symbol).slice(0, 30) },
+        meta: {
+          sector: sectorName,
+          selection: selectionKey,
+          symbols: quotes.map((q) => q.symbol).slice(0, 30),
+        },
       },
       () =>
         generateText({
@@ -183,13 +240,28 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
       }
     }
 
-    return NextResponse.json({
+    const scannedAt = new Date().toISOString();
+    const results = {
       report,
       picks,
       sector: sectorName,
       tickersAnalyzed: quotes.map((q) => q.symbol),
-      timestamp: new Date().toISOString(),
       reportId,
+    };
+
+    if (selectionKey) {
+      try {
+        await insertExplosiveScan(selectionKey, results);
+      } catch (e) {
+        console.error("Failed to cache explosive scan:", e);
+      }
+    }
+
+    return NextResponse.json({
+      ...results,
+      timestamp: scannedAt,
+      cached: false,
+      scannedAt,
     });
   } catch (e) {
     console.error("Explosive API error:", e);
