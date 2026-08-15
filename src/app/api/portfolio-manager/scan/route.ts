@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { initScan, executeScan } from "@/lib/portfolio-manager/runner";
 import { getRunningWithin } from "@/lib/db/portfolio-manager-scans";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const maxDuration = 300;
 
@@ -37,7 +38,16 @@ export async function POST() {
     // so this safely outlives the 60s Hobby plan response budget.
     after(async () => {
       try {
-        await executeScan(scan_id, tickers, free_cash, user.id, t0);
+        await runTracked(
+          {
+            kind: "portfolio-manager-scan",
+            label: "Portfolio manager scan",
+            trigger: "manual",
+            createdBy: user.email ?? null,
+            meta: { scan_id, tickers: ticker_count },
+          },
+          () => executeScan(scan_id, tickers, free_cash, user.id, t0)
+        );
       } catch (e) {
         console.error(`[scan/after] ${scan_id} failed:`, e);
       }

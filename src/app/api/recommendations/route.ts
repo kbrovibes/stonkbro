@@ -9,6 +9,7 @@ import {
   getCachedTheme,
   RecommendationTheme,
 } from "@/lib/recommendations/generate";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const maxDuration = 120;
 
@@ -52,7 +53,16 @@ export async function POST() {
     const batchId = await createPendingBatch(user?.id);
 
     // Generate in the background — this continues even if the client disconnects
-    generateAllRecommendations(batchId, user?.id).catch((e) => {
+    runTracked(
+      {
+        kind: "recommendations",
+        label: "Daily recommendations refresh",
+        trigger: "manual",
+        createdBy: user?.email ?? null,
+        meta: { batchId },
+      },
+      () => generateAllRecommendations(batchId, user?.id)
+    ).catch((e) => {
       console.error("Background recommendation generation failed:", e);
     });
 

@@ -280,12 +280,26 @@ const ACTIVITIES_CAP = 1000;
 const ACTIVITIES_CALL_SPACING_MS = 2600;
 const RATE_LIMIT_WINDOW_WAIT_MS = 65_000;
 
+/**
+ * Optional cooperative-cancellation / progress hooks for long chain scans.
+ * `checkCancelled` may throw to abort the scan; `progress` is best-effort.
+ * Callers that don't pass hooks are completely unaffected.
+ */
+export interface ChainScanHooks {
+  checkCancelled?: () => Promise<void>;
+  progress?: (text: string) => Promise<void>;
+}
+
 async function fetchActivitiesWindow(
   accountId: string,
   startISO: string,
   endISO: string,
   depth = 0,
+  hooks?: ChainScanHooks,
 ): Promise<any[]> {
+  // Only poll the cancel flag near the top of the recursion tree — a DB
+  // read per leaf window would be wasteful.
+  if (depth <= 2) await hooks?.checkCancelled?.();
   if (depth > 0) await new Promise((r) => setTimeout(r, ACTIVITIES_CALL_SPACING_MS));
   let res;
   try {
@@ -312,8 +326,8 @@ async function fetchActivitiesWindow(
       // Sequential on purpose — parallel halves compound into a request burst
       // that exceeds SnapTrade's per-minute rate limit once history is deep
       // enough to need several split levels (SDK gives up after 3 retries).
-      const left = await fetchActivitiesWindow(accountId, startISO, midDt, depth + 1);
-      const right = await fetchActivitiesWindow(accountId, midDt, endISO, depth + 1);
+      const left = await fetchActivitiesWindow(accountId, startISO, midDt, depth + 1, hooks);
+      const right = await fetchActivitiesWindow(accountId, midDt, endISO, depth + 1, hooks);
       // Dedupe by id (midpoint day may appear in both halves)
       const seen = new Set<string>();
       const out: any[] = [];
@@ -365,7 +379,10 @@ export interface OptionChain {
   direction: "SELL" | "BUY"; // first action — SELL = short/income, BUY = long/directional
 }
 
-export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionChain[]> {
+export async function getOptionChains(
+  startDate = "2026-01-01",
+  hooks?: ChainScanHooks,
+): Promise<OptionChain[]> {
   const end = new Date().toISOString().split("T")[0];
   const accounts = await getAccounts();
 
@@ -377,7 +394,9 @@ export async function getOptionChains(startDate = "2026-01-01"): Promise<OptionC
   // calls but combined still burst SnapTrade's per-minute activities cap.
   const allRaw: any[][] = [];
   for (const acct of accounts) {
-    const txs = await fetchActivitiesWindow(acct.id, startDate, end);
+    await hooks?.checkCancelled?.();
+    await hooks?.progress?.(`${acct.institution}: fetching activities…`);
+    const txs = await fetchActivitiesWindow(acct.id, startDate, end, 0, hooks);
     for (const t of txs) t._institution = acct.institution;
     allRaw.push(txs);
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runMarketMonitor } from "@/lib/alerts/monitor";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -17,7 +18,15 @@ export async function GET(request: Request) {
   }
   const start = Date.now();
   try {
-    const result = await runMarketMonitor();
+    const result = await runTracked(
+      {
+        kind: "market-monitor",
+        label: "Market monitor sweep",
+        trigger: "cron",
+        createdBy: "cron",
+      },
+      () => runMarketMonitor()
+    );
     console.log(
       `[MarketMonitor] checked ${result.symbolsChecked} symbols, ${result.alertsNew} new alerts, ${result.pushesSent} pushes in ${Date.now() - start}ms`
     );

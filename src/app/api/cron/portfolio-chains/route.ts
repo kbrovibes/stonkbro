@@ -6,6 +6,8 @@ import {
   markChainScanComplete,
   markChainScanFailed,
 } from "@/lib/db/portfolio-chain-scans";
+import { runTracked } from "@/lib/jobs/tracker";
+import { JobCancelledError } from "@/lib/jobs/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -29,7 +31,20 @@ export async function GET(request: Request) {
     console.log("[PortfolioChains] Starting scheduled chain scan...");
     scanId = await insertChainScan("scheduled");
 
-    const chains = await getOptionChains(CHAIN_CACHE_START_DATE);
+    const chains = await runTracked(
+      {
+        kind: "chain-scan",
+        label: "Option chain scan (scheduled)",
+        trigger: "cron",
+        createdBy: "cron",
+        meta: { startDate: CHAIN_CACHE_START_DATE },
+      },
+      (ctx) =>
+        getOptionChains(CHAIN_CACHE_START_DATE, {
+          checkCancelled: ctx.checkCancelled,
+          progress: ctx.progress,
+        })
+    );
     await markChainScanComplete(scanId, {
       chains,
       duration_ms: Date.now() - startTime,
@@ -43,7 +58,6 @@ export async function GET(request: Request) {
       durationMs: Date.now() - startTime,
     });
   } catch (e) {
-    console.error("[PortfolioChains] Cron failed:", e);
     const message = e instanceof Error ? e.message : "Unknown error";
     if (scanId) {
       try {
@@ -52,6 +66,11 @@ export async function GET(request: Request) {
         // best effort
       }
     }
+    if (e instanceof JobCancelledError) {
+      console.log("[PortfolioChains] Scan cancelled by user");
+      return NextResponse.json({ ok: false, cancelled: true, scanId });
+    }
+    console.error("[PortfolioChains] Cron failed:", e);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

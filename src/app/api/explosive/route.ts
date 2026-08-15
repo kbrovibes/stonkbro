@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase-server";
 import { getQuotes } from "@/lib/market/yahoo";
 import { getSector, getAllSectorTickers } from "@/lib/market/sectors";
 import { saveResearchReport } from "@/lib/db/research";
+import { runTracked } from "@/lib/jobs/tracker";
 import type { QuoteData } from "@/lib/market/yahoo";
 
 export const maxDuration = 120;
@@ -113,12 +114,22 @@ Return a JSON array (and ONLY a JSON array, no markdown code fences) on a line s
   }
 ]`;
 
-    const aiResult = await generateText({
-      prompt,
-      maxTokens: 4096,
-      feature: "explosive",
-      userId: user?.id,
-    });
+    const aiResult = await runTracked(
+      {
+        kind: "explosive-scan",
+        label: `Explosive scan: ${sectorName}`,
+        trigger: "manual",
+        createdBy: user?.email ?? null,
+        meta: { sector: sectorName, symbols: quotes.map((q) => q.symbol).slice(0, 30) },
+      },
+      () =>
+        generateText({
+          prompt,
+          maxTokens: 4096,
+          feature: "explosive",
+          userId: user?.id,
+        })
+    );
 
     const responseText = aiResult.text;
 

@@ -11,6 +11,7 @@ import {
   markComplete,
   markFailed,
 } from "@/lib/db/bloodbath-scans";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -41,27 +42,41 @@ export async function GET(request: Request) {
       // continue with the scan universe only
     }
 
-    const scan = await scanBloodbath(watchlistSymbols);
-    console.log(
-      `[Bloodbath] Scanned ${scan.scannedCount}: ${scan.watchlist.length} watchlist, ${scan.market.length} market drops`
-    );
+    const { scan, verdicts, aiProvider, aiModel } = await runTracked(
+      {
+        kind: "bloodbath-scan",
+        label: "Bloodbath scan (scheduled)",
+        trigger: "cron",
+        createdBy: "cron",
+        meta: { watchlistCount: watchlistSymbols.length },
+      },
+      async (ctx) => {
+        await ctx.progress("Scanning universe…");
+        const scan = await scanBloodbath(watchlistSymbols);
+        console.log(
+          `[Bloodbath] Scanned ${scan.scannedCount}: ${scan.watchlist.length} watchlist, ${scan.market.length} market drops`
+        );
 
-    // Verdicts are best-effort — a failed AI call still leaves a usable scan.
-    let verdicts: BloodbathVerdict[] | null = null;
-    let aiProvider: string | null = null;
-    let aiModel: string | null = null;
-    const targets = pickVerdictTargets([...scan.watchlist, ...scan.market]);
-    if (targets.length > 0) {
-      try {
-        const result = await generateBloodbathVerdicts(targets, undefined, scan.benchmarks);
-        verdicts = result.verdicts;
-        aiProvider = result.aiProvider;
-        aiModel = result.aiModel;
-        console.log(`[Bloodbath] Got ${verdicts.length} AI verdicts via ${aiProvider}`);
-      } catch (e) {
-        console.error("[Bloodbath] Verdict generation failed:", e);
+        // Verdicts are best-effort — a failed AI call still leaves a usable scan.
+        let verdicts: BloodbathVerdict[] | null = null;
+        let aiProvider: string | null = null;
+        let aiModel: string | null = null;
+        const targets = pickVerdictTargets([...scan.watchlist, ...scan.market]);
+        if (targets.length > 0) {
+          await ctx.progress(`Generating AI verdicts (${targets.length} targets)…`);
+          try {
+            const result = await generateBloodbathVerdicts(targets, undefined, scan.benchmarks);
+            verdicts = result.verdicts;
+            aiProvider = result.aiProvider;
+            aiModel = result.aiModel;
+            console.log(`[Bloodbath] Got ${verdicts.length} AI verdicts via ${aiProvider}`);
+          } catch (e) {
+            console.error("[Bloodbath] Verdict generation failed:", e);
+          }
+        }
+        return { scan, verdicts, aiProvider, aiModel };
       }
-    }
+    );
 
     await markComplete(scanId, {
       scanned_count: scan.scannedCount,

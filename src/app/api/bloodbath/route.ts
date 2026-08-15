@@ -3,6 +3,7 @@ import { scanBloodbath } from "@/lib/analysis/bloodbath";
 import { getLatestScan } from "@/lib/db/bloodbath-scans";
 import { createClient } from "@/lib/supabase-server";
 import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -34,19 +35,30 @@ export async function GET(request: Request) {
     }
 
     let watchlistSymbols: string[] = [];
+    let userEmail: string | null = null;
     try {
       const supabase = await createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        userEmail = user.email ?? null;
         watchlistSymbols = await getAllWatchlistSymbols(user.id);
       }
     } catch {
       // watchlist unavailable — continue with the scan universe only
     }
 
-    const scan = await scanBloodbath(watchlistSymbols);
+    const scan = await runTracked(
+      {
+        kind: "bloodbath-scan",
+        label: "Bloodbath scan (live refresh)",
+        trigger: "manual",
+        createdBy: userEmail,
+        meta: { watchlistCount: watchlistSymbols.length },
+      },
+      () => scanBloodbath(watchlistSymbols)
+    );
 
     return NextResponse.json({
       ...scan,
