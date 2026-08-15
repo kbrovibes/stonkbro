@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.32.0 — Explosive finder: per-sector state, Research All, 24h cache
+
+- **Dropdown never blocks**: each sector keeps its own scan state — switching the dropdown while one sector is scanning shows the new sector's cached result or its own Start button; the in-flight scan lands when done
+- **Research All Sectors**: sequential runner over all 9 options with "Researching 3/9…" progress and per-sector ticks; fresh-cached sectors pass through instantly, only stale ones hit the AI; navigating away keeps everything already completed (results land server-side)
+- **24h server-side cache** (`explosive_scans` table, applied to prod): page load / dropdown switch renders the cached report instantly with its age ("Scanned 5h ago"); **Re-scan** forces a fresh run. Cache-served responses create no Actions rows; live scans stay job-tracked
+- New cache-only `GET /api/explosive?sector=slug`; POST gains `cached`/`scannedAt` (additive)
+
 ## v0.31.1 — Actions page polish + nav reorder
 
 - **"Jobs" is now "Actions"** (`/actions`; `/jobs` redirects): header indicator and profile menu updated

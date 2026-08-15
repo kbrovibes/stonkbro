@@ -243,6 +243,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.32.0** | Explosive finder — per-sector state, Research All, 24h cached scans |
 | **v0.31.0** | Tax Center stock sales — FIFO lot engine, per-quarter ST/LT split, basis overrides |
 | **v0.30.0** | Jobs Center — all async ops tracked, queryable, cancellable; header running-count indicator |
 | **v0.29.0** | Tax Center (quarterly estimated taxes), potential year total, per-brokerage chain badges |
