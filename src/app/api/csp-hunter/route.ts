@@ -6,6 +6,7 @@ import { computeDelta, getLastScan, saveScanResult } from "@/lib/options/csp-del
 import { analyzeCSPCandidates } from "@/lib/options/csp-analyst";
 import { getAllWatchlistSymbols } from "@/lib/db/watchlists";
 import { getPositions } from "@/lib/db/positions";
+import { runTracked } from "@/lib/jobs/tracker";
 
 /** GET — fetch recent scan results (public, no user context needed) */
 export async function GET() {
@@ -70,62 +71,77 @@ export async function POST(request: Request) {
     }
   }
 
-  // Run all three scans in parallel
-  const [scan, callScan, leapsScan] = await Promise.all([
-    scanForCSPs(config),
-    scanForCalls(config),
-    scanForLeaps(config),
-  ]);
+  const payload = await runTracked(
+    {
+      kind: "csp-hunter-scan",
+      label: "CSP Hunter scan",
+      trigger: "manual",
+      createdBy: user.email ?? null,
+      meta: { tickers: (config.tickers ?? DEFAULT_UNIVERSE).length },
+    },
+    async (ctx) => {
+      // Run all three scans in parallel
+      await ctx.progress("Scanning CSPs, calls, and LEAPS…");
+      const [scan, callScan, leapsScan] = await Promise.all([
+        scanForCSPs(config),
+        scanForCalls(config),
+        scanForLeaps(config),
+      ]);
 
-  // Deduplicate within each section (1 ticker per section), no cross-section dedup
-  const dedupSection = <T extends { symbol: string }>(items: T[], max: number): T[] => {
-    const seen = new Set<string>();
-    return items.filter((c) => {
-      if (seen.has(c.symbol)) return false;
-      seen.add(c.symbol);
-      return true;
-    }).slice(0, max);
-  };
+      // Deduplicate within each section (1 ticker per section), no cross-section dedup
+      const dedupSection = <T extends { symbol: string }>(items: T[], max: number): T[] => {
+        const seen = new Set<string>();
+        return items.filter((c) => {
+          if (seen.has(c.symbol)) return false;
+          seen.add(c.symbol);
+          return true;
+        }).slice(0, max);
+      };
 
-  const dedupedCSPs = dedupSection(scan.candidates, 10);
-  const dedupedCalls = dedupSection(callScan.candidates, 10);
-  const dedupedLeaps = dedupSection(leapsScan.candidates, 10);
+      const dedupedCSPs = dedupSection(scan.candidates, 10);
+      const dedupedCalls = dedupSection(callScan.candidates, 10);
+      const dedupedLeaps = dedupSection(leapsScan.candidates, 10);
 
-  let delta = null;
-  const lastScan = await getLastScan();
-  if (lastScan) {
-    delta = computeDelta(dedupedCSPs, lastScan.candidates, lastScan.scannedAt);
-  }
+      let delta = null;
+      const lastScan = await getLastScan();
+      if (lastScan) {
+        delta = computeDelta(dedupedCSPs, lastScan.candidates, lastScan.scannedAt);
+      }
 
-  let analysis = null;
-  if (dedupedCSPs.length > 0) {
-    try {
-      analysis = await analyzeCSPCandidates(dedupedCSPs, delta, scan.capital, user.id);
-    } catch (e) {
-      console.error("[Options Scanner] AI analysis failed:", e);
+      let analysis = null;
+      if (dedupedCSPs.length > 0) {
+        await ctx.progress("Running AI analysis…");
+        try {
+          analysis = await analyzeCSPCandidates(dedupedCSPs, delta, scan.capital, user.id);
+        } catch (e) {
+          console.error("[Options Scanner] AI analysis failed:", e);
+        }
+      }
+
+      const scanId = await saveScanResult(
+        { ...scan, candidates: dedupedCSPs },
+        delta,
+        analysis?.text ?? null,
+        analysis?.provider ?? null,
+        "manual",
+        dedupedCalls,
+        dedupedLeaps,
+        analysis?.model ?? null
+      );
+
+      return {
+        scanId,
+        candidates: dedupedCSPs,
+        callCandidates: dedupedCalls,
+        leapsCandidates: dedupedLeaps,
+        delta,
+        claudeAnalysis: analysis?.text ?? null,
+        scannedAt: scan.scannedAt,
+        capital: scan.capital,
+        errors: [...scan.errors, ...callScan.errors, ...leapsScan.errors],
+      };
     }
-  }
-
-  const scanId = await saveScanResult(
-    { ...scan, candidates: dedupedCSPs },
-    delta,
-    analysis?.text ?? null,
-    analysis?.provider ?? null,
-    "manual",
-    dedupedCalls,
-    dedupedLeaps,
-    analysis?.model ?? null
   );
 
-  return NextResponse.json({
-    scanId,
-    candidates: dedupedCSPs,
-    callCandidates: dedupedCalls,
-    leapsCandidates: dedupedLeaps,
-    delta,
-    claudeAnalysis: analysis?.text ?? null,
-    scannedAt: scan.scannedAt,
-    capital: scan.capital,
-    errors: [...scan.errors, ...callScan.errors, ...leapsScan.errors],
-  });
+  return NextResponse.json(payload);
 }

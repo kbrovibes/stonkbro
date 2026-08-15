@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getQuote, getAllOptionsChains } from "@/lib/market/yahoo";
 import { findPMCCSetups, PMCCCandidate } from "@/lib/options/pmcc";
 import { SECTORS, getSector, getAllSectorTickers } from "@/lib/market/sectors";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const maxDuration = 120;
 
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
   const sectorSlug = searchParams.get("sector");
 
   let tickers: string[];
+  let scanScope = "top 20";
 
   if (sectorSlug) {
     const sector = getSector(sectorSlug);
@@ -25,55 +27,69 @@ export async function GET(request: Request) {
       );
     }
     tickers = sector.tickers;
+    scanScope = sector.name;
   } else {
     // All sectors but limit to ~20 to avoid timeout
     const all = getAllSectorTickers();
     tickers = all.slice(0, 20);
   }
 
-  const allSetups: PMCCScanResult[] = [];
-  const errors: { symbol: string; error: string }[] = [];
-  const scanned: string[] = [];
+  const { allSetups, errors, scanned } = await runTracked(
+    {
+      kind: "pmcc-scan",
+      label: `PMCC scan: ${scanScope}`,
+      trigger: "manual",
+      meta: { sector: sectorSlug ?? "all", tickers: tickers.length },
+    },
+    async (ctx) => {
+      const allSetups: PMCCScanResult[] = [];
+      const errors: { symbol: string; error: string }[] = [];
+      const scanned: string[] = [];
 
-  // Process sequentially to avoid rate limits
-  for (const symbol of tickers) {
-    try {
-      const [quote, chain] = await Promise.all([
-        getQuote(symbol),
-        getAllOptionsChains(symbol),
-      ]);
+      // Process sequentially to avoid rate limits
+      for (const symbol of tickers) {
+        await ctx.progress(`${symbol} (${scanned.length + 1}/${tickers.length})`);
+        try {
+          const [quote, chain] = await Promise.all([
+            getQuote(symbol),
+            getAllOptionsChains(symbol),
+          ]);
 
-      scanned.push(symbol);
+          scanned.push(symbol);
 
-      if (!quote || !chain) continue;
+          if (!quote || !chain) continue;
 
-      const setups = findPMCCSetups(symbol, quote.price, chain.calls);
+          const setups = findPMCCSetups(symbol, quote.price, chain.calls);
 
-      // Take top 2 setups per ticker to keep results manageable
-      for (const setup of setups.slice(0, 2)) {
-        const incomeProjection12mo = setup.monthlyPremium * 12;
-        const capitalEfficiency = setup.capitalRequired / (setup.stockPrice * 100);
+          // Take top 2 setups per ticker to keep results manageable
+          for (const setup of setups.slice(0, 2)) {
+            const incomeProjection12mo = setup.monthlyPremium * 12;
+            const capitalEfficiency = setup.capitalRequired / (setup.stockPrice * 100);
 
-        allSetups.push({
-          ...setup,
-          incomeProjection12mo,
-          capitalEfficiency,
-        });
+            allSetups.push({
+              ...setup,
+              incomeProjection12mo,
+              capitalEfficiency,
+            });
+          }
+        } catch (e) {
+          errors.push({
+            symbol,
+            error: e instanceof Error ? e.message : "Unknown error",
+          });
+          scanned.push(symbol);
+        }
       }
-    } catch (e) {
-      errors.push({
-        symbol,
-        error: e instanceof Error ? e.message : "Unknown error",
-      });
-      scanned.push(symbol);
-    }
-  }
 
-  // Sort by monthly return %
-  allSetups.sort((a, b) => {
-    if (a.grade !== b.grade) return a.grade.localeCompare(b.grade);
-    return b.monthlyReturnPct - a.monthlyReturnPct;
-  });
+      // Sort by monthly return %
+      allSetups.sort((a, b) => {
+        if (a.grade !== b.grade) return a.grade.localeCompare(b.grade);
+        return b.monthlyReturnPct - a.monthlyReturnPct;
+      });
+
+      return { allSetups, errors, scanned };
+    }
+  );
 
   return NextResponse.json({
     setups: allSetups,

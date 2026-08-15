@@ -9,6 +9,7 @@ import {
   failReport,
   saveTradeSuggestion,
 } from "@/lib/db/research";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const maxDuration = 120;
 
@@ -56,18 +57,38 @@ export async function POST(request: Request) {
     let aiModel: string | undefined;
 
     try {
-      if (mode === "hybrid") {
-        const result = await runHybridResearch(normalizedSymbols, quotes, undefined, user.id);
-        report = result.report;
-        suggestions = result.suggestions;
-        // hybrid analyzer doesn't return provider/model in the result type yet, need to fix that or handle it
-      } else {
-        const result = await runDeepResearch(normalizedSymbols, quotes, undefined, user.id);
-        report = result.report;
-        suggestions = result.suggestions;
-        aiProvider = result.provider;
-        aiModel = result.model;
-      }
+      const tracked = await runTracked(
+        {
+          kind: "research",
+          label: `Research: ${normalizedSymbols[0]}${normalizedSymbols.length > 1 ? ` +${normalizedSymbols.length - 1} more` : ""}`,
+          trigger: "manual",
+          createdBy: user.email ?? null,
+          meta: { symbols: normalizedSymbols, mode },
+        },
+        async (): Promise<{
+          report: string;
+          suggestions: typeof suggestions;
+          aiProvider?: string;
+          aiModel?: string;
+        }> => {
+          if (mode === "hybrid") {
+            const result = await runHybridResearch(normalizedSymbols, quotes, undefined, user.id);
+            // hybrid analyzer doesn't return provider/model in the result type yet, need to fix that or handle it
+            return { report: result.report, suggestions: result.suggestions };
+          }
+          const result = await runDeepResearch(normalizedSymbols, quotes, undefined, user.id);
+          return {
+            report: result.report,
+            suggestions: result.suggestions,
+            aiProvider: result.provider,
+            aiModel: result.model,
+          };
+        }
+      );
+      report = tracked.report;
+      suggestions = tracked.suggestions;
+      aiProvider = tracked.aiProvider;
+      aiModel = tracked.aiModel;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Research failed";
       await failReport(reportId, msg);

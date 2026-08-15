@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { scanForMovers } from "@/lib/analysis/movers";
 import { sendPushToAll } from "@/lib/notifications/push";
 import { runPortfolioManagerScan } from "@/lib/portfolio-manager/runner";
+import { runTracked } from "@/lib/jobs/tracker";
 
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -20,6 +21,14 @@ export async function GET(request: Request) {
   }
 
   try {
+    return await runTracked(
+      {
+        kind: "daily-briefing",
+        label: "Daily briefing",
+        trigger: "cron",
+        createdBy: "cron",
+      },
+      async (ctx) => {
     // Get all users with alert_email configured
     const { data: settings } = await supabaseAdmin
       .from("user_settings")
@@ -68,6 +77,7 @@ export async function GET(request: Request) {
     const allAlertsByUser = new Map<string, { email: string; alerts: AlertItem[] }>();
 
     // Process each user
+    await ctx.progress(`Generating alerts for ${positionsByUser.size} user${positionsByUser.size === 1 ? "" : "s"}…`);
     for (const [userId, userPositions] of positionsByUser) {
       // Find email for this user
       const userSetting = settings?.find((s) => s.user_id === userId);
@@ -103,6 +113,7 @@ export async function GET(request: Request) {
     }
 
     // Scan for explosive movers across the full universe
+    await ctx.progress("Scanning for movers…");
     let moverAlerts: AlertItem[] = [];
     let moversScanned = 0;
     try {
@@ -134,6 +145,7 @@ export async function GET(request: Request) {
     }
 
     // Send emails: combine position alerts with mover alerts per user
+    await ctx.progress("Sending briefings…");
     for (const [userId, { email, alerts }] of allAlertsByUser) {
       const combined = [...alerts, ...moverAlerts];
 
@@ -160,7 +172,15 @@ export async function GET(request: Request) {
     }
 
     // Fire-and-forget portfolio manager scan (ride-along at market close)
-    runPortfolioManagerScan({ scan_type: "scheduled", trigger_source: "cron-close" })
+    runTracked(
+      {
+        kind: "portfolio-manager-scan",
+        label: "Portfolio manager scan (cron ride-along)",
+        trigger: "cron",
+        createdBy: "cron",
+      },
+      () => runPortfolioManagerScan({ scan_type: "scheduled", trigger_source: "cron-close" })
+    )
       .then((r) => console.log(`[portfolio-manager] ride-along complete: ${r.status} (${r.ticker_count} tickers, ${r.duration_ms}ms)`))
       .catch((e) => console.error("[portfolio-manager] ride-along failed:", e));
 
@@ -172,6 +192,8 @@ export async function GET(request: Request) {
       push,
       results,
     });
+      }
+    );
   } catch (e) {
     console.error("Cron error:", e);
     return NextResponse.json({ error: "Cron job failed", details: String(e) }, { status: 500 });

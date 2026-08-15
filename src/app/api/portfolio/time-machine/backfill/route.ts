@@ -17,6 +17,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getAllActivities, getPortfolio } from "@/lib/snaptrade/client";
 import { simulateTimeMachine } from "@/lib/time-machine/simulate";
 import { SnapTradeTxn } from "@/lib/time-machine/types";
+import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -104,70 +105,95 @@ export async function POST(req: Request) {
     }
   }
 
-  try {
-    // Fetch once — feed the same data to every snapshot date.
-    const [activities, portfolio] = await Promise.all([
-      getAllActivities("2010-01-01"),
-      getPortfolio(),
-    ]);
+  type Outcome = { date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number };
+  // Shared with onCancelled so a cancel mid-run returns the months done so far.
+  const completed: Outcome[] = [];
 
-    if (!activities.length) {
-      return NextResponse.json({ error: "No transaction history" }, { status: 502 });
-    }
-
-    const txns = activities as SnapTradeTxn[];
-    let earliestAvailable: string | null = null;
-    for (const t of activities as any[]) {
-      const d = (t?.trade_date ?? t?.settlement_date ?? "").slice(0, 10);
-      if (!d) continue;
-      if (earliestAvailable === null || d < earliestAvailable) earliestAvailable = d;
-    }
-
-    type Outcome = { date: string; status: "ok" | "skipped" | "error"; reason?: string; delta?: number };
-
-    async function processOne(date: string): Promise<Outcome> {
-      if (earliestAvailable && date < earliestAvailable) {
-        return { date, status: "skipped", reason: `before earliest activity (${earliestAvailable})` };
-      }
-      try {
-        const sim = await simulateTimeMachine({ snapshotDate: date, txns, currentPortfolio: portfolio });
-        const payload = { ...sim, earliestAvailable };
-        const { error: upErr } = await writeClient
-          .from("time_machine_snapshots")
-          .upsert({
-            snapshot_date: date,
-            owner_email: ownerEmail,
-            payload,
-            payload_version: sim.payloadVersion,
-            delta_absolute: sim.delta.absolute,
-            favorable_to_hold: sim.delta.favorableToHold,
-            computed_at: new Date().toISOString(),
-          }, { onConflict: "snapshot_date,owner_email" });
-        if (upErr) return { date, status: "error", reason: upErr.message };
-        return { date, status: "ok", delta: sim.delta.absolute };
-      } catch (e: any) {
-        return { date, status: "error", reason: e?.message ?? String(e) };
-      }
-    }
-
-    // Explicit-targets mode = small batch from a client doing parallel chunks.
-    // Range mode = full backfill — keep sequential to avoid Tradier rate limits.
-    const results: Outcome[] = mode === "explicit"
-      ? await Promise.all(targets.map(processOne))
-      : await (async () => {
-          const out: Outcome[] = [];
-          for (const d of targets) out.push(await processOne(d));
-          return out;
-        })();
-
-    return NextResponse.json({
+  const summarize = (results: Outcome[], cancelled: boolean) =>
+    NextResponse.json({
       mode,
       targets: targets.length,
+      ...(cancelled ? { cancelled: true } : {}),
       ok: results.filter((r) => r.status === "ok").length,
       skipped: results.filter((r) => r.status === "skipped").length,
       errors: results.filter((r) => r.status === "error").length,
       results,
     });
+
+  try {
+    return await runTracked(
+      {
+        kind: "time-machine-backfill",
+        label: mode === "explicit"
+          ? `Hindsight backfill (${targets.length} date${targets.length > 1 ? "s" : ""})`
+          : `Hindsight backfill (${targets.length} months from ${fromISO.slice(0, 7)})`,
+        trigger: isAdminAuth ? "auto" : "manual",
+        createdBy: ownerEmail,
+        meta: { mode, from: fromISO, months: targets.length },
+      },
+      async (ctx) => {
+        await ctx.progress("Fetching transaction history…");
+
+        // Fetch once — feed the same data to every snapshot date.
+        const [activities, portfolio] = await Promise.all([
+          getAllActivities("2010-01-01"),
+          getPortfolio(),
+        ]);
+
+        if (!activities.length) {
+          return NextResponse.json({ error: "No transaction history" }, { status: 502 });
+        }
+
+        const txns = activities as SnapTradeTxn[];
+        let earliestAvailable: string | null = null;
+        for (const t of activities as any[]) {
+          const d = (t?.trade_date ?? t?.settlement_date ?? "").slice(0, 10);
+          if (!d) continue;
+          if (earliestAvailable === null || d < earliestAvailable) earliestAvailable = d;
+        }
+
+        async function processOne(date: string): Promise<Outcome> {
+          if (earliestAvailable && date < earliestAvailable) {
+            return { date, status: "skipped", reason: `before earliest activity (${earliestAvailable})` };
+          }
+          try {
+            const sim = await simulateTimeMachine({ snapshotDate: date, txns, currentPortfolio: portfolio });
+            const payload = { ...sim, earliestAvailable };
+            const { error: upErr } = await writeClient
+              .from("time_machine_snapshots")
+              .upsert({
+                snapshot_date: date,
+                owner_email: ownerEmail,
+                payload,
+                payload_version: sim.payloadVersion,
+                delta_absolute: sim.delta.absolute,
+                favorable_to_hold: sim.delta.favorableToHold,
+                computed_at: new Date().toISOString(),
+              }, { onConflict: "snapshot_date,owner_email" });
+            if (upErr) return { date, status: "error", reason: upErr.message };
+            return { date, status: "ok", delta: sim.delta.absolute };
+          } catch (e: any) {
+            return { date, status: "error", reason: e?.message ?? String(e) };
+          }
+        }
+
+        // Explicit-targets mode = small batch from a client doing parallel chunks.
+        // Range mode = full backfill — keep sequential to avoid Tradier rate limits.
+        if (mode === "explicit") {
+          completed.push(...(await Promise.all(targets.map(processOne))));
+        } else {
+          for (let i = 0; i < targets.length; i++) {
+            await ctx.checkCancelled();
+            await ctx.progress(`${targets[i].slice(0, 7)} (${i + 1}/${targets.length})`);
+            completed.push(await processOne(targets[i]));
+          }
+        }
+
+        return summarize(completed, false);
+      },
+      // Cancelled mid-run → partial success with the months completed so far.
+      () => summarize(completed, true)
+    );
   } catch (err: any) {
     console.error("Time Machine backfill error:", err);
     return NextResponse.json({ error: "Backfill failed", detail: String(err).slice(0, 300) }, { status: 500 });

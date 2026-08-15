@@ -8,6 +8,7 @@ import {
   markChainScanComplete,
   markChainScanFailed,
 } from "@/lib/db/portfolio-chain-scans";
+import { runTracked } from "@/lib/jobs/tracker";
 
 // Serve the cron-cached chain scan up to this age; covers weekends.
 const CHAIN_CACHE_MAX_AGE_HOURS = 72;
@@ -57,7 +58,20 @@ export async function GET(req: Request) {
       }
 
       const started = Date.now();
-      const chains = await getOptionChains(startDate);
+      const chains = await runTracked(
+        {
+          kind: "chain-scan",
+          label: "Option chain scan (live refresh)",
+          trigger: "manual",
+          createdBy: user.email ?? null,
+          meta: { startDate },
+        },
+        (ctx) =>
+          getOptionChains(startDate, {
+            checkCancelled: ctx.checkCancelled,
+            progress: ctx.progress,
+          })
+      );
 
       // Store the live result so the next load is a cache hit (best-effort).
       if (cacheable) {
