@@ -1,42 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import LessonRenderer from "@/components/learn/LessonRenderer";
 import type { LessonSection } from "@/lib/learn/curriculum";
-
-function useDebouncedSave(delay: number) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const save = useCallback(
-    (data: Record<string, unknown>) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(async () => {
-        // Offline: skip the round-trip entirely. Progress is best-effort and
-        // resyncs on the next section change once the connection is back.
-        if (typeof navigator !== "undefined" && !navigator.onLine) return;
-        try {
-          await fetch("/api/learn/progress", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-        } catch {
-          // silently fail — progress save is best-effort
-        }
-      }, delay);
-    },
-    [delay]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  return save;
-}
+import { createSoftSaver, saveCritical, flushQueue } from "./progressSync";
 
 interface LessonClientProps {
   moduleId: string;
@@ -65,44 +33,76 @@ export default function LessonClient({
 }: LessonClientProps) {
   const router = useRouter();
   const [completed, setCompleted] = useState(false);
+  const completedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const saveProgress = useDebouncedSave(3000);
+  const mountedAtRef = useRef(Date.now());
 
-  // Record lesson start
+  // Soft saver (scroll/time): merged + debounced per lesson, flushed on exit.
+  const soft = useMemo(() => createSoftSaver(moduleId, lessonId), [moduleId, lessonId]);
+
+  const markComplete = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    setCompleted(true);
+    // Critical path: immediate keepalive POST + offline/failure queue —
+    // survives scrolling, navigation, and unmount.
+    void saveCritical({ moduleId, lessonId, completed: true });
+  }, [moduleId, lessonId]);
+
+  // Record lesson start + retry any queued saves from earlier sessions.
   useEffect(() => {
     if (!moduleId || !lessonId) return;
-    saveProgress({ moduleId, lessonId });
-  }, [moduleId, lessonId, saveProgress]);
+    mountedAtRef.current = Date.now();
+    completedRef.current = false;
+    soft.save({});
+    void flushQueue();
+    const onOnline = () => void flushQueue();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [moduleId, lessonId, soft]);
 
-  // Auto-save scroll position
+  // Auto-save scroll position (merged — never displaces a completion save).
   useEffect(() => {
-    const handleScroll = () => {
-      saveProgress({
-        moduleId,
-        lessonId,
-        scrollPosition: window.scrollY,
-      });
-    };
-
+    const handleScroll = () => soft.save({ scrollPosition: window.scrollY });
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [moduleId, lessonId, saveProgress]);
+  }, [soft]);
+
+  // Flush soft state (scroll + time spent) when leaving the lesson.
+  useEffect(() => {
+    const flushWithTime = () => {
+      soft.save({ timeSpentSeconds: Math.round((Date.now() - mountedAtRef.current) / 1000) });
+      soft.flush();
+    };
+    window.addEventListener("pagehide", flushWithTime);
+    return () => {
+      window.removeEventListener("pagehide", flushWithTime);
+      flushWithTime(); // unmount (in-app navigation)
+    };
+  }, [soft]);
 
   // Detect reaching bottom to mark complete
   useEffect(() => {
     if (!bottomRef.current) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !completed) {
-          setCompleted(true);
-          saveProgress({ moduleId, lessonId, completed: true });
-        }
+        if (entry.isIntersecting) markComplete();
       },
       { threshold: 0.5 }
     );
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [moduleId, lessonId, completed, saveProgress]);
+  }, [markComplete]);
+
+  // Quiz results are critical: save immediately, and a finished quiz also
+  // completes the lesson (quizzes sit at the end of a lesson).
+  const handleQuizComplete = useCallback(
+    (score: number, answers: Record<string, number>) => {
+      void saveCritical({ moduleId, lessonId, quizScore: score, quizAnswers: answers });
+      markComplete();
+    },
+    [moduleId, lessonId, markComplete]
+  );
 
   return (
     <div className="min-h-screen bg-white dark:bg-surface-elevated">
@@ -143,7 +143,7 @@ export default function LessonClient({
 
       {/* Lesson content */}
       <div className="max-w-2xl mx-auto">
-        <LessonRenderer sections={sections} />
+        <LessonRenderer sections={sections} onQuizComplete={handleQuizComplete} />
       </div>
 
       {/* Bottom marker for completion detection */}
@@ -172,7 +172,7 @@ export default function LessonClient({
 
           {nextLessonId ? (
             <button
-              onClick={() => router.push(`/learn/${moduleId}/${nextLessonId}`)}
+              onClick={() => { markComplete(); router.push(`/learn/${moduleId}/${nextLessonId}`); }}
               className="text-sm font-medium text-sky-600 dark:text-accent hover:text-sky-700 flex items-center gap-1"
             >
               Next Lesson
@@ -182,7 +182,7 @@ export default function LessonClient({
             </button>
           ) : (
             <button
-              onClick={() => router.push(`/learn/${moduleId}`)}
+              onClick={() => { markComplete(); router.push(`/learn/${moduleId}`); }}
               className="text-sm font-medium text-emerald-600 dark:text-gain hover:text-emerald-700 flex items-center gap-1"
             >
               Complete Module

@@ -54,7 +54,9 @@ export async function saveLessonProgress(
     updated_at: now,
   };
 
-  if (data.completed !== undefined) upsertData.completed = data.completed;
+  // Only ever set completed to true — a later scroll/time save (or a replayed
+  // stale request) must never downgrade a finished lesson.
+  if (data.completed === true) upsertData.completed = true;
   if (data.quizScore !== undefined) upsertData.quiz_score = data.quizScore;
   if (data.quizAnswers !== undefined)
     upsertData.quiz_answers = data.quizAnswers;

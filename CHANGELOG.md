@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.32.2 — Learn progress tracking actually works
+
+- **Root cause**: one shared debounce timer + payload slot for every save type — a scroll event or "Next Lesson" tap scheduled after reaching a lesson's bottom silently replaced the pending `completed: true` save (and unmount killed the timer). Completions only stuck if you idled 3s at the bottom, which is why finished modules showed random single lessons complete
+- **Fix**: completions and quiz results now POST immediately with `keepalive` (survive navigation), with a localStorage retry queue for offline/failed saves flushed on reconnect; scroll/time-spent saves merge into their own debounced channel and flush on lesson exit — they can never displace a completion
+- **Quiz scores were never saved at all** (`onQuizComplete` was unwired) — now saved immediately, and finishing a quiz completes the lesson; time-spent is now actually tracked
+- "Next Lesson" / "Complete Module" taps also mark the lesson complete (belt-and-suspenders); server now refuses to downgrade a completed lesson
+- Backfilled the SNDK case study to fully completed (all lessons were read; the bug ate the saves)
+
 ## v0.32.1 — Explosive finder fixes: deep links + per-sector reports view
 
 - **Actions rows deep-link to the right sector**: clicking a "space-defense" explosive job now opens `/explosive?sector=space-defense` (the job's selection rides its meta), not the page's default view
