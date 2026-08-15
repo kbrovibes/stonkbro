@@ -55,8 +55,8 @@ export default function JobsIndicator() {
 
   return (
     <Link
-      href="/jobs"
-      aria-label={running > 0 ? `Jobs — ${running} running` : "Jobs"}
+      href="/actions"
+      aria-label={running > 0 ? `Actions — ${running} running` : "Actions"}
       className="relative w-10 h-10 flex items-center justify-center rounded-full text-text-faint hover:text-text hover:bg-surface-muted active:bg-accent-bg transition-colors"
     >
       <svg

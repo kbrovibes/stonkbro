@@ -22,7 +22,10 @@ export async function GET(req: Request) {
   try {
     await sweepStaleJobs();
     const { jobs, running } = await listJobs(limit);
-    const enriched = jobs.map((j) => ({ ...j, cancellable: jobKindInfo(j.kind).cancellable }));
+    const enriched = jobs.map((j) => {
+      const info = jobKindInfo(j.kind);
+      return { ...j, cancellable: info.cancellable, href: info.href ?? null };
+    });
     return NextResponse.json({ jobs: enriched, running });
   } catch (e) {
     return NextResponse.json(

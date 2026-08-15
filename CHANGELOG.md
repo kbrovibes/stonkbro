@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.31.1 — Actions page polish + nav reorder
+
+- **"Jobs" is now "Actions"** (`/actions`; `/jobs` redirects): header indicator and profile menu updated
+- **Status cards** at the top (Running / Completed / Failed counts) that double as filters
+- **Aligned trigger badges**: CRON/MANUAL/AUTO chips sit in a fixed-width column so rows line up
+- **Tap-through**: tapping an action opens its output page (chain scan → Portfolio, backfill → Hindsight, research → Research, scans → their pages, tax sync → Tax Center); rows show a › affordance
+- **Bottom nav reorder**: Home · Options (renamed from Plays) · Portfolio (center) · Learn · More
+
 ## v0.31.0 — Tax Center: stock sales + explicit short/long-term per quarter
 
 - **Stock sells now count**: a FIFO lot engine walks full broker activity history (2010→now, both brokers, lots kept separate per broker) and matches every 2026 equity sale to its purchase lots — gain and short/long-term split per matched lot, sweep-fund churn (SPAXX/QACDS) excluded, securities-lending rows ignored
