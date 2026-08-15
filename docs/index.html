@@ -1107,6 +1107,11 @@
             <td>Jobs Center — list historic + running async jobs with exact running count; POST requests cooperative cancellation.</td>
           </tr>
           <tr>
+            <td><code>/api/taxes/equities</code></td>
+            <td><span class="method-badge method-post">POST</span></td>
+            <td>Sync stock-sale history: FIFO lot matching over full broker activity feed (tracked, cancellable job); GET returns scan freshness.</td>
+          </tr>
+          <tr>
             <td><code>/api/taxes</code></td>
             <td><span class="method-badge method-get">GET</span></td>
             <td>Tax Center — per-IRS-quarter realized gains, estimated tax at marginal rates, recommended one-off payments; POST records a payment, DELETE removes one.</td>
@@ -1164,6 +1169,13 @@
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.31</div>
+          <div class="tl-content">
+            <h4>Tax Center: Stock Sales + Per-Quarter ST/LT</h4>
+            <p>FIFO lot engine over full broker history brings equity sells into the quarterly tax math with an always-visible short/long-term split per quarter, and basis-override entry for transfer/RSU shares.</p>
+          </div>
+        </div>
         <div class="tl-item">
           <div class="tl-dot" style="font-size:0.55rem;">0.30</div>
           <div class="tl-content">

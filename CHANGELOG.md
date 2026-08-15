@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.31.0 — Tax Center: stock sales + explicit short/long-term per quarter
+
+- **Stock sells now count**: a FIFO lot engine walks full broker activity history (2010→now, both brokers, lots kept separate per broker) and matches every 2026 equity sale to its purchase lots — gain and short/long-term split per matched lot, sweep-fund churn (SPAXX/QACDS) excluded, securities-lending rows ignored
+- **Short-term vs long-term is now always visible per quarter**, split by source: `options $A · stocks $B` under each of the ST and LT rows in every period card, plus the always-on year ST/LT card
+- **"Needs basis" handling**: shares that arrived via transfer/RSU have no cost basis in the connector feed — those sales are listed per quarter (excluded from the math, clearly flagged) and in a new Stock Sales panel where you enter total cost basis + acquisition date once; the quarterly recommendations then re-adjust, with holding period deciding ST vs LT
+- **Sync**: "Sync" button pulls sell history (tracked as a cancellable job in the Jobs Center); results cached in `tax_equity_scans`; basis overrides in `tax_basis_overrides` (RLS per user)
+- New APIs: `GET/POST /api/taxes/equities` (scan status / sync now), `POST/DELETE /api/taxes/basis` (basis overrides); `/api/taxes` GET now merges equity events into periods and year summary
+
 ## v0.30.0 — Jobs Center: every async operation tracked, queryable, cancellable
 
 - **Header indicator** next to the profile badge: activity icon with a live count of running jobs (exact global count, 20s poll + focus refresh, hidden for guests), linking to the new **/jobs** page (also in the profile menu)

@@ -20,13 +20,15 @@ export type TaxTerm = "short" | "long";
 /** Chain statuses whose net_pnl counts as realized. */
 const REALIZED_STATUSES = new Set(["CLOSED", "EXPIRED", "ASSIGNED"]);
 
-/** One realized chain reduced to what the tax math needs. */
+/** One realized chain or stock sale reduced to what the tax math needs. */
 export interface RealizedEvent {
   underlying: string;
   net_pnl: number;
   term: TaxTerm;
-  /** Realization date (chain end_date), YYYY-MM-DD. */
+  /** Realization date (chain end_date / sell date), YYYY-MM-DD. */
   end_date: string;
+  /** Where the gain came from; absent = "option" (pre-equities events). */
+  source?: "option" | "equity";
 }
 
 /**
@@ -57,6 +59,7 @@ export function realizedEventsForYear(
       net_pnl: c.net_pnl,
       term: classifyTerm(c),
       end_date: c.end_date as string,
+      source: "option" as const,
     }));
 }
 
@@ -125,6 +128,11 @@ export interface PeriodSummary {
   net: number;
   stcg: number;
   ltcg: number;
+  /** Source splits (stcg = stcgOptions + stcgEquity, same for ltcg). */
+  stcgOptions: number;
+  stcgEquity: number;
+  ltcgOptions: number;
+  ltcgEquity: number;
   /** Running totals through the end of this period. */
   cumulativeNet: number;
   cumulativeStcg: number;
@@ -175,12 +183,24 @@ export function computePeriods(
     let losses = 0;
     let stcg = 0;
     let ltcg = 0;
+    let stcgOptions = 0;
+    let stcgEquity = 0;
+    let ltcgOptions = 0;
+    let ltcgEquity = 0;
     for (const ev of events) {
       if (ev.end_date < per.start || ev.end_date > per.end) continue;
       if (ev.net_pnl >= 0) gains += ev.net_pnl;
       else losses += ev.net_pnl;
-      if (ev.term === "short") stcg += ev.net_pnl;
-      else ltcg += ev.net_pnl;
+      const isEquity = ev.source === "equity";
+      if (ev.term === "short") {
+        stcg += ev.net_pnl;
+        if (isEquity) stcgEquity += ev.net_pnl;
+        else stcgOptions += ev.net_pnl;
+      } else {
+        ltcg += ev.net_pnl;
+        if (isEquity) ltcgEquity += ev.net_pnl;
+        else ltcgOptions += ev.net_pnl;
+      }
     }
     const net = stcg + ltcg;
     cumStcg += stcg;
@@ -206,6 +226,10 @@ export function computePeriods(
       net,
       stcg,
       ltcg,
+      stcgOptions,
+      stcgEquity,
+      ltcgOptions,
+      ltcgEquity,
       cumulativeNet: cumStcg + cumLtcg,
       cumulativeStcg: cumStcg,
       cumulativeLtcg: cumLtcg,

@@ -20,6 +20,7 @@ export const JOB_KINDS: Record<string, JobKindInfo> = {
   "market-monitor":        { label: "Market Monitor",           cancellable: false },
   "daily-briefing":        { label: "Daily Briefing",           cancellable: false },
   "recommendations":       { label: "Daily Recommendations",    cancellable: false },
+  "tax-equity-sync":       { label: "Tax Center Stock Sync",    cancellable: true },
 };
 
 export function jobKindInfo(kind: string): JobKindInfo {

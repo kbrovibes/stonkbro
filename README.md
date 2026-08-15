@@ -89,7 +89,7 @@ Tap "Lock private info" in the profile menu before handing your phone over: ever
 Every long-running operation — scans, refreshes, AI research, crons — registers as a job. A header indicator shows a live count of running jobs; the /jobs page lists historic and in-flight work with trigger badges (cron/manual/auto), timing, progress, errors, and cancel buttons for jobs that support cooperative cancellation (chain scan, Hindsight backfill).
 
 ### Tax Center (quarterly estimated taxes)
-Personal-CPA view of taxes on trading gains: per IRS estimated-tax period (real Apr 15 / Jun 15 / Sep 15 / Jan 15 due dates), realized gains/losses from closed chains, STCG/LTCG split, tax at marginal rates (40.8% STCG / 23.8% LTCG, WA excise handling), and a recommended one-off payment per quarter — computed cumulatively so losses and prior payments re-adjust later quarters. Record payments you've made and the math updates. Assumes W-2 income is already covered by employer withholding.
+Personal-CPA view of taxes on trading gains: per IRS estimated-tax period (real Apr 15 / Jun 15 / Sep 15 / Jan 15 due dates), realized gains/losses from closed option chains **and stock sales** (FIFO lot matching over full broker history), an always-visible short/long-term split per quarter (options vs stocks), tax at marginal rates (40.8% STCG / 23.8% LTCG, WA excise handling), and a recommended one-off payment per quarter — computed cumulatively so losses and prior payments re-adjust later quarters. Transfer/RSU shares without feed basis are flagged per quarter until you enter basis. Record payments you've made and the math updates. Assumes W-2 income is already covered by employer withholding.
 
 ### Google OAuth
 One-click login with Google via Supabase Auth. All routes protected — unauthenticated users redirect to login. Row-level security ensures you only see your own data.
@@ -218,6 +218,8 @@ npm run dev
 | `/api/portfolio/connections` | GET/POST | List SnapTrade brokerage connections; generate a Connection Portal link to add/fix one |
 | `/api/taxes` | GET/POST/DELETE | Quarterly estimated-tax insights from realized chains; record/delete one-off payments |
 | `/api/jobs` | GET/POST | List async jobs + running count; request cooperative cancel of a running job |
+| `/api/taxes/equities` | GET/POST | Stock-sale scan freshness; sync sell history via FIFO lot engine (job-tracked) |
+| `/api/taxes/basis` | POST/DELETE | Cost-basis overrides for transfer/RSU shares the broker feed can't price |
 | `/api/alerts` | GET/POST | Recent market-monitor alerts; acknowledge one or all |
 | `/api/cron/market-monitor` | GET | Hourly market watch: big moves → push alerts with stop suggestions |
 | `/api/learn/manifest` | GET | Knowledge-base paths for offline precaching |
@@ -241,6 +243,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.31.0** | Tax Center stock sales — FIFO lot engine, per-quarter ST/LT split, basis overrides |
 | **v0.30.0** | Jobs Center — all async ops tracked, queryable, cancellable; header running-count indicator |
 | **v0.29.0** | Tax Center (quarterly estimated taxes), potential year total, per-brokerage chain badges |
 | **v0.28.0** | Multi-brokerage connections — link Chase or any SnapTrade broker from Settings |

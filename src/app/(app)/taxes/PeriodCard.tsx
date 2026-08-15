@@ -4,9 +4,25 @@ import { usePrivacy } from "@/components/PrivacyProvider";
 import type { PeriodSummary } from "@/lib/taxes/estimates";
 import { fmtDate, fmtMoney, fmtRange, fmtSignedMoney } from "./format";
 
-export default function PeriodCard({ period }: { period: PeriodSummary }) {
+export interface NeedsBasisItem {
+  key: string;
+  symbol: string;
+  institution: string;
+  sell_date: string;
+  units: number;
+  proceeds: number;
+}
+
+export default function PeriodCard({
+  period,
+  needsBasis = [],
+}: {
+  period: PeriodSummary;
+  needsBasis?: NeedsBasisItem[];
+}) {
   const { locked } = usePrivacy();
   const isCurrent = period.status === "current";
+  const nbProceeds = needsBasis.reduce((s, n) => s + n.proceeds, 0);
 
   return (
     <div
@@ -42,15 +58,72 @@ export default function PeriodCard({ period }: { period: PeriodSummary }) {
         <Row label="Cumulative net" value={fmtSignedMoney(locked, period.cumulativeNet)} />
         <Row label="Cumulative tax" value={fmtMoney(locked, period.cumulativeTax)} />
         <Row label="Paid" value={fmtMoney(locked, period.paid)} />
-        {period.ltcg !== 0 && (
-          <>
-            <Row label="Short-term" value={fmtSignedMoney(locked, period.stcg)} />
-            <Row label="Long-term" value={fmtSignedMoney(locked, period.ltcg)} />
-          </>
-        )}
       </div>
 
+      {/* Short vs long term, options vs stocks — always visible */}
+      <div className="px-4 pb-3 pt-1 border-t border-stone-50 dark:border-border-subtle/50">
+        <TermRow
+          label="Short-term"
+          total={period.stcg}
+          options={period.stcgOptions}
+          equity={period.stcgEquity}
+          locked={locked}
+        />
+        <TermRow
+          label="Long-term"
+          total={period.ltcg}
+          options={period.ltcgOptions}
+          equity={period.ltcgEquity}
+          locked={locked}
+        />
+      </div>
+
+      {needsBasis.length > 0 && (
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/40 text-[11px] text-amber-700 dark:text-amber-300">
+          {needsBasis.length} stock sale{needsBasis.length !== 1 ? "s" : ""} ({fmtMoney(locked, nbProceeds)} proceeds)
+          missing cost basis — excluded from this math. Set basis in the Stock Sales panel below.
+        </div>
+      )}
+
       <PeriodVerdict period={period} locked={locked} />
+    </div>
+  );
+}
+
+function TermRow({
+  label,
+  total,
+  options,
+  equity,
+  locked,
+}: {
+  label: string;
+  total: number;
+  options: number;
+  equity: number;
+  locked: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 py-0.5">
+      <span className="text-xs text-stone-400 dark:text-text-faint">{label}</span>
+      <span className="text-right">
+        <span
+          className={`text-sm font-medium tabular-nums ${
+            total > 0
+              ? "text-emerald-600 dark:text-emerald-400"
+              : total < 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-stone-400 dark:text-text-faint"
+          }`}
+        >
+          {fmtSignedMoney(locked, total)}
+        </span>
+        {(options !== 0 || equity !== 0) && (
+          <span className="block text-[10px] text-stone-400 dark:text-text-faint tabular-nums">
+            options {fmtSignedMoney(locked, options)} · stocks {fmtSignedMoney(locked, equity)}
+          </span>
+        )}
+      </span>
     </div>
   );
 }

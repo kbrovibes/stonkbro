@@ -344,6 +344,27 @@ async function fetchActivitiesWindow(
   return chunk;
 }
 
+/**
+ * Full activity history with each activity tagged `_institution` — the Tax
+ * Center's equity lot engine needs to keep FIFO lots separate per broker.
+ */
+export async function getAllActivitiesTagged(
+  startDate = "2010-01-01",
+  hooks?: ChainScanHooks
+): Promise<any[]> {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const accounts = await getAccounts();
+  const all: any[] = [];
+  for (const acct of accounts) {
+    await hooks?.checkCancelled?.();
+    await hooks?.progress?.(`${acct.institution}: fetching activity history…`);
+    const txs = await fetchActivitiesWindow(acct.id, startDate, endDate, 0, hooks);
+    for (const t of txs) t._institution = acct.institution;
+    all.push(...txs);
+  }
+  return all;
+}
+
 export async function getAllActivities(startDate = "2010-01-01"): Promise<any[]> {
   const endDate = new Date().toISOString().slice(0, 10);
   const accounts = await getAccounts();

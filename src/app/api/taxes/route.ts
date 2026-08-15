@@ -15,6 +15,8 @@ import {
   realizedEventsForYear,
 } from "@/lib/taxes/estimates";
 import { TAX_ASSUMPTIONS, TAX_YEAR } from "@/lib/taxes/config";
+import { equityRealizedEvents } from "@/lib/taxes/equities";
+import { getLatestEquityScan, listBasisOverrides } from "@/lib/db/tax-equities";
 
 // Serve the cron-cached chain scan up to this age; covers weekends.
 const CHAIN_CACHE_MAX_AGE_HOURS = 72;
@@ -62,9 +64,37 @@ export async function GET() {
       chainsAsOf = new Date().toISOString();
     }
 
-    const events = realizedEventsForYear(chains, TAX_YEAR);
+    const optionEvents = realizedEventsForYear(chains, TAX_YEAR);
     const payments = await listTaxPayments(user.id, TAX_YEAR);
     const todayISO = new Date().toISOString().slice(0, 10);
+
+    // Stock sales: latest cached FIFO scan + this user's basis overrides.
+    // Missing scan just means the equities section shows "never synced".
+    let equityInfo: {
+      lastSyncedAt: string | null;
+      saleCount: number;
+      needsBasis: ReturnType<typeof equityRealizedEvents>["needsBasis"];
+    } = { lastSyncedAt: null, saleCount: 0, needsBasis: [] };
+    let equityEvents: ReturnType<typeof equityRealizedEvents>["events"] = [];
+    try {
+      const [scan, overrides] = await Promise.all([
+        getLatestEquityScan(),
+        listBasisOverrides(user.id),
+      ]);
+      if (scan?.events) {
+        const realized = equityRealizedEvents(scan.events, overrides, TAX_YEAR);
+        equityEvents = realized.events;
+        equityInfo = {
+          lastSyncedAt: scan.created_at,
+          saleCount: scan.events.filter((s) => s.sell_date.startsWith(`${TAX_YEAR}-`)).length,
+          needsBasis: realized.needsBasis,
+        };
+      }
+    } catch (e) {
+      console.error("Tax Center: equity scan read failed (continuing without):", e);
+    }
+
+    const events = [...optionEvents, ...equityEvents];
 
     return NextResponse.json({
       periods: computePeriods(events, payments, todayISO),
@@ -73,6 +103,7 @@ export async function GET() {
       assumptions: TAX_ASSUMPTIONS,
       chainsAsOf,
       cached,
+      equities: equityInfo,
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);

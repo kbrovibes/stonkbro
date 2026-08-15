@@ -5,9 +5,10 @@ import { usePrivacy } from "@/components/PrivacyProvider";
 import type { PeriodSummary, YearSummary } from "@/lib/taxes/estimates";
 import type { TaxPaymentRow } from "@/lib/db/tax-payments";
 import type { TaxAssumptions } from "@/lib/taxes/config";
-import PeriodCard from "./PeriodCard";
+import PeriodCard, { type NeedsBasisItem } from "./PeriodCard";
 import PaymentsPanel from "./PaymentsPanel";
 import AssumptionsPanel from "./AssumptionsPanel";
+import StockSalesPanel from "./StockSalesPanel";
 import { fmtDate, fmtMoney, fmtSignedMoney } from "./format";
 
 type TaxesPayload = {
@@ -16,6 +17,11 @@ type TaxesPayload = {
   payments: TaxPaymentRow[];
   assumptions: TaxAssumptions;
   chainsAsOf: string | null;
+  equities: {
+    lastSyncedAt: string | null;
+    saleCount: number;
+    needsBasis: NeedsBasisItem[];
+  };
 };
 
 const cardClass =
@@ -84,7 +90,7 @@ export default function TaxesPage() {
       <div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-text">Tax Center</h1>
         <p className="text-xs text-stone-400 dark:text-text-faint">
-          Estimated taxes on {ys.taxYear} realized options P&amp;L
+          Estimated taxes on {ys.taxYear} realized options + stock P&amp;L
           {data.chainsAsOf && ` · data as of ${new Date(data.chainsAsOf).toLocaleDateString()}`}
         </p>
       </div>
@@ -125,31 +131,37 @@ export default function TaxesPage() {
         </p>
       )}
 
-      {ys.ltcgNet !== 0 && (
-        <div className={`${cardClass} px-4 py-3 grid grid-cols-2 gap-4 text-sm`}>
-          <div>
-            <p className="text-xs text-stone-400 dark:text-text-faint">Short-term ({pctLabel(assumptions.stcgRate)})</p>
-            <p className="font-semibold text-stone-900 dark:text-text tabular-nums">
-              {fmtSignedMoney(locked, ys.stcgNet)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-stone-400 dark:text-text-faint">Long-term ({pctLabel(assumptions.ltcgFederalRate)})</p>
-            <p className="font-semibold text-stone-900 dark:text-text tabular-nums">
-              {fmtSignedMoney(locked, ys.ltcgNet)}
-            </p>
-          </div>
+      <div className={`${cardClass} px-4 py-3 grid grid-cols-2 gap-4 text-sm`}>
+        <div>
+          <p className="text-xs text-stone-400 dark:text-text-faint">Short-term ({pctLabel(assumptions.stcgRate)})</p>
+          <p className="font-semibold text-stone-900 dark:text-text tabular-nums">
+            {fmtSignedMoney(locked, ys.stcgNet)}
+          </p>
         </div>
-      )}
+        <div>
+          <p className="text-xs text-stone-400 dark:text-text-faint">Long-term ({pctLabel(assumptions.ltcgFederalRate)})</p>
+          <p className="font-semibold text-stone-900 dark:text-text tabular-nums">
+            {fmtSignedMoney(locked, ys.ltcgNet)}
+          </p>
+        </div>
+      </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-stone-900 dark:text-text px-1">
           IRS estimated-tax periods
         </h2>
         {periods.map((p) => (
-          <PeriodCard key={p.id} period={p} />
+          <PeriodCard
+            key={p.id}
+            period={p}
+            needsBasis={data.equities.needsBasis.filter(
+              (n) => n.sell_date >= p.start && n.sell_date <= p.end
+            )}
+          />
         ))}
       </section>
+
+      <StockSalesPanel equities={data.equities} onChanged={() => fetchData(false)} />
 
       {ys.byUnderlying.length > 0 && (
         <section className={`${cardClass} overflow-hidden`}>
