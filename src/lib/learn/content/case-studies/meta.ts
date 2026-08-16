@@ -13,6 +13,7 @@ import {
   type V2Ticker,
 } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -70,7 +71,7 @@ export const META_CASES: Module = {
   track: "case-study",
   ticker: "META",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "quality-still-gaps",
@@ -471,5 +472,58 @@ export const META_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "quality-still-gaps": {
+      kind: "short-put",
+      entryDate: "2026-06-03",
+      strike: 600,
+      expiry: "2026-06-12",
+      credit: jun600.mid,
+      volume: jun600.volume,
+      support: { level: junOneLow, label: "June 1 low the strike sat on" },
+      note: `This is the study where the premium stop alone fails: the June 5 rescan marked only $${jun600Mark.mid.toFixed(2)} with the stock already through the strike. The close-basis alert is the trigger that actually fires here.`,
+    },
+    "underwater-winner": {
+      kind: "short-put",
+      entryDate: "2026-06-05",
+      strike: 575,
+      expiry: "2026-06-18",
+      credit: jun575.mid,
+      volume: jun575.volume,
+      support: { level: gapDay.low, label: "June 5 panic low the strike sat under" },
+    },
+    "six-contracts-traded": {
+      kind: "short-put",
+      entryDate: "2026-05-06",
+      strike: 590,
+      expiry: "2026-05-15",
+      credit: may590.mid,
+      volume: may590.volume,
+      note: "This block defends pick B — the $590 with a real order book. Pick A's defense would be the illiquid variant: with 6 contracts of day volume, alerts and manual limits, never resting stops.",
+    },
+    "watching-theta-work": {
+      kind: "short-put",
+      entryDate: may580First.date,
+      strike: 580,
+      expiry: "2026-05-15",
+      credit: may580First.mid,
+      volume: may580First.volume,
+    },
+    "call-you-regret-then-thank": {
+      kind: "covered-call",
+      entryDate: "2026-05-27",
+      strike: 630,
+      expiry: "2026-08-21",
+      credit: cc630.mid,
+      volume: cc630.volume,
+    },
+    "pick-the-cap": {
+      kind: "covered-call",
+      entryDate: "2026-06-03",
+      strike: 640,
+      expiry: "2026-08-21",
+      credit: junCall640.mid,
+      volume: junCall640.volume,
+    },
+  }),
 };

@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/TSM.json";
 import { bars, barOn, findPut, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 // TSM's leap rows omit premium/gamma/theta/vega, so the direct cast fails.
 const t = raw as unknown as V2Ticker;
@@ -50,7 +51,7 @@ export const TSM_CASES: Module = {
   track: "case-study",
   ticker: "TSM",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "the-spread-tax",
@@ -437,5 +438,51 @@ export const TSM_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "the-spread-tax": {
+      kind: "short-put",
+      entryDate: "2026-06-23",
+      strike: 415,
+      expiry: "2026-07-02",
+      credit: june415.mid,
+      volume: june415.volume,
+      note: `This block defends pick B. Pick A, with ${june417.volume} contract of day volume and a ${spreadPct(june417).toFixed(0)}%-wide quote, gets the stricter rule: no resting stops against a book like that — and preferably no position either.`,
+    },
+    "floor-below-the-strike": {
+      kind: "short-put",
+      entryDate: "2026-06-22",
+      strike: 440,
+      expiry: "2026-07-02",
+      credit: june440.mid,
+      volume: june440.volume,
+      support: { level: 438, label: `claimed "$438 floor" from the catalyst` },
+      note: "The gap is why the orders exist before the open: no reaction speed helps when the first print of the session is already through both the floor and the strike.",
+    },
+    "stop-that-would-have-cost-you": {
+      kind: "short-put",
+      entryDate: "2026-07-22",
+      strike: 397.5,
+      expiry: "2026-07-31",
+      credit: july397.mid,
+      volume: july397.volume,
+      note: "This is the whipsaw study, and the block above prices the whipsaw honestly: the defense fires, the stock reverses, and the exit costs money a holder kept. The playbook pays that fee on purpose — the same trigger is what capped the TSM trade one lesson back, where the gap never came back.",
+    },
+    "cushion-versus-credit": {
+      kind: "short-put",
+      entryDate: "2026-06-29",
+      strike: 410,
+      expiry: "2026-07-10",
+      credit: june410.mid,
+      volume: june410.volume,
+      note: "This block defends pick A, the strike that stayed outside the whole traded range. B won the same dollars while living inside it — meaning B's version of these orders was one bad session from firing the entire time.",
+    },
+    "five-sessions-early": {
+      kind: "short-put",
+      entryDate: "2026-07-17",
+      strike: 375,
+      expiry: "2026-07-24",
+      credit: july375.mid,
+      volume: july375.volume,
+    },
+  }),
 };

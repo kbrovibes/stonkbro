@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/AMD.json";
 import { bars, barOn, findPut, contractSeries, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -57,7 +58,7 @@ export const AMD_CASES: Module = {
   track: "case-study",
   ticker: "AMD",
   universe: "opportunity",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "sold-the-top-tick",
@@ -372,5 +373,57 @@ export const AMD_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "sold-the-top-tick": {
+      kind: "short-put",
+      entryDate: "2026-06-30",
+      strike: 520,
+      expiry: "2026-07-17",
+      credit: jun30_520.mid,
+      volume: jun30_520.volume,
+    },
+    "stops-and-wicks": {
+      kind: "short-put",
+      entryDate: "2026-06-03",
+      strike: 500,
+      expiry: "2026-06-18",
+      credit: jun3_500.mid,
+      volume: jun3_500.volume,
+      note: `Watch what the close-basis rule does with June 9: the wick traded $${(500 - jun9.low).toFixed(2)} through the strike intraday, but the session closed back at $${jun9.close} — no daily close below the line, so the alert never fires. Triggering on closes, not touches, is exactly how the defense ignores wicks and still catches trends.`,
+    },
+    "the-exit-tax": {
+      kind: "short-put",
+      entryDate: "2026-07-15",
+      strike: 510,
+      expiry: "2026-07-22",
+      credit: jul15_510.mid,
+      volume: jul15_510.volume,
+    },
+    "the-aroc-trap": {
+      kind: "short-put",
+      entryDate: "2026-07-22",
+      strike: 515,
+      expiry: "2026-07-29",
+      credit: jul22_515.mid,
+      volume: jul22_515.volume,
+      note: "This block defends pick A — the chart-topping AROC that turned into the module's headline loss. Note how much of the defense here is pre-trade: on a book this empty the orders degrade to alerts, which is itself the signal to size down or pass.",
+    },
+    "watch-the-premium-move": {
+      kind: "short-put",
+      entryDate: decayFirst.date,
+      strike: 450,
+      expiry: "2026-07-24",
+      credit: decayFirst.mid,
+      volume: decayFirst.volume,
+    },
+    "the-other-side-of-the-swing": {
+      kind: "short-put",
+      entryDate: "2026-06-10",
+      strike: 420,
+      expiry: "2026-06-18",
+      credit: jun10_420.mid,
+      volume: jun10_420.volume,
+      support: { level: jun9.low, label: "June 9 capitulation low the strike sat under" },
+    },
+  }),
 };

@@ -12,6 +12,7 @@ import {
   type V2Ticker,
 } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -64,7 +65,7 @@ export const TSLA_CASES: Module = {
   track: "case-study",
   ticker: "TSLA",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "support-level-mirage",
@@ -427,5 +428,60 @@ export const TSLA_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "support-level-mirage": {
+      kind: "short-put",
+      entryDate: "2026-05-28",
+      strike: 425,
+      expiry: "2026-06-05",
+      credit: may425.mid,
+      volume: may425.volume,
+      support: { level: 436, label: `claimed "$436 support" from the catalyst` },
+    },
+    "the-bounce-that-lied": {
+      kind: "short-put",
+      entryDate: "2026-06-15",
+      strike: 395,
+      expiry: "2026-06-26",
+      credit: june395.mid,
+      volume: june395.volume,
+      note: "The June 22 bounce back above the strike is the moment these orders defend you from yourself: the exit rule already fired, and re-justifying the hold on a one-day recovery is how a credit-sized loss becomes a strike-sized one.",
+    },
+    "mid-price-fiction": {
+      kind: "short-put",
+      entryDate: "2026-06-12",
+      strike: 380,
+      expiry: "2026-06-26",
+      credit: tight380.mid,
+      volume: tight380.volume,
+      note: `This block defends pick B. Pick A's defense starts earlier: on a ${(((wide385.ask - wide385.bid) / wide385.mid) * 100).toFixed(0)}%-wide quote, recompute the credit off the $${wide385.bid.toFixed(2)} bid before any order exists — half its headline premium was arithmetic, and a stop through that spread pays the difference twice.`,
+    },
+    "premium-down-risk-up": {
+      kind: "short-put",
+      entryDate: "2026-06-01",
+      strike: 400,
+      expiry: "2026-06-12",
+      credit: june400.mid,
+      volume: june400.volume,
+      note: "On the scoreboard this exit looks like a mistake — the put expired worthless anyway. That is the point of the lesson: the block above prices what the near-miss cost to insure, and the same rule is what caps the TSLA trades in this module that did not come back.",
+    },
+    "assignment-without-a-rescue": {
+      kind: "short-put",
+      entryDate: "2026-07-06",
+      strike: 400,
+      expiry: "2026-07-17",
+      credit: july400.mid,
+      volume: july400.volume,
+      note: `"I'll just take the shares" is not a defense — it hands the result to a path you don't control. The order below is what turns this study's ${usd((400 - julyExpiry.close - july400.mid) * 100)} assignment (and the crash that followed it) into a bounded, sized loss.`,
+    },
+    "quote-nobody-traded": {
+      kind: "short-put",
+      entryDate: "2026-06-09",
+      strike: 375,
+      expiry: "2026-06-18",
+      credit: live375.mid,
+      volume: live375.volume,
+      note: `Row A needs no ticket: with ${stale385.volume} contracts traded, its quote is a model, not a market, and no defensive order against it can be real. Refusing the row is the defense.`,
+    },
+  }),
 };

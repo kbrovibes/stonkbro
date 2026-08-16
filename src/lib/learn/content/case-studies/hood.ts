@@ -8,6 +8,7 @@
 import raw from "@/lib/learn/v2-data/HOOD.json";
 import { bars, barOn, findPut, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -56,7 +57,7 @@ export const HOOD_CASES: Module = {
   track: "case-study",
   ticker: "HOOD",
   universe: "opportunity",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "iv-expanding-was-the-warning",
@@ -361,5 +362,43 @@ export const HOOD_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "iv-expanding-was-the-warning": {
+      kind: "short-put",
+      entryDate: "2026-07-15",
+      strike: 108,
+      expiry: "2026-07-24",
+      credit: jul108.mid,
+      volume: jul108.volume,
+      note: `"IV expanding" was the warning at entry; the defense is what converts a warning into an instruction. With the break arriving one session after the fill, only an order placed on July 15 was ever going to act on it.`,
+    },
+    "the-stop-that-gapped": {
+      kind: "short-put",
+      entryDate: "2026-07-13",
+      strike: 101,
+      expiry: "2026-07-24",
+      credit: jul101.mid,
+      volume: jul101.volume,
+      support: { level: 105, label: `claimed "$105 floor" from the catalyst` },
+      note: "The July 17 gap means the orders bound the delay, not the slippage — the fill lands below the trigger. What they still buy is the exit at the start of the unwind instead of the end of it.",
+    },
+    "hundred-percent-aroc-no-bid": {
+      kind: "short-put",
+      entryDate: "2026-06-09",
+      strike: 75,
+      expiry: "2026-06-18",
+      credit: jun75.mid,
+      volume: jun75.volume,
+      note: `This block defends pick B. Pick A cannot be defended at all — with ${jun80.volume} contracts of day volume there is no book to place an exit into, which settles the A/B question before any AROC comparison.`,
+    },
+    "where-in-the-swing": {
+      kind: "short-put",
+      entryDate: "2026-06-18",
+      strike: 100,
+      expiry: "2026-06-26",
+      credit: highPut.mid,
+      volume: highPut.volume,
+      note: "This block defends the June 18 entry at the local high. The June 25 washout entry is the contrast: same catalyst text, strike under a just-tested low, and a set of orders that never had a reason to fire.",
+    },
+  }),
 };

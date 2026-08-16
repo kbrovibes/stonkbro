@@ -8,6 +8,7 @@
 import raw from "@/lib/learn/v2-data/RKLB.json";
 import { bars, barOn, findPut, contractSeries, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -62,7 +63,7 @@ export const RKLB_CASES: Module = {
   track: "case-study",
   ticker: "RKLB",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "thin-chain-in-a-hurricane",
@@ -358,5 +359,42 @@ export const RKLB_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "thin-chain-in-a-hurricane": {
+      kind: "short-put",
+      entryDate: "2026-07-16",
+      strike: 60,
+      expiry: "2026-07-31",
+      credit: post60.mid,
+      volume: post60.volume,
+      note: "The worked contract here is the post-crash $60 put — the only clean winner the chain produced — because on a book this thin the defense is mostly decided before any order: fewer contracts, wider levels, alerts instead of resting stops.",
+    },
+    "iv-at-130": {
+      kind: "short-put",
+      entryDate: "2026-06-09",
+      strike: 90,
+      expiry: "2026-06-18",
+      credit: june90.mid,
+      volume: june90.volume,
+    },
+    "the-gap-that-ate-the-stop": {
+      kind: "short-put",
+      entryDate: "2026-07-01",
+      strike: 90,
+      expiry: "2026-07-17",
+      credit: july90.mid,
+      volume: july90.volume,
+      support: { level: barOn(t, "2026-06-22").low, label: "June 22 swing low — the last tested level under the entry" },
+      note: "The gap means neither trigger fills at its trigger price here — the orders bound the delay, not the slippage. What they still buy you is the exit on day one of the break instead of day ten.",
+    },
+    "three-scans-that-lied": {
+      kind: "short-put",
+      entryDate: "2026-07-06",
+      strike: 80,
+      expiry: "2026-07-17",
+      credit: pick80.mid,
+      volume: pick80.volume,
+      note: "This block defends pick B, the less-bad $80. Three green decay scans changed nothing about where these orders belonged — they were placed before the first scan and fire on the same break either way.",
+    },
+  }),
 };

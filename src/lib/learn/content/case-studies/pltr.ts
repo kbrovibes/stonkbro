@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/PLTR.json";
 import { bars, barOn, findPut, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -45,7 +46,7 @@ export const PLTR_CASES: Module = {
   track: "case-study",
   ticker: "PLTR",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "support-floor-that-wasnt",
@@ -329,5 +330,52 @@ export const PLTR_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "support-floor-that-wasnt": {
+      kind: "short-put",
+      entryDate: "2026-06-01",
+      strike: 150,
+      expiry: "2026-06-12",
+      credit: june150.mid,
+      volume: june150.volume,
+      support: { level: 156, label: `"$156 support" the catalyst leaned on` },
+    },
+    "place-the-stop": {
+      kind: "short-put",
+      entryDate: "2026-06-15",
+      strike: 125,
+      expiry: "2026-06-26",
+      credit: june125.mid,
+      volume: june125.volume,
+      support: { level: 130, label: "claimed $130 floor from the catalyst" },
+    },
+    "earnings-eve-picker": {
+      kind: "short-put",
+      entryDate: "2026-05-04",
+      strike: 130,
+      expiry: "2026-05-15",
+      credit: may130.mid,
+      volume: may130.volume,
+      note: "This block defends pick B — the $130. On an earnings entry the pre-placed orders matter double: the gap arrives overnight, when there is no chance to decide anything in real time.",
+    },
+    "assignment-aftermath": {
+      kind: "short-put",
+      entryDate: "2026-06-15",
+      strike: 125,
+      expiry: "2026-06-26",
+      credit: june125.mid,
+      volume: june125.volume,
+      support: { level: 130, label: "claimed $130 floor from the catalyst" },
+      note: "With this order in place from June 15, the whole expiry-day dilemma above never happens — the position closes on the breach, and the wheel restarts a week later at a strike the market has actually tested.",
+    },
+    "textbook-winner": {
+      kind: "short-put",
+      entryDate: "2026-07-09",
+      strike: 120,
+      expiry: "2026-07-17",
+      credit: july120.mid,
+      volume: july120.volume,
+      support: { level: worstJuneLow, label: "June 25 panic low the strike sat under" },
+    },
+  }),
 };

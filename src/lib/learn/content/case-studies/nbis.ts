@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/NBIS.json";
 import { bars, barOn, findPut, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -54,7 +55,7 @@ export const NBIS_CASES: Module = {
   track: "case-study",
   ticker: "NBIS",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "selling-the-exact-top",
@@ -370,5 +371,50 @@ export const NBIS_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "selling-the-exact-top": {
+      kind: "short-put",
+      entryDate: "2026-06-18",
+      strike: 252.5,
+      expiry: "2026-06-26",
+      credit: top252.mid,
+      volume: top252.volume,
+      note: `At ${(top252.iv * 100).toFixed(0)}% IV the defense starts before any order: a cushion inside a one-σ move is a sizing problem. When no stop placement fits between "fires spuriously" and "limits nothing", the playbook's answer is a smaller position — or none.`,
+    },
+    "place-the-stop": {
+      kind: "short-put",
+      entryDate: "2026-06-18",
+      strike: 252.5,
+      expiry: "2026-06-26",
+      credit: top252.mid,
+      volume: top252.volume,
+    },
+    "same-strike-two-expiries": {
+      kind: "short-put",
+      entryDate: "2026-06-22",
+      strike: 240,
+      expiry: "2026-07-10",
+      credit: jun240Long.mid,
+      volume: jun240Long.volume,
+      note: "This block defends pick B, the longer expiry. A's orders would read the same with its own credit — and would have fired on the same break.",
+    },
+    "stop-market-vs-stop-limit": {
+      kind: "short-put",
+      entryDate: "2026-07-24",
+      strike: 160,
+      expiry: "2026-07-31",
+      credit: wide160.mid,
+      volume: wide160.volume,
+      note: "This is the whipsaw case the lesson describes: the defense fires near the low of a move that then reverses into a worthless expiry. That cost is the insurance premium — the alternative was discovering on a different path what a strike-sized loss feels like on a book this wide.",
+    },
+    "the-vega-trap": {
+      kind: "short-put",
+      entryDate: "2026-07-16",
+      strike: 150,
+      expiry: "2026-07-31",
+      credit: iv150Early.mid,
+      volume: iv150Early.volume,
+      note: "Note which trigger fires here and when: not the premium stop on the July 20 vega pop the lesson dissects, but the close-basis line during the late-July washout. Anchoring the primary trigger to the stock is exactly what kept the IV expansion from stopping you out on a green day.",
+    },
+  }),
 };

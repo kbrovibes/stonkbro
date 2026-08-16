@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/SOFI.json";
 import { bars, barOn, findPut, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -60,7 +61,7 @@ export const SOFI_CASES: Module = {
   track: "case-study",
   ticker: "SOFI",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "same-strike-two-endings",
@@ -376,5 +377,50 @@ export const SOFI_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "same-strike-two-endings": {
+      kind: "short-put",
+      entryDate: "2026-07-14",
+      strike: 17.5,
+      expiry: "2026-07-24",
+      credit: july175.mid,
+      volume: july175.volume,
+      note: "This block defends trade B, the loser. Trade A deserved a different defense entirely: it was already in the money at entry, and the playbook's answer to selling intrinsic value as if it were premium is to skip the row.",
+    },
+    "place-the-stop": {
+      kind: "short-put",
+      entryDate: "2026-07-14",
+      strike: 17.5,
+      expiry: "2026-07-24",
+      credit: july175.mid,
+      volume: july175.volume,
+    },
+    "the-quote-that-never-moved": {
+      kind: "short-put",
+      entryDate: "2026-08-04",
+      strike: 17.5,
+      expiry: "2026-08-14",
+      credit: aug175Fresh.mid,
+      volume: aug175Fresh.volume,
+      note: `Row A has a shorter defense: against a quote showing ${aug17Stale.volume} contracts of volume and market inputs frozen for a day, no order — stop, limit, or otherwise — means anything. Refusing the row is the defense.`,
+    },
+    "four-cents": {
+      kind: "short-put",
+      entryDate: "2026-07-17",
+      strike: 16.5,
+      expiry: "2026-07-24",
+      credit: july165.mid,
+      volume: july165.volume,
+      note: "This block defends the better-ranked $16.50 — the one that ended in assignment. The $16's orders would have sat untouched.",
+    },
+    "selling-the-capitulation": {
+      kind: "short-put",
+      entryDate: "2026-07-30",
+      strike: 15.5,
+      expiry: "2026-08-07",
+      credit: july30Put.mid,
+      volume: july30Put.volume,
+      support: { level: capitulation.low, label: "July 29 capitulation low the strike sat under" },
+    },
+  }),
 };
