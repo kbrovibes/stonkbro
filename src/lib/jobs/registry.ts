@@ -21,6 +21,7 @@ export const JOB_KINDS: Record<string, JobKindInfo> = {
   "portfolio-manager-scan":{ label: "Portfolio Manager Scan",   cancellable: false, href: "/portfolio-manager" },
   "market-monitor":        { label: "Market Monitor",           cancellable: false },
   "daily-briefing":        { label: "Daily Briefing",           cancellable: false },
+  "audio-briefing":        { label: "Audio Briefing",           cancellable: true,  href: "/briefing" },
   "recommendations":       { label: "Daily Recommendations",    cancellable: false, href: "/suggestions" },
   "tax-equity-sync":       { label: "Tax Center Stock Sync",    cancellable: true,  href: "/taxes" },
 };

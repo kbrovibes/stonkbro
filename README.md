@@ -94,6 +94,8 @@ Every long-running operation — scans, refreshes, AI research, crons — regist
 ### Tax Center (quarterly estimated taxes)
 Personal-CPA view of taxes on trading gains: per IRS estimated-tax period (real Apr 15 / Jun 15 / Sep 15 / Jan 15 due dates), realized gains/losses from closed option chains **and stock sales** (FIFO lot matching over full broker history), an always-visible short/long-term split per quarter (options vs stocks), tax at marginal rates (40.8% STCG / 23.8% LTCG, WA excise handling), and a recommended one-off payment per quarter — computed cumulatively so losses and prior payments re-adjust later quarters. Transfer/RSU shares without feed basis are flagged per quarter until you enter basis. Record payments you've made and the math updates. Assumes W-2 income is already covered by employer withholding.
 
+### Daily Audio Briefing (pre-market podcast)
+A personal ~2–3 minute audio briefing generated before market open every weekday, curated to your portfolio: market pulse, your biggest movers and why, news/earnings that matter today, and concrete trade suggestions (close / roll / open / watch, each with a reason). Free Microsoft Edge neural TTS (no API key) renders ~1 MB mono MP3s; a home-screen card opens a Spotify-style player with generated cover art, speed control, transcript, 7-day history, offline download, and force-regenerate. No account-level dollar amounts spoken, by design.
 ### Face ID App Lock (per-device)
 Optional Settings toggle: once enabled on a device, opening the app (or returning after a minute in the background) requires Face ID/Touch ID via the WebAuthn platform authenticator — full lock screen with auto-prompt, no content flash, works offline, zero dependencies. Layers on top of the Privacy Lock PIN and Supabase auth.
 
@@ -230,6 +232,9 @@ npm run dev
 | `/api/cron/market-monitor` | GET | Hourly market watch: big moves → push alerts with stop suggestions |
 | `/api/learn/manifest` | GET | Knowledge-base paths for offline precaching |
 | `/api/cron` | GET | Automated daily briefing (Vercel cron) |
+| `/api/briefing` | GET/POST | List audio briefings (7-day history); force-regenerate today's episode |
+| `/api/briefing/audio/[id]` | GET | Stream a briefing's MP3 (auth-gated, private bucket) |
+| `/api/cron/briefing` | GET | Generate the daily audio briefing pre-open (Vercel cron) |
 
 ---
 
@@ -249,6 +254,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.35.0** | Daily Audio Briefing — pre-market podcast curated to your portfolio, free TTS, offline player |
 | **v0.34.0** | Defense-first case studies — warning signs, exact order tickets, cost of inaction |
 | **v0.33.0** | Face ID app lock (per-device WebAuthn gate) + Learn progress fix |
 | **v0.32.0** | Explosive finder — per-sector state, Research All, 24h cached scans |

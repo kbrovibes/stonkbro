@@ -6,6 +6,10 @@ import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
 import WatchlistWidget from "../WatchlistWidget";
 import UpcomingCatalysts from "../UpcomingCatalysts";
+import HomeBriefingCard from "@/components/briefing/HomeBriefingCard";
+import { hasPortfolioAccess } from "@/lib/portfolio-access";
+import { getLatestBriefings } from "@/lib/db/briefings";
+import type { DailyBriefing } from "@/lib/briefing/types";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +52,12 @@ export default async function DiscoverPage() {
 
   // Quotes (watchlist symbols) and the earnings calendar both depend only on
   // the symbol list, not on each other — fetch them concurrently.
-  const [allQuotes, earnings] = await Promise.all([
+  const [allQuotes, earnings, briefing] = await Promise.all([
     allSymbols.length > 0 ? getQuotes(allSymbols).catch(() => []) : Promise.resolve([]),
     getEarningsCalendar(earningsSymbols).catch(() => []),
+    user && hasPortfolioAccess(user.email)
+      ? getLatestBriefings(1).then((b): DailyBriefing | null => b[0] ?? null).catch(() => null)
+      : Promise.resolve<DailyBriefing | null>(null),
   ]);
 
   if (allQuotes.length > 0) {
@@ -100,6 +107,8 @@ export default async function DiscoverPage() {
 
   return (
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+      {briefing && <HomeBriefingCard briefing={briefing} />}
+
       <div className="grid grid-cols-3 gap-2">
         {FEATURE_CARDS.map((card) => (
           <Link

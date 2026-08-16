@@ -676,6 +676,13 @@
         </div>
 
         <div class="feature-card">
+          <div class="card-icon bg-purple">&#x1F3A7;</div>
+          <h3>Daily Audio Briefing</h3>
+          <p>A personal ~2&ndash;3 minute pre-market podcast curated to your portfolio, generated weekdays at 6am PT: market pulse, your biggest movers and why, news/earnings that matter today, and concrete close/roll/open/watch suggestions with reasons. Free Edge neural TTS (~1 MB mono MP3), Spotify-style player with generated cover art, speed control, transcript, 7-day history, offline download, and force-regenerate.</p>
+          <span class="tag bg-purple">AI · Audio · Cron</span>
+        </div>
+
+        <div class="feature-card">
           <div class="card-icon bg-purple">&#x1F9E0;</div>
           <h3>Portfolio Manager</h3>
           <p>AI rates every stock in your SnapTrade portfolio daily (STRONG_BUY → STRONG_SELL) with thesis, risks, catalysts, and a $100K reallocation plan. Runs at market open + close; expandable-row table with RSI/SMA/MACD/news per ticker.</p>
@@ -1147,6 +1154,21 @@
             <td>Automated multi-purpose cron (Vercel cron). Runs position alerts, daily recs refresh, email briefings.</td>
           </tr>
           <tr>
+            <td><code>/api/briefing</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Daily audio briefings — 7-day history with transcript, highlights, and suggested actions; POST force-regenerates today's episode (job-tracked).</td>
+          </tr>
+          <tr>
+            <td><code>/api/briefing/audio/[id]</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Stream a briefing's MP3 from the private storage bucket. Auth-gated.</td>
+          </tr>
+          <tr>
+            <td><code>/api/cron/briefing</code></td>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td>Pre-open generator (weekdays 13:00 UTC): portfolio + quotes + news + earnings + alerts &rarr; AI script &rarr; free Edge TTS &rarr; MP3.</td>
+          </tr>
+          <tr>
             <td><code>/api/admin</code></td>
             <td><span class="method-badge method-get">GET</span></td>
             <td>Admin stats — token usage by feature, current AI provider config. Admin-gated.</td>
@@ -1169,6 +1191,13 @@
       <div class="section-desc">Built at mass speed with Claude Code.</div>
 
       <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot" style="font-size:0.55rem;">0.35</div>
+          <div class="tl-content">
+            <h4>Daily Audio Briefing</h4>
+            <p>Pre-market podcast curated to your portfolio — AI script from chains, quotes, news, earnings, and alerts; free Edge neural TTS; Spotify-style player with generated art, transcript, 7-day history, offline download, and force-regenerate.</p>
+          </div>
+        </div>
         <div class="tl-item">
           <div class="tl-dot" style="font-size:0.55rem;">0.34</div>
           <div class="tl-content">

@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.35.0 — Daily Audio Briefing: your pre-market podcast, curated to your portfolio
+
+- **Home-screen briefing card + `/briefing` player**: a personal ~2–3 minute audio briefing generated before market open every weekday — market pulse in one breath, your portfolio's biggest moves and why, news/earnings that matter today, and concrete trade suggestions (close / roll / open / watch, each with a reason). Spotify-style player with deterministic generated cover art (seeded, mood-tinted), play/pause, ±15s skip, seek, 1x/1.25x/1.5x speed, full transcript, highlights strip, and suggested-actions list
+- **Free TTS, tiny files**: Microsoft Edge neural voice (en-US-AndrewNeural at +10% rate, no API key, $0) renders the script to 24 kHz 48 kbps mono MP3 (~1 MB for 3 minutes), stored in a private Supabase Storage bucket and streamed through auth-gated `/api/briefing/audio/[id]`
+- **Offline playback**: played audio is cached via Cache Storage automatically; a Download button pre-caches today's episode for airplane mode
+- **History kept**: last 7 days of briefings listed in the player — tap any previous day to replay it; new `daily_briefings` table (migration `20260816150000`) stores transcript, structured highlights/actions JSON, mood, art seed, and audio metadata per day
+- **Curation inputs**: open option chains + holdings (SnapTrade chains cache), live quotes for portfolio symbols + SPY/QQQ, fresh Yahoo news headlines per portfolio symbol, upcoming earnings (≤7 days), and last-24h market-monitor alerts — one AI call/day (Claude/Gemini with fallback). No account-level dollar amounts spoken, by design
+- **Cron + force regenerate**: `/api/cron/briefing` weekdays 13:00 UTC (6am PT, pre-open); Regenerate button in the player forces a fresh episode. Both runs are job-tracked in the Actions Center (kind `audio-briefing`) and cancellable between phases
+- New APIs: `GET /api/briefing` (list), `POST /api/briefing` (force regenerate), `GET /api/briefing/audio/[id]`, `GET /api/cron/briefing`
 ## v0.34.0 — Case studies now teach the defensive ACTION
 
 - **Every one of the 80 case studies** gains four data-computed sections: **The warning sign** (the exact date/price where trouble was detectable — support break or the option's mark crossing 2× the credit, from real bars and rescanned marks), **The order you should have placed** (a literal ticket, placed AT ENTRY: "GTC stop-limit BTC — stop $136.10, limit $149.71; alert: close < $1,895" — thin books get "alerts, not resting stops" tickets automatically), **What it would have saved** (defensive exit vs what actually happened, e.g. the SNDK $1800P study: −$6.8K exit vs −$37.7K held, $30.9K/contract kept), and a **trigger-price quiz**
