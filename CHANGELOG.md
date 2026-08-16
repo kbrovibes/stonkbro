@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.34.0 — Case studies now teach the defensive ACTION
+
+- **Every one of the 80 case studies** gains four data-computed sections: **The warning sign** (the exact date/price where trouble was detectable — support break or the option's mark crossing 2× the credit, from real bars and rescanned marks), **The order you should have placed** (a literal ticket, placed AT ENTRY: "GTC stop-limit BTC — stop $136.10, limit $149.71; alert: close < $1,895" — thin books get "alerts, not resting stops" tickets automatically), **What it would have saved** (defensive exit vs what actually happened, e.g. the SNDK $1800P study: −$6.8K exit vs −$37.7K held, $30.9K/contract kept), and a **trigger-price quiz**
+- **New "Defense Playbook" module** opens the case-studies track: the 2×-credit rule, close-below-support tripwire (whichever hits first), 50–75% profit taking, 21-DTE management, swing-low−1 ATR stops with position-sizing-from-the-stop, and GTC stop-limit vs stop-market mechanics on real spreads
+- Winners show the rules staying out of the way (or the 50% take-profit that was offered); whipsaw losers state plainly that the defense cost money there — that's the insurance premium
+- All numbers computed from the real chain/bar data at load (`src/lib/learn/defense.ts` — pure helpers; verification scripts in `scripts/`); zero hardcoded prices; **no existing lesson IDs changed**, so progress is preserved
+
 ## v0.33.0 — Face ID app lock (optional, per-device)
 
 - **Settings → Security → "Require Face ID"**: enabling runs a Face ID enrollment (WebAuthn platform authenticator — works in the installed iOS PWA); once on, opening the app or returning after >60s in the background shows a full lock screen that auto-prompts Face ID. Turning it off requires Face ID too
