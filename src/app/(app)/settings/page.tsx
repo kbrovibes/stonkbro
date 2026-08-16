@@ -7,6 +7,7 @@ import { CLAUDE_MODELS, GEMINI_MODELS } from "@/lib/ai/constants";
 import { THEME_FONTS, DEFAULT_THEME_FONT_KEY, THEME_FONT_STORAGE_KEY, applyThemeFont } from "@/lib/theme-fonts";
 import { Group, Row, ActionRow, Toggle, inputClass, selectClass } from "./ui";
 import BrokerageSection from "./BrokerageSection";
+import BiometricSection from "./BiometricSection";
 
 // ---------------------------------------------------------------------------
 
@@ -314,6 +315,8 @@ export default function SettingsPage() {
         <BrokerageSection />
 
         <PrivacyPinSection />
+
+        <BiometricSection />
 
         <Group
           header="AI"

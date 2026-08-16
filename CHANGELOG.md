@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.33.0 — Face ID app lock (optional, per-device)
+
+- **Settings → Security → "Require Face ID"**: enabling runs a Face ID enrollment (WebAuthn platform authenticator — works in the installed iOS PWA); once on, opening the app or returning after >60s in the background shows a full lock screen that auto-prompts Face ID. Turning it off requires Face ID too
+- **No content flash**: a pre-paint script hides the app shell before first render on locked devices; the overlay is opaque and content stays hidden until the assertion succeeds
+- **Per-device by design**: enabling on the iPhone never locks the desktop; zero new dependencies, no server round-trip (works offline). It layers on top of — not instead of — the Privacy Lock PIN and Supabase auth
+- **Fail-open on destroyed credentials**: if Face ID is reset/removed on the phone, the lock offers "Disable and continue" instead of bricking the app (session + PIN still protect data)
+- Section only appears on devices with a biometric platform authenticator
+
 ## v0.32.2 — Learn progress tracking actually works
 
 - **Root cause**: one shared debounce timer + payload slot for every save type — a scroll event or "Next Lesson" tap scheduled after reaching a lesson's bottom silently replaced the pending `completed: true` save (and unmount killed the timer). Completions only stuck if you idled 3s at the bottom, which is why finished modules showed random single lessons complete
