@@ -91,6 +91,9 @@ Every long-running operation — scans, refreshes, AI research, crons — regist
 ### Tax Center (quarterly estimated taxes)
 Personal-CPA view of taxes on trading gains: per IRS estimated-tax period (real Apr 15 / Jun 15 / Sep 15 / Jan 15 due dates), realized gains/losses from closed option chains **and stock sales** (FIFO lot matching over full broker history), an always-visible short/long-term split per quarter (options vs stocks), tax at marginal rates (40.8% STCG / 23.8% LTCG, WA excise handling), and a recommended one-off payment per quarter — computed cumulatively so losses and prior payments re-adjust later quarters. Transfer/RSU shares without feed basis are flagged per quarter until you enter basis. Record payments you've made and the math updates. Assumes W-2 income is already covered by employer withholding.
 
+### Face ID App Lock (per-device)
+Optional Settings toggle: once enabled on a device, opening the app (or returning after a minute in the background) requires Face ID/Touch ID via the WebAuthn platform authenticator — full lock screen with auto-prompt, no content flash, works offline, zero dependencies. Layers on top of the Privacy Lock PIN and Supabase auth.
+
 ### Google OAuth
 One-click login with Google via Supabase Auth. All routes protected — unauthenticated users redirect to login. Row-level security ensures you only see your own data.
 
@@ -243,6 +246,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.33.0** | Face ID app lock (per-device WebAuthn gate) + Learn progress fix |
 | **v0.32.0** | Explosive finder — per-sector state, Research All, 24h cached scans |
 | **v0.31.0** | Tax Center stock sales — FIFO lot engine, per-quarter ST/LT split, basis overrides |
 | **v0.30.0** | Jobs Center — all async ops tracked, queryable, cancellable; header running-count indicator |
