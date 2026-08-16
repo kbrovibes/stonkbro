@@ -73,6 +73,9 @@ Vercel cron job runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks a
 ### Learn (Interactive Coursework)
 22 modules / ~120 lessons across Greeks, technical analysis, trader fluency, leverage, and crash playbooks — built practice-first: scored support/resistance drawing drills (LevelFinder), a live indicator playground (SMA/EMA/RSI/MACD/Bollinger with auto-annotated signals), a Black-Scholes strike/DTE/IV sandbox with payoff diagrams, and spot-the-setup chart quizzes. Every concept: worked examples (including failure cases), exact plotting steps, options-seller trade rules, and quizzes. Fully offline.
 
+### Learn v3: Defense-First Case Studies
+Every case study teaches the explicit brokerage action that limits losses, computed from real data: the warning sign (exact date/price of the support break or credit doubling), the order to place at entry (GTC stop-limit ticket with stop/limit prices, or alert levels for thin books), and the dollars it would have saved vs what actually happened. A Defense Playbook module codifies the rules: 2×-credit stop, support tripwire, 50-75% profit taking, 21-DTE management, swing-low−ATR stops.
+
 ### Learn v2: Case Studies (Real Chain Data)
 15 ticker modules / 80 case studies built **entirely from real scanner history** (May–Aug 2026 option-chain snapshots committed to the repo) — 10 wheel tickers plus 5 "opportunities you weren't watching". Stop-loss discipline on real -50% drawdowns, stop-market vs stop-limit through real wide spreads, roll-vs-assignment decisions (including the one that never recovered), covered-call strike regret, and observed theta/IV decay. Interactive: place your stop on the real chart before seeing what happened, A/B-pick between two real contracts, scrub actual premium decay. Every number is traceable to a dataset row — fabricated figures fail the build.
 
@@ -246,6 +249,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.34.0** | Defense-first case studies — warning signs, exact order tickets, cost of inaction |
 | **v0.33.0** | Face ID app lock (per-device WebAuthn gate) + Learn progress fix |
 | **v0.32.0** | Explosive finder — per-sector state, Research All, 24h cached scans |
 | **v0.31.0** | Tax Center stock sales — FIFO lot engine, per-quarter ST/LT split, basis overrides |
