@@ -2,6 +2,7 @@
 // the real chain-snapshot dataset in src/lib/learn/v2-data/.
 
 import type { Module } from "@/lib/learn/curriculum";
+import { DEFENSE_PLAYBOOK } from "./playbook";
 import { PLTR_CASES } from "./pltr";
 import { SOFI_CASES } from "./sofi";
 import { NBIS_CASES } from "./nbis";
@@ -21,6 +22,8 @@ import { IWM_CASES } from "./iwm";
 // Traded universe first (matches the scanner's wheel tickers), then the
 // "opportunities you weren't watching" — same order as v2-data/index.json.
 export const CASE_STUDY_MODULES: Module[] = [
+  // The shared rulebook every study's defense block applies — first on the track.
+  DEFENSE_PLAYBOOK,
   PLTR_CASES,
   SOFI_CASES,
   NBIS_CASES,

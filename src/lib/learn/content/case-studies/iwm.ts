@@ -13,6 +13,7 @@ import {
   type V2Ticker,
 } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -65,7 +66,7 @@ export const IWM_CASES: Module = {
   track: "case-study",
   ticker: "IWM",
   universe: "opportunity",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "the-calm-side-of-premium",
@@ -447,5 +448,58 @@ export const IWM_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "the-calm-side-of-premium": {
+      kind: "short-put",
+      entryDate: "2026-05-05",
+      strike: 271,
+      expiry: "2026-05-22",
+      credit: may271.mid,
+      volume: may271.volume,
+      note: `Watch the May 19 wick against the close-basis rule: the session traded $${worstLow} — under the strike — but closed at $${ddTrough.close}, above it. Triggering on closes is what let this position sit through the only scare the calmest ticker in the dataset produced.`,
+    },
+    "top-of-the-aroc-column": {
+      kind: "short-put",
+      entryDate: "2026-05-06",
+      strike: 280,
+      expiry: "2026-05-15",
+      credit: may280.mid,
+      volume: may280.volume,
+      note: "This block defends pick A — the AROC-column winner that finished in the money. B's orders belong to the next lesson, where they cost real money on a trade that won.",
+    },
+    "the-wick-that-stops-you-out": {
+      kind: "short-put",
+      entryDate: "2026-05-06",
+      strike: 275,
+      expiry: "2026-05-22",
+      credit: may275.mid,
+      volume: may275.volume,
+      note: `This is the calibration case: on an instrument whose worst quarter-drawdown was ${Math.abs(ddPct).toFixed(1)}%, the standard triggers sit inside ordinary noise, and here they exited a trade that finished as a full winner. The playbook's answer is not "no stop" — it is a level scaled to the instrument (under the tested May low, not at the strike) and a smaller cost when it fires.`,
+    },
+    "the-aroc-with-no-bid": {
+      kind: "short-put",
+      entryDate: "2026-06-24",
+      strike: 287,
+      expiry: "2026-07-01",
+      credit: ghost287.mid,
+      volume: ghost287.volume,
+      note: "The honest version of this block is shorter than the template: with a $0.00 bid, no defensive order against this contract means anything, because the credit itself was fiction. The liquidity screen — bid > 0, payable spread, real volume — is the defense, and it runs before any order exists.",
+    },
+    "watching-theta-work": {
+      kind: "covered-call",
+      entryDate: decayFirst.date,
+      strike: 305,
+      expiry: "2026-09-18",
+      credit: decayFirst.mid,
+      volume: decayFirst.volume,
+    },
+    "the-cap-that-cost-almost-nothing": {
+      kind: "covered-call",
+      entryDate: "2026-06-05",
+      strike: 290,
+      expiry: "2026-08-21",
+      credit: cc77.mid,
+      volume: cc77.volume,
+    },
+  }),
 };

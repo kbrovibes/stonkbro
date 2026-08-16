@@ -10,6 +10,7 @@
 import raw from "@/lib/learn/v2-data/CRWD.json";
 import { bars, barOn, findPut, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -48,7 +49,7 @@ export const CRWD_CASES: Module = {
   track: "case-study",
   ticker: "CRWD",
   universe: "opportunity",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "opportunity-you-werent-watching",
@@ -354,5 +355,50 @@ export const CRWD_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "opportunity-you-werent-watching": {
+      kind: "short-put",
+      entryDate: "2026-07-23",
+      strike: 170,
+      expiry: "2026-07-31",
+      credit: p170.mid,
+      volume: p170.volume,
+      note: "The worked contract is the July 23 $170 — the strike that survived the module's slide. On a ticker you only meet through the scanner, the orders below are what make an opportunistic trade survivable rather than merely interesting.",
+    },
+    "nine-percent-cushion-gone": {
+      kind: "short-put",
+      entryDate: "2026-07-20",
+      strike: 180,
+      expiry: "2026-07-31",
+      credit: p180.mid,
+      volume: p180.volume,
+    },
+    "place-the-stop-air-pocket": {
+      kind: "short-put",
+      entryDate: "2026-07-20",
+      strike: 180,
+      expiry: "2026-07-31",
+      credit: p180.mid,
+      volume: p180.volume,
+      note: "Yes: on this path the exit cost you a trade that finished as a winner. Keep the June air pocket from lesson 1 next to it — same rule, same ticker, and there it is the only thing standing between one contract and a quarter of income.",
+    },
+    "stop-market-through-the-spread": {
+      kind: "short-put",
+      entryDate: "2026-07-20",
+      strike: 180,
+      expiry: "2026-07-31",
+      credit: p180.mid,
+      volume: p180.volume,
+      note: `The ticket's stop-limit band is doing real work on this book: the entry quote was $${(p180.ask - p180.bid).toFixed(2)} wide, so a stop-market pays the spread at the worst possible moment, and a limit with no room simply strands you short.`,
+    },
+    "pick-the-contract-mid-slide": {
+      kind: "short-put",
+      entryDate: "2026-07-23",
+      strike: 170,
+      expiry: "2026-07-31",
+      credit: p170.mid,
+      volume: p170.volume,
+      note: "This block defends pick A, the $170 with the deeper cushion — bought with credit the AROC column called a mistake.",
+    },
+  }),
 };

@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/MRVL.json";
 import { bars, barOn, findPut, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -66,7 +67,7 @@ export const MRVL_CASES: Module = {
   track: "case-study",
   ticker: "MRVL",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "selling-the-euphoria-top",
@@ -466,5 +467,61 @@ export const MRVL_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "selling-the-euphoria-top": {
+      kind: "short-put",
+      entryDate: "2026-06-04",
+      strike: 280,
+      expiry: "2026-06-12",
+      credit: p280.mid,
+      volume: p280.volume,
+      support: { level: 294, label: `claimed "$294 support" from the catalyst — inside entry day's own range` },
+      note: "This block defends pick A, the $280 that spent the week in the fire. Note that this is one of the cases where the defense loses money on the final print — the whipsaw is the fee, and the June 9 mark is what it insures against.",
+    },
+    "the-stop-nobody-set": {
+      kind: "short-put",
+      entryDate: "2026-06-30",
+      strike: 250,
+      expiry: "2026-07-17",
+      credit: p250.mid,
+      volume: p250.volume,
+      support: { level: jun26.low, label: "June 26 swing low — the last structure under the entry" },
+    },
+    "stops-through-wide-spreads": {
+      kind: "short-put",
+      entryDate: "2026-06-05",
+      strike: 220,
+      expiry: "2026-06-18",
+      credit: wide220.mid,
+      volume: wide220.volume,
+      note: `On this book the ticket's stop-limit is doing heavy lifting: the quoted spread was $${(wide220.ask - wide220.bid).toFixed(2)} wide, so a stop-market pays up to $${((wide220.ask - wide220.bid) * 100).toFixed(0)}/contract of pure slippage. The $146 and $160 rows get the stricter variant — at ${thin146.volume} and ${thin160.volume} contracts of day volume, alerts and manual limits only.`,
+    },
+    "dte-is-exposure": {
+      kind: "short-put",
+      entryDate: "2026-07-02",
+      strike: 210,
+      expiry: "2026-07-17",
+      credit: jul17Put.mid,
+      volume: jul17Put.volume,
+      note: "This block defends B, the longer expiry that gave the downtrend time to reach it. A expired before the break and never needed its orders — fewer days at risk is itself a defense.",
+    },
+    "the-roll-that-mattered": {
+      kind: "short-put",
+      entryDate: "2026-06-18",
+      strike: 287.5,
+      expiry: "2026-06-26",
+      credit: roll2875.mid,
+      volume: roll2875.volume,
+      note: "This block defends the $287.50 — the roll-up that turned a recovery into a fresh loss. The $270's identical orders would have sat unused: its strike was under the structure instead of on top of it.",
+    },
+    "cushion-beats-the-catalyst": {
+      kind: "short-put",
+      entryDate: "2026-07-07",
+      strike: 200,
+      expiry: "2026-07-17",
+      credit: oversold200.mid,
+      volume: oversold200.volume,
+      note: `The May 28 $170 — the boringest row in the window — never came near its triggers, and the July 20 $170 squeaked by. The defensive orders only earn their keep on rows like this one, where "oversold" was the whole thesis.`,
+    },
+  }),
 };

@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/SNDK.json";
 import { bars, barOn, findPut, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -71,7 +72,7 @@ export const SNDK_CASES: Module = {
   track: "case-study",
   ticker: "SNDK",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "credit-vs-realized-move",
@@ -451,5 +452,61 @@ export const SNDK_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "credit-vs-realized-move": {
+      kind: "short-put",
+      entryDate: "2026-06-30",
+      strike: 2000,
+      expiry: "2026-07-10",
+      credit: jun2000.mid,
+      volume: jun2000.volume,
+      support: { level: jun25.low, label: `"support" low from June 25 that the catalyst cited` },
+      note: `Sharper still: this tripwire was blown before the trade existed — June 29 traded down to $${jun29.low}, under the claimed floor, the day before the scan called it strong. The cheapest defense was available at order time: don't sell the put at all.`,
+    },
+    "stop-through-the-whipsaw": {
+      kind: "short-put",
+      entryDate: "2026-07-01",
+      strike: 1800,
+      expiry: "2026-07-17",
+      credit: jul1800.mid,
+      volume: jul1800.volume,
+      support: { level: jun29.low, label: "June 29 swing low under the entry" },
+    },
+    "twenty-dollars-of-strike": {
+      kind: "short-put",
+      entryDate: "2026-07-08",
+      strike: 1420,
+      expiry: "2026-07-17",
+      credit: jul1420.mid,
+      volume: jul1420.volume,
+      note: "This block defends contract A — the higher-AROC $1420 that flipped negative. The same orders under contract B would have used its own credit and the same close-basis line.",
+    },
+    "the-exit-you-didnt-take": {
+      kind: "short-put",
+      entryDate: "2026-06-29",
+      strike: 1600,
+      expiry: "2026-07-17",
+      credit: mark0629.mid,
+      volume: mark0629.volume,
+      support: { level: jun29.low, label: "entry-day swing low" },
+    },
+    "selling-into-the-fear": {
+      kind: "short-put",
+      entryDate: "2026-07-15",
+      strike: 1310,
+      expiry: "2026-07-24",
+      credit: jul1310.mid,
+      volume: jul1310.volume,
+      support: { level: jul15.low, label: "entry-day washout low" },
+    },
+    "day-volume-one": {
+      kind: "short-put",
+      entryDate: "2026-07-23",
+      strike: 1390,
+      expiry: "2026-07-31",
+      credit: jul1390b.mid,
+      volume: jul1390b.volume,
+      support: { level: jul17.low, label: "July 17 swing low" },
+    },
+  }),
 };

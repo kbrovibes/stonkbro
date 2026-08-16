@@ -8,6 +8,7 @@
 import raw from "@/lib/learn/v2-data/NVDA.json";
 import { bars, barOn, findPut, findCall, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -61,7 +62,7 @@ export const NVDA_CASES: Module = {
   track: "case-study",
   ticker: "NVDA",
   universe: "opportunity",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "boring-wins",
@@ -394,5 +395,49 @@ export const NVDA_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "boring-wins": {
+      kind: "short-put",
+      entryDate: "2026-07-09",
+      strike: 192.5,
+      expiry: "2026-07-17",
+      credit: jul192.mid,
+      volume: jul192.volume,
+      note: "The worked contract is the July 9 $192.50 — the winner that came closest to trouble. The other two winners' orders would have sat just as untouched.",
+    },
+    "the-220-put": {
+      kind: "short-put",
+      entryDate: "2026-06-02",
+      strike: 220,
+      expiry: "2026-06-12",
+      credit: jun220.mid,
+      volume: jun220.volume,
+    },
+    "five-points-of-cushion": {
+      kind: "short-put",
+      entryDate: "2026-07-21",
+      strike: 195,
+      expiry: "2026-07-31",
+      credit: jul195x.mid,
+      volume: jul195x.volume,
+      note: "This block defends pick A, the wider strike. B's identical rules were one bad Friday from firing — five points of strike is the difference between orders that rest and orders that trigger.",
+    },
+    "roll-or-take-the-shares": {
+      kind: "short-put",
+      entryDate: "2026-07-22",
+      strike: 205,
+      expiry: "2026-07-31",
+      credit: jul205.mid,
+      volume: jul205.volume,
+      note: "Roll, assign, or close only becomes a trilemma once the defense was skipped. With the exit taken on the break, the July 31 decision is simply which new trade — if any — deserves the freed-up collateral.",
+    },
+    "right-for-eight-days": {
+      kind: "long-call",
+      entryDate: "2026-05-06",
+      strike: 225,
+      expiry: "2026-07-17",
+      credit: may225c.mid,
+      volume: may225c.volume,
+    },
+  }),
 };

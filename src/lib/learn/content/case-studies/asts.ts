@@ -5,6 +5,7 @@
 import raw from "@/lib/learn/v2-data/ASTS.json";
 import { bars, barOn, findPut, contractSeries, pctOtm, type V2Ticker } from "@/lib/learn/v2";
 import type { Module } from "@/lib/learn/curriculum";
+import { withDefenses } from "./defense-sections";
 
 const t = raw as V2Ticker;
 
@@ -48,7 +49,7 @@ export const ASTS_CASES: Module = {
   track: "case-study",
   ticker: "ASTS",
   universe: "traded",
-  lessons: [
+  lessons: withDefenses([
     // ── 1 ──────────────────────────────────────────────────────────────
     {
       id: "delta-is-not-a-safety-rating",
@@ -416,5 +417,58 @@ export const ASTS_CASES: Module = {
         },
       ],
     },
-  ],
+  ], t, {
+    "delta-is-not-a-safety-rating": {
+      kind: "short-put",
+      entryDate: "2026-06-29",
+      strike: 75,
+      expiry: "2026-07-17",
+      credit: jun29p75.mid,
+      volume: jun29p75.volume,
+    },
+    "where-the-stop-belonged": {
+      kind: "short-put",
+      entryDate: "2026-06-29",
+      strike: 75,
+      expiry: "2026-07-17",
+      credit: jun29p75.mid,
+      volume: jun29p75.volume,
+      note: "The scanner stopped listing this contract after July 2 — but GTC orders don't care what the scan list shows. Orders placed at entry keep working at the broker precisely when the row has fallen off every screen you look at.",
+    },
+    "stop-market-vs-stop-limit": {
+      kind: "short-put",
+      entryDate: "2026-06-10",
+      strike: 75,
+      expiry: "2026-06-18",
+      credit: jun10p75.mid,
+      volume: jun10p75.volume,
+      note: `On a ${spreadPct(jun10p75).toFixed(0)}%-wide book the ticket above is honest about its own limits: the stop-limit can gap unfilled and the stop-market pays the spread. The upstream fix from the lesson stands — size so a plain limit order can always be the exit.`,
+    },
+    "the-decay-that-lied": {
+      kind: "short-put",
+      entryDate: p75Series[0].date,
+      strike: 75,
+      expiry: "2026-07-17",
+      credit: p75Series[0].mid,
+      volume: p75Series[0].volume,
+    },
+    "when-the-premium-is-the-warning": {
+      kind: "short-put",
+      entryDate: "2026-07-15",
+      strike: 60,
+      expiry: "2026-07-24",
+      credit: jul15p60.mid,
+      volume: jul15p60.volume,
+      note: "This block defends pick B — sold into the last quiet bar before the -17% session. When the gap is one sleep away, the pre-placed order is the only version of you that reacts at the open.",
+    },
+    "the-entry-after-the-washout": {
+      kind: "short-put",
+      entryDate: "2026-07-24",
+      strike: 51,
+      expiry: "2026-07-31",
+      credit: jul24p51.mid,
+      volume: jul24p51.volume,
+      support: { level: jul16Bar.low, label: "July 16 washout low the strike sat under" },
+    },
+  }),
 };
