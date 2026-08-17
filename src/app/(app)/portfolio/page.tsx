@@ -1059,7 +1059,7 @@ export default function PortfolioPage() {
       {/* Summary */}
       <div className="px-4 pt-4 pb-2">
         <div className="hood-hero bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-2xl px-5 py-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="hood-hero-row flex items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <div className="hood-micro text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Year so far</div>
@@ -1075,17 +1075,17 @@ export default function PortfolioPage() {
                 {closedPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(closedPnl))}
               </div>
             </div>
-            <div className="flex gap-4 text-right">
+            <div className="hood-statgroup flex gap-4 text-right">
               <div>
-                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Open</div>
+                <div className="hood-stat text-xs text-stone-500 dark:text-text-subtle">Open</div>
                 <div className="hood-money text-sm font-semibold">{open.length}</div>
               </div>
               <div>
-                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Closed</div>
+                <div className="hood-stat text-xs text-stone-500 dark:text-text-subtle">Closed</div>
                 <div className="hood-money text-sm font-semibold">{closed.length}</div>
               </div>
               <div>
-                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Assigned</div>
+                <div className="hood-stat text-xs text-stone-500 dark:text-text-subtle">Assigned</div>
                 <div className="hood-money text-sm font-semibold">{assigned.length}</div>
               </div>
             </div>
