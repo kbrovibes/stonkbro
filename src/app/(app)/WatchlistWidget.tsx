@@ -242,7 +242,7 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-stone-800 dark:text-text">{wl.name}</span>
                 {avgReturn !== null && (
-                  <span className={`text-[10px] font-bold tabular-nums ${
+                  <span className={`hood-money text-[10px] font-bold tabular-nums ${
                     avgReturn >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                   }`}>
                     {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(1)}%
@@ -307,7 +307,7 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                             <Sparkline data={sparklines[t.symbol]} up={up} />
                           )}
                         </div>
-                        <div className={`text-[10px] font-bold tabular-nums mt-0.5 ${
+                        <div className={`hood-money text-[10px] font-bold tabular-nums mt-0.5 ${
                           up ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                         }`}>
                           {up ? "+" : ""}{t.changePct.toFixed(1)}%

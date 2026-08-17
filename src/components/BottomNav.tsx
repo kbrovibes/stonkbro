@@ -117,13 +117,13 @@ export default function BottomNav({
               glued to the More tab on screens wider than the nav. */}
           <div className="fixed bottom-[60px] left-0 right-0 z-50 pointer-events-none">
             <div className="max-w-2xl mx-auto px-2 flex justify-end">
-              <div className="pointer-events-auto bg-surface-elevated border border-border-default rounded-xl shadow-2xl max-h-[75vh] w-fit max-w-[88vw] flex flex-col">
+              <div className="hood-card pointer-events-auto bg-surface-elevated border border-border-default rounded-xl shadow-2xl max-h-[75vh] w-fit max-w-[88vw] flex flex-col">
                 <div className="overflow-y-auto py-1.5 px-2 min-h-0">
               {moreGroups.map((group) => (
                 <section key={group.label} className="mb-1 last:mb-0">
                   <div className="flex items-center gap-1.5 px-2 pt-1 pb-0.5">
                     <span className="text-text-faint">{group.icon}</span>
-                    <span className="text-[9px] font-bold text-text-subtle uppercase tracking-wide whitespace-nowrap">{group.label}</span>
+                    <span className="hood-micro text-[9px] font-bold text-text-subtle uppercase tracking-wide whitespace-nowrap">{group.label}</span>
                   </div>
                   <ul>
                     {group.links.map((link) => (
@@ -148,7 +148,7 @@ export default function BottomNav({
                   <Link
                     href="/more"
                     onClick={() => setMoreOpen(false)}
-                    className="block text-center text-[12px] font-semibold text-white bg-accent hover:bg-accent-hover active:opacity-90 py-2 rounded-md whitespace-nowrap"
+                    className="hood-cta block text-center text-[12px] font-semibold text-white bg-accent hover:bg-accent-hover active:opacity-90 py-2 rounded-md whitespace-nowrap"
                   >
                     View All &rarr;
                   </Link>
@@ -159,7 +159,7 @@ export default function BottomNav({
         </>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface-elevated border-t border-border-subtle">
+      <nav className="hood-chrome fixed bottom-0 left-0 right-0 z-50 bg-surface-elevated border-t border-border-subtle">
         <div className="max-w-2xl mx-auto flex">
           {visibleTabs.map((tab) => {
             const active = tab.href === "/home"
@@ -169,8 +169,8 @@ export default function BottomNav({
               <Link
                 key={tab.name}
                 href={tab.href}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-surface-muted ${
-                  active ? "text-accent" : "text-text-faint"
+                className={`hood-navtab flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-surface-muted ${
+                  active ? "hood-navtab-active text-accent" : "text-text-faint"
                 }`}
               >
                 {tab.icon(active)}
@@ -184,8 +184,10 @@ export default function BottomNav({
               onClick={() => setMoreOpen((v) => !v)}
               aria-expanded={moreOpen}
               aria-label="More"
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-surface-muted ${
-                moreOpen || pathname.startsWith("/more") ? "text-accent" : "text-text-faint"
+              className={`hood-navtab flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs font-medium transition-colors active:bg-surface-muted ${
+                moreOpen || pathname.startsWith("/more")
+                  ? "hood-navtab-active text-accent"
+                  : "text-text-faint"
               }`}
             >
               {moreIcon(moreOpen)}

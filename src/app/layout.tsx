@@ -6,7 +6,9 @@ import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import NavigationProgress from "@/components/NavigationProgress";
 import ThemeFontProvider from "@/components/ThemeFontProvider";
 import ThemeProvider from "@/components/ThemeProvider";
+import ThemeStyleProvider from "@/components/ThemeStyleProvider";
 import { PRE_PAINT_THEME_SCRIPT } from "@/lib/theme";
+import { PRE_PAINT_THEME_STYLE_SCRIPT } from "@/lib/theme-style";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -66,9 +68,11 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#0E1014" />
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_STYLE_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider />
+        <ThemeStyleProvider />
         <ThemeFontProvider />
         <NavigationProgress />
         {children}

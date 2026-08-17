@@ -1,0 +1,295 @@
+/* ==========================================================================
+   HOOD — an opt-in design system for stonkBRO.
+   ==========================================================================
+
+   Activated by `data-theme-style="hood"` on <html> (see `src/lib/theme-style.ts`).
+   When the attribute is absent, NOTHING in this file matches, so Classic
+   renders exactly as it did before HOOD existed.
+
+   Everything here is intentionally unlayered CSS. Tailwind v4 puts its
+   utilities inside `@layer utilities`, and unlayered rules win over layered
+   ones regardless of specificity — that is how a `.hood-card` marker class
+   can restyle an element that already carries `bg-white rounded-xl`, without
+   forking the component.
+
+   Two blocks of tokens (light + dark) and then a small set of `hood-*`
+   marker classes for the handful of things tokens cannot reach (numeral
+   sizing, pill geometry, frosted chrome).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Tokens — HOOD × light  (crisp paper-white)
+   -------------------------------------------------------------------------- */
+:root[data-theme-style="hood"] {
+  --background: #FFFFFF;
+  --foreground: #0A0A0B;
+
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F5F5F3;
+  --surface-sunken: #EFEFED;
+
+  /* Barely-there stone hairlines */
+  --border: rgba(28, 25, 23, 0.09);
+  --border-subtle: rgba(28, 25, 23, 0.055);
+  --border-strong: rgba(28, 25, 23, 0.16);
+
+  --text: #0A0A0B;
+  --text-muted: #46484D;
+  --text-subtle: #6B6E75;
+  --text-faint: #9A9DA3;
+  --text-inverse: #FFFFFF;
+
+  /* Deep vivid green — passes AA on paper-white at body sizes */
+  --gain: #04843C;
+  --gain-strong: #026B30;
+  --gain-bg: rgba(4, 132, 60, 0.075);
+  --gain-border: rgba(4, 132, 60, 0.24);
+
+  /* Coral, warmed down so it never shouts louder than a gain */
+  --loss: #D93A46;
+  --loss-strong: #B0242F;
+  --loss-bg: rgba(217, 58, 70, 0.07);
+  --loss-border: rgba(217, 58, 70, 0.22);
+
+  /* HOOD collapses "accent" into the money-green: one voice for action */
+  --accent: #04843C;
+  --accent-hover: #026B30;
+  --accent-bg: rgba(4, 132, 60, 0.085);
+  --accent-border: rgba(4, 132, 60, 0.24);
+
+  /* HOOD-only tokens */
+  --hood-radius-hero: 20px;
+  --hood-radius-card: 14px;
+  --hood-radius-control: 10px;
+  --hood-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hood-shadow-card: 0 1px 2px rgba(12, 12, 14, 0.04);
+  --hood-shadow-hero: 0 1px 3px rgba(12, 12, 14, 0.05), 0 8px 24px -12px rgba(12, 12, 14, 0.10);
+  --hood-chrome: rgba(255, 255, 255, 0.78);
+  --hood-shimmer: rgba(28, 25, 23, 0.07);
+  --hood-shimmer-hi: rgba(28, 25, 23, 0.02);
+}
+
+/* --------------------------------------------------------------------------
+   2. Tokens — HOOD × dark  (true black, OLED-first)
+   -------------------------------------------------------------------------- */
+:root[data-theme-style="hood"].dark {
+  --background: #000000;
+  --foreground: #F7F8F8;
+
+  --surface: #000000;
+  --surface-elevated: #0A0B0D;
+  --surface-muted: #141518;
+  --surface-sunken: #000000;
+
+  /* Hairlines at ~8% white — the only thing separating card from canvas */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text: #F7F8F8;
+  --text-muted: #A8ADB4;
+  --text-subtle: #80858D;
+  --text-faint: #5E636B;
+  --text-inverse: #000000;
+
+  /* The Robinhood green, unmodified — it only truly sings on black */
+  --gain: #00C805;
+  --gain-strong: #45E06A;
+  --gain-bg: rgba(0, 200, 5, 0.12);
+  --gain-border: rgba(0, 200, 5, 0.28);
+
+  --loss: #FF6B6B;
+  --loss-strong: #FF9494;
+  --loss-bg: rgba(255, 107, 107, 0.12);
+  --loss-border: rgba(255, 107, 107, 0.28);
+
+  --accent: #00C805;
+  --accent-hover: #45E06A;
+  --accent-bg: rgba(0, 200, 5, 0.10);
+  --accent-border: rgba(0, 200, 5, 0.26);
+
+  --hood-shadow-card: none;
+  --hood-shadow-hero: none;
+  --hood-chrome: rgba(0, 0, 0, 0.72);
+  --hood-shimmer: rgba(255, 255, 255, 0.06);
+  --hood-shimmer-hi: rgba(255, 255, 255, 0.015);
+}
+
+/* --------------------------------------------------------------------------
+   3. Surfaces — cards flatten, hero cards breathe
+   -------------------------------------------------------------------------- */
+[data-theme-style="hood"] .hood-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--hood-radius-card);
+  box-shadow: var(--hood-shadow-card);
+}
+
+[data-theme-style="hood"] .hood-hero {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--hood-radius-hero);
+  box-shadow: var(--hood-shadow-hero);
+  padding: 1.25rem 1.25rem 1.125rem;
+}
+
+/* Frosted chrome: header + bottom nav read as glass over the canvas */
+[data-theme-style="hood"] .hood-chrome {
+  background: var(--hood-chrome);
+  -webkit-backdrop-filter: saturate(150%) blur(16px);
+  backdrop-filter: saturate(150%) blur(16px);
+  border-color: var(--border-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   4. Money is the hero
+   -------------------------------------------------------------------------- */
+[data-theme-style="hood"] .hood-money,
+[data-theme-style="hood"] .hood-money-lg,
+[data-theme-style="hood"] .hood-money-hero {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+[data-theme-style="hood"] .hood-money-hero {
+  font-size: clamp(2.125rem, 8.5vw, 2.75rem); /* 34 → 44px */
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.032em;
+}
+
+[data-theme-style="hood"] .hood-money-lg {
+  font-size: 1.375rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+
+[data-theme-style="hood"] .hood-money {
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+/* Everything that is not money recedes */
+[data-theme-style="hood"] .hood-micro {
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+[data-theme-style="hood"] .hood-micro-11 {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   5. Controls — pills everywhere, filled = committed
+   -------------------------------------------------------------------------- */
+[data-theme-style="hood"] .hood-pill,
+[data-theme-style="hood"] .hood-tab {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: -0.006em;
+  border: 1px solid transparent;
+}
+
+[data-theme-style="hood"] .hood-pill {
+  background: var(--surface-muted);
+  border-color: var(--border-subtle);
+  color: var(--text-subtle);
+}
+
+[data-theme-style="hood"] .hood-tab {
+  background: transparent;
+  color: var(--text-subtle);
+  padding-inline: 0.875rem;
+}
+
+/* The selected state is the single highest-contrast thing in its row */
+[data-theme-style="hood"] .hood-pill-active,
+[data-theme-style="hood"] .hood-tab-active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+}
+
+/* Filled primary actions. On dark, `--accent` is the vivid green, so white
+   label text would be unreadable — flip it to near-black. */
+:root[data-theme-style="hood"].dark .bg-accent {
+  color: #04120A;
+}
+
+[data-theme-style="hood"] .hood-cta {
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+[data-theme-style="hood"] .hood-iconbtn {
+  border-radius: 999px;
+  color: var(--text-subtle);
+}
+
+[data-theme-style="hood"] .hood-badge {
+  background: var(--accent);
+  color: var(--surface);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+[data-theme-style="hood"] .hood-toggle-on {
+  background: var(--gain);
+}
+
+/* One consistent, always-visible keyboard affordance */
+[data-theme-style="hood"] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   6. Navigation chrome
+   -------------------------------------------------------------------------- */
+[data-theme-style="hood"] .hood-navtab {
+  position: relative;
+  color: var(--text-faint);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+[data-theme-style="hood"] .hood-navtab-active {
+  color: var(--accent);
+}
+
+[data-theme-style="hood"] .hood-navtab-active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 22px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+/* Wordmark tightens up and drops the drop-shadow-y feel */
+[data-theme-style="hood"] .hood-wordmark {
+  letter-spacing: -0.045em;
+}
+
+/* --------------------------------------------------------------------------
+   7. Loading
+   -------------------------------------------------------------------------- */
+[data-theme-style="hood"] .hood-skeleton {
+  background: var(--hood-shimmer);
+  border-radius: var(--hood-radius-control);
+}

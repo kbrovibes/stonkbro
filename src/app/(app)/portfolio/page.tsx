@@ -451,10 +451,10 @@ function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstit
     : null;
 
   return (
-    <div className="bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl overflow-hidden">
+    <div className="hood-card bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl overflow-hidden">
       <button
         onClick={() => setExpanded(v => !v)}
-        className="w-full text-left px-4 py-3 flex items-start justify-between gap-2"
+        className="hood-press w-full text-left px-4 py-3 flex items-start justify-between gap-2"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -514,7 +514,7 @@ function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstit
           })()}
         </div>
         <div className="text-right flex-shrink-0">
-          <div className={`font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
+          <div className={`hood-money font-bold text-sm ${chain.net_pnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
             {chain.net_pnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(chain.net_pnl))}
           </div>
           <div className="text-[10px] text-stone-300 dark:text-text-faint mt-0.5">{expanded ? "▲" : "▼"}</div>
@@ -1058,47 +1058,47 @@ export default function PortfolioPage() {
     <div className="flex flex-col">
       {/* Summary */}
       <div className="px-4 pt-4 pb-2">
-        <div className="bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-2xl px-5 py-4">
+        <div className="hood-hero bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-2xl px-5 py-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Year so far</div>
+                <div className="hood-micro text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Year so far</div>
                 <Link
                   href="/time-machine"
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 border border-violet-200 dark:border-violet-800/50 px-1.5 py-0.5 rounded transition-colors"
+                  className="hood-pill inline-flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 border border-violet-200 dark:border-violet-800/50 px-1.5 py-0.5 rounded transition-colors"
                   title="What if you'd stopped trading on a past date?"
                 >
                   <span>⏰</span> Hindsight
                 </Link>
               </div>
-              <div className={`text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
+              <div className={`hood-money-hero text-2xl font-bold ${closedPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
                 {closedPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(closedPnl))}
               </div>
             </div>
             <div className="flex gap-4 text-right">
               <div>
-                <div className="text-xs text-stone-500 dark:text-text-subtle">Open</div>
-                <div className="text-sm font-semibold">{open.length}</div>
+                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Open</div>
+                <div className="hood-money text-sm font-semibold">{open.length}</div>
               </div>
               <div>
-                <div className="text-xs text-stone-500 dark:text-text-subtle">Closed</div>
-                <div className="text-sm font-semibold">{closed.length}</div>
+                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Closed</div>
+                <div className="hood-money text-sm font-semibold">{closed.length}</div>
               </div>
               <div>
-                <div className="text-xs text-stone-500 dark:text-text-subtle">Assigned</div>
-                <div className="text-sm font-semibold">{assigned.length}</div>
+                <div className="hood-micro text-xs text-stone-500 dark:text-text-subtle">Assigned</div>
+                <div className="hood-money text-sm font-semibold">{assigned.length}</div>
               </div>
             </div>
           </div>
           {favorableShorts.length > 0 && (
             <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle flex items-center justify-between">
               <div>
-                <div className="text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Potential Year Total</div>
+                <div className="hood-micro text-xs text-stone-400 dark:text-text-faint font-medium uppercase tracking-wider">Potential Year Total</div>
                 <div className="text-[11px] text-stone-400 dark:text-text-faint">
                   if all {favorableShorts.length} open short{favorableShorts.length !== 1 ? "s" : ""} expire worthless · +{maskValue(locked, fmtCurrency(openFavorablePnl))} unsettled
                 </div>
               </div>
-              <div className={`text-base font-bold ${potentialYearPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
+              <div className={`hood-money-lg text-base font-bold ${potentialYearPnl >= 0 ? "text-emerald-600 dark:text-gain" : "text-rose-600 dark:text-loss"}`}>
                 {potentialYearPnl >= 0 ? "+" : ""}{maskValue(locked, fmtCurrency(potentialYearPnl))}
               </div>
             </div>
@@ -1106,10 +1106,10 @@ export default function PortfolioPage() {
           {capitalLocked > 0 && (
             <div className="mt-3 pt-3 border-t border-stone-100 dark:border-border-subtle flex items-center justify-between">
               <div>
-                <div className="text-xs text-amber-600 dark:text-amber-300 font-medium">PUT Collateral Locked</div>
+                <div className="hood-micro text-xs text-amber-600 dark:text-amber-300 font-medium">PUT Collateral Locked</div>
                 <div className="text-[11px] text-stone-400 dark:text-text-faint">{openPuts.length} open put{openPuts.length !== 1 ? "s" : ""}</div>
               </div>
-              <div className="text-base font-bold text-amber-700 dark:text-amber-300">{maskValue(locked, fmtCurrency(capitalLocked))}</div>
+              <div className="hood-money-lg text-base font-bold text-amber-700 dark:text-amber-300">{maskValue(locked, fmtCurrency(capitalLocked))}</div>
             </div>
           )}
         </div>
@@ -1128,7 +1128,7 @@ export default function PortfolioPage() {
         <button
           onClick={() => fetchChains(true)}
           disabled={refreshing || offline}
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-900 dark:bg-surface-elevated text-white dark:text-text hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
+          className="hood-pill hood-pill-active text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-900 dark:bg-surface-elevated text-white dark:text-text hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors disabled:opacity-50"
           title="Bypass the cache and re-fetch live from SnapTrade (slow)"
         >
           {refreshing ? "Fetching live…" : "Refresh"}
@@ -1141,8 +1141,8 @@ export default function PortfolioPage() {
           <button
             key={t}
             onClick={() => setFilter(t)}
-            className={`text-sm font-medium px-3 py-1.5 rounded-lg capitalize transition-colors ${
-              filter === t ? "bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "text-stone-500 dark:text-text-subtle hover:text-stone-700"
+            className={`hood-tab text-sm font-medium px-3 py-1.5 rounded-lg capitalize transition-colors ${
+              filter === t ? "hood-tab-active bg-sky-100 dark:bg-accent-bg text-sky-700 dark:text-accent-hover" : "text-stone-500 dark:text-text-subtle hover:text-stone-700"
             }`}
           >
             {t}
@@ -1163,9 +1163,9 @@ export default function PortfolioPage() {
             <button
               key={key}
               onClick={() => setOpenSort(key)}
-              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`hood-pill text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
                 openSort === key
-                  ? "bg-stone-800 text-white"
+                  ? "hood-pill-active bg-stone-800 text-white"
                   : "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle hover:bg-stone-200"
               }`}
             >
@@ -1183,9 +1183,9 @@ export default function PortfolioPage() {
             <button
               key={inst}
               onClick={() => setInstFilter(instFilter === inst ? null : inst)}
-              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`hood-pill text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
                 instFilter === inst
-                  ? "bg-violet-600 text-white"
+                  ? "hood-pill-active bg-violet-600 text-white"
                   : "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100"
               }`}
             >
@@ -1208,9 +1208,9 @@ export default function PortfolioPage() {
             <button
               key={key}
               onClick={() => setClosedSort(key)}
-              className={`text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`hood-pill text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 ${
                 closedSort === key
-                  ? "bg-stone-800 text-white"
+                  ? "hood-pill-active bg-stone-800 text-white"
                   : "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle hover:bg-stone-200 dark:hover:bg-surface-sunken"
               }`}
             >
@@ -1221,7 +1221,9 @@ export default function PortfolioPage() {
       )}
 
       {/* Content */}
-      <div className="px-4 pb-4 flex flex-col gap-2 mt-1">
+      {/* `key={filter}` remounts the panel on tab change so HOOD replays its
+          cross-fade; `hood-stagger` steps the card entrances. */}
+      <div key={filter} className="hood-panel hood-stagger px-4 pb-4 flex flex-col gap-2 mt-1">
         {filter === "Monthly" ? (
           <MonthlyView chains={chains} yearFilter={new Date().getFullYear().toString()} />
         ) : filter === "Archive" ? (

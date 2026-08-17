@@ -5,6 +5,8 @@ import Link from "next/link";
 
 import { CLAUDE_MODELS, GEMINI_MODELS } from "@/lib/ai/constants";
 import { THEME_FONTS, DEFAULT_THEME_FONT_KEY, THEME_FONT_STORAGE_KEY, applyThemeFont } from "@/lib/theme-fonts";
+import { THEME_STYLES, setThemeStyle, type ThemeStyle } from "@/lib/theme-style";
+import { useThemeStyle } from "@/components/ThemeStyleProvider";
 import { Group, Row, ActionRow, Toggle, inputClass, selectClass } from "./ui";
 import BrokerageSection from "./BrokerageSection";
 import BiometricSection from "./BiometricSection";
@@ -32,6 +34,9 @@ export default function SettingsPage() {
   const [healthErrors, setHealthErrors] = useState<Record<string, string>>({});
   const [activeError, setActiveError] = useState<string | null>(null);
   const [themeFont, setThemeFont] = useState<string>(DEFAULT_THEME_FONT_KEY);
+  // Theme style lives on <html>, not in React state — read it live so the
+  // selector stays correct if another tab or the pre-paint script set it.
+  const themeStyle = useThemeStyle();
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -233,6 +238,7 @@ export default function SettingsPage() {
   const checking = Object.values(healthStatus).some(s => s === "checking");
   const healthStarted = Object.keys(healthStatus).length > 0;
   const currentFont = THEME_FONTS.find((f) => f.key === themeFont) ?? THEME_FONTS[0];
+  const activeStyleHint = (THEME_STYLES.find((s) => s.key === themeStyle) ?? THEME_STYLES[0]).hint;
   const pushOn = notifPermission === "granted" && pushSubscribed === true;
 
   return (
@@ -282,6 +288,17 @@ export default function SettingsPage() {
             >
               {THEME_FONTS.map((f) => (
                 <option key={f.key} value={f.key}>{f.label}</option>
+              ))}
+            </select>
+          </Row>
+          <Row label="Theme Style" sub={activeStyleHint}>
+            <select
+              value={themeStyle}
+              onChange={(e) => setThemeStyle(e.target.value as ThemeStyle)}
+              className={selectClass}
+            >
+              {THEME_STYLES.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
               ))}
             </select>
           </Row>

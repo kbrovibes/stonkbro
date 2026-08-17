@@ -18,11 +18,11 @@ export function Group({
   return (
     <section>
       {header && (
-        <h3 className="px-4 pb-1.5 text-[12px] font-semibold uppercase tracking-wider text-stone-400 dark:text-text-faint">
+        <h3 className="hood-micro px-4 pb-1.5 text-[12px] font-semibold uppercase tracking-wider text-stone-400 dark:text-text-faint">
           {header}
         </h3>
       )}
-      <div className="rounded-2xl bg-white dark:bg-surface-elevated shadow-sm overflow-hidden divide-y divide-stone-100 dark:divide-border-subtle">
+      <div className="hood-card rounded-2xl bg-white dark:bg-surface-elevated shadow-sm overflow-hidden divide-y divide-stone-100 dark:divide-border-subtle">
         {children}
       </div>
       {footer && (
@@ -93,8 +93,8 @@ export function Toggle({
       aria-checked={on}
       onClick={onChange}
       disabled={busy}
-      className={`relative w-[51px] h-[31px] rounded-full transition-colors duration-200 disabled:opacity-60 ${
-        on ? "bg-[#34C759] dark:bg-gain" : "bg-stone-200 dark:bg-surface-muted"
+      className={`hood-press relative w-[51px] h-[31px] rounded-full transition-colors duration-200 disabled:opacity-60 ${
+        on ? "hood-toggle-on bg-[#34C759] dark:bg-gain" : "bg-stone-200 dark:bg-surface-muted"
       }`}
     >
       <span

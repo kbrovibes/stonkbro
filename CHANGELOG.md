@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.36.0 — HOOD: an opt-in Robinhood-grade theme style
+
+- **New "Theme Style" setting** (Settings → Appearance): **Classic** (unchanged, still the default) or **HOOD** — a sleeker, premium re-skin that layers on top of whichever light/dark mode you already use
+- **HOOD × dark** goes true-black (#000 canvas, #0A0B0D cards, 8%-white hairline borders) — built for OLED; **HOOD × light** goes crisp paper-white with barely-there stone hairlines
+- **Money is the hero**: portfolio P&L renders at 34–44px, weight 800, tightly tracked, in tabular numerals so digits stop jittering; gains in the Robinhood green, losses in a soft coral; labels recede to 10px uppercase micro-caps
+- **Pill controls everywhere**: filter tabs, sort chips and broker filters become pills, with the selected one as the highest-contrast thing in its row; frosted-glass header and bottom nav; green active-tab indicator
+- **Tasteful micro-motion**: 240ms rise-in on card mount with a 30ms stagger, 170ms tab cross-fade, 120ms scale(0.97) press feedback, 200ms colour ticks on P&L, shimmer skeletons — **all of it disabled automatically** when your device asks for reduced motion
+- Per-device choice (localStorage), applied before first paint so there's no flash. Zero new dependencies; Classic renders exactly as it did before
+
 ## v0.35.1 — Briefing player: explicit speed options + 7-day audio retention
 
 - **Speed segmented control**: the single cycling speed button is now three explicit pills (1x · 1.25x · 1.5x) with the active speed highlighted

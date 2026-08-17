@@ -22,6 +22,9 @@ No paper trading simulators. No "educational" disclaimers hiding an empty app. T
 
 ## Features
 
+### HOOD Theme Style (opt-in premium re-skin)
+Settings → Appearance → **Theme Style** switches the whole app between **Classic** (the default, unchanged) and **HOOD** — a Robinhood-leaning design system that composes with your existing Light/Dark/Auto choice. HOOD dark is true-black (#000) with near-black cards and 8%-white hairlines; HOOD light is paper-white with barely-there stone borders. Portfolio P&L jumps to 34–44px tabular numerals in vivid green or soft coral, secondary labels shrink to 10px uppercase micro-caps, tabs and sort chips become pills, and the header/bottom nav turn to frosted glass. Micro-motion — card rise-in, tab cross-fade, press-scale, shimmer skeletons — is entirely CSS and turns itself off under `prefers-reduced-motion`. The choice is per-device and applied before first paint.
+
 ### Dark Mode (default-on, Robinhood-style)
 Full dark mode across every page, with a Light/Dark/Auto toggle in the profile dropdown (top-right initials bubble). Dark is the default for new visitors; existing preferences are respected. Brand green stays loud in both modes; loss reds shift to a softer coral on dark; sky-blue CTAs bump to sky-400 on dark for legibility. Charts, sparklines, and badges all flip automatically.
 
@@ -254,6 +257,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.36.0** | HOOD theme style — opt-in Robinhood-grade re-skin over both light and dark modes |
 | **v0.35.0** | Daily Audio Briefing — pre-market podcast curated to your portfolio, free TTS, offline player |
 | **v0.34.0** | Defense-first case studies — warning signs, exact order tickets, cost of inaction |
 | **v0.33.0** | Face ID app lock (per-device WebAuthn gate) + Learn progress fix |

@@ -109,12 +109,12 @@ export default async function DiscoverPage() {
     <div className="flex flex-col flex-1 px-4 py-5 gap-5">
       {briefing && <HomeBriefingCard briefing={briefing} />}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="hood-stagger grid grid-cols-3 gap-2">
         {FEATURE_CARDS.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className={`flex flex-col gap-1 rounded-xl border p-3 transition-opacity hover:opacity-80 ${card.accent}`}
+            className={`hood-press flex flex-col gap-1 rounded-xl border p-3 transition-opacity hover:opacity-80 ${card.accent}`}
           >
             <span className="text-xl leading-none">{card.emoji}</span>
             <span className="text-xs font-bold text-stone-900 dark:text-text mt-1">{card.title}</span>
@@ -149,7 +149,7 @@ export default async function DiscoverPage() {
           <p className="text-xs text-stone-500 dark:text-text-subtle mb-4">Create a watchlist to see your tickers here.</p>
           <Link
             href="/watchlists"
-            className="px-4 py-2 rounded-lg bg-stone-900 dark:bg-surface-elevated text-white text-xs font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors"
+            className="hood-pill hood-pill-active px-4 py-2 rounded-lg bg-stone-900 dark:bg-surface-elevated text-white text-xs font-semibold hover:bg-stone-800 dark:hover:bg-surface-muted transition-colors"
           >
             Create Watchlist
           </Link>

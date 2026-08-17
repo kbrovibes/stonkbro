@@ -28,7 +28,13 @@ export function applyTheme(mode: ThemeMode): void {
   document.documentElement.classList.toggle("dark", resolved === "dark");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
-    meta.setAttribute("content", resolved === "dark" ? "#0E1014" : "#FAFAF9");
+    // HOOD swaps the canvas to true-black / paper-white, so the status-bar
+    // colour follows the active theme style (see `theme-style.ts`).
+    const hood = document.documentElement.getAttribute("data-theme-style") === "hood";
+    const content = resolved === "dark"
+      ? (hood ? "#000000" : "#0E1014")
+      : (hood ? "#FFFFFF" : "#FAFAF9");
+    meta.setAttribute("content", content);
   }
 }
 

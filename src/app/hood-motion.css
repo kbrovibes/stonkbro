@@ -1,0 +1,113 @@
+/* ==========================================================================
+   HOOD — motion layer
+   ==========================================================================
+
+   CSS-only micro-motion for the HOOD theme style. Two hard rules:
+
+   1. Nothing here matches unless `data-theme-style="hood"` is on <html>, so
+      Classic never animates differently than it does today.
+   2. EVERY rule lives inside `@media (prefers-reduced-motion: no-preference)`.
+      A user who asked their OS for less motion gets the full HOOD look with
+      zero movement — including the pressed-state scale.
+
+   Timings: 120ms for touch feedback (must feel instant), 150–250ms for
+   entrances and cross-fades, 200ms for colour/number ticks. Easing is
+   `--hood-ease` (cubic-bezier(.22,1,.36,1)) — a fast-out curve that settles
+   rather than bounces.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ---- Entrances --------------------------------------------------------
+     Cards and hero cards rise 6px into place on mount. `both` holds the
+     from-state so there is no flash of the final position before the frame
+     lands. */
+  [data-theme-style="hood"] .hood-card,
+  [data-theme-style="hood"] .hood-hero {
+    animation: hood-rise 240ms var(--hood-ease) both;
+  }
+
+  /* Lists stagger in 30ms steps, capped at 8 so a 60-row portfolio still
+     finishes its entrance in under half a second. */
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(2) { animation-delay: 30ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(3) { animation-delay: 60ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(4) { animation-delay: 90ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(5) { animation-delay: 120ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(6) { animation-delay: 150ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(7) { animation-delay: 180ms; }
+  [data-theme-style="hood"] .hood-stagger > *:nth-child(8) { animation-delay: 210ms; }
+
+  /* ---- Tab switching ----------------------------------------------------
+     Keyed on the active tab so React remounts the panel and replays it. */
+  [data-theme-style="hood"] .hood-panel {
+    animation: hood-fade 170ms var(--hood-ease) both;
+  }
+
+  /* ---- Touch feedback ---------------------------------------------------
+     120ms ease-out press. Applied on :active only, so it never fires for
+     hover-only pointers. */
+  [data-theme-style="hood"] .hood-pill,
+  [data-theme-style="hood"] .hood-tab,
+  [data-theme-style="hood"] .hood-cta,
+  [data-theme-style="hood"] .hood-press {
+    transition:
+      transform 120ms ease-out,
+      background-color 150ms var(--hood-ease),
+      border-color 150ms var(--hood-ease),
+      color 150ms var(--hood-ease);
+  }
+
+  [data-theme-style="hood"] .hood-pill:active,
+  [data-theme-style="hood"] .hood-tab:active,
+  [data-theme-style="hood"] .hood-cta:active,
+  [data-theme-style="hood"] .hood-press:active {
+    transform: scale(0.97);
+  }
+
+  /* ---- Number ticks -----------------------------------------------------
+     A P&L flipping from gain-green to loss-coral eases instead of snapping.
+     Colour-only, so it costs nothing on the compositor. */
+  [data-theme-style="hood"] .hood-money,
+  [data-theme-style="hood"] .hood-money-lg,
+  [data-theme-style="hood"] .hood-money-hero {
+    transition: color 200ms var(--hood-ease);
+  }
+
+  /* Nav active indicator slides its opacity in rather than popping */
+  [data-theme-style="hood"] .hood-navtab-active::after {
+    animation: hood-fade 200ms var(--hood-ease) both;
+  }
+
+  /* ---- Skeletons --------------------------------------------------------- */
+  [data-theme-style="hood"] .hood-skeleton {
+    background-image: linear-gradient(
+      90deg,
+      var(--hood-shimmer-hi) 0%,
+      var(--hood-shimmer) 45%,
+      var(--hood-shimmer-hi) 90%
+    );
+    background-size: 220% 100%;
+    animation: hood-shimmer 1400ms linear infinite;
+  }
+
+  @keyframes hood-rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 6px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hood-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes hood-shimmer {
+    from { background-position: 120% 0; }
+    to   { background-position: -120% 0; }
+  }
+}

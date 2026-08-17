@@ -57,7 +57,7 @@ export default function JobsIndicator() {
     <Link
       href="/actions"
       aria-label={running > 0 ? `Actions — ${running} running` : "Actions"}
-      className="relative w-10 h-10 flex items-center justify-center rounded-full text-text-faint hover:text-text hover:bg-surface-muted active:bg-accent-bg transition-colors"
+      className="hood-iconbtn hood-press relative w-10 h-10 flex items-center justify-center rounded-full text-text-faint hover:text-text hover:bg-surface-muted active:bg-accent-bg transition-colors"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -72,7 +72,7 @@ export default function JobsIndicator() {
         <polyline points="2 12 6.5 12 9.5 5 14.5 19 17.5 12 22 12" />
       </svg>
       {running > 0 && (
-        <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-sky-500 text-white text-[10px] font-bold leading-4 text-center animate-pulse">
+        <span className="hood-badge absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-sky-500 text-white text-[10px] font-bold leading-4 text-center animate-pulse">
           {running}
         </span>
       )}

@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Opt-in HOOD design system. Inert unless <html data-theme-style="hood">. */
+@import "./hood.css";
+@import "./hood-motion.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
