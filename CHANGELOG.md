@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.36.1 — Briefing playlist: every generation is an entry, stamped to the hour
+
+- **Regenerations append instead of replacing**: each generation (cron or manual) is now its own playlist entry — regenerating today's briefing keeps the earlier episode in "Previous briefings" instead of deleting it. Only failed/stuck rows for the day are cleaned up; the 7-day retention sweep still bounds storage
+- **Hour-stamped entries**: the player header and every playlist row now show the generation time rounded to the nearest hour (e.g. "Monday, August 17 · 6 AM"), so multiple same-day episodes are distinguishable
+
 ## v0.36.0 — HOOD: an opt-in Robinhood-grade theme style
 
 - **New "Theme Style" setting** (Settings → Appearance): **Classic** (unchanged, still the default) or **HOOD** — a sleeker, premium re-skin that layers on top of whichever light/dark mode you already use

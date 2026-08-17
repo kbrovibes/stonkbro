@@ -40,6 +40,14 @@ function fmtDate(dateStr: string): string {
   });
 }
 
+/** Generation time rounded to the nearest hour, e.g. "10 PM". */
+function fmtHour(createdAt: string): string {
+  const d = new Date(createdAt);
+  d.setMinutes(d.getMinutes() + 30, 0, 0);
+  d.setMinutes(0);
+  return d.toLocaleTimeString("en-US", { hour: "numeric" });
+}
+
 async function fetchAudioBlob(id: string): Promise<Blob> {
   const url = BRIEFING_AUDIO_ROUTE(id);
   if (typeof caches !== "undefined") {
@@ -236,7 +244,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
         </div>
         <div className="text-center px-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint">
-            {fmtDate(selected.briefing_date)}
+            {fmtDate(selected.briefing_date)} · {fmtHour(selected.created_at)}
             {selected.trigger === "manual" && " · regenerated"}
           </p>
           <h2 className="text-lg font-bold text-stone-900 dark:text-text mt-0.5 leading-snug">
@@ -451,7 +459,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
                     {b.title ?? "Daily briefing"}
                   </p>
                   <p className="text-[10px] text-stone-400 dark:text-text-faint">
-                    {fmtDate(b.briefing_date)}
+                    {fmtDate(b.briefing_date)} · {fmtHour(b.created_at)}
                     {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
                   </p>
                 </div>

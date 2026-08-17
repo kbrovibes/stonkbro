@@ -68,28 +68,22 @@ export async function getBriefingById(id: string): Promise<DailyBriefing | null>
  * failed/running one for the same date (a botched force-regenerate must not
  * hide yesterday's good briefing... or today's earlier good one).
  */
-export async function getLatestBriefings(limit = BRIEFING_HISTORY_DAYS): Promise<DailyBriefing[]> {
+/**
+ * Every generation is its own playlist entry (regenerations append, they don't
+ * replace). The 7-day retention sweep bounds the total, so the limit is just a
+ * sanity cap on entries, not days. Non-completed rows are hidden except the
+ * newest one, so an in-flight generation still shows as "preparing".
+ */
+export async function getLatestBriefings(limit = 30): Promise<DailyBriefing[]> {
   const { data, error } = await supabaseAdmin
     .from(TABLE)
     .select("*")
-    .order("briefing_date", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(limit * 4);
+    .limit(limit * 2);
   if (error) throw new Error(`getLatestBriefings: ${error.message}`);
 
-  const byDate = new Map<string, DailyBriefing>();
-  for (const row of (data ?? []) as DailyBriefing[]) {
-    const existing = byDate.get(row.briefing_date);
-    if (!existing) {
-      byDate.set(row.briefing_date, row);
-      continue;
-    }
-    // Rows arrive newest-created first; only upgrade non-completed → completed.
-    if (existing.status !== "completed" && row.status === "completed") {
-      byDate.set(row.briefing_date, row);
-    }
-  }
-  return [...byDate.values()].slice(0, limit);
+  const rows = (data ?? []) as DailyBriefing[];
+  return rows.filter((row, i) => row.status === "completed" || i === 0).slice(0, limit);
 }
 
 export async function uploadBriefingAudio(path: string, buffer: Buffer): Promise<void> {
@@ -106,12 +100,14 @@ export async function downloadBriefingAudio(path: string): Promise<Buffer | null
 }
 
 /** Remove superseded rows (and their audio) after a successful regenerate. */
-export async function deleteOlderBriefingsForDate(briefingDate: string, keepId: string): Promise<void> {
+/** Clear out failed/stuck rows for a date; completed briefings stay in the playlist. */
+export async function deleteUnfinishedBriefingsForDate(briefingDate: string, keepId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from(TABLE)
     .select("id, audio_path")
     .eq("briefing_date", briefingDate)
-    .neq("id", keepId);
+    .neq("id", keepId)
+    .neq("status", "completed");
   if (error || !data || data.length === 0) return;
 
   const paths = (data as { audio_path: string | null }[])
@@ -123,8 +119,7 @@ export async function deleteOlderBriefingsForDate(briefingDate: string, keepId: 
   await supabaseAdmin
     .from(TABLE)
     .delete()
-    .eq("briefing_date", briefingDate)
-    .neq("id", keepId);
+    .in("id", (data as { id: string }[]).map((r) => r.id));
 }
 
 /** Retention sweep: remove briefings (rows + audio) older than the history window. */

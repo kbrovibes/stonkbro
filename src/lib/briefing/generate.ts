@@ -6,7 +6,7 @@ import { generateText } from "@/lib/ai/provider";
 import { getRecentAlerts } from "@/lib/db/alerts";
 import {
   completeBriefing,
-  deleteOlderBriefingsForDate,
+  deleteUnfinishedBriefingsForDate,
   failBriefing,
   getBriefingById,
   insertBriefing,
@@ -241,7 +241,7 @@ export async function generateDailyBriefing(opts: {
       voice: audioPath ? BRIEFING_VOICE : null,
       error_message: ttsError,
     });
-    await deleteOlderBriefingsForDate(dateISO, id);
+    await deleteUnfinishedBriefingsForDate(dateISO, id);
 
     const saved = await getBriefingById(id);
     if (!saved) throw new Error("briefing row vanished after completion");
