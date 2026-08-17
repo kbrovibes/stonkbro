@@ -30,8 +30,8 @@ export interface ThemeStyleOption {
 }
 
 export const THEME_STYLES: ThemeStyleOption[] = [
-  { key: "classic", label: "Classic", hint: "The original stonkBRO look." },
-  { key: "hood", label: "HOOD", hint: "True-black canvas, oversized money, pill controls." },
+  { key: "classic", label: "Classic", hint: "The original stonkBRO look. Set per device." },
+  { key: "hood", label: "HOOD", hint: "True-black canvas, oversized money, pill controls. Set per device." },
 ];
 
 export function isThemeStyle(v: unknown): v is ThemeStyle {

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.36.2 — Theme Style hint: say it's per-device
+
+- Settings → Appearance → Theme Style hints now end with "Set per device." — HOOD/Classic is stored in localStorage, so toggling on one device never changes another; the UI now says so (validated HOOD itself works in all four mode combinations on prod)
+
 ## v0.36.1 — Briefing playlist: every generation is an entry, stamped to the hour
 
 - **Regenerations append instead of replacing**: each generation (cron or manual) is now its own playlist entry — regenerating today's briefing keeps the earlier episode in "Previous briefings" instead of deleting it. Only failed/stuck rows for the day are cleaned up; the 7-day retention sweep still bounds storage
