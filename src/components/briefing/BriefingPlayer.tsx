@@ -151,12 +151,9 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
     audio.currentTime = Math.min(Math.max(0, audio.currentTime + delta), audio.duration);
   }, []);
 
-  const cycleSpeed = useCallback(() => {
-    setSpeedIdx((i) => {
-      const next = (i + 1) % SPEEDS.length;
-      if (audioRef.current) audioRef.current.playbackRate = SPEEDS[next];
-      return next;
-    });
+  const setSpeed = useCallback((idx: number) => {
+    setSpeedIdx(idx);
+    if (audioRef.current) audioRef.current.playbackRate = SPEEDS[idx];
   }, []);
 
   const download = useCallback(async () => {
@@ -272,13 +269,22 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
             <span>{fmtTime(displayDuration)}</span>
           </div>
           <div className="flex items-center justify-center gap-6 mt-1">
-            <button
-              type="button"
-              onClick={cycleSpeed}
-              className="w-12 text-xs font-bold text-stone-600 dark:text-text-subtle tabular-nums"
-            >
-              {SPEEDS[speedIdx]}x
-            </button>
+            <div className="flex items-center rounded-full border border-stone-200 dark:border-border-subtle p-0.5">
+              {SPEEDS.map((s, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSpeed(i)}
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums transition-colors ${
+                    i === speedIdx
+                      ? "bg-stone-900 text-white dark:bg-accent"
+                      : "text-stone-500 dark:text-text-subtle"
+                  }`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => skip(-15)}

@@ -126,3 +126,22 @@ export async function deleteOlderBriefingsForDate(briefingDate: string, keepId: 
     .eq("briefing_date", briefingDate)
     .neq("id", keepId);
 }
+
+/** Retention sweep: remove briefings (rows + audio) older than the history window. */
+export async function deleteExpiredBriefings(days = BRIEFING_HISTORY_DAYS): Promise<number> {
+  const cutoff = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("id, audio_path")
+    .lt("briefing_date", cutoff);
+  if (error || !data || data.length === 0) return 0;
+
+  const paths = (data as { audio_path: string | null }[])
+    .map((r) => r.audio_path)
+    .filter((p): p is string => !!p);
+  if (paths.length > 0) {
+    await supabaseAdmin.storage.from(BRIEFING_BUCKET).remove(paths);
+  }
+  await supabaseAdmin.from(TABLE).delete().lt("briefing_date", cutoff);
+  return data.length;
+}

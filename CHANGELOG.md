@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.35.1 — Briefing player: explicit speed options + 7-day audio retention
+
+- **Speed segmented control**: the single cycling speed button is now three explicit pills (1x · 1.25x · 1.5x) with the active speed highlighted
+- **True 7-day expiry**: briefings older than the 7-day history window are now actually deleted (DB rows + MP3s in storage) by a retention sweep after each cron run — previously the list just capped at 7 while old audio accumulated
+
 ## v0.35.0 — Daily Audio Briefing: your pre-market podcast, curated to your portfolio
 
 - **Home-screen briefing card + `/briefing` player**: a personal ~2–3 minute audio briefing generated before market open every weekday — market pulse in one breath, your portfolio's biggest moves and why, news/earnings that matter today, and concrete trade suggestions (close / roll / open / watch, each with a reason). Spotify-style player with deterministic generated cover art (seeded, mood-tinted), play/pause, ±15s skip, seek, 1x/1.25x/1.5x speed, full transcript, highlights strip, and suggested-actions list

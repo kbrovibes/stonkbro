@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateDailyBriefing, marketDateToday } from "@/lib/briefing/generate";
-import { getLatestBriefings } from "@/lib/db/briefings";
+import { deleteExpiredBriefings, getLatestBriefings } from "@/lib/db/briefings";
 import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,10 @@ export async function GET(request: Request) {
       { kind: "audio-briefing", label: "Daily audio briefing", trigger: "cron", createdBy: "cron" },
       (ctx) => generateDailyBriefing({ trigger: "cron", ctx })
     );
+
+    // Retention: history surfaces one week; anything older is dead weight in storage.
+    const expired = await deleteExpiredBriefings().catch(() => 0);
+    if (expired > 0) console.log(`[Briefing] Swept ${expired} expired briefing(s)`);
 
     return NextResponse.json({
       ok: true,
