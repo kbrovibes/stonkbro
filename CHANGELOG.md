@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.37.0 — Briefings 3× a day + crash alerts restored to hourly
+
+- **Three briefing episodes per trading day** (all appear in the playlist with session labels): **Pre-market** 6:00am PT (overnight setup, what to do at the open), **Market open** 7:30am PT (how the open actually went, intraday actions), **After close** 2:00pm PT (day recap, after-hours movers and earnings reactions, tomorrow's setup). New `session` column (migration `20260818150000`, applied), session-aware prompts, per-session cron skip logic, Actions Center labels per session
+- **Index shocks can't be buried**: the briefing writer now has a hard rule — if SPY or QQQ moved more than ±1.5%, the episode must open with it and set the mood accordingly
+- **Market-monitor restored to hourly during market hours** (`35 13-20 * * 1-5` UTC, was once daily at 10am PT — the Hobby-era compromise). A crash at the open now pushes an alert within the hour instead of hours later
+
 ## v0.36.4 — Briefing player: play/pause dead-centered
 
 - Controls row rebuilt as three zones (speed pills | ↺15 · play · 15↻ | download) with equal-width flanks, so the play button sits exactly centered instead of being pushed off-axis by the wider speed pills

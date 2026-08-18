@@ -2,18 +2,36 @@ import { supabaseAdmin } from "@/lib/supabase";
 import {
   BRIEFING_BUCKET,
   BRIEFING_HISTORY_DAYS,
+  type BriefingSession,
   type BriefingTrigger,
   type DailyBriefing,
 } from "@/lib/briefing/types";
 
+/** True when a completed briefing already exists for this date + session. */
+export async function hasCompletedSession(briefingDate: string, session: BriefingSession): Promise<boolean> {
+  const { count, error } = await supabaseAdmin
+    .from("daily_briefings")
+    .select("id", { count: "exact", head: true })
+    .eq("briefing_date", briefingDate)
+    .eq("session", session)
+    .eq("status", "completed");
+  if (error) throw new Error(`hasCompletedSession: ${error.message}`);
+  return (count ?? 0) > 0;
+}
+
 const TABLE = "daily_briefings";
 
-export async function insertBriefing(trigger: BriefingTrigger, briefingDate: string): Promise<string> {
+export async function insertBriefing(
+  trigger: BriefingTrigger,
+  briefingDate: string,
+  session: BriefingSession = "premarket"
+): Promise<string> {
   const { data, error } = await supabaseAdmin
     .from(TABLE)
     .insert({
       trigger,
       briefing_date: briefingDate,
+      session,
       status: "running",
       art_seed: Math.floor(Math.random() * 2_147_483_647),
     })

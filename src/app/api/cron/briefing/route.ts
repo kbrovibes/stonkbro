@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { generateDailyBriefing, marketDateToday } from "@/lib/briefing/generate";
-import { deleteExpiredBriefings, getLatestBriefings } from "@/lib/db/briefings";
+import { generateDailyBriefing, marketDateToday, sessionForNow } from "@/lib/briefing/generate";
+import { BRIEFING_SESSIONS, isBriefingSession } from "@/lib/briefing/types";
+import { deleteExpiredBriefings, hasCompletedSession } from "@/lib/db/briefings";
 import { runTracked } from "@/lib/jobs/tracker";
 
 export const dynamic = "force-dynamic";
@@ -18,20 +19,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const force = new URL(request.url).searchParams.get("force") === "1";
+  const params = new URL(request.url).searchParams;
+  const force = params.get("force") === "1";
+  const sessionParam = params.get("session");
+  const session = isBriefingSession(sessionParam) ? sessionParam : sessionForNow();
   const today = marketDateToday();
 
   try {
-    if (!force) {
-      const existing = await getLatestBriefings(1);
-      if (existing[0]?.briefing_date === today && existing[0].status === "completed") {
-        return NextResponse.json({ ok: true, skipped: true, briefingId: existing[0].id });
-      }
+    if (!force && (await hasCompletedSession(today, session))) {
+      return NextResponse.json({ ok: true, skipped: true, session });
     }
 
     const briefing = await runTracked(
-      { kind: "audio-briefing", label: "Daily audio briefing", trigger: "cron", createdBy: "cron" },
-      (ctx) => generateDailyBriefing({ trigger: "cron", ctx })
+      {
+        kind: "audio-briefing",
+        label: `Audio briefing (${BRIEFING_SESSIONS[session].label})`,
+        trigger: "cron",
+        createdBy: "cron",
+        meta: { session },
+      },
+      (ctx) => generateDailyBriefing({ trigger: "cron", session, ctx })
     );
 
     // Retention: history surfaces one week; anything older is dead weight in storage.

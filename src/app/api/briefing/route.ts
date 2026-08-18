@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { generateDailyBriefing } from "@/lib/briefing/generate";
-import type { BriefingListResponse } from "@/lib/briefing/types";
+import { generateDailyBriefing, sessionForNow } from "@/lib/briefing/generate";
+import { BRIEFING_SESSIONS, type BriefingListResponse } from "@/lib/briefing/types";
 import { getUser } from "@/lib/auth";
 import { getLatestBriefings } from "@/lib/db/briefings";
 import { runTracked } from "@/lib/jobs/tracker";
@@ -38,14 +38,16 @@ export async function POST() {
   if (access instanceof NextResponse) return access;
 
   try {
+    const session = sessionForNow();
     const briefing = await runTracked(
       {
         kind: "audio-briefing",
-        label: "Daily audio briefing (manual)",
+        label: `Audio briefing (${BRIEFING_SESSIONS[session].label}, manual)`,
         trigger: "manual",
         createdBy: access.userId,
+        meta: { session },
       },
-      (ctx) => generateDailyBriefing({ trigger: "manual", ctx })
+      (ctx) => generateDailyBriefing({ trigger: "manual", session, ctx })
     );
     return NextResponse.json({ ok: true, briefing });
   } catch (e) {

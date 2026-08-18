@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import BriefingArt from "./BriefingArt";
 import {
   BRIEFING_AUDIO_ROUTE,
+  BRIEFING_SESSIONS,
   type BriefingAction,
   type DailyBriefing,
 } from "@/lib/briefing/types";
@@ -245,6 +246,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
         <div className="text-center px-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint">
             {fmtDate(selected.briefing_date)} · {fmtHour(selected.created_at)}
+            {selected.session ? ` · ${BRIEFING_SESSIONS[selected.session].label}` : ""}
             {selected.trigger === "manual" && " · regenerated"}
           </p>
           <h2 className="text-lg font-bold text-stone-900 dark:text-text mt-0.5 leading-snug">
@@ -467,6 +469,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
                   </p>
                   <p className="text-[10px] text-stone-400 dark:text-text-faint">
                     {fmtDate(b.briefing_date)} · {fmtHour(b.created_at)}
+                    {b.session ? ` · ${BRIEFING_SESSIONS[b.session].label}` : ""}
                     {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
                   </p>
                 </div>

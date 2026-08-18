@@ -1,8 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron/briefing",
+      "path": "/api/cron/briefing?session=premarket",
       "schedule": "0 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/briefing?session=midday",
+      "schedule": "30 14 * * 1-5"
+    },
+    {
+      "path": "/api/cron/briefing?session=close",
+      "schedule": "0 21 * * 1-5"
     },
     {
       "path": "/api/cron/morning-briefing",
@@ -74,7 +82,7 @@
     },
     {
       "path": "/api/cron/market-monitor",
-      "schedule": "0 17 * * 1-5"
+      "schedule": "35 13-20 * * 1-5"
     },
     {
       "path": "/api/cron/portfolio-chains",

@@ -38,6 +38,31 @@ export type BriefingScript = {
 export type BriefingStatus = "running" | "completed" | "failed";
 export type BriefingTrigger = "cron" | "manual";
 
+/** Three episodes per trading day. */
+export type BriefingSession = "premarket" | "midday" | "close";
+
+export const BRIEFING_SESSIONS: Record<BriefingSession, { label: string; focus: string }> = {
+  premarket: {
+    label: "Pre-market",
+    focus:
+      "Pre-open setup: overnight futures and index tone, pre-market movers among their names, today's earnings/news to watch, and what to do at the open.",
+  },
+  midday: {
+    label: "Market open",
+    focus:
+      "The first hour is done: how the open actually went versus the pre-market read, biggest moves among their names since the bell, whether any open positions need intraday action, and what to watch into the afternoon.",
+  },
+  close: {
+    label: "After close",
+    focus:
+      "The day is done: how the session closed, their portfolio's biggest winners and losers on the day, after-hours movers and earnings reactions among their names, and the setup for tomorrow.",
+  },
+};
+
+export function isBriefingSession(v: unknown): v is BriefingSession {
+  return v === "premarket" || v === "midday" || v === "close";
+}
+
 /** Row in daily_briefings. */
 export type DailyBriefing = {
   id: string;
@@ -45,6 +70,8 @@ export type DailyBriefing = {
   briefing_date: string;
   status: BriefingStatus;
   trigger: BriefingTrigger;
+  /** Which of the day's three episodes this is; old rows default to premarket. */
+  session: BriefingSession | null;
   title: string | null;
   summary: string | null;
   transcript: string | null;

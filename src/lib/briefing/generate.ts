@@ -19,7 +19,14 @@ import { getQuotes } from "@/lib/market/yahoo";
 import { getRecentHeadlines } from "@/lib/market/yahoo-news";
 import { getPortfolio, type OptionChain } from "@/lib/snaptrade/client";
 import { synthesizeBriefing } from "./tts";
-import { BRIEFING_VOICE, type BriefingScript, type BriefingTrigger, type DailyBriefing } from "./types";
+import {
+  BRIEFING_SESSIONS,
+  BRIEFING_VOICE,
+  type BriefingScript,
+  type BriefingSession,
+  type BriefingTrigger,
+  type DailyBriefing,
+} from "./types";
 
 /** Today's date (YYYY-MM-DD) in market time, not server UTC. */
 export function marketDateToday(): string {
@@ -119,7 +126,9 @@ function chainSummary(c: OptionChain): Record<string, unknown> {
   };
 }
 
-const SYSTEM_PROMPT = `You write a personal pre-market audio briefing for one busy options trader who runs PMCC, covered-call, and cash-secured-put strategies. You are given their actual open positions, holdings, overnight quotes, headlines, earnings dates, and app alerts.
+const SYSTEM_PROMPT = `You write a personal audio market briefing for one busy options trader who runs PMCC, covered-call, and cash-secured-put strategies. You are given their actual open positions, holdings, quotes, headlines, earnings dates, app alerts, and which of the day's three episodes this is (session_guidance says what this episode should cover).
+
+NON-NEGOTIABLE: if SPY or QQQ has moved more than 1.5% in either direction, that IS the story — open with it, state the magnitude plainly ("the market is selling off hard, SPY down three point one percent"), connect it to their positions, and set the mood accordingly. Never bury or soften an index-level shock.
 
 Return ONLY valid JSON (no markdown fences, no commentary) with this exact shape:
 {
@@ -136,14 +145,16 @@ Transcript rules — it is fed directly to text-to-speech:
 - 350-500 words, crisp and conversational, medium-fast radio pacing. Address the listener as "you".
 - Say percentages in words ("up four point two percent"), never "%" glued to digits like "4.2%-ish".
 - NEVER state account-level or position-level dollar amounts. Percentages and generic per-contract premium talk only (privacy).
-- Structure: one-breath market open (futures/SPY/QQQ tone) -> biggest moves in THEIR portfolio and why -> news and earnings that matter for THEIR names today -> concrete suggestions (close, roll, open, watch — each with one plain reason, referencing their actual open positions) -> one-line signoff.
+- Structure: one-breath market tone (SPY/QQQ) -> biggest moves in THEIR portfolio and why -> news and earnings that matter for THEIR names -> concrete suggestions (close, roll, open, watch — each with one plain reason, referencing their actual open positions) -> one-line signoff. Bend the content to session_guidance.
 - If a data section is empty, skip it gracefully — never say "no data available".
 - Only suggest closing/rolling positions that actually appear in open_chains. Suggesting nothing is fine on a quiet day: say so and keep it short.`;
 
-function buildPrompt(dateISO: string, ctx: GatheredContext): string {
+function buildPrompt(dateISO: string, session: BriefingSession, ctx: GatheredContext): string {
   return JSON.stringify(
     {
       briefing_date: dateISO,
+      session,
+      session_guidance: BRIEFING_SESSIONS[session].focus,
       day_of_week: new Date(`${dateISO}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long" }),
       open_chains: ctx.openChains.map(chainSummary),
       stock_holdings: ctx.holdings.map((h) => ({ symbol: h.symbol, unrealized_pnl_pct: Math.round(h.pnlPct * 10) / 10 })),
@@ -178,12 +189,30 @@ function parseScript(raw: string): BriefingScript | null {
   }
 }
 
+/** Which episode a generation started right now belongs to, by Eastern time. */
+export function sessionForNow(): BriefingSession {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const m = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  const mins = h * 60 + m;
+  if (mins < 9 * 60 + 30) return "premarket";
+  if (mins < 16 * 60) return "midday";
+  return "close";
+}
+
 export async function generateDailyBriefing(opts: {
   trigger: BriefingTrigger;
+  session?: BriefingSession;
   ctx?: JobContext;
 }): Promise<DailyBriefing> {
   const dateISO = marketDateToday();
-  const id = await insertBriefing(opts.trigger, dateISO);
+  const session = opts.session ?? sessionForNow();
+  const id = await insertBriefing(opts.trigger, dateISO, session);
 
   try {
     await opts.ctx?.progress("Gathering market data…");
@@ -191,7 +220,7 @@ export async function generateDailyBriefing(opts: {
     await opts.ctx?.checkCancelled();
 
     await opts.ctx?.progress("Writing script…");
-    const prompt = buildPrompt(dateISO, context);
+    const prompt = buildPrompt(dateISO, session, context);
     let result = await generateText({
       prompt,
       systemPrompt: SYSTEM_PROMPT,
