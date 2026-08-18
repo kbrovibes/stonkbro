@@ -276,7 +276,9 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
             <span>{fmtTime(currentTime)}</span>
             <span>{fmtTime(displayDuration)}</span>
           </div>
-          <div className="flex items-center justify-center gap-6 mt-1">
+          {/* Three-zone row: equal flex-1 flanks keep the play button dead-center. */}
+          <div className="flex items-center mt-1">
+            <div className="flex-1 flex justify-start">
             <div className="flex items-center rounded-full border border-stone-200 dark:border-border-subtle p-0.5">
               {SPEEDS.map((s, i) => (
                 <button
@@ -293,6 +295,8 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
                 </button>
               ))}
             </div>
+            </div>
+            <div className="flex items-center gap-6">
             <button
               type="button"
               onClick={() => skip(-15)}
@@ -329,14 +333,17 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
             >
               15↻
             </button>
+            </div>
+            <div className="flex-1 flex justify-end">
             <button
               type="button"
               onClick={download}
               aria-label="Download for offline"
-              className={`w-12 text-lg ${downloaded.has(selected.id) ? "text-emerald-500 dark:text-gain" : "text-stone-500 dark:text-text-subtle"}`}
+              className={`text-lg ${downloaded.has(selected.id) ? "text-emerald-500 dark:text-gain" : "text-stone-500 dark:text-text-subtle"}`}
             >
               {downloaded.has(selected.id) ? "✓" : "⤓"}
             </button>
+            </div>
           </div>
           {downloaded.has(selected.id) && (
             <p className="text-center text-[10px] text-stone-400 dark:text-text-faint">Saved for offline</p>

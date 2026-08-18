@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.36.4 — Briefing player: play/pause dead-centered
+
+- Controls row rebuilt as three zones (speed pills | ↺15 · play · 15↻ | download) with equal-width flanks, so the play button sits exactly centered instead of being pushed off-axis by the wider speed pills
+
 ## v0.36.3 — Face ID lock temporarily disabled (kill switch)
 
 - **`BIOMETRIC_LOCK_ENABLED = false`** in new `src/lib/feature-flags.ts` turns the Face ID app lock off for all devices while it's debugged: the pre-paint hide script is not emitted, the lock screen never mounts (and actively removes a stale build's `bio-locked` class), and the Settings section is hidden
