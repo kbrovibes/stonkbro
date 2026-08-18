@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getBiometricConfig, verifyBiometric, clearBiometric } from "@/lib/biometric";
+import { BIOMETRIC_LOCK_ENABLED } from "@/lib/feature-flags";
 
 /** Re-lock after the app sits in the background this long. */
 const RELOCK_AFTER_MS = 60_000;
@@ -17,6 +18,19 @@ const RELOCK_AFTER_MS = 60_000;
  * unlock. Lock state is in-memory, so a reload re-locks.
  */
 export default function BiometricLock({ children }: { children: React.ReactNode }) {
+  if (!BIOMETRIC_LOCK_ENABLED) return <BiometricLockDisabled>{children}</BiometricLockDisabled>;
+  return <BiometricLockActive>{children}</BiometricLockActive>;
+}
+
+/** Kill-switch path: never lock, and unhide any shell the pre-paint script of a stale build hid. */
+function BiometricLockDisabled({ children }: { children: React.ReactNode }) {
+  useLayoutEffect(() => {
+    document.documentElement.classList.remove("bio-locked");
+  }, []);
+  return <div id="bio-shell" style={{ display: "contents" }}>{children}</div>;
+}
+
+function BiometricLockActive({ children }: { children: React.ReactNode }) {
   const [locked, setLocked] = useState(false); // matches server render; real check in layout effect
   const [verifying, setVerifying] = useState(false);
   const [credGone, setCredGone] = useState(false);

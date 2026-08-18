@@ -8,6 +8,7 @@ import BiometricLock from "@/components/BiometricLock";
 import { getUser } from "@/lib/auth";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 import { isPiiLocked } from "@/lib/privacy-server";
+import { BIOMETRIC_LOCK_ENABLED } from "@/lib/feature-flags";
 
 export default async function AppLayout({
   children,
@@ -24,13 +25,17 @@ export default async function AppLayout({
       {/* Pre-paint check: hide the app shell before first paint when the
           device-local Face ID lock is enabled, so nothing flashes before
           BiometricLock hydrates and prompts. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html:
-            'try{var c=JSON.parse(localStorage.getItem("biometric-lock-v1")||"null");if(c&&c.enabled)document.documentElement.classList.add("bio-locked")}catch(e){}',
-        }}
-      />
-      <style>{`html.bio-locked #bio-shell{visibility:hidden}`}</style>
+      {BIOMETRIC_LOCK_ENABLED && (
+        <>
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                'try{var c=JSON.parse(localStorage.getItem("biometric-lock-v1")||"null");if(c&&c.enabled)document.documentElement.classList.add("bio-locked")}catch(e){}',
+            }}
+          />
+          <style>{`html.bio-locked #bio-shell{visibility:hidden}`}</style>
+        </>
+      )}
       <BiometricLock>
       <Header />
       <OfflineBanner />

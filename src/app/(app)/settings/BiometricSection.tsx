@@ -9,12 +9,19 @@ import {
   verifyBiometric,
   clearBiometric,
 } from "@/lib/biometric";
+import { BIOMETRIC_LOCK_ENABLED } from "@/lib/feature-flags";
 
 /**
  * Face ID app lock — device-local, only rendered on hardware with a
  * user-verifying platform authenticator (iPhone Face ID, Mac Touch ID).
  */
 export default function BiometricSection() {
+  // Kill switch: section disappears entirely while the feature is off.
+  if (!BIOMETRIC_LOCK_ENABLED) return null;
+  return <BiometricSectionInner />;
+}
+
+function BiometricSectionInner() {
   const [available, setAvailable] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);

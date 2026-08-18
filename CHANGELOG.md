@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.36.3 — Face ID lock temporarily disabled (kill switch)
+
+- **`BIOMETRIC_LOCK_ENABLED = false`** in new `src/lib/feature-flags.ts` turns the Face ID app lock off for all devices while it's debugged: the pre-paint hide script is not emitted, the lock screen never mounts (and actively removes a stale build's `bio-locked` class), and the Settings section is hidden
+- Enrolled devices keep their localStorage credential config — flipping the flag back to `true` restores the lock everywhere, nothing is wiped
+
 ## v0.36.2 — Theme Style hint: say it's per-device
 
 - Settings → Appearance → Theme Style hints now end with "Set per device." — HOOD/Classic is stored in localStorage, so toggling on one device never changes another; the UI now says so (validated HOOD itself works in all four mode combinations on prod)
