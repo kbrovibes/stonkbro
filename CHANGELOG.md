@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.38.3 — /more page fixed (Next 16) + PMCC tab on Options
+
+- **/more crashed with a server error since the Next 16 upgrade**: the page (a Server Component) called `getVisibleMoreGroups()` imported from the `"use client"` MoreNav module — Next 16 hard-errors on invoking client-module functions server-side. Nav data + filter moved to a server-safe `more-nav-data.tsx`; MoreNav keeps the interactive tile and re-exports for client consumers
+- **Options page gains a PMCC tab**: the full PMCC Picks experience (scan by sector, both legs of each setup — the LEAPS you buy and the short call you sell — with capital required, monthly premium, annualized return, and A/B/C grades) now lives as a tab in /plays alongside Market · CSPs · Calls · LEAPS · Weekly; /pmcc-picks still works and renders the same shared component
+
 ## v0.38.2 — Biggest Movers for empty homes + second account allow-listed
 
 - **New users / guests with no watchlists** no longer get an empty home screen: the day's **Biggest Movers** (top 5 winners + top 5 losers from the ~110-symbol scan universe) render in the exact watchlist card layout (price, day change, sparkline), read-only, with a Create Watchlist link in the section header

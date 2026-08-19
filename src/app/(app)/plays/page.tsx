@@ -4,14 +4,16 @@ import { useState } from "react";
 import OfflineGate from "@/components/OfflineGate";
 import MarketTab from "./MarketTab";
 import ScannerTabs, { type ScannerTab } from "./ScannerTabs";
+import PMCCContent from "../pmcc-picks/PMCCContent";
 
-type PlaysTab = "market" | ScannerTab;
+type PlaysTab = "market" | "pmcc" | ScannerTab;
 
 const TABS: { id: PlaysTab; label: string; activeClass: string }[] = [
   { id: "market", label: "Market", activeClass: "text-stone-900 dark:text-text border-stone-900 dark:border-text" },
   { id: "csp", label: "CSPs", activeClass: "text-emerald-600 dark:text-gain border-emerald-600" },
   { id: "calls", label: "Calls", activeClass: "text-sky-600 dark:text-accent border-sky-600" },
   { id: "leaps", label: "LEAPS", activeClass: "text-violet-600 dark:text-violet-300 border-violet-600" },
+  { id: "pmcc", label: "PMCC", activeClass: "text-indigo-600 dark:text-indigo-300 border-indigo-600" },
   { id: "weekly", label: "Weekly", activeClass: "text-amber-600 dark:text-amber-300 border-amber-600" },
 ];
 
@@ -50,8 +52,11 @@ function PlaysView() {
       <div className={tab === "market" ? "flex flex-col flex-1" : "hidden"}>
         <MarketTab />
       </div>
-      <div className={tab === "market" ? "hidden" : "flex flex-col flex-1"}>
-        <ScannerTabs tab={tab === "market" ? "csp" : tab} />
+      <div className={tab === "pmcc" ? "flex flex-col flex-1" : "hidden"}>
+        <PMCCContent />
+      </div>
+      <div className={tab === "market" || tab === "pmcc" ? "hidden" : "flex flex-col flex-1"}>
+        <ScannerTabs tab={tab === "market" || tab === "pmcc" ? "csp" : tab} />
       </div>
     </div>
   );

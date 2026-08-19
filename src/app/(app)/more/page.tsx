@@ -1,4 +1,5 @@
-import { getVisibleMoreGroups, MoreTile } from "@/components/MoreNav";
+import { getVisibleMoreGroups } from "@/components/more-nav-data";
+import { MoreTile } from "@/components/MoreNav";
 import { getUser } from "@/lib/auth";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
 

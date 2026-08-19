@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getVisibleMoreGroups } from "@/components/MoreNav";
+import { getVisibleMoreGroups } from "@/components/more-nav-data";
 
 const tabs = [
   {
