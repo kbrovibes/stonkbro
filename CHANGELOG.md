@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.37.1 — HOOD actually looks like HOOD
+
+- v0.36.0's token overrides barely showed because the app's light mode is written in hardcoded palette utilities (`bg-white`, `text-stone-*`, `text-sky-*`, `text-emerald-*`) with tokens only on `dark:` variants — HOOD changed little beyond dark-canvas and green shifts
+- New scoped **remap layer** in `hood.css` re-points ~2,300 hardcoded utility usages at HOOD tokens (unlayered rules beat Tailwind's utility layer): every sky-blue action turns HOOD green, stone text collapses to the HOOD tiers, light-mode surfaces/borders go paper-white with hairlines, gain/loss hues unify, and square-ish buttons pill out — across every page, both modes
+- Text/status remaps apply in both modes (tier-paired with their `dark:` counterparts); surface/border remaps are light-only by design
+
 ## v0.37.0 — Briefings 3× a day + crash alerts restored to hourly
 
 - **Three briefing episodes per trading day** (all appear in the playlist with session labels): **Pre-market** 6:00am PT (overnight setup, what to do at the open), **Market open** 7:30am PT (how the open actually went, intraday actions), **After close** 2:00pm PT (day recap, after-hours movers and earnings reactions, tomorrow's setup). New `session` column (migration `20260818150000`, applied), session-aware prompts, per-session cron skip logic, Actions Center labels per session

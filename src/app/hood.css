@@ -319,3 +319,65 @@
   background: var(--hood-shimmer);
   border-radius: var(--hood-radius-control);
 }
+
+/* --------------------------------------------------------------------------
+   REMAP LAYER — v0.36.1
+   The app's light mode is written in hardcoded palette utilities
+   (bg-white, text-stone-*, text-sky-*, text-emerald-*) with tokens only on
+   the dark: variants — so HOOD's token overrides barely showed. These
+   unlayered, scoped rules re-point those utilities at HOOD tokens and beat
+   Tailwind's @layer utilities in the cascade, re-skinning every page.
+
+   Text/status remaps apply in BOTH modes: each light class is tier-paired
+   with a dark: token class that resolves to the same variable, so
+   overriding both sides is consistent. Surface/border remaps are LIGHT-ONLY
+   (guarded with :not(.dark)) because their dark counterparts already use
+   tokens and some pair different surfaces than the light class implies.
+   -------------------------------------------------------------------------- */
+
+/* Text tiers */
+:root[data-theme-style="hood"] .text-stone-900,
+:root[data-theme-style="hood"] .text-stone-800 { color: var(--text); }
+:root[data-theme-style="hood"] .text-stone-700,
+:root[data-theme-style="hood"] .text-stone-600 { color: var(--text-muted); }
+:root[data-theme-style="hood"] .text-stone-500 { color: var(--text-subtle); }
+:root[data-theme-style="hood"] .text-stone-400,
+:root[data-theme-style="hood"] .text-stone-300 { color: var(--text-faint); }
+
+/* Status colors — gains, losses */
+:root[data-theme-style="hood"] .text-emerald-600 { color: var(--gain); }
+:root[data-theme-style="hood"] .text-emerald-700 { color: var(--gain-strong); }
+:root[data-theme-style="hood"] .text-rose-600,
+:root[data-theme-style="hood"] .text-rose-500,
+:root[data-theme-style="hood"] .text-red-600,
+:root[data-theme-style="hood"] .text-red-500 { color: var(--loss); }
+:root[data-theme-style="hood"] .text-rose-700,
+:root[data-theme-style="hood"] .text-red-700 { color: var(--loss-strong); }
+
+/* The identity shift: every sky-blue action goes HOOD green */
+:root[data-theme-style="hood"] .text-sky-500,
+:root[data-theme-style="hood"] .text-sky-600,
+:root[data-theme-style="hood"] .text-sky-700,
+:root[data-theme-style="hood"] .text-blue-600 { color: var(--accent); }
+:root[data-theme-style="hood"] .text-sky-800 { color: var(--accent-hover); }
+
+/* Surfaces & borders — light mode only (dark: variants are already tokens) */
+:root[data-theme-style="hood"]:not(.dark) .bg-white { background-color: var(--surface-elevated); }
+:root[data-theme-style="hood"]:not(.dark) .bg-stone-50,
+:root[data-theme-style="hood"]:not(.dark) .bg-stone-100 { background-color: var(--surface-muted); }
+:root[data-theme-style="hood"]:not(.dark) .bg-sky-50,
+:root[data-theme-style="hood"]:not(.dark) .bg-sky-100 { background-color: var(--accent-bg); }
+:root[data-theme-style="hood"]:not(.dark) .bg-emerald-50,
+:root[data-theme-style="hood"]:not(.dark) .bg-emerald-100 { background-color: var(--gain-bg); }
+:root[data-theme-style="hood"]:not(.dark) .bg-rose-50,
+:root[data-theme-style="hood"]:not(.dark) .bg-red-50 { background-color: var(--loss-bg); }
+:root[data-theme-style="hood"]:not(.dark) .border-stone-100 { border-color: var(--border-subtle); }
+:root[data-theme-style="hood"]:not(.dark) .border-stone-200 { border-color: var(--border); }
+:root[data-theme-style="hood"]:not(.dark) .border-emerald-200 { border-color: var(--gain-border); }
+:root[data-theme-style="hood"]:not(.dark) .border-sky-200 { border-color: var(--accent-border); }
+:root[data-theme-style="hood"]:not(.dark) .border-red-200,
+:root[data-theme-style="hood"]:not(.dark) .border-rose-200 { border-color: var(--loss-border); }
+
+/* Pill-ify buttons: square-ish controls go full-radius, Robinhood style */
+:root[data-theme-style="hood"] button.rounded-md,
+:root[data-theme-style="hood"] button.rounded-lg { border-radius: 999px; }
