@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.38.1 — HOOD is the default theme style
+
+- **HOOD now ships on by default for everyone** — new devices and anyone who never touched Settings → Appearance → Theme Style get the HOOD look; an explicit Classic choice (stored per device) is respected
+- Pre-paint script inverted (`!== 'classic'` sets the attribute) so defaulted devices get HOOD before first paint with no flash; Settings lists HOOD first as "(default)"
+
 ## v0.38.0 — Premium home page + alert folder
 
 - **Feature cards rebuilt**: Bloodbath / Portfolio / Hindsight lose the emoji + tinted-slab look — now monochrome HOOD cards (dark surface, hairline border) with thin-stroke line icons in a muted bubble; color lives only in the glyph

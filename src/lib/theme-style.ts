@@ -20,8 +20,8 @@ export const THEME_STYLE_STORAGE_KEY = "stonkbro-theme-style";
 export const THEME_STYLE_ATTR = "data-theme-style";
 export const THEME_STYLE_EVENT = "stonkbro:theme-style-change";
 
-/** Never change this — Classic is the guaranteed-unchanged default. */
-export const DEFAULT_THEME_STYLE: ThemeStyle = "classic";
+/** HOOD is the default for everyone; an explicit "classic" choice sticks. */
+export const DEFAULT_THEME_STYLE: ThemeStyle = "hood";
 
 export interface ThemeStyleOption {
   key: ThemeStyle;
@@ -30,8 +30,8 @@ export interface ThemeStyleOption {
 }
 
 export const THEME_STYLES: ThemeStyleOption[] = [
+  { key: "hood", label: "HOOD", hint: "True-black canvas, oversized money, pill controls. The default. Set per device." },
   { key: "classic", label: "Classic", hint: "The original stonkBRO look. Set per device." },
-  { key: "hood", label: "HOOD", hint: "True-black canvas, oversized money, pill controls. Set per device." },
 ];
 
 export function isThemeStyle(v: unknown): v is ThemeStyle {
@@ -73,4 +73,4 @@ export function setThemeStyle(style: ThemeStyle): void {
 }
 
 /** Inline pre-paint script source. Injected into <head> to prevent FOUC. */
-export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s==='hood')document.documentElement.setAttribute('${THEME_STYLE_ATTR}','hood');}catch(e){}})();`;
+export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s!=='classic')document.documentElement.setAttribute('${THEME_STYLE_ATTR}','hood');}catch(e){}})();`;

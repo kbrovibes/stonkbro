@@ -22,7 +22,7 @@ function getSnapshot(): ThemeStyle {
 }
 
 function getServerSnapshot(): ThemeStyle {
-  return "classic";
+  return "hood";
 }
 
 /**
