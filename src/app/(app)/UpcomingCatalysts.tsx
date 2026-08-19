@@ -17,29 +17,34 @@ export default function UpcomingCatalysts({ earnings }: Props) {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-xs font-bold text-stone-800 dark:text-text">Upcoming Catalysts</span>
+      <div className="flex items-baseline justify-between mb-2.5">
+        <h2 className="text-[17px] font-bold tracking-[-0.01em] text-stone-900 dark:text-text">
+          Upcoming Catalysts
+        </h2>
         <Link
           href="/earnings"
-          className="text-[10px] font-medium text-sky-600 dark:text-accent hover:text-sky-700"
+          className="text-xs font-semibold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
         >
           Full Calendar
         </Link>
       </div>
 
+      {/* Monochrome pills — urgency lives in the day-count color, not the surface. */}
       <div className="flex flex-wrap gap-1.5">
         {earnings.map((e) => (
           <Link
             key={`er-${e.symbol}`}
             href={`/suggestions/${e.symbol}`}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:opacity-80 ${
-              e.category === "this_week"
-                ? "bg-red-50 dark:bg-loss-bg text-red-700 dark:text-loss-strong"
-                : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
-            }`}
+            className="hood-press inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-stone-200 dark:border-border-subtle bg-stone-50 dark:bg-surface-muted text-[11px] transition-colors hover:border-stone-300 dark:hover:border-border-default"
           >
-            <span className="font-bold">{e.symbol}</span>
-            <span className="opacity-70">
+            <span className="font-bold text-stone-900 dark:text-text">{e.symbol}</span>
+            <span
+              className={`font-semibold tabular-nums ${
+                e.category === "this_week"
+                  ? "text-rose-600 dark:text-loss"
+                  : "text-stone-400 dark:text-text-subtle"
+              }`}
+            >
               {e.daysUntil === 0 ? "today" : e.daysUntil === 1 ? "tmrw" : `${e.daysUntil}d`}
             </span>
           </Link>

@@ -37,8 +37,16 @@ export default function HomeBriefingCard({ briefing }: { briefing: DailyBriefing
         )}
       </div>
       <div className="w-10 h-10 rounded-full bg-stone-900 dark:bg-accent text-white flex items-center justify-center flex-shrink-0">
-        <svg viewBox="0 0 24 24" className="w-4 h-4 translate-x-px" fill="currentColor">
-          <path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5Z" />
+        {/* Stroke-rounded triangle whose optical center lands on x=12 — no CSS nudge. */}
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        >
+          <polygon points="8,6.2 18,12 8,17.8" />
         </svg>
       </div>
     </Link>

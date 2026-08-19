@@ -240,9 +240,9 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
             {/* Section header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-stone-800 dark:text-text">{wl.name}</span>
+                <span className="text-sm font-bold tracking-[-0.01em] text-stone-900 dark:text-text">{wl.name}</span>
                 {avgReturn !== null && (
-                  <span className={`hood-money text-[10px] font-bold tabular-nums ${
+                  <span className={`hood-money text-[11px] font-bold tabular-nums ${
                     avgReturn >= 0 ? "text-emerald-600 dark:text-gain" : "text-red-500 dark:text-loss"
                   }`}>
                     {avgReturn >= 0 ? "+" : ""}{avgReturn.toFixed(1)}%

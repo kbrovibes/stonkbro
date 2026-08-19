@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.38.0 — Premium home page + alert folder
+
+- **Feature cards rebuilt**: Bloodbath / Portfolio / Hindsight lose the emoji + tinted-slab look — now monochrome HOOD cards (dark surface, hairline border) with thin-stroke line icons in a muted bubble; color lives only in the glyph
+- **Section headings unified Robinhood-style**: Upcoming Catalysts and Watchlists share one 17px bold tight-tracked heading with a green action link; watchlist group names bump to 14px so the hierarchy reads heading → group → card
+- **Catalyst pills go monochrome**: neutral pill surfaces, urgency carried by the day-count color alone (red = this week)
+- **Alert banner is now a folder**: compact one-row summary (severity bubble with count badge, key alert, "N alerts · M critical · symbols…") with Clear all and expand right in the header; expanded alerts open in a scrollable tray with per-alert Open/Dismiss. Replaces the full-width red slab
+- **Home briefing card play glyph recentered** (same optical-center triangle as the player)
+
 ## v0.37.2 — Briefing player: playlist-first, auto-advance, true symmetry
 
 - **Playlist is now the default view**: every episode (grouped by day, session-labeled) lists right under the player; recommended moves, highlights, and the transcript moved behind a collapsed "Today's moves & details" expander

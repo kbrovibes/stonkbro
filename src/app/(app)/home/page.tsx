@@ -81,27 +81,26 @@ export default async function DiscoverPage() {
     })),
   }));
 
+  // Monochrome surfaces; the only color is the icon glyph itself, so the row
+  // reads as one system instead of three tinted slabs.
   const FEATURE_CARDS = [
     {
       href: "/bloodbath",
-      emoji: "🩸",
       title: "Bloodbath",
-      description: "Navigate the pullback — drawdowns, reasons, verdicts",
-      accent: "bg-red-50 dark:bg-loss-bg border-red-100 dark:border-loss-bg",
+      color: "text-rose-500 dark:text-loss",
+      icon: "M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181",
     },
     {
       href: "/portfolio",
-      emoji: "📊",
       title: "Portfolio",
-      description: "Live P&L across your accounts",
-      accent: "bg-sky-50 dark:bg-accent-bg border-sky-100 dark:border-accent-bg",
+      color: "text-emerald-600 dark:text-gain",
+      icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z",
     },
     {
       href: "/time-machine",
-      emoji: "⏰",
       title: "Hindsight",
-      description: "What-if portfolio simulator",
-      accent: "bg-amber-50 dark:bg-amber-950/40 border-amber-100 dark:border-amber-950/40",
+      color: "text-amber-500 dark:text-amber-400",
+      icon: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     },
   ];
 
@@ -114,11 +113,20 @@ export default async function DiscoverPage() {
           <Link
             key={card.href}
             href={card.href}
-            className={`hood-press flex flex-col gap-1 rounded-xl border p-3 transition-opacity hover:opacity-80 ${card.accent}`}
+            className="hood-press hood-card flex flex-col items-center gap-2 rounded-xl border border-stone-100 dark:border-border-subtle bg-white dark:bg-surface-elevated px-3 py-3.5 transition-colors hover:border-stone-200 dark:hover:border-border-default"
           >
-            <span className="text-xl leading-none">{card.emoji}</span>
-            <span className="text-xs font-bold text-stone-900 dark:text-text mt-1">{card.title}</span>
-            <span className="text-[10px] leading-snug text-stone-500 dark:text-text-subtle">{card.description}</span>
+            <span className="w-9 h-9 rounded-full bg-stone-50 dark:bg-surface-muted flex items-center justify-center">
+              <svg
+                viewBox="0 0 24 24"
+                className={`w-[18px] h-[18px] ${card.color}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d={card.icon} />
+              </svg>
+            </span>
+            <span className="text-xs font-bold text-stone-900 dark:text-text">{card.title}</span>
           </Link>
         ))}
       </div>
@@ -127,13 +135,15 @@ export default async function DiscoverPage() {
 
       {watchlistWidgetData.length > 0 ? (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-stone-800 dark:text-text">Watchlists</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[17px] font-bold tracking-[-0.01em] text-stone-900 dark:text-text">
+              Watchlists
+            </h2>
             <Link
               href="/watchlists"
-              className="text-[11px] font-semibold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
+              className="text-xs font-semibold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
             >
-              Manage Watchlists
+              Manage
             </Link>
           </div>
           <WatchlistWidget watchlists={watchlistWidgetData} />
