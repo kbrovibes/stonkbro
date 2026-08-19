@@ -192,7 +192,14 @@ function InlineAdd({
 // Widget
 // ---------------------------------------------------------------------------
 
-export default function WatchlistWidget({ watchlists: initial }: { watchlists: Watchlist[] }) {
+export default function WatchlistWidget({
+  watchlists: initial,
+  readOnly = false,
+}: {
+  watchlists: Watchlist[];
+  /** Curated groups (e.g. home-page movers): no + Add / Edit affordances. */
+  readOnly?: boolean;
+}) {
   const [watchlists, setWatchlists] = useState(initial);
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -250,7 +257,7 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {addingTo === wl.id ? (
+                {readOnly ? null : addingTo === wl.id ? (
                   <>
                     <InlineAdd
                       watchlistId={wl.id}
@@ -273,12 +280,14 @@ export default function WatchlistWidget({ watchlists: initial }: { watchlists: W
                     + Add
                   </button>
                 )}
-                <Link
-                  href={`/watchlists/${wl.id}`}
-                  className="text-[10px] font-medium text-stone-400 dark:text-text-faint hover:text-stone-600 transition-colors"
-                >
-                  Edit
-                </Link>
+                {!readOnly && (
+                  <Link
+                    href={`/watchlists/${wl.id}`}
+                    className="text-[10px] font-medium text-stone-400 dark:text-text-faint hover:text-stone-600 transition-colors"
+                  >
+                    Edit
+                  </Link>
+                )}
               </div>
             </div>
 

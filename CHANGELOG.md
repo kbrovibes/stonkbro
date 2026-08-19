@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.38.2 — Biggest Movers for empty homes + second account allow-listed
+
+- **New users / guests with no watchlists** no longer get an empty home screen: the day's **Biggest Movers** (top 5 winners + top 5 losers from the ~110-symbol scan universe) render in the exact watchlist card layout (price, day change, sparkline), read-only, with a Create Watchlist link in the section header
+- `WatchlistWidget` grew a `readOnly` prop (hides + Add / Edit) so curated groups can reuse the layout
+- **chinnunchunni@gmail.com added to the portfolio allow-list** — brokerage link, Portfolio, Hindsight, and briefings now visible from that account. Note: SnapTrade remains one app-wide identity, so every allow-listed email sees the same real portfolio
+
 ## v0.38.1 — HOOD is the default theme style
 
 - **HOOD now ships on by default for everyone** — new devices and anyone who never touched Settings → Appearance → Theme Style get the HOOD look; an explicit Classic choice (stored per device) is respected

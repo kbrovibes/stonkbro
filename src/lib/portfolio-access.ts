@@ -9,6 +9,9 @@
 
 export const PORTFOLIO_ALLOWED_EMAILS = [
   "k4rthikr@gmail.com",
+  // Karthik's second account. NOTE: SnapTrade is a single app-wide identity —
+  // every email here sees the same (real) portfolio, briefings, and taxes.
+  "chinnunchunni@gmail.com",
 ] as const;
 
 export function hasPortfolioAccess(email: string | null | undefined): boolean {

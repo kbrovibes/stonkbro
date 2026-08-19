@@ -4,6 +4,7 @@ import { getWatchlistsWithItems } from "@/lib/db/watchlists";
 import { getQuotes } from "@/lib/market/yahoo";
 import { QuoteData } from "@/lib/market/types";
 import { getEarningsCalendar } from "@/lib/market/earnings";
+import { SCAN_UNIVERSE } from "@/lib/analysis/movers";
 import WatchlistWidget from "../WatchlistWidget";
 import UpcomingCatalysts from "../UpcomingCatalysts";
 import HomeBriefingCard from "@/components/briefing/HomeBriefingCard";
@@ -52,12 +53,17 @@ export default async function DiscoverPage() {
 
   // Quotes (watchlist symbols) and the earnings calendar both depend only on
   // the symbol list, not on each other — fetch them concurrently.
-  const [allQuotes, earnings, briefing] = await Promise.all([
+  const [allQuotes, earnings, briefing, moverQuotes] = await Promise.all([
     allSymbols.length > 0 ? getQuotes(allSymbols).catch(() => []) : Promise.resolve([]),
     getEarningsCalendar(earningsSymbols).catch(() => []),
     user && hasPortfolioAccess(user.email)
       ? getLatestBriefings(1).then((b): DailyBriefing | null => b[0] ?? null).catch(() => null)
       : Promise.resolve<DailyBriefing | null>(null),
+    // No watchlists (new user / guest) → the home screen would be empty.
+    // Fill it with the day's biggest movers from the scan universe instead.
+    watchlists.length === 0
+      ? getQuotes(SCAN_UNIVERSE).catch(() => [])
+      : Promise.resolve<QuoteData[]>([]),
   ]);
 
   if (allQuotes.length > 0) {
@@ -70,6 +76,28 @@ export default async function DiscoverPage() {
   upcomingEarnings = earnings
     .filter((e) => e.category === "this_week" || e.category === "next_week")
     .slice(0, 20);
+
+  // Top 5 up / top 5 down of the day, rendered in the watchlist layout.
+  const sortedMovers = moverQuotes
+    .filter((q) => Number.isFinite(q.changePct))
+    .sort((a, b) => b.changePct - a.changePct);
+  const moversWidgetData = [
+    {
+      id: "movers-winners",
+      name: "Today's Winners",
+      tickers: sortedMovers.slice(0, 5).filter((q) => q.changePct > 0),
+    },
+    {
+      id: "movers-losers",
+      name: "Today's Losers",
+      tickers: sortedMovers.slice(-5).reverse().filter((q) => q.changePct < 0),
+    },
+  ]
+    .map((g) => ({
+      ...g,
+      tickers: g.tickers.map((q) => ({ symbol: q.symbol, price: q.price, changePct: q.changePct })),
+    }))
+    .filter((g) => g.tickers.length > 0);
 
   const watchlistWidgetData = watchlists.map((wl) => ({
     id: wl.id,
@@ -147,6 +175,24 @@ export default async function DiscoverPage() {
             </Link>
           </div>
           <WatchlistWidget watchlists={watchlistWidgetData} />
+        </>
+      ) : moversWidgetData.length > 0 ? (
+        <>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[17px] font-bold tracking-[-0.01em] text-stone-900 dark:text-text">
+              Biggest Movers
+            </h2>
+            <Link
+              href="/watchlists"
+              className="text-xs font-semibold text-sky-600 dark:text-accent hover:text-sky-800 transition-colors"
+            >
+              Create Watchlist
+            </Link>
+          </div>
+          <WatchlistWidget watchlists={moversWidgetData} readOnly />
+          <p className="text-[11px] text-stone-400 dark:text-text-faint text-center -mt-1">
+            Create a watchlist to track your own tickers here.
+          </p>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
