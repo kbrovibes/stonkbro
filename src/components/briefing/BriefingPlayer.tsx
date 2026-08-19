@@ -76,6 +76,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   const [downloaded, setDownloaded] = useState<Set<string>>(new Set());
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -154,6 +155,48 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
     }
   }, [playing, selected, speedIdx, ensureAudioSrc]);
 
+  const playBriefing = useCallback(
+    async (b: DailyBriefing) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.pause();
+      setPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setError(null);
+      setSelectedId(b.id);
+      if (!b.audio_path) {
+        audio.removeAttribute("src");
+        audio.load();
+        return;
+      }
+      try {
+        setLoadingAudio(true);
+        audio.src = await ensureAudioSrc(b);
+        audio.playbackRate = SPEEDS[speedIdx];
+        await audio.play();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Playback failed");
+      } finally {
+        setLoadingAudio(false);
+      }
+    },
+    [ensureAudioSrc, speedIdx]
+  );
+
+  /** When an episode ends, continue with the day's next episode; stop after the day's last one. */
+  const handleEnded = useCallback(() => {
+    setPlaying(false);
+    const cur = briefings.find((b) => b.id === selectedId) ?? briefings[0];
+    if (!cur) return;
+    const dayQueue = briefings
+      .filter((b) => b.briefing_date === cur.briefing_date && b.audio_path)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const i = dayQueue.findIndex((b) => b.id === cur.id);
+    const next = i >= 0 ? dayQueue[i + 1] : undefined;
+    if (next) void playBriefing(next);
+  }, [briefings, selectedId, playBriefing]);
+
   const skip = useCallback((delta: number) => {
     const audio = audioRef.current;
     if (!audio || !audio.duration) return;
@@ -227,13 +270,27 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   const displayDuration = duration || selected.audio_duration_s || 0;
   const mood = selected.mood ?? "quiet";
 
+  // Newest day first; episodes within a day in generation order (= playback order).
+  const playlistGroups: { date: string; rows: DailyBriefing[] }[] = [];
+  for (const b of briefings) {
+    let g = playlistGroups.find((x) => x.date === b.briefing_date);
+    if (!g) {
+      g = { date: b.briefing_date, rows: [] };
+      playlistGroups.push(g);
+    }
+    g.rows.push(b);
+  }
+  for (const g of playlistGroups) {
+    g.rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <audio
         ref={audioRef}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
+        onEnded={handleEnded}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
       />
@@ -278,73 +335,76 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
             <span>{fmtTime(currentTime)}</span>
             <span>{fmtTime(displayDuration)}</span>
           </div>
-          {/* Three-zone row: equal flex-1 flanks keep the play button dead-center. */}
+          {/* Three-zone row. The flanks hold one fixed w-12 control each — a wider
+              flank (the old 3-pill speed group) can't shrink below its content on
+              phones, which shoved the play button off-center. */}
           <div className="flex items-center mt-1">
             <div className="flex-1 flex justify-start">
-            <div className="flex items-center rounded-full border border-stone-200 dark:border-border-subtle p-0.5">
-              {SPEEDS.map((s, i) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSpeed(i)}
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums transition-colors ${
-                    i === speedIdx
-                      ? "bg-stone-900 text-white dark:bg-accent"
-                      : "text-stone-500 dark:text-text-subtle"
-                  }`}
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
+              <button
+                type="button"
+                onClick={() => setSpeed((speedIdx + 1) % SPEEDS.length)}
+                aria-label={`Playback speed ${SPEEDS[speedIdx]}x — tap to change`}
+                className="w-12 h-8 rounded-full border border-stone-200 dark:border-border-subtle text-[11px] font-bold tabular-nums text-stone-600 dark:text-text-subtle"
+              >
+                {SPEEDS[speedIdx]}x
+              </button>
             </div>
             <div className="flex items-center gap-6">
-            <button
-              type="button"
-              onClick={() => skip(-15)}
-              aria-label="Back 15 seconds"
-              className="text-stone-700 dark:text-text-muted text-sm font-semibold"
-            >
-              ↺15
-            </button>
-            <button
-              type="button"
-              onClick={togglePlay}
-              aria-label={playing ? "Pause" : "Play"}
-              disabled={loadingAudio}
-              className="w-16 h-16 rounded-full bg-stone-900 dark:bg-accent text-white flex items-center justify-center shadow-lg disabled:opacity-60 active:scale-95 transition-transform"
-            >
-              {loadingAudio ? (
-                <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : playing ? (
-                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
-                  <rect x="6" y="5" width="4" height="14" rx="1" />
-                  <rect x="14" y="5" width="4" height="14" rx="1" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" className="w-7 h-7 translate-x-0.5" fill="currentColor">
-                  <path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5Z" />
-                </svg>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => skip(15)}
-              aria-label="Forward 15 seconds"
-              className="text-stone-700 dark:text-text-muted text-sm font-semibold"
-            >
-              15↻
-            </button>
+              <button
+                type="button"
+                onClick={() => skip(-15)}
+                aria-label="Back 15 seconds"
+                className="text-stone-700 dark:text-text-muted text-sm font-semibold"
+              >
+                ↺15
+              </button>
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={playing ? "Pause" : "Play"}
+                disabled={loadingAudio}
+                className="w-16 h-16 rounded-full bg-stone-900 dark:bg-accent text-white flex items-center justify-center shadow-lg disabled:opacity-60 active:scale-95 transition-transform"
+              >
+                {loadingAudio ? (
+                  <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : playing ? (
+                  <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                  </svg>
+                ) : (
+                  /* Stroke-rounded triangle whose optical center (between centroid
+                     and bbox center) lands on x=12 — no CSS nudge needed. */
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-7 h-7"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="8,6.2 18,12 8,17.8" />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => skip(15)}
+                aria-label="Forward 15 seconds"
+                className="text-stone-700 dark:text-text-muted text-sm font-semibold"
+              >
+                15↻
+              </button>
             </div>
             <div className="flex-1 flex justify-end">
-            <button
-              type="button"
-              onClick={download}
-              aria-label="Download for offline"
-              className={`text-lg ${downloaded.has(selected.id) ? "text-emerald-500 dark:text-gain" : "text-stone-500 dark:text-text-subtle"}`}
-            >
-              {downloaded.has(selected.id) ? "✓" : "⤓"}
-            </button>
+              <button
+                type="button"
+                onClick={download}
+                aria-label="Download for offline"
+                className={`w-12 h-8 flex items-center justify-center text-lg ${downloaded.has(selected.id) ? "text-emerald-500 dark:text-gain" : "text-stone-500 dark:text-text-subtle"}`}
+              >
+                {downloaded.has(selected.id) ? "✓" : "⤓"}
+              </button>
             </div>
           </div>
           {downloaded.has(selected.id) && (
@@ -354,83 +414,153 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
       ) : (
         <div className="mx-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-950/40 px-4 py-3">
           <p className="text-xs text-amber-700 dark:text-amber-300">
-            Audio unavailable for this briefing — transcript below.
+            Audio unavailable for this briefing — read it under &quot;Today&apos;s moves &amp; details&quot;.
           </p>
         </div>
       )}
 
       {error && <p className="text-center text-xs text-rose-600 dark:text-loss px-2">{error}</p>}
 
-      {/* Highlights */}
-      {selected.highlights && selected.highlights.length > 0 && (
-        <div className="-mx-4 px-4 overflow-x-auto">
-          <div className="flex gap-2 w-max">
-            {selected.highlights.map((h, i) => (
-              <div
-                key={i}
-                className="w-44 flex-shrink-0 bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl px-3 py-2.5"
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-bold text-stone-900 dark:text-text">{h.symbol}</span>
-                  {h.changePct != null && (
-                    <span
-                      className={`text-[11px] font-semibold tabular-nums ${
-                        h.direction === "down" ? "text-rose-600 dark:text-loss" : h.direction === "up" ? "text-emerald-600 dark:text-gain" : "text-stone-500 dark:text-text-subtle"
-                      }`}
-                    >
-                      {h.changePct >= 0 ? "+" : ""}
-                      {h.changePct.toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] leading-snug text-stone-500 dark:text-text-subtle mt-1 line-clamp-2">{h.note}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      {selected.actions && selected.actions.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint px-1">
-            Today&apos;s moves
-          </h3>
-          {selected.actions.map((a, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-2.5 bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl px-3.5 py-3"
-            >
-              <span className={`mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide flex-shrink-0 ${ACTION_BADGE[a.kind] ?? ACTION_BADGE.hold}`}>
-                {a.kind}
-              </span>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-stone-900 dark:text-text">{a.symbol}</span>
-                <p className="text-xs text-stone-500 dark:text-text-subtle leading-snug mt-0.5">{a.detail}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Transcript */}
-      {selected.transcript && (
+      {/* Details — highlights, recommended moves, and transcript live behind one
+          expander so the page defaults to a playlist view. */}
+      {((selected.highlights?.length ?? 0) > 0 ||
+        (selected.actions?.length ?? 0) > 0 ||
+        selected.transcript) && (
         <div className="bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl overflow-hidden">
           <button
             type="button"
-            onClick={() => setShowTranscript((v) => !v)}
+            onClick={() => setShowDetails((v) => !v)}
             className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-stone-900 dark:text-text"
           >
-            Transcript
-            <span className="text-stone-400 dark:text-text-faint">{showTranscript ? "−" : "+"}</span>
+            Today&apos;s moves & details
+            <span className="text-stone-400 dark:text-text-faint">{showDetails ? "−" : "+"}</span>
           </button>
-          {showTranscript && (
-            <p className="px-4 pb-4 text-[13px] leading-relaxed text-stone-600 dark:text-text-muted whitespace-pre-line">
-              {selected.transcript}
-            </p>
+
+          {showDetails && (
+            <div className="flex flex-col gap-4 px-4 pb-4">
+              {selected.highlights && selected.highlights.length > 0 && (
+                <div className="-mx-4 px-4 overflow-x-auto">
+                  <div className="flex gap-2 w-max">
+                    {selected.highlights.map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-44 flex-shrink-0 bg-stone-50 dark:bg-surface-muted border border-stone-100 dark:border-border-subtle rounded-xl px-3 py-2.5"
+                      >
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs font-bold text-stone-900 dark:text-text">{h.symbol}</span>
+                          {h.changePct != null && (
+                            <span
+                              className={`text-[11px] font-semibold tabular-nums ${
+                                h.direction === "down" ? "text-rose-600 dark:text-loss" : h.direction === "up" ? "text-emerald-600 dark:text-gain" : "text-stone-500 dark:text-text-subtle"
+                              }`}
+                            >
+                              {h.changePct >= 0 ? "+" : ""}
+                              {h.changePct.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] leading-snug text-stone-500 dark:text-text-subtle mt-1 line-clamp-2">{h.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selected.actions && selected.actions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint">
+                    Today&apos;s moves
+                  </h3>
+                  {selected.actions.map((a, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2.5 bg-stone-50 dark:bg-surface-muted border border-stone-100 dark:border-border-subtle rounded-xl px-3.5 py-3"
+                    >
+                      <span className={`mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide flex-shrink-0 ${ACTION_BADGE[a.kind] ?? ACTION_BADGE.hold}`}>
+                        {a.kind}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-stone-900 dark:text-text">{a.symbol}</span>
+                        <p className="text-xs text-stone-500 dark:text-text-subtle leading-snug mt-0.5">{a.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selected.transcript && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTranscript((v) => !v)}
+                    className="w-full flex items-center justify-between text-xs font-bold text-stone-900 dark:text-text"
+                  >
+                    Transcript
+                    <span className="text-stone-400 dark:text-text-faint">{showTranscript ? "−" : "+"}</span>
+                  </button>
+                  {showTranscript && (
+                    <p className="mt-2 text-[13px] leading-relaxed text-stone-600 dark:text-text-muted whitespace-pre-line">
+                      {selected.transcript}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
+
+      {/* Playlist — every episode, grouped by day. Rows within a day run in
+          generation order (the same order auto-advance plays them). */}
+      <div className="flex flex-col gap-2 pb-4">
+        <h3 className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint px-1">
+          Playlist
+        </h3>
+        {playlistGroups.map((group) => (
+          <div key={group.date} className="flex flex-col gap-1.5">
+            <p className="text-[10px] font-semibold text-stone-400 dark:text-text-faint px-1 mt-1">
+              {fmtDate(group.date)}
+            </p>
+            {group.rows.map((b) => {
+              const isCurrent = b.id === selected.id;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => (isCurrent ? togglePlay() : playBriefing(b))}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left border transition-colors ${
+                    isCurrent
+                      ? "bg-stone-50 dark:bg-surface-muted border-stone-300 dark:border-border-default"
+                      : "bg-white dark:bg-surface-elevated border-stone-100 dark:border-border-subtle hover:border-stone-200 dark:hover:border-border-default"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                    <BriefingArt seed={artSeed(b)} mood={b.mood ?? "quiet"} className="w-full h-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-stone-900 dark:text-text truncate">
+                      {b.title ?? "Daily briefing"}
+                    </p>
+                    <p className="text-[10px] text-stone-400 dark:text-text-faint">
+                      {b.session ? `${BRIEFING_SESSIONS[b.session].label} · ` : ""}
+                      {fmtHour(b.created_at)}
+                      {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
+                      {downloaded.has(b.id) ? " · ✓ saved" : ""}
+                    </p>
+                  </div>
+                  {isCurrent ? (
+                    <span className="text-[10px] font-bold text-stone-900 dark:text-text flex-shrink-0">
+                      {playing ? "❚❚" : "▶"}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-stone-300 dark:text-text-faint flex-shrink-0">▶</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
 
       {/* Regenerate */}
       <button
@@ -444,42 +574,6 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
         </svg>
         {regenerating ? "Regenerating… takes about a minute" : "Regenerate today's briefing"}
       </button>
-
-      {/* History */}
-      {briefings.length > 1 && (
-        <div className="flex flex-col gap-2 pb-4">
-          <h3 className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint px-1">
-            Previous briefings
-          </h3>
-          {briefings
-            .filter((b) => b.id !== selected.id)
-            .map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => select(b)}
-                className="flex items-center gap-3 bg-white dark:bg-surface-elevated border border-stone-100 dark:border-border-subtle rounded-xl px-3 py-2.5 text-left hover:border-stone-200 dark:hover:border-border-default transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                  <BriefingArt seed={artSeed(b)} mood={b.mood ?? "quiet"} className="w-full h-full" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-stone-900 dark:text-text truncate">
-                    {b.title ?? "Daily briefing"}
-                  </p>
-                  <p className="text-[10px] text-stone-400 dark:text-text-faint">
-                    {fmtDate(b.briefing_date)} · {fmtHour(b.created_at)}
-                    {b.session ? ` · ${BRIEFING_SESSIONS[b.session].label}` : ""}
-                    {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
-                  </p>
-                </div>
-                {downloaded.has(b.id) && (
-                  <span className="text-[10px] text-emerald-500 dark:text-gain flex-shrink-0">✓ saved</span>
-                )}
-              </button>
-            ))}
-        </div>
-      )}
     </div>
   );
 }

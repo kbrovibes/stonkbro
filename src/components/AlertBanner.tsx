@@ -87,22 +87,37 @@ export default function AlertBanner() {
             : "bg-amber-500 border-amber-600 text-white"
         }`}
       >
-        <button
-          onClick={() => setExpanded((e) => !e)}
-          className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-2"
-        >
-          <div className="min-w-0">
-            <div className="text-sm font-bold truncate">
-              {locked ? HIDDEN_ALERT : top.title}
-            </div>
-            {!expanded && (
-              <div className="text-[11px] opacity-90 truncate">
-                {alerts.length > 1 ? `+${alerts.length - 1} more — tap to expand` : "Tap for details"}
+        <div className="flex items-center">
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="flex-1 min-w-0 text-left px-4 py-2.5 flex items-center gap-2"
+          >
+            <div className="min-w-0">
+              <div className="text-sm font-bold truncate">
+                {locked ? HIDDEN_ALERT : top.title}
               </div>
-            )}
-          </div>
-          <span className="text-xs opacity-80 shrink-0">{expanded ? "▲" : "▼"}</span>
-        </button>
+              {!expanded && (
+                <div className="text-[11px] opacity-90 truncate">
+                  {alerts.length > 1 ? `+${alerts.length - 1} more — tap to expand` : "Tap for details"}
+                </div>
+              )}
+            </div>
+          </button>
+          <button
+            onClick={ackAll}
+            aria-label="Clear all alerts"
+            className="shrink-0 text-[11px] font-bold bg-white/15 hover:bg-white/25 rounded-full px-2.5 py-1 mr-2"
+          >
+            Clear all
+          </button>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? "Collapse alerts" : "Expand alerts"}
+            className="shrink-0 text-xs opacity-80 pr-4 py-2.5"
+          >
+            {expanded ? "▲" : "▼"}
+          </button>
+        </div>
 
         {expanded && (
           <div className="px-4 pb-3 flex flex-col gap-3">

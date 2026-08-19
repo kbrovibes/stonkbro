@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.37.2 — Briefing player: playlist-first, auto-advance, true symmetry
+
+- **Playlist is now the default view**: every episode (grouped by day, session-labeled) lists right under the player; recommended moves, highlights, and the transcript moved behind a collapsed "Today's moves & details" expander
+- **Auto-advance within the day**: when an episode ends, the day's next episode (in generation order) plays automatically; playback stops after the day's last episode
+- **Play button truly centered**: the old 3-pill speed group couldn't shrink below its content width on phones and pushed the transport off-center — it's now a single cycling speed chip (1x → 1.25x → 1.5x) sized to mirror the download button, so the flanks are symmetric; the play triangle was redrawn so its optical center sits on the circle's axis (the old glyph's bounding box + CSS nudge sat ~3px right)
+- **Alert banner "Clear all"**: the in-app notification banner now has a one-tap Clear all button in the collapsed header (previously you had to expand and scroll to "Dismiss all")
+
 ## v0.37.1 — HOOD actually looks like HOOD
 
 - v0.36.0's token overrides barely showed because the app's light mode is written in hardcoded palette utilities (`bg-white`, `text-stone-*`, `text-sky-*`, `text-emerald-*`) with tokens only on `dark:` variants — HOOD changed little beyond dark-canvas and green shifts
