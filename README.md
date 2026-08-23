@@ -4,7 +4,9 @@
 
 > *"Stop scrolling Reddit for plays. Let the machine find them."*
 
-**Live at [stonkbro.vercel.app](https://stonkbro.vercel.app)** | **Docs at [kbrovibes.github.io/stonkbro](https://kbrovibes.github.io/stonkbro)**
+**Project page → [kbrovibes.github.io/stonkbro](https://kbrovibes.github.io/stonkbro/)** · **Live app → [stonkbro.vercel.app](https://stonkbro.vercel.app)**
+
+*Personal project. Not investment advice — nothing here is a recommendation to buy or sell anything.*
 
 ---
 

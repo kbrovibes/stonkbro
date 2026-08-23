@@ -1,1493 +1,629 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>stonkbro — AI-Powered Options Trading Copilot</title>
-  <meta name="description" content="Find explosive stocks, analyze PMCC setups, track positions, and get real-time trade signals.">
-  <style>
-    :root {
-      --bg: #fafaf9;
-      --surface: #ffffff;
-      --surface-alt: #f5f5f4;
-      --border: #e7e5e4;
-      --text: #1c1917;
-      --text-muted: #78716c;
-      --accent: #16a34a;
-      --accent-light: #dcfce7;
-      --accent-dark: #15803d;
-      --blue: #2563eb;
-      --blue-light: #dbeafe;
-      --amber: #d97706;
-      --amber-light: #fef3c7;
-      --red: #dc2626;
-      --red-light: #fee2e2;
-      --purple: #7c3aed;
-      --purple-light: #ede9fe;
-      --gradient-start: #16a34a;
-      --gradient-end: #2563eb;
-      --radius: 12px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-lg: 0 10px 25px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.04);
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<title>Stonk Bro — an options scanner for premium sellers</title>
+<meta name="description" content="Scans live option chains for cash-secured puts, covered calls, LEAPS and PMCC setups, ranks them by annualised return, and tracks the positions you open.">
+<meta name="author" content="Karthik Rajan">
+<meta name="color-scheme" content="dark">
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
+<link rel="canonical" href="https://kbrovibes.github.io/stonkbro/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kbrovibes.github.io/stonkbro/">
+<meta property="og:title" content="Stonk Bro — an options scanner for premium sellers">
+<meta property="og:description" content="Live option chains ranked by annualised return, plus position tracking and roll/close signals. A personal project, not investment advice.">
+<meta property="og:image" content="https://kbrovibes.github.io/stonkbro/media/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 
-    /* ---- NAV ---- */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(250,250,249,0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-    }
-    nav .inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-    }
-    nav .logo {
-      font-weight: 800;
-      font-size: 1.2rem;
-      letter-spacing: -0.5px;
-      color: var(--accent-dark);
-    }
-    nav .links { display: flex; gap: 1.5rem; }
-    nav .links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: color 0.15s;
-    }
-    nav .links a:hover { color: var(--text); }
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23000'/%3E%3Cpath d='M20 72 L42 48 L58 60 L82 28' fill='none' stroke='%2300c805' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
-    /* ---- HERO ---- */
-    .hero {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 5rem 2rem 4rem;
-      text-align: center;
-    }
-    .hero .badge {
-      display: inline-block;
-      background: var(--accent-light);
-      color: var(--accent-dark);
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      margin-bottom: 1.5rem;
-    }
-    .hero h1 {
-      font-size: clamp(2.5rem, 5vw, 3.5rem);
-      font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
-      margin-bottom: 1rem;
-    }
-    .hero h1 .gradient {
-      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero p {
-      font-size: 1.15rem;
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 2rem;
-    }
-    .hero .cta-row {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.7rem 1.4rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.15s;
-      border: none;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-    .btn-primary:hover { background: var(--accent-dark); }
-    .btn-outline {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-outline:hover { border-color: var(--text-muted); }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Black+Ops+One&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    /* ---- FLOW ---- */
-    .flow {
-      max-width: 900px;
-      margin: 0 auto 4rem;
-      padding: 0 2rem;
-    }
-    .flow-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      flex-wrap: wrap;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.5rem;
-      box-shadow: var(--shadow);
-    }
-    .flow-step {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    .flow-step .icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-    }
-    .flow-arrow {
-      color: var(--text-muted);
-      margin: 0 0.6rem;
-      font-size: 0.75rem;
-      opacity: 0.5;
-    }
+<style>
+/* ==========================================================================
+   THEME TOKENS — derived from src/app/hood.css (dark block), the app's
+   real default: theme=dark x style=hood, i.e. true-black OLED.
+   ========================================================================== */
+:root{
+  --bg:            #000000;   /* --hood-bg dark */
+  --surface:       #0a0b0d;   /* --surface-elevated */
+  --surface-2:     #141518;   /* --surface-muted */
+  --ink:           #f7f8f8;   /* --text */
+  --muted:         #a8adb4;   /* --text-muted */
+  --accent:        #00c805;   /* --gain / --accent, the Robinhood green */
+  --accent-ink:    #001a01;   /* dark ink on green; white fails on this hue */
+  --accent-2:      #45e06a;   /* --gain-strong */
+  --hairline:      rgba(255,255,255,.10);
+  --radius:        14px;      /* --hood-radius-card */
+  --shadow:        none;      /* the app sets --hood-shadow-card:none in dark */
+  --font-display:  "Black Ops One", Impact, system-ui, sans-serif;
+  --font-body:     "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:     "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme:    dark;
+}
+/* ==================== end theme tokens ==================================== */
 
-    /* ---- SECTION ---- */
-    section { padding: 3rem 2rem; }
-    section .inner { max-width: 1100px; margin: 0 auto; }
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--accent);
-      margin-bottom: 0.5rem;
-    }
-    .section-title {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
-    }
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 1rem;
-      max-width: 550px;
-      margin-bottom: 2.5rem;
-    }
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img,svg{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.02em;font-weight:600}
+p{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+::selection{background:var(--accent);color:var(--accent-ink)}
 
-    /* ---- FEATURE GRID ---- */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.25rem;
-    }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
-      transition: box-shadow 0.2s, transform 0.2s;
-    }
-    .feature-card:hover {
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-2px);
-    }
-    .feature-card .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-    }
-    .feature-card h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-    }
-    .feature-card p {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-    .feature-card .tag {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      margin-top: 0.75rem;
-    }
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2)}
+.lede{color:var(--muted);font-size:17px;max-width:62ch}
+.band{background:var(--surface-2)}
+section{scroll-margin-top:80px}
 
-    /* color helpers */
-    .bg-green { background: var(--accent-light); color: var(--accent-dark); }
-    .bg-blue { background: var(--blue-light); color: var(--blue); }
-    .bg-amber { background: var(--amber-light); color: var(--amber); }
-    .bg-red { background: var(--red-light); color: var(--red); }
-    .bg-purple { background: var(--purple-light); color: var(--purple); }
+.skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:var(--accent-ink);
+  padding:12px 18px;z-index:99;border-radius:0 0 10px 0;font-weight:600}
+.skip:focus{left:0}
 
-    /* ---- ARCH DIAGRAM ---- */
-    .arch-section { background: var(--surface-alt); }
-    .arch-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-    @media (max-width: 768px) {
-      .arch-grid { grid-template-columns: 1fr; }
-    }
-    .arch-col h3 {
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid var(--border);
-    }
-    .arch-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-    }
-    .arch-item .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-top: 6px;
-      flex-shrink: 0;
-    }
-    .arch-item strong { font-size: 0.9rem; }
-    .arch-item span { font-size: 0.8rem; color: var(--text-muted); }
+/* ---------- buttons / the three link affordances ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;
+  font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;
+  transition:background .16s,color .16s,border-color .16s,transform .16s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent-2);color:var(--accent-ink)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--hairline)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-quiet{color:var(--muted);padding:11px 10px}
+.btn-quiet:hover{color:var(--ink)}
+.btn svg{width:15px;height:15px;flex:none;fill:currentColor}
 
-    /* ---- STACK ---- */
-    .stack-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-    .stack-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      box-shadow: var(--shadow);
-    }
-    .stack-card .label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-    }
-    .stack-card .value {
-      font-size: 1rem;
-      font-weight: 700;
-    }
-    .stack-card .detail {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 0.15rem;
-    }
+/* ---------- header ---------- */
+.site{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid var(--hairline)}
+.site .wrap{display:flex;align-items:center;gap:20px;height:62px}
+.wordmark{font-size:20px;letter-spacing:-.01em;text-decoration:none;
+  display:flex;align-items:baseline;gap:.35em}
+.wordmark b{font-family:var(--font-display);font-weight:400;font-size:17px;letter-spacing:.01em}
+.wordmark b i{font-style:normal;color:var(--accent)}
+.wordmark span{font-size:13px;font-family:var(--font-body);color:var(--muted);letter-spacing:.02em}
+.site nav{display:flex;gap:22px;margin-left:auto;font-size:14px}
+.site nav a{color:var(--muted);text-decoration:none;padding:4px 0;border-bottom:1.5px solid transparent}
+.site nav a:hover{color:var(--ink)}
+.site nav a[aria-current="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.site .links{display:flex;align-items:center;gap:6px;margin-left:auto}
+.site nav + .links{margin-left:16px}
+@media (max-width:900px){.site nav{display:none}.site .links .label-long{display:none}}
+@media (max-width:560px){.site .wrap{gap:10px;padding:0 16px}.btn{padding:9px 13px;font-size:13px}}
 
-    /* ---- SIGNALS DEMO ---- */
-    .signal-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      max-width: 600px;
-    }
-    .signal-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.25rem;
-      box-shadow: var(--shadow);
-    }
-    .signal-item .urgency {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .signal-item .urgency.high { background: var(--red); }
-    .signal-item .urgency.med { background: var(--amber); }
-    .signal-item .urgency.low { background: #a3a3a3; }
-    .signal-item .action {
-      font-weight: 700;
-      font-size: 0.8rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .signal-item .msg {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
+/* ---------- hero ---------- */
+.hero{padding:72px 0 24px}
+.hero h1{font-size:clamp(34px,6.2vw,60px);max-width:15ch}
+.hero h1 em{font-style:normal;font-weight:700;color:var(--accent)}
+.hero .lede{margin-top:18px;font-size:clamp(16px,2.2vw,19px)}
+.hero .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding:0;list-style:none}
+.facts li{font-size:12.5px;color:var(--muted);border:1px solid var(--hairline);background:var(--surface);
+  border-radius:999px;padding:5px 12px;font-variant-numeric:tabular-nums}
+.hero-shot{margin-top:44px}
 
-    /* ---- ROADMAP ---- */
-    .roadmap-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-    .roadmap-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      box-shadow: var(--shadow);
-    }
-    .roadmap-item .num {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      background: var(--surface-alt);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-    .roadmap-item h4 { font-size: 0.9rem; font-weight: 700; }
-    .roadmap-item p { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+/* ---------- screenshot frames ---------- */
+.frame{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden}
+.frame .chrome{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--hairline);
+  background:var(--surface-2)}
+.frame .chrome i{width:9px;height:9px;border-radius:50%;background:var(--hairline);flex:none}
+.frame .chrome .url{margin-left:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frame .media{aspect-ratio:16/10;background:var(--surface-2)}
+.frame .media > *{width:100%;height:100%;object-fit:cover;object-position:top center}
 
-    /* ---- FOOTER ---- */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+/* ---------- generic section head ---------- */
+.head{max-width:70ch}
+.head h2{font-size:clamp(26px,3.6vw,38px);margin-top:10px}
+.head p{margin-top:14px;color:var(--muted);font-size:17px}
+.pad{padding:76px 0}
+.pad-sm{padding:56px 0}
 
-    /* ---- TIMELINE ---- */
-    .timeline {
-      position: relative;
-      max-width: 700px;
-    }
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 14px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: var(--border);
-    }
-    .tl-item {
-      display: flex;
-      gap: 1.25rem;
-      padding-bottom: 1.5rem;
-      position: relative;
-    }
-    .tl-dot {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: var(--accent-light);
-      border: 2px solid var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      font-weight: 800;
-      color: var(--accent-dark);
-      flex-shrink: 0;
-      z-index: 1;
-    }
-    .tl-content h4 { font-size: 0.95rem; font-weight: 700; }
-    .tl-content p { font-size: 0.825rem; color: var(--text-muted); margin-top: 0.15rem; }
+/* ---------- "what it is" ---------- */
+.what{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:start}
+.what p + p{margin-top:14px}
+.what .prose{font-size:17.5px}
+.what .prose strong{font-weight:600}
+.forwho{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);padding:22px 24px}
+.forwho h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.forwho ul{margin:14px 0 0;padding-left:0;list-style:none;display:grid;gap:12px}
+.forwho li{display:flex;gap:10px;font-size:15px;color:var(--muted)}
+.forwho li b{color:var(--ink);font-weight:600}
+.forwho li::before{content:"";flex:none;width:6px;height:6px;margin-top:9px;border-radius:50%;background:var(--accent)}
+@media (max-width:860px){.what{grid-template-columns:1fr;gap:32px}}
 
-    /* ---- DB SCHEMA TABLE ---- */
-    .schema-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-    .schema-table th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-weight: 700;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      background: var(--surface-alt);
-      border-bottom: 1px solid var(--border);
-    }
-    .schema-table td {
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .schema-table tr:last-child td { border-bottom: none; }
-    .schema-table code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.8rem;
-      background: var(--surface-alt);
-      padding: 0.1rem 0.35rem;
-      border-radius: 4px;
-    }
+/* ---------- carousel ---------- */
+.tour{padding:76px 0 64px;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+.tour .bar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  margin-top:34px;gap:0;overscroll-behavior-x:contain}
+.track::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;
+  display:grid;grid-template-columns:1.25fr 1fr;gap:52px;align-items:center;padding:0 24px}
+.slide .copy h3{font-size:clamp(24px,3.4vw,36px);margin-top:8px}
+.slide .copy h3 em{font-style:normal;font-weight:700;color:var(--accent)}
+.slide .copy p{margin-top:14px;color:var(--muted);font-size:16.5px;max-width:44ch}
+.slide .copy ul{margin:18px 0 0;padding-left:0;list-style:none;display:grid;gap:8px;font-size:14.5px;color:var(--muted)}
+.slide .copy li::before{content:"— ";color:var(--accent)}
+.controls{display:flex;align-items:center;gap:14px;margin-top:30px;justify-content:center}
+.dots{display:flex;gap:8px}
+.dot{width:8px;height:8px;padding:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--ink) 30%,transparent);
+  cursor:pointer;transition:width .2s,background .2s}
+.dot[aria-current="true"]{width:26px;background:var(--accent)}
+.arrow,.pause{width:34px;height:34px;display:grid;place-items:center;border-radius:999px;cursor:pointer;
+  border:1px solid var(--hairline);background:var(--surface);color:var(--ink)}
+.arrow:hover,.pause:hover{border-color:var(--ink)}
+.arrow svg,.pause svg{width:14px;height:14px;fill:currentColor}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media (max-width:900px){
+  .slide{grid-template-columns:1fr;gap:26px;padding:0 20px}
+  .slide .shot{order:-1}
+  .slide .copy p{max-width:none}
+}
 
-    /* ---- API TABLE ---- */
-    .api-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-    .api-table th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-weight: 700;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      background: var(--surface-alt);
-      border-bottom: 1px solid var(--border);
-    }
-    .api-table td {
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .api-table tr:last-child td { border-bottom: none; }
-    .api-table code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.8rem;
-      background: var(--surface-alt);
-      padding: 0.1rem 0.35rem;
-      border-radius: 4px;
-    }
-    .method-badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-    }
-    .method-get { background: var(--accent-light); color: var(--accent-dark); }
-    .method-post { background: var(--blue-light); color: var(--blue); }
+/* ---------- steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;margin-top:38px;
+  background:var(--hairline);border:1px solid var(--hairline);border-radius:var(--radius);overflow:hidden}
+.step{background:var(--bg);padding:26px 24px}
+.step .n{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent-2);letter-spacing:.08em}
+.step h3{font-size:17px;margin-top:12px}
+.step p{margin-top:8px;font-size:14.5px;color:var(--muted)}
 
-    /* ---- BACKLOG MODE ---- */
-    .backlog-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2.5rem;
-    }
-    @media (max-width: 768px) { .backlog-grid { grid-template-columns: 1fr; } }
-    .backlog-col h3 {
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid var(--border);
-    }
-    .backlog-rule {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.6rem 0;
-      font-size: 0.875rem;
-    }
-    .backlog-rule .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
-    .cmd-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1rem;
-    }
-    .cmd-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      box-shadow: var(--shadow);
-    }
-    .cmd-card code {
-      display: block;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--accent-dark);
-      background: var(--accent-light);
-      padding: 0.35rem 0.6rem;
-      border-radius: 6px;
-      margin-bottom: 0.6rem;
-    }
-    .cmd-card p { font-size: 0.825rem; color: var(--text-muted); line-height: 1.5; }
-    .status-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 1.5rem;
-    }
-    .status-chip {
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-  </style>
+/* ---------- feature grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:38px}
+.card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);padding:22px}
+.card h3{font-size:16px;display:flex;align-items:center;gap:9px}
+.card h3 svg{width:16px;height:16px;fill:none;stroke:var(--accent);stroke-width:1.7;flex:none}
+.card p{margin-top:9px;font-size:14.5px;color:var(--muted)}
+
+/* ---------- stack ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding:0;list-style:none}
+.chips li{font-family:var(--font-mono);font-size:12.5px;background:var(--surface);border:1px solid var(--hairline);
+  border-radius:999px;padding:6px 13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.note{margin-top:22px;font-size:14.5px;color:var(--muted);max-width:64ch}
+
+/* ---------- faq ---------- */
+.faq{margin-top:34px;border-top:1px solid var(--hairline);max-width:78ch}
+.faq details{border-bottom:1px solid var(--hairline)}
+.faq summary{cursor:pointer;list-style:none;padding:18px 2px;font-weight:600;font-size:16px;
+  display:flex;justify-content:space-between;gap:16px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font-weight:400;font-size:20px;line-height:1}
+.faq details[open] summary::after{content:"–"}
+.faq p{padding:0 2px 20px;color:var(--muted);font-size:15.5px;max-width:66ch}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--hairline);background:var(--surface-2);padding:52px 0 40px;margin-top:0}
+.foot{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between;align-items:flex-start}
+.foot .links{display:flex;flex-wrap:wrap;gap:8px}
+.foot small{display:block;color:var(--muted);font-size:13px;line-height:1.7}
+.foot a.plain{color:var(--muted)}
+.foot a.plain:hover{color:var(--ink)}
+.disclaimer{margin-top:34px;padding-top:22px;border-top:1px solid var(--hairline);color:var(--muted);
+  font-size:13px;line-height:1.7;max-width:78ch}
+.disclaimer b{color:var(--ink);font-weight:600}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .btn:hover{transform:none}
+}
+@media (min-width:1px){html{scroll-behavior:smooth}}
+</style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
-  <!-- NAV -->
-  <nav>
-    <div class="inner">
-      <div class="logo">stonkbro</div>
-      <div class="links">
-        <a href="#features">Features</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#stack">Stack</a>
-        <a href="#api">API</a>
-        <a href="#roadmap">Roadmap</a>
-        <a href="#backlog-mode">Backlog Mode</a>
-        <a href="backlog.html">Backlog Status</a>
-        <a href="https://stonkbro.vercel.app">Launch App</a>
-        <a href="https://github.com/kbrovibes/stonkbro">GitHub</a>
-      </div>
+<!-- ══ HEADER — link affordances #1 ══════════════════════════════════ -->
+<header class="site">
+  <div class="wrap">
+    <a class="wordmark" href="#top"><b>stonk<i>BRO</i></b><span>options scanner</span></a>
+
+    <nav aria-label="Page sections">
+      <a href="#what">What it is</a>
+      <a href="#tour">Tour</a>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="links">
+      <a class="btn btn-primary" href="https://stonkbro.vercel.app" rel="noopener">Open the app</a>
+      <a class="btn btn-ghost" href="https://github.com/kbrovibes/stonkbro" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span class="label-long">View source</span>
+      </a>
+      <a class="btn btn-quiet" href="https://kbrovibes.github.io/">All projects</a>
     </div>
-  </nav>
+  </div>
+</header>
 
-  <!-- HERO -->
-  <header class="hero">
-    <div class="badge">v0.10.0 &mdash; Autonomous Backlog Mode</div>
-    <h1>Your <span class="gradient">AI-powered</span><br>options trading copilot</h1>
-    <p>Find explosive stocks, analyze PMCC setups, track positions, and get real-time trade signals &mdash; all from one app. Now with autonomous AI development mode.</p>
-    <div class="cta-row">
-      <a href="https://stonkbro.vercel.app" class="btn btn-primary">Launch App</a>
-      <a href="https://github.com/kbrovibes/stonkbro" class="btn btn-outline">View Source</a>
+<main id="main">
+
+<!-- ══ 1. HERO ══════════════════════════════════════════════════════ -->
+<section id="top" class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Options trading tool</p>
+    <h1>An options scanner for people who <em>sell premium</em>.</h1>
+    <p class="lede">It reads live option chains for cash-secured puts, covered calls, LEAPS and PMCC pairs, ranks what it finds, and tracks the positions you open. Built to replace checking chains one ticker at a time.</p>
+
+    <div class="cta">
+      <a class="btn btn-primary" href="https://stonkbro.vercel.app" rel="noopener">Open the app</a>
+      <a class="btn btn-ghost" href="https://github.com/kbrovibes/stonkbro" rel="noopener">View source on GitHub</a>
+      <a class="btn btn-quiet" href="https://kbrovibes.github.io/">← Back to all projects</a>
     </div>
-  </header>
 
-  <!-- FLOW -->
-  <div class="flow">
-    <div class="flow-bar">
-      <div class="flow-step">
-        <div class="icon bg-green">1</div>
-        Discover
-      </div>
-      <span class="flow-arrow">&#9654;</span>
-      <div class="flow-step">
-        <div class="icon bg-blue">2</div>
-        Analyze
-      </div>
-      <span class="flow-arrow">&#9654;</span>
-      <div class="flow-step">
-        <div class="icon bg-purple">3</div>
-        Open Position
-      </div>
-      <span class="flow-arrow">&#9654;</span>
-      <div class="flow-step">
-        <div class="icon bg-amber">4</div>
-        Get Signals
-      </div>
-      <span class="flow-arrow">&#9654;</span>
-      <div class="flow-step">
-        <div class="icon bg-green">5</div>
-        Collect Premium
-      </div>
-      <span class="flow-arrow">&#9654;</span>
-      <div class="flow-step">
-        <div class="icon" style="background:#f5f5f4; color:#78716c;">&#8635;</div>
-        Repeat
+    <ul class="facts">
+      <li>Next.js 16 + Supabase</li>
+      <li>Yahoo Finance chains</li>
+      <li>Free to explore</li>
+      <li>Not financial advice</li>
+    </ul>
+
+    <div class="hero-shot frame">
+      <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="url">stonkbro.vercel.app</span></div>
+      <div class="media">
+        <img src="media/hero.jpg" fetchpriority="high" alt="Market Pulse dashboard listing ten explosive movers with percentage change and volume multiples">
       </div>
     </div>
   </div>
+</section>
 
-  <!-- FEATURES -->
-  <section id="features">
-    <div class="inner">
-      <div class="section-label">Features</div>
-      <div class="section-title">20+ production features. Zero mock data.</div>
-      <div class="section-desc">Every feature pulls live market data from Tradier and persists real positions in Supabase. Tradier provides real Greeks on every contract.</div>
-
-      <div class="features-grid">
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F319;</div>
-          <h3>Dark Mode (default-on)</h3>
-          <p>Robinhood-style dark mode across every page with a Light/Dark/Auto toggle in the profile dropdown. Dark is the default for new visitors; existing preferences are honored. Brand green stays loud, loss reds shift to softer coral, sky CTAs bump brighter on dark. Charts, sparklines, and badges flip automatically.</p>
-          <span class="tag bg-purple">UI · Theming</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F3A7;</div>
-          <h3>Daily Audio Briefing</h3>
-          <p>A personal ~2&ndash;3 minute podcast curated to your portfolio, generated three times every trading day (pre-market, an hour after the open, and after the close with after-hours trends): market pulse, your biggest movers and why, news/earnings that matter today, and concrete close/roll/open/watch suggestions with reasons. Free Edge neural TTS (~1 MB mono MP3), Spotify-style player with generated cover art, speed control, transcript, 7-day history, offline download, and force-regenerate.</p>
-          <span class="tag bg-purple">AI · Audio · Cron</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F9E0;</div>
-          <h3>Portfolio Manager</h3>
-          <p>AI rates every stock in your SnapTrade portfolio daily (STRONG_BUY → STRONG_SELL) with thesis, risks, catalysts, and a $100K reallocation plan. Runs at market open + close; expandable-row table with RSI/SMA/MACD/news per ticker.</p>
-          <span class="tag bg-purple">AI · Cron-Cached</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F393;</div>
-          <h3>Learn (Interactive Coursework)</h3>
-          <p>22 modules / ~120 lessons built practice-first: scored support/resistance drawing drills, a live indicator playground with auto-annotated signals, a Black-Scholes strike sandbox with payoff diagrams, and spot-the-setup chart quizzes. Worked examples including failure cases, exact plotting steps, and options-seller trade rules. Fully offline.</p>
-          <span class="tag bg-purple">Education · Offline</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F4D2;</div>
-          <h3>Learn v2: Case Studies (Real Chain Data)</h3>
-          <p>15 ticker modules / 80 case studies mined from real scanner history (May&ndash;Aug 2026 option-chain snapshots): stop-loss discipline on real -50% drawdowns, stop-market vs stop-limit through real wide spreads, roll-vs-assignment, covered-call strike regret, observed theta decay. Place your stop on the real chart before the reveal; A/B-pick between two real contracts. Fabricated numbers fail the build.</p>
-          <span class="tag bg-purple">Education · Real Data</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-red">&#x1F6A8;</div>
-          <h3>Market Monitor (Hourly Push Alerts)</h3>
-          <p>Hourly cron watches SPY plus every portfolio holding and watchlist symbol. Big moves fire plain-English push alerts with severity tiers — critical drops on your holdings include concrete stop-limit levels computed from support. Sticky in-app banner ensures nothing gets missed.</p>
-          <span class="tag bg-red">Push · Cron</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F512;</div>
-          <h3>Privacy Lock (Hand-Your-Phone Mode)</h3>
-          <p>One tap locks every wealth-revealing number — portfolio value, P&amp;L, collateral, position sizes, account balances — behind &bull;&bull;&bull;&bull;&bull; app-wide, while market data, the scanner, and Learn stay fully usable. PIN unlock is verified server-side with an httpOnly cookie, so even server-rendered pages mask at the source.</p>
-          <span class="tag bg-purple">Privacy · PIN</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x2708;&#xFE0F;</div>
-          <h3>Offline Mode (Airplane-Mode PWA)</h3>
-          <p>Service worker pre-caches the full knowledge base (Learn v1 + v2 case studies) on each app open — Learn works completely offline. Network pages fail fast with a retry state instead of hanging, Portfolio shows a read-only last-known snapshot with an "as of" note, and the global banner also catches flaky connections that report online but fail.</p>
-          <span class="tag bg-purple">PWA · Offline</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-red">&#x1FA78;</div>
-          <h3>Bloodbath (Pullback Navigator)</h3>
-          <p>Watchlist tickers + the biggest scan-universe casualties ranked by drawdown off their 4-week peak. Tap-to-expand AI verdicts — Buy the dip / Nibble / Wait / Avoid — with headline-driven reasons, confidence, and a concrete entry idea. One batched AI call for up to 12 tickers.</p>
-          <span class="tag bg-red">AI · Cron-Cached</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-green">&#x1F50D;</div>
-          <h3>Discovery Dashboard</h3>
-          <p>Ranked watchlist with custom scoring: volume ratio, momentum, SMA positioning, 52-week range. High scores = explosive potential.</p>
-          <span class="tag bg-green">Live Data</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-blue">&#x1F30F;</div>
-          <h3>Sector Discovery</h3>
-          <p>Browse 8 curated sectors (AI Infra, Quantum, Nuclear, Space, Fintech, Biotech, EV, AI Software) with 70+ pre-loaded tickers. Expandable card grid with live quotes.</p>
-          <span class="tag bg-blue">70+ Tickers</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F525;</div>
-          <h3>Explosive Finder</h3>
-          <p>Claude AI analyzes each sector to surface the highest-conviction 10x potential stocks, with specific entry strategies and risk reasoning.</p>
-          <span class="tag bg-purple">AI-Powered</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-amber">&#x2600;</div>
-          <h3>Daily Recommendations</h3>
-          <p>AI-generated daily stock picks across 3 themes (momentum, value, contrarian) — cached by cron at market open, refreshable on demand. Collapsible theme cards with next-refresh countdown.</p>
-          <span class="tag bg-amber">Cron-Cached</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-blue">&#x1F4CA;</div>
-          <h3>PMCC Scanner</h3>
-          <p>Scans real options chains for optimal LEAPS + short call pairings. Grades A/B/C by capital efficiency and annualized return. Real delta from Tradier.</p>
-          <span class="tag bg-blue">Options Chains</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-blue">&#x1F3AF;</div>
-          <h3>PMCC Picks</h3>
-          <p>Auto-scan sectors for the best PMCC setups ranked by monthly income and capital efficiency. Combines sector discovery with options analysis.</p>
-          <span class="tag bg-blue">Auto-Scan</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F9E0;</div>
-          <h3>Deep Research Engine</h3>
-          <p>Claude AI analyzes up to 20 symbols: market context, technicals, and generates specific trade suggestions with strike, expiry, and reasoning.</p>
-          <span class="tag bg-purple">AI-Powered</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-green">&#x1F4BC;</div>
-          <h3>Position Tracking</h3>
-          <p>Log multi-leg trades (PMCC, CC, CSP, Wheel). Track each leg with strike, expiry, entry price. Lifecycle: active &rarr; rolled &rarr; closed.</p>
-          <span class="tag bg-green">Full CRUD</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-red">&#x1F6D1;</div>
-          <h3>Trailing Stop System</h3>
-          <p>Set % trailing stops on positions. App tracks peak price automatically, calculates drawdown, and flags when stop triggers. Color-coded risk view.</p>
-          <span class="tag bg-red">Risk Management</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-amber">&#x1F4B0;</div>
-          <h3>Portfolio (Live P&L)</h3>
-          <p>Real P&L from Supabase positions + live Tradier quotes. Summary cards, per-position breakdown, gain/drawdown tracking, % from peak visualization.</p>
-          <span class="tag bg-amber">Real-Time</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-red">&#x26A0;</div>
-          <h3>Trade Signals</h3>
-          <p>Real-time alerts: CLOSE at 50%+ profit, ROLL at 21 DTE, WARNING when price nears strike. Urgency-sorted: HIGH / MEDIUM / LOW.</p>
-          <span class="tag bg-red">Alerts</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-blue">&#x1F4C8;</div>
-          <h3>Covered Call Optimizer</h3>
-          <p>Find best CC strikes for your holdings. Filters 3-10% OTM, 20-45 DTE. Grid view with annualized return and probability OTM.</p>
-          <span class="tag bg-blue">Options Chains</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F504;</div>
-          <h3>Wheel Visualizer</h3>
-          <p>Timeline of the full wheel cycle: Sell Put &rarr; Assigned &rarr; Sell Call &rarr; Called Away. Premium per step, cumulative income.</p>
-          <span class="tag bg-purple">Strategy View</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-green">&#x1F4B5;</div>
-          <h3>Income Dashboard</h3>
-          <p>Track your premium income: starting capital, total collected, yield %, monthly breakdown chart, annualized projections.</p>
-          <span class="tag bg-green">Analytics</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-amber">&#x1F4CB;</div>
-          <h3>Watchlist Management</h3>
-          <p>Create named watchlists, add/remove tickers, set defaults. Your default watchlist drives Discovery. Persisted with RLS.</p>
-          <span class="tag bg-amber">Supabase</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-red">&#x1F4E7;</div>
-          <h3>Automated Cron Alerts</h3>
-          <p>Vercel cron runs multiple times daily on market days. Checks all positions, generates daily recommendations, sends email briefings via Resend.</p>
-          <span class="tag bg-red">Automated</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-purple">&#x1F4CA;</div>
-          <h3>Admin Panel + Token Tracking</h3>
-          <p>Admin-gated settings panel for switching AI providers and viewing real-time token usage per feature. Backed by <code>ai_token_usage</code> table with full audit trail.</p>
-          <span class="tag bg-purple">Admin</span>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-icon bg-blue">&#x1F510;</div>
-          <h3>Google Auth</h3>
-          <p>One-click Google login via Supabase Auth. All routes protected. Row-level security ensures data isolation per user.</p>
-          <span class="tag bg-blue">Secure</span>
-        </div>
-
+<!-- ══ 2. WHAT IT IS ════════════════════════════════════════════════ -->
+<section id="what" class="pad">
+  <div class="wrap what">
+    <div>
+      <p class="eyebrow">What it is</p>
+      <h2 style="font-size:clamp(26px,3.6vw,38px);margin-top:10px">Selling premium is mostly checking the same things again</h2>
+      <div class="prose" style="margin-top:18px">
+        <p>Which of my tickers moved today. What the chain looks like at the strikes I'd actually sell. Whether the premium is worth the collateral it ties up. Done by hand across twenty symbols that is an evening's work, and the quotes are stale by the time you finish.</p>
+        <p>Stonk Bro takes a watchlist and does the pass for you. It pulls live quotes and full option chains from Yahoo Finance, scores stocks on volume ratio, momentum, moving-average position and 52-week range, and ranks option setups by annualised return on capital. Claude writes the reasoning next to each pick.</p>
       </div>
     </div>
-  </section>
+    <aside class="forwho">
+      <h3>Who it's for</h3>
+      <ul>
+        <li><span><b>Premium sellers.</b> Wheel, covered calls, cash-secured puts, PMCC — the strategies the scanner actually ranks.</span></li>
+        <li><span><b>People with a watchlist.</b> It scores the tickers you give it, not the whole market.</span></li>
+        <li><span><b>Not for anyone wanting trades to copy.</b> It surfaces candidates and shows its reasoning. You do the reading and place your own orders with your own broker.</span></li>
+      </ul>
+    </aside>
+  </div>
+</section>
 
-  <!-- SIGNALS DEMO -->
-  <section style="background: var(--surface-alt);">
-    <div class="inner">
-      <div class="section-label">Trade Signals</div>
-      <div class="section-title">Know when to act</div>
-      <div class="section-desc">Real-time alerts against your active positions. No noise, just actionable signals.</div>
-      <div class="signal-list">
-        <div class="signal-item">
-          <div class="urgency high"></div>
-          <span class="action bg-red">CLOSE</span>
-          <span class="msg">NVDA May 135C at 68% profit &mdash; take it off</span>
-        </div>
-        <div class="signal-item">
-          <div class="urgency high"></div>
-          <span class="action bg-amber">ROLL</span>
-          <span class="msg">AAPL Jun 200C has 14 DTE &mdash; roll out to July</span>
-        </div>
-        <div class="signal-item">
-          <div class="urgency med"></div>
-          <span class="action bg-amber">WARNING</span>
-          <span class="msg">TSLA price within 2.5% of $280 short call strike</span>
-        </div>
-        <div class="signal-item">
-          <div class="urgency low"></div>
-          <span class="action" style="background: var(--surface-alt); color: var(--text-muted);">MONITOR</span>
-          <span class="msg">PLTR short put at 35% profit &mdash; approaching target</span>
+<!-- ══ 3. TOUR ══════════════════════════════════════════════════════ -->
+<section id="tour" class="tour band"
+         aria-roledescription="carousel" aria-label="Product tour">
+  <div class="wrap bar">
+    <div class="head">
+      <p class="eyebrow">Tour</p>
+      <h2>Three screens you'll live in</h2>
+    </div>
+    <div class="controls" style="margin-top:0">
+      <button class="arrow" data-prev type="button" aria-controls="track" aria-label="Previous slide">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2 4.5 8l6 6 1.4-1.4L7.3 8l4.6-4.6z"/></svg></button>
+      <button class="arrow" data-next type="button" aria-controls="track" aria-label="Next slide">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 2 4.1 3.4 8.7 8l-4.6 4.6L5.5 14l6-6z"/></svg></button>
+      <button class="pause" data-toggle type="button" aria-label="Pause automatic slide rotation" aria-pressed="false">
+        <svg viewBox="0 0 16 16" aria-hidden="true" data-icon><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg></button>
+    </div>
+  </div>
+
+  <div class="track" id="track" tabindex="0" role="group" aria-label="Slides, use arrow keys">
+
+    <article class="slide" role="group" aria-roledescription="slide" aria-label="1 of 3: Look before you sign in">
+      <div class="shot frame">
+        <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="url">stonkbro.vercel.app</span></div>
+        <div class="media">
+          <img src="media/tour-01-explore-free.jpg" loading="lazy" decoding="async" alt="Signed-out landing page reading Find stocks ready to move beside two phone screens">
         </div>
       </div>
-    </div>
-  </section>
+      <div class="copy">
+        <p class="eyebrow">Signed out</p>
+        <h3>Look before you <em>sign in</em></h3>
+        <p>Sign in with Google, or take the Explore route and look around first. The three things it does are stated on the front door: daily plays, options scanner, AI research. The layout is built phone-first.</p>
+        <ul>
+          <li>Live market data, free to explore</li>
+          <li>Google sign-in through Supabase Auth</li>
+        </ul>
+      </div>
+    </article>
 
-  <!-- ARCHITECTURE -->
-  <section id="architecture">
-    <div class="inner">
-      <div class="section-label">Architecture</div>
-      <div class="section-title">Clean layers, no shortcuts</div>
-      <div class="section-desc">Business logic lives in lib/. Components stay thin. DB access goes through typed functions. Market data is isolated.</div>
-
-      <div class="arch-grid">
-        <div class="arch-col">
-          <h3>Application Layer</h3>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--accent);"></div>
-            <div><strong>app/(app)/(pages)/</strong><br><span>Protected feature pages &mdash; Discovery, Portfolio, Scanner, Research, Signals</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--blue);"></div>
-            <div><strong>app/(app)/api/</strong><br><span>Backend routes &mdash; research, options, signals, cron</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--purple);"></div>
-            <div><strong>components/</strong><br><span>Shared UI &mdash; nav, cards, charts, forms</span></div>
-          </div>
-        </div>
-        <div class="arch-col">
-          <h3>Business Logic</h3>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--accent);"></div>
-            <div><strong>lib/db/</strong><br><span>All Supabase queries &mdash; positions, watchlists, settings, research</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--amber);"></div>
-            <div><strong>lib/market/</strong><br><span>Yahoo Finance integration &mdash; quotes, options chains</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--blue);"></div>
-            <div><strong>lib/options/</strong><br><span>Options math &mdash; PMCC grading, signal generation, delta estimation</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--purple);"></div>
-            <div><strong>lib/research/</strong><br><span>Claude AI analysis engine &mdash; prompt construction, response parsing</span></div>
-          </div>
-          <div class="arch-item">
-            <div class="dot" style="background: var(--red);"></div>
-            <div><strong>lib/notifications/</strong><br><span>Email service via Resend &mdash; daily briefings, alert formatting</span></div>
-          </div>
+    <article class="slide" role="group" aria-roledescription="slide" aria-label="2 of 3: Market Pulse, ranked">
+      <div class="shot frame">
+        <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="url">stonkbro.vercel.app/discovery</span></div>
+        <div class="media">
+          <img src="media/tour-02-explosive-movers.jpg" loading="lazy" decoding="async" alt="Explosive Movers cards for MSTR, SMCI, MRNA and LEU showing price, change and volume ratio">
         </div>
       </div>
-    </div>
-  </section>
+      <div class="copy">
+        <p class="eyebrow">Discovery</p>
+        <h3>Market Pulse, <em>ranked</em></h3>
+        <p>Explosive Movers scores your watchlist on volume ratio, momentum, moving-average position and where price sits in its 52-week range. Each card carries the move, the volume multiple and a one-line reason for the ranking.</p>
+        <ul>
+          <li>Research, Options and Log Trade on every card</li>
+          <li>Options Flow with call/put counts per symbol</li>
+        </ul>
+      </div>
+    </article>
 
-  <!-- TECH STACK -->
-  <section id="stack" style="background: var(--surface-alt);">
-    <div class="inner">
-      <div class="section-label">Tech Stack</div>
-      <div class="section-title">Modern, minimal, fast</div>
-      <div class="section-desc">No bloat. Every dependency earns its place.</div>
-
-      <div class="stack-grid">
-        <div class="stack-card">
-          <div class="label">Framework</div>
-          <div class="value">Next.js 16</div>
-          <div class="detail">App Router, TypeScript 5, React 19</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Styling</div>
-          <div class="value">Tailwind CSS 4</div>
-          <div class="detail">Mobile-first, no other CSS</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Database</div>
-          <div class="value">Supabase</div>
-          <div class="detail">PostgreSQL + Row-Level Security</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Auth</div>
-          <div class="value">Google OAuth</div>
-          <div class="detail">Via Supabase Auth</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Market Data</div>
-          <div class="value">Yahoo Finance</div>
-          <div class="detail">Quotes + Options Chains</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">AI</div>
-          <div class="value">Claude SDK</div>
-          <div class="detail">Anthropic Claude for research</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Email</div>
-          <div class="value">Resend</div>
-          <div class="detail">Daily alert briefings</div>
-        </div>
-        <div class="stack-card">
-          <div class="label">Hosting</div>
-          <div class="value">Vercel</div>
-          <div class="detail">Analytics + Speed Insights + Cron</div>
+    <article class="slide" role="group" aria-roledescription="slide" aria-label="3 of 3: Chains, ranked by return">
+      <div class="shot frame">
+        <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="url">stonkbro.vercel.app/options</span></div>
+        <div class="media">
+          <img src="media/tour-03-options-scanner.jpg" loading="lazy" decoding="async" alt="Cash-secured put scanner listing ten ranked setups with strike, expiry, premium and annualised return">
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- DATABASE -->
-  <section>
-    <div class="inner">
-      <div class="section-label">Database</div>
-      <div class="section-title">10 tables, full RLS</div>
-      <div class="section-desc">Every user-scoped table has row-level security. Global config tables have public read, admin write. Users only see their own data.</div>
-
-      <table class="schema-table">
-        <thead>
-          <tr><th>Table</th><th>Purpose</th><th>Key Fields</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>watchlists</code></td>
-            <td>Named watchlists per user</td>
-            <td>name, is_default, user_id</td>
-          </tr>
-          <tr>
-            <td><code>watchlist_items</code></td>
-            <td>Tickers in each watchlist</td>
-            <td>symbol, watchlist_id (unique pair)</td>
-          </tr>
-          <tr>
-            <td><code>positions</code></td>
-            <td>Options/stock positions</td>
-            <td>symbol, strategy, status, trailing_stop_pct, peak_price</td>
-          </tr>
-          <tr>
-            <td><code>position_legs</code></td>
-            <td>Individual legs of multi-leg trades</td>
-            <td>type, strike, expiry, entry_price, qty</td>
-          </tr>
-          <tr>
-            <td><code>research_reports</code></td>
-            <td>Claude AI analysis results</td>
-            <td>symbols_analyzed[], report (markdown)</td>
-          </tr>
-          <tr>
-            <td><code>trade_suggestions</code></td>
-            <td>Specific trade recommendations</td>
-            <td>symbol, strategy, strike, premium, reasoning</td>
-          </tr>
-          <tr>
-            <td><code>daily_recommendations</code></td>
-            <td>Cron-cached daily AI stock picks</td>
-            <td>date, theme, picks (jsonb), generated_at</td>
-          </tr>
-          <tr>
-            <td><code>user_settings</code></td>
-            <td>Preferences, admin flag &amp; account defaults</td>
-            <td>starting_cash, alert_email, is_admin</td>
-          </tr>
-          <tr>
-            <td><code>app_config</code></td>
-            <td>Global AI provider settings</td>
-            <td>key, value — public read, admin write</td>
-          </tr>
-          <tr>
-            <td><code>ai_token_usage</code></td>
-            <td>Token audit trail per AI call</td>
-            <td>feature, user_id, input_tokens, output_tokens, model</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- API -->
-  <section id="api" style="background: var(--surface-alt);">
-    <div class="inner">
-      <div class="section-label">API</div>
-      <div class="section-title">12 backend routes</div>
-      <div class="section-desc">Server-side endpoints for market data, AI analysis, signals, and automated alerts.</div>
-
-      <table class="api-table">
-        <thead>
-          <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>/api/research</code></td>
-            <td><span class="method-badge method-post">POST</span></td>
-            <td>Run Claude AI deep research on up to 20 symbols. Returns markdown report + trade suggestions.</td>
-          </tr>
-          <tr>
-            <td><code>/api/recommendations</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Daily AI stock picks across 3 themes. Served from cache; force-refresh via query param.</td>
-          </tr>
-          <tr>
-            <td><code>/api/explosive</code></td>
-            <td><span class="method-badge method-post">POST</span></td>
-            <td>Claude AI explosive stock finder for a given sector. Returns high-conviction picks with entry strategies.</td>
-          </tr>
-          <tr>
-            <td><code>/api/options?symbol=X</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Fetch PMCC setups for a symbol from live Tradier options chains with real Greeks.</td>
-          </tr>
-          <tr>
-            <td><code>/api/pmcc-scan</code></td>
-            <td><span class="method-badge method-post">POST</span></td>
-            <td>Batch PMCC scan across a list of tickers. Returns ranked setups by monthly income.</td>
-          </tr>
-          <tr>
-            <td><code>/api/scanner</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Discovery scoring engine — ranks watchlist tickers by explosive potential score.</td>
-          </tr>
-          <tr>
-            <td><code>/api/signals</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Check active positions for roll/close/profit alerts. Returns urgency-sorted signal list.</td>
-          </tr>
-          <tr>
-            <td><code>/api/jobs</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Jobs Center — list historic + running async jobs with exact running count; POST requests cooperative cancellation.</td>
-          </tr>
-          <tr>
-            <td><code>/api/taxes/equities</code></td>
-            <td><span class="method-badge method-post">POST</span></td>
-            <td>Sync stock-sale history: FIFO lot matching over full broker activity feed (tracked, cancellable job); GET returns scan freshness.</td>
-          </tr>
-          <tr>
-            <td><code>/api/taxes</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Tax Center — per-IRS-quarter realized gains, estimated tax at marginal rates, recommended one-off payments; POST records a payment, DELETE removes one.</td>
-          </tr>
-          <tr>
-            <td><code>/api/portfolio/connections</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>SnapTrade brokerage connections — list linked brokers + accounts; POST generates a Connection Portal link to add or fix one.</td>
-          </tr>
-          <tr>
-            <td><code>/api/alerts</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Recent market-monitor alerts with severity, plain-English context, and stop suggestions; POST acknowledges.</td>
-          </tr>
-          <tr>
-            <td><code>/api/cron/market-monitor</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Hourly market watch — big moves in holdings/watchlist → web-push alerts with actionable steps.</td>
-          </tr>
-          <tr>
-            <td><code>/api/movers</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Top market movers and unusual volume across watchlist symbols.</td>
-          </tr>
-          <tr>
-            <td><code>/api/earnings</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Upcoming earnings dates for watchlist symbols — risk flag for options positions.</td>
-          </tr>
-          <tr>
-            <td><code>/api/cron</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Automated multi-purpose cron (Vercel cron). Runs position alerts, daily recs refresh, email briefings.</td>
-          </tr>
-          <tr>
-            <td><code>/api/briefing</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Daily audio briefings — 7-day history with transcript, highlights, and suggested actions; POST force-regenerates today's episode (job-tracked).</td>
-          </tr>
-          <tr>
-            <td><code>/api/briefing/audio/[id]</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Stream a briefing's MP3 from the private storage bucket. Auth-gated.</td>
-          </tr>
-          <tr>
-            <td><code>/api/cron/briefing</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Pre-open generator (weekdays 13:00 UTC): portfolio + quotes + news + earnings + alerts &rarr; AI script &rarr; free Edge TTS &rarr; MP3.</td>
-          </tr>
-          <tr>
-            <td><code>/api/admin</code></td>
-            <td><span class="method-badge method-get">GET</span></td>
-            <td>Admin stats — token usage by feature, current AI provider config. Admin-gated.</td>
-          </tr>
-          <tr>
-            <td><code>/api/admin/provider</code></td>
-            <td><span class="method-badge method-post">POST</span></td>
-            <td>Toggle AI provider (Anthropic / OpenAI) and default model. Updates <code>app_config</code> table.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- VERSION HISTORY -->
-  <section>
-    <div class="inner">
-      <div class="section-label">History</div>
-      <div class="section-title">From zero to 20+ features</div>
-      <div class="section-desc">Built at mass speed with Claude Code.</div>
-
-      <div class="timeline">
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.36</div>
-          <div class="tl-content">
-            <h4>HOOD Theme Style</h4>
-            <p>An opt-in, Robinhood-grade re-skin that layers over both light and dark modes — true-black OLED canvas, oversized tabular-numeral P&amp;L, pill controls, frosted chrome, and CSS-only micro-motion that disables itself under prefers-reduced-motion. Classic stays the default and stays pixel-identical.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.35</div>
-          <div class="tl-content">
-            <h4>Daily Audio Briefing</h4>
-            <p>Pre-market podcast curated to your portfolio — AI script from chains, quotes, news, earnings, and alerts; free Edge neural TTS; Spotify-style player with generated art, transcript, 7-day history, offline download, and force-regenerate.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.34</div>
-          <div class="tl-content">
-            <h4>Defense-First Case Studies</h4>
-            <p>All 80 studies now teach the explicit defensive action — the warning sign, the exact order ticket to place at entry, and the dollars it would have saved — computed from real chain data, plus a Defense Playbook module codifying the rules.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.33</div>
-          <div class="tl-content">
-            <h4>Face ID App Lock + Reliable Learn Progress</h4>
-            <p>Optional per-device biometric gate via the WebAuthn platform authenticator with pre-paint flash prevention, plus a rebuilt Learn progress pipeline where completions and quiz scores can never be lost to debounce races.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.31</div>
-          <div class="tl-content">
-            <h4>Tax Center: Stock Sales + Per-Quarter ST/LT</h4>
-            <p>FIFO lot engine over full broker history brings equity sells into the quarterly tax math with an always-visible short/long-term split per quarter, and basis-override entry for transfer/RSU shares.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.30</div>
-          <div class="tl-content">
-            <h4>Jobs Center</h4>
-            <p>Unified tracking for every async operation and cron — header indicator with live running count, /jobs page with trigger badges, timing, progress, and cooperative cancellation for long scans.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.29</div>
-          <div class="tl-content">
-            <h4>Tax Center + Potential Year Total + Brokerage Badges</h4>
-            <p>Quarterly estimated-tax insights from realized chains with recommended one-off payments and payment tracking. Portfolio shows potential year total if all open shorts expire worthless, and open contracts carry click-to-filter brokerage badges.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.28</div>
-          <div class="tl-content">
-            <h4>Multi-Brokerage Connections</h4>
-            <p>Settings &rarr; Brokerages lists SnapTrade connections and opens the Connection Portal to link Chase or any supported broker. One-tap rebuild re-pulls 2026 chains and monthly snapshots so new accounts backfill into portfolio math.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.26</div>
-          <div class="tl-content">
-            <h4>Learn v2 Case Studies + Offline Hardening</h4>
-            <p>80 case studies across 15 tickers built entirely from real May&ndash;Aug 2026 scanner snapshots, with place-the-stop / contract-picker / premium-decay interactives. Offline fail-fast on network pages, portfolio last-known snapshot, SW v4.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="font-size:0.55rem;">0.10</div>
-          <div class="tl-content">
-            <h4>Sector Discovery, Explosive Finder, Trailing Stops, PMCC Picks</h4>
-            <p>8 curated sectors with 70+ tickers, Claude AI explosive stock finder, trailing stop system with peak tracking, PMCC auto-scan ranked by income.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.9</div>
-          <div class="tl-content">
-            <h4>Tradier Integration + Mock Fallback</h4>
-            <p>Replaced Yahoo Finance with Tradier for real Greeks (delta, gamma, theta, vega, IV). Automatic mock fallback when API key not set.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.8</div>
-          <div class="tl-content">
-            <h4>All Real Data: No More Mocks</h4>
-            <p>Every page wired to live market data + Supabase. Zero hardcoded data remaining.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.7</div>
-          <div class="tl-content">
-            <h4>Full App: Watchlists, Positions, Research</h4>
-            <p>Watchlist management, position tracking with legs, Claude AI research engine, options suggestions. 7 Supabase tables.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.6</div>
-          <div class="tl-content">
-            <h4>Cron Alerts & Trade Signals</h4>
-            <p>Vercel cron jobs 3x daily. Signal engine for profit targets, DTE warnings, strike breaches. Email via Resend.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.5</div>
-          <div class="tl-content">
-            <h4>Live PMCC Scanner</h4>
-            <p>Real options chain scanning. LEAPS + short call pairing with A/B/C grades. Yahoo Finance market data layer.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.4</div>
-          <div class="tl-content">
-            <h4>Auth, Covered Calls, Wheel, Income</h4>
-            <p>Google OAuth, CC Optimizer, Wheel Visualizer, Income Dashboard. Route groups for auth/unauth.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.3</div>
-          <div class="tl-content">
-            <h4>Discovery, Ticker Detail, PMCC, Portfolio</h4>
-            <p>Core feature pages with technical indicators, scoring algorithm, and PMCC analyzer.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.2</div>
-          <div class="tl-content">
-            <h4>App Shell & Navigation</h4>
-            <p>Layout, bottom nav, empty state pages. Light stone theme.</p>
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot">0.1</div>
-          <div class="tl-content">
-            <h4>Project Init</h4>
-            <p>Next.js + Supabase + Vercel scaffolding. Project conventions established.</p>
-          </div>
-        </div>
+      <div class="copy">
+        <p class="eyebrow">Options scanner</p>
+        <h3>Chains ranked by <em>return</em></h3>
+        <p>The CSP tab reads real option chains and ranks setups by annualised return on capital, putting strike, expiry, days to run, premium and collateral on one line. A plain-English note under each row says why it ranked.</p>
+        <ul>
+          <li>Tabs for CSPs, calls, LEAPS, PMCC and weeklies</li>
+          <li>Flags what changed since the previous scan</li>
+        </ul>
       </div>
+    </article>
+
+  </div>
+
+  <div class="controls">
+    <div class="dots" aria-label="Choose a slide">
+      <button class="dot" type="button" aria-current="true"  aria-label="Slide 1"></button>
+      <button class="dot" type="button" aria-current="false" aria-label="Slide 2"></button>
+      <button class="dot" type="button" aria-current="false" aria-label="Slide 3"></button>
     </div>
-  </section>
+  </div>
+  <p class="sr" aria-live="polite" data-live></p>
+</section>
 
-  <!-- ROADMAP -->
-  <section id="roadmap" style="background: var(--surface-alt);">
-    <div class="inner">
-      <div class="section-label">Roadmap</div>
-      <div class="section-title">What's next</div>
-      <div class="section-desc">Current P2 backlog — items Claude can pick up and implement autonomously once promoted to P1.</div>
-
-      <div class="roadmap-list">
-        <div class="roadmap-item">
-          <div class="num">24</div>
-          <div>
-            <h4>Email Activation</h4>
-            <p>Configure Resend API key to activate automated email alert briefings</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">25</div>
-          <div>
-            <h4>Paper Trading Mode</h4>
-            <p>Simulate trades with $20k virtual capital, track hypothetical performance</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">26</div>
-          <div>
-            <h4>Research &rarr; Position</h4>
-            <p>Accept an AI suggestion and auto-create the position with one click</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">19</div>
-          <div>
-            <h4>Broker Integration</h4>
-            <p>Connect to Tradier or IBKR for one-click order execution</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">20</div>
-          <div>
-            <h4>Rules Engine</h4>
-            <p>Define auto-rolling, profit-taking, and defense rules</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">21</div>
-          <div>
-            <h4>Risk Dashboard</h4>
-            <p>Correlation matrix, sector exposure, portfolio delta</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">22</div>
-          <div>
-            <h4>Backtesting</h4>
-            <p>Test scoring model and strategies against historical data</p>
-          </div>
-        </div>
-        <div class="roadmap-item">
-          <div class="num">23</div>
-          <div>
-            <h4>PWA + Push</h4>
-            <p>Install to home screen with native push notifications</p>
-          </div>
-        </div>
-      </div>
+<!-- ══ 4. HOW IT WORKS ══════════════════════════════════════════════ -->
+<section id="how" class="pad">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">How it works</p>
+      <h2>Watchlist in, positions tracked</h2>
+      <p>The order a real user meets it: build the list, scan the chains, log what you actually traded, then let the alerts find you.</p>
     </div>
-  </section>
-
-  <!-- AUTONOMOUS BACKLOG MODE -->
-  <section id="backlog-mode">
-    <div class="inner">
-      <div class="section-label">Developer</div>
-      <div class="section-title">Autonomous Backlog Mode</div>
-      <div class="section-desc">Claude Code can pick items from the backlog, implement them, commit, and loop — without supervision. Karthik reviews diffs and promotes items to approve them.</div>
-
-      <div class="cmd-grid" style="margin-bottom: 2.5rem;">
-        <div class="cmd-card">
-          <code>/project:generate-backlog</code>
-          <p>Analyze the codebase for bugs, gaps, and ideas. Adds confirmed items to BACKLOG.md P2, and feature ideas to IDEAS.md for review.</p>
-        </div>
-        <div class="cmd-card">
-          <code>/project:list-backlog</code>
-          <p>Print a clean count of P1 / P2 / In Progress / Done items and list each title. Read-only, no file changes.</p>
-        </div>
-        <div class="cmd-card">
-          <code>/project:work-backlog</code>
-          <p>Pick the next P1 item (or P2 if P1 empty), implement it fully, run build, commit on success, and loop to the next item.</p>
-        </div>
-        <div class="cmd-card">
-          <code>./run-backlog.sh</code>
-          <p>Shell loop that re-invokes <code>/project:work-backlog</code> until Claude writes a status file — DONE, BLOCKED, NEEDS_INPUT, or LOOP_DETECTED.</p>
-        </div>
-      </div>
-
-      <div class="backlog-grid">
-        <div class="backlog-col">
-          <h3>Auto-approved (Claude just does it)</h3>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--accent);"></div>
-            <span>Bug fixes with clear reproduction in the task description</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--accent);"></div>
-            <span>Missing error handling, null checks, TypeScript type fixes</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--accent);"></div>
-            <span>Console.log cleanup and minor copy/label fixes</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--accent);"></div>
-            <span>Test additions for existing behavior</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--accent);"></div>
-            <span>Performance improvements with no behavior change</span>
-          </div>
-        </div>
-        <div class="backlog-col">
-          <h3>Requires stopping (NEEDS_INPUT)</h3>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--red);"></div>
-            <span>New pages, routes, or major UI sections not in the task</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--red);"></div>
-            <span>New external API or data source integrations</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--red);"></div>
-            <span>Changes to core business logic or calculations</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--red);"></div>
-            <span>Anything requiring new environment variables</span>
-          </div>
-          <div class="backlog-rule">
-            <div class="dot" style="background: var(--red);"></div>
-            <span>Deleting or renaming existing database tables or routes</span>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.75rem;">Exit status written to .claude-status</div>
-        <div class="status-chips">
-          <span class="status-chip bg-green">DONE: all items complete</span>
-          <span class="status-chip bg-red">BLOCKED: [task] — [reason]</span>
-          <span class="status-chip bg-amber">NEEDS_INPUT: [task] — [what is needed]</span>
-          <span class="status-chip" style="background: var(--purple-light); color: var(--purple);">LOOP_DETECTED: [what is repeating]</span>
-        </div>
-      </div>
+    <div class="steps">
+      <div class="step"><p class="n">01</p><h3>Build a watchlist</h3><p>Sign in with Google and add tickers. Your default watchlist is what Discovery scores and what the scanner runs against.</p></div>
+      <div class="step"><p class="n">02</p><h3>Scan the chains</h3><p>Pick a tab — CSPs, calls, LEAPS, PMCC, weeklies — and it pulls live chains from Yahoo Finance and ranks the setups it finds.</p></div>
+      <div class="step"><p class="n">03</p><h3>Log what you traded</h3><p>Place the order with your own broker, then log the position here, leg by leg: strike, expiry, entry price, quantity.</p></div>
+      <div class="step"><p class="n">04</p><h3>Let the signals find you</h3><p>A cron checks open positions three times a day on market days and emails a briefing when something is worth closing or rolling.</p></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- FOOTER -->
-  <footer>
-    <p><strong>stonkbro</strong> &mdash; built at mass speed with <a href="https://claude.ai/code">Claude Code</a></p>
-    <p style="margin-top: 0.5rem;">Not financial advice. Options trading involves risk. You know the drill.</p>
-  </footer>
+<!-- ══ 5. FEATURES ══════════════════════════════════════════════════ -->
+<section id="features" class="pad band">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Features</p>
+      <h2>What's actually in it</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V8m5 10V5m5 13v-7m5 7V9"/></svg>Discovery scoring</h3><p>Ranks your watchlist on volume ratio, momentum, moving-average position and 52-week range, from live Yahoo Finance quotes.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Options scanner</h3><p>Real chains for cash-secured puts, covered calls, LEAPS, PMCC and weeklies, sorted by annualised return on capital.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>PMCC grading</h3><p>Pairs a LEAPS call with a short call, computes capital required and monthly premium, and grades the setup A, B or C.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4m0 10v4m9-9h-4M7 12H3m13.5-5.5-2.8 2.8m-5.4 5.4-2.8 2.8m11 0-2.8-2.8M8.3 9.3 5.5 6.5"/></svg>Claude research</h3><p>Reads up to twenty symbols in one run and writes trade suggestions with strike, expiry and the reasoning behind each.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>Position tracking</h3><p>Multi-leg positions through a full active, rolled, closed lifecycle. Wheel cycles and PMCCs both track leg by leg.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 20h18z"/><path d="M12 10v4"/></svg>Trade signals</h3><p>Close at 50% profit, roll at 21 days to expiry or a breached strike, warn within 3% of strike. Sorted by urgency.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>Portfolio P&amp;L</h3><p>Live profit and loss from your logged positions, or from a brokerage account linked through SnapTrade.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z"/></svg>Learn, offline</h3><p>Coursework on Greeks, technicals and defensive rules, with case studies built from committed chain snapshots. Runs with no connection.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Privacy lock</h3><p>A PIN masks every dollar figure app-wide before you hand someone your phone. Market data and the scanner stay usable.</p></div>
+    </div>
+  </div>
+</section>
 
+<!-- ══ 6. BUILT WITH ════════════════════════════════════════════════ -->
+<section id="stack" class="pad-sm">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Built with</p>
+      <h2>The stack, and where the data lives</h2>
+    </div>
+    <ul class="chips">
+      <li>Next.js 16</li><li>React 19</li><li>TypeScript 5</li><li>Tailwind CSS 4</li>
+      <li>Supabase</li><li>Anthropic SDK</li><li>Resend</li><li>SnapTrade</li><li>Vercel</li>
+    </ul>
+    <p class="note">Hosted on Vercel. Positions, watchlists and settings live in Supabase Postgres behind row-level security, so a row only reads back to the account that wrote it. Quotes and chains come from Yahoo Finance. The research calls run on my own Anthropic key, which is the real limit on how many people can use this.</p>
+  </div>
+</section>
+
+<!-- ══ 7. FAQ ═══════════════════════════════════════════════════════ -->
+<section id="faq" class="pad-sm">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">FAQ</p>
+      <h2>Reasonable questions</h2>
+    </div>
+    <div class="faq">
+      <details open><summary>Is this financial advice?</summary><p>No. It is a personal project I built for my own trades. Nothing in it is a recommendation to buy or sell anything, and the figures in these screenshots are one scan on one day, not results to expect. Options trading can lose money.</p></details>
+      <details><summary>Is it free?</summary><p>There is nothing to pay. The research runs on my own Anthropic API key, so heavy use costs me rather than you — which is why it stays a small, personal deployment.</p></details>
+      <details><summary>Do I need an account?</summary><p>You can explore market data without one. Watchlists, positions and saved research need a Google sign-in through Supabase Auth, because they write rows that belong to you.</p></details>
+      <details><summary>Where does my data go?</summary><p>Supabase Postgres with row-level security. Quotes and option chains come from Yahoo Finance, research prompts go to Anthropic's API, and alert emails go through Resend. Vercel Analytics is the only measurement on the app.</p></details>
+      <details><summary>Does it work on a phone?</summary><p>It is built mobile-first and installs as a PWA. A service worker caches visited pages and the whole Learn section, so the coursework still works on a plane.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══ FOOTER — link affordances #2 ══════════════════════════════════ -->
+<footer>
+  <div class="wrap foot">
+    <div>
+      <a class="wordmark" href="#top" style="text-decoration:none"><b>stonk<i>BRO</i></b><span>options scanner</span></a>
+      <small style="margin-top:12px">
+        Built by <a class="plain" href="https://karthikrajan.info" rel="noopener">Karthik Rajan</a>.<br>
+        Last updated <time datetime="2026-08">August 2026</time>.
+      </small>
+    </div>
+    <div class="links">
+      <a class="btn btn-primary" href="https://stonkbro.vercel.app" rel="noopener">Open the app</a>
+      <a class="btn btn-ghost" href="https://github.com/kbrovibes/stonkbro" rel="noopener">View source on GitHub</a>
+      <a class="btn btn-ghost" href="https://kbrovibes.github.io/">All projects</a>
+    </div>
+  </div>
+  <div class="wrap">
+    <p class="disclaimer"><b>Not investment advice.</b> Stonk Bro is a personal project, built by one person for his own trading. Nothing on this page or in the app is a recommendation to buy, sell or hold any security, and no output from it should be treated as one. The tickers, premiums and annualised return figures in the screenshots are a snapshot of what one scan returned on one day; they are not projections and not results you should expect. Options trading carries real risk of loss, including losses larger than the premium collected. Market data can be delayed or wrong. Check every number against your broker before you place an order, and speak to a licensed professional if you need advice.</p>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   Markup-driven: add or remove .slide elements (and matching
+   .dot buttons) and the carousel adapts.
+   ============================================================ */
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  /* ---------- 1. Carousel ---------- */
+  var track = document.getElementById("track");
+  if (track) {
+    var slides = Array.prototype.slice.call(track.querySelectorAll(".slide"));
+    var dots   = Array.prototype.slice.call(document.querySelectorAll(".dot"));
+    var live   = document.querySelector("[data-live]");
+    var toggle = document.querySelector("[data-toggle]");
+    var index  = 0;
+    var paused = false;      // user asked for pause
+    var resting = true;      // no pointer/focus inside right now
+    var timer  = null;
+    var AUTOPLAY_MS = 6500;
+
+    function label(i) {
+      var s = slides[i];
+      var h = s && s.querySelector(".copy h3");
+      return "Slide " + (i + 1) + " of " + slides.length + (h ? ": " + h.textContent.trim() : "");
+    }
+
+    function paint(i) {
+      index = i;
+      dots.forEach(function (d, n) { d.setAttribute("aria-current", n === i ? "true" : "false"); });
+      if (live) live.textContent = label(i);
+    }
+
+    function goTo(i, smooth) {
+      var n = (i + slides.length) % slides.length;
+      track.scrollTo({
+        left: n * track.clientWidth,
+        behavior: smooth && !reduce.matches ? "smooth" : "auto"
+      });
+      paint(n);
+    }
+
+    /* scroll-spy: the scroll position is the source of truth */
+    var raf = null;
+    track.addEventListener("scroll", function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        raf = null;
+        var n = Math.round(track.scrollLeft / track.clientWidth);
+        if (n !== index && slides[n]) paint(n);
+      });
+    }, { passive: true });
+
+    dots.forEach(function (d, n) {
+      d.addEventListener("click", function () { rest(false); goTo(n, true); });
+    });
+    var prev = document.querySelector("[data-prev]");
+    var next = document.querySelector("[data-next]");
+    if (prev) prev.addEventListener("click", function () { rest(false); goTo(index - 1, true); });
+    if (next) next.addEventListener("click", function () { rest(false); goTo(index + 1, true); });
+
+    /* keyboard: arrows when the track (or anything inside it) has focus */
+    track.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { e.preventDefault(); rest(false); goTo(index + 1, true); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); rest(false); goTo(index - 1, true); }
+      else if (e.key === "Home") { e.preventDefault(); rest(false); goTo(0, true); }
+      else if (e.key === "End") { e.preventDefault(); rest(false); goTo(slides.length - 1, true); }
+    });
+
+    /* autoplay, and every way it can stop */
+    var PLAY = '<path d="M4 2.5v11l9-5.5z"></path>';
+    var PAUSE = '<rect x="4" y="3" width="3" height="10" rx="1"></rect><rect x="9" y="3" width="3" height="10" rx="1"></rect>';
+
+    function rest(v) { resting = v; }
+
+    function tick() {
+      if (paused || !resting || document.hidden) return;
+      goTo(index + 1, true);
+    }
+
+    function start() {
+      stop();
+      if (reduce.matches) return;      /* honour prefers-reduced-motion: no autoplay */
+      timer = setInterval(tick, AUTOPLAY_MS);
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+    function setPaused(v) {
+      paused = v;
+      if (toggle) {
+        toggle.setAttribute("aria-pressed", v ? "true" : "false");
+        toggle.setAttribute("aria-label", v ? "Resume automatic slide rotation" : "Pause automatic slide rotation");
+        var icon = toggle.querySelector("[data-icon]");
+        if (icon) icon.innerHTML = v ? PLAY : PAUSE;
+      }
+    }
+
+    if (toggle) {
+      if (reduce.matches) { toggle.hidden = true; }
+      toggle.addEventListener("click", function () { setPaused(!paused); });
+    }
+
+    /* hovering, touching, or tabbing into the carousel suspends rotation */
+    ["pointerenter", "pointerdown", "focusin"].forEach(function (ev) {
+      track.addEventListener(ev, function () { rest(false); });
+    });
+    ["pointerleave", "focusout"].forEach(function (ev) {
+      track.addEventListener(ev, function () { rest(true); });
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) stop(); else start();
+    });
+    reduce.addEventListener("change", function () { start(); if (toggle) toggle.hidden = reduce.matches; });
+
+    /* keep the slide aligned when the viewport changes width */
+    var rt = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { goTo(index, false); }, 120);
+    });
+
+    paint(0);
+    start();
+  }
+
+  /* ---------- 2. Header scroll-spy ---------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll(".site nav a"));
+  var targets = navLinks
+    .map(function (a) { return document.querySelector(a.getAttribute("href")); })
+    .filter(Boolean);
+
+  if (targets.length && "IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach(function (a) {
+          a.setAttribute("aria-current", a.getAttribute("href") === "#" + entry.target.id ? "true" : "false");
+        });
+      });
+    }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+    targets.forEach(function (t) { io.observe(t); });
+  }
+})();
+</script>
 </body>
 </html>
