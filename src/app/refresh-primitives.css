@@ -1,0 +1,382 @@
+/* ==========================================================================
+   REFRESH — primitive styling and the entire motion layer.
+   ==========================================================================
+
+   Companion to `refresh.css`. Everything here is scoped under
+   `[data-theme-style="refresh"]` and unlayered, for the same two reasons
+   `hood.css` is: it must be inert for Classic/HOOD users, and it must beat
+   Tailwind's `@layer utilities` without specificity games.
+
+   Read `src/components/refresh/` alongside this file — these classes are the
+   styling half of those five primitives, and nothing else should use them.
+
+   MOTION BUDGET — hard rules, not guidance:
+     · Nothing animates longer than 400ms.
+     · `transform` and `opacity` only. The three sanctioned exceptions are
+       MetricBar's `width`, the hero chart's `stroke-dashoffset`, and the
+       digit flash's `color` — all paint-only, none trigger layout.
+     · Every animation collapses to a 120ms opacity fade under
+       `prefers-reduced-motion`, and count-up jumps straight to its value.
+     · rAF loops run only while their element is visible (see `raf.ts`).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Motion — the six behaviours from the handoff, defined once
+   -------------------------------------------------------------------------- */
+
+@keyframes refresh-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes refresh-bar-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes refresh-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes refresh-flash-up {
+  from { color: var(--up); }
+  to   { color: var(--refresh-rest, var(--text)); }
+}
+
+@keyframes refresh-flash-down {
+  from { color: var(--down); }
+  to   { color: var(--refresh-rest, var(--text)); }
+}
+
+@keyframes refresh-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* LIST ENTRY — the one class every list uses. Screens set the index:
+   `style={{ "--refresh-i": i }}`. The stagger caps at 12 items per the
+   budget; row 13 and beyond simply appear with the twelfth. */
+[data-theme-style="refresh"] .refresh-enter {
+  animation: refresh-enter var(--dur-enter) var(--refresh-ease) both;
+  animation-delay: calc(min(var(--refresh-i, 0), 11) * 40ms);
+}
+
+/* BAR GROWTH — MetricBar's series variant. Mount only. */
+[data-theme-style="refresh"] .refresh-bar-grow {
+  transform-origin: bottom;
+  animation: refresh-bar-grow var(--dur-bar) var(--refresh-ease) both;
+  animation-delay: calc(var(--refresh-i, 0) * 40ms);
+}
+
+/* HERO CHART DRAW — paired with `pathLength="1"` on the polyline. */
+[data-theme-style="refresh"] .refresh-draw {
+  stroke-dasharray: 1;
+  animation: refresh-draw var(--dur-bar) var(--refresh-ease) both;
+}
+
+/* DIGIT FLASH — `--refresh-rest` is the number's resting colour, set inline
+   by MonoNumber so the animation has something interpolatable to land on. */
+[data-theme-style="refresh"] .refresh-flash-up {
+  animation: refresh-flash-up var(--dur-flash) linear both;
+}
+[data-theme-style="refresh"] .refresh-flash-down {
+  animation: refresh-flash-down var(--dur-flash) linear both;
+}
+
+/* MASK CROSS-FADE — privacy toggle. No layout shift: tabular figures make
+   the masked string exactly as wide as the value it hides. */
+[data-theme-style="refresh"] .refresh-mask-fade {
+  animation: refresh-fade var(--dur-mask) linear both;
+}
+
+/* PRESSED — rows, cards, and anything else tappable. */
+[data-theme-style="refresh"] .refresh-pressable {
+  transition:
+    transform var(--dur-press) var(--refresh-ease),
+    background-color var(--dur-press) var(--refresh-ease);
+}
+[data-theme-style="refresh"] .refresh-pressable:active {
+  transform: scale(0.978);
+  background-color: var(--pressed);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme-style="refresh"] .refresh-enter,
+  [data-theme-style="refresh"] .refresh-bar-grow,
+  [data-theme-style="refresh"] .refresh-draw,
+  [data-theme-style="refresh"] .refresh-flash-up,
+  [data-theme-style="refresh"] .refresh-flash-down,
+  [data-theme-style="refresh"] .refresh-mask-fade {
+    animation: refresh-fade 120ms linear both;
+    animation-delay: 0ms;
+    transform: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+  [data-theme-style="refresh"] .refresh-metric-fill {
+    transition: none;
+  }
+  [data-theme-style="refresh"] .refresh-pressable {
+    transition: opacity 120ms linear;
+  }
+  [data-theme-style="refresh"] .refresh-pressable:active {
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. MonoNumber
+   -------------------------------------------------------------------------- */
+
+/* `pre` keeps the pad characters the count-up uses to hold a constant width
+   while the digits fill in — without it the row reflows every frame. */
+[data-theme-style="refresh"] .refresh-number {
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  white-space: pre;
+  display: inline-block;
+}
+
+/* --------------------------------------------------------------------------
+   3. StatTile
+   -------------------------------------------------------------------------- */
+
+[data-theme-style="refresh"] .refresh-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+
+[data-theme-style="refresh"] .refresh-stat-accent {
+  border-color: var(--accent-border-soft);
+}
+
+/* --------------------------------------------------------------------------
+   4. ChipRow + segmented switch
+   -------------------------------------------------------------------------- */
+
+/* Horizontal scroll with no visible scrollbar. The trailing gutter is a
+   pseudo-element so the last chip never clips against the screen edge. */
+[data-theme-style="refresh"] .refresh-chiprow {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+[data-theme-style="refresh"] .refresh-chiprow::-webkit-scrollbar {
+  display: none;
+}
+[data-theme-style="refresh"] .refresh-chiprow::after {
+  content: "";
+  flex: none;
+  width: var(--refresh-gutter, var(--gutter));
+}
+
+/* The button is the 44pt hit area; the span inside is the visible pill. */
+[data-theme-style="refresh"] .refresh-chip-hit {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-theme-style="refresh"] .refresh-chip {
+  display: block;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.25;
+  border: 1px solid transparent;
+  transition:
+    background-color var(--dur-chip) var(--refresh-ease),
+    color var(--dur-chip) var(--refresh-ease),
+    border-color var(--dur-chip) var(--refresh-ease);
+}
+
+[data-theme-style="refresh"] .refresh-chip-filled { padding: 6px 13px; border-radius: 18px; }
+[data-theme-style="refresh"] .refresh-chip-outlined { padding: 7px 14px; border-radius: 20px; }
+
+[data-theme-style="refresh"] .refresh-chip-off {
+  background: var(--surface-1);
+  border-color: var(--hairline);
+  color: var(--text-subtle);
+  font-weight: 400;
+}
+
+[data-theme-style="refresh"] .refresh-chip-filled.refresh-chip-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface-0);
+  font-weight: 600;
+}
+
+[data-theme-style="refresh"] .refresh-chip-outlined.refresh-chip-on {
+  background: var(--accent-bg);
+  border-color: var(--accent-border-strong);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+[data-theme-style="refresh"] .refresh-chip-hit:disabled { opacity: 0.4; cursor: default; }
+
+/* Segmented switch — CSP / CC / PMCC / LEAPS / WKLY. */
+[data-theme-style="refresh"] .refresh-seg-track {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+
+/* 36px + 8px of track padding = a 44pt control. The reference's 9px block
+   padding stays; min-height only adds the 3px that gets it to 44. */
+[data-theme-style="refresh"] .refresh-seg {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  transition:
+    background-color var(--dur-chip) var(--refresh-ease),
+    color var(--dur-chip) var(--refresh-ease);
+}
+
+[data-theme-style="refresh"] .refresh-seg-on {
+  background: var(--accent);
+  color: var(--surface-0);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   5. MetricBar
+   -------------------------------------------------------------------------- */
+
+[data-theme-style="refresh"] .refresh-metric {
+  overflow: hidden;
+  background: var(--surface-3);
+}
+
+/* The one sanctioned width animation: a small element with no siblings
+   depending on its size. */
+[data-theme-style="refresh"] .refresh-metric-fill {
+  height: 100%;
+  transition: width var(--dur-metric) var(--refresh-ease);
+}
+
+[data-theme-style="refresh"] .refresh-splitbar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--chart-dim);
+}
+
+[data-theme-style="refresh"] .refresh-barseries {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* --------------------------------------------------------------------------
+   6. DataRow
+   -------------------------------------------------------------------------- */
+
+[data-theme-style="refresh"] .refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  text-align: left;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+
+/* Risk is border-only. No icon, no fill — the badge already says it. */
+[data-theme-style="refresh"] .refresh-row-risk { border-color: var(--loss-border); }
+
+[data-theme-style="refresh"] .refresh-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* The two lines of a row are fixed-height, and DataRowSkeleton reuses these
+   exact classes. That is what makes a skeleton and the row replacing it the
+   same height by construction rather than by eyeballing. */
+[data-theme-style="refresh"] .refresh-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 21px;
+}
+
+/* Captions truncate. They never wrap — a wrapped caption changes row height
+   and breaks the list rhythm. */
+[data-theme-style="refresh"] .refresh-row-caption {
+  height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-theme-style="refresh"] .refresh-row-value {
+  flex: none;
+  text-align: right;
+}
+
+[data-theme-style="refresh"] .refresh-badge {
+  flex: none;
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 400;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+[data-theme-style="refresh"] .refresh-badge-info { background: var(--accent-bg); color: var(--accent); }
+[data-theme-style="refresh"] .refresh-badge-risk { background: var(--down-bg); color: var(--down); }
+[data-theme-style="refresh"] .refresh-badge-fact { background: var(--control); color: var(--text-subtle); }
+
+/* Skeleton blocks are sized from the real row's line boxes, not eyeballed,
+   so nothing jumps when the data lands. */
+[data-theme-style="refresh"] .refresh-skeleton { opacity: 0.45; }
+[data-theme-style="refresh"] .refresh-skel-block { background: var(--surface-3); border-radius: 4px; }
+[data-theme-style="refresh"] .refresh-skel-sub { background: var(--chart-dim); border-radius: 4px; }
