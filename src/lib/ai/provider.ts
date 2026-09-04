@@ -5,7 +5,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import { getDefaultAIProvider, getPreferredAIModel, trackTokenUsage } from "@/lib/db/admin";
 import { sendPushToAll } from "@/lib/notifications/push";
 import { CLAUDE_MODELS, GEMINI_MODELS } from "./constants";
@@ -57,7 +57,17 @@ async function callGemini(prompt: string, modelId: string, systemPrompt?: string
   const model = genAI.getGenerativeModel({
     model: modelId,
     ...(systemPrompt ? { systemInstruction: systemPrompt } : {}),
-    generationConfig: { maxOutputTokens: maxTokens },
+    // Gemini 2.5 spends "thinking" tokens out of maxOutputTokens and will
+    // expand to fill whatever it is given: a 10-item JSON request burned
+    // 2396/2500 and then 7678/8000 on thinking, returning truncated JSON both
+    // times. Raising the ceiling never helps — the budget has to be capped.
+    // Our prompts hand the model pre-computed evidence and ask it to write it
+    // up, so there is nothing here worth thinking about.
+    // thinkingConfig ships in the API but not in this SDK version's types.
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      thinkingConfig: { thinkingBudget: 0 },
+    } as GenerationConfig,
   });
 
   const result = await model.generateContent(prompt);
@@ -77,7 +87,15 @@ function isRateLimitError(e: unknown): boolean {
       msg.includes("429") ||
       msg.includes("quota") ||
       msg.includes("overloaded") ||
-      msg.includes("capacity");
+      msg.includes("capacity") ||
+      // An exhausted balance is as recoverable as a rate limit: the other
+      // provider is configured and works. Without this every AI feature dies
+      // silently the moment one provider's credits run out.
+      msg.includes("credit balance") ||
+      msg.includes("billing") ||
+      msg.includes("insufficient_quota") ||
+      msg.includes("payment required") ||
+      msg.includes("402");
   }
   return false;
 }

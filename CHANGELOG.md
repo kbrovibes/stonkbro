@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.39.0 — Trading Desk: Decision Journal + Debate Verdict + Risk Gate + Market Regime
+
+- **Decision Journal + Reflection** (`/journal`): every recommendation ever surfaced is journaled, then graded against what actually happened. API `/api/journal` (authenticated) exposes the history; cron `/api/cron/reflect` runs the grading. Backfilled 9,065 decisions from 255 historical scans.
+- **Bull/Bear Debate Verdict** (`/desk` page): deterministic evidence ledger produces a BUY/OVERWEIGHT/HOLD/UNDERWEIGHT/SELL rating; returns HOLD when evidence is balanced or thin rather than manufacturing a direction. One batched LLM call (2 per full scan) narrates the top candidates; degrades to ledger-only if AI is unavailable.
+- **Risk Desk** (`src/lib/risk/desk.ts`): deterministic portfolio risk gate — assignment capacity, single-name and sector concentration, correlated-cluster baskets, earnings clustering, liquidity. Emits APPROVE / SIZE_DOWN(n) / REJECT per candidate. Zero LLM calls.
+- **Market Regime** (`/api/regime`): SPY trend, VIX, breadth, risk appetite → RISK_ON / NEUTRAL / RISK_OFF / VOLATILE; auto-tightens the scanner's delta and DTE bands. Zero LLM calls.
+- **News Sentiment** (`src/lib/news/sentiment.ts`): deterministic keyword classifier plus one batched LLM call for all tickers at once; falls back to keyword-only when AI is unavailable.
+- **New /desk page** ("Trading Desk" in Options group): composited trading pipeline exposes Decision Journal, Verdict ratings, risk gate, and market regime in one place. API `/api/desk` serves the full pipeline output.
+- **Provider fallback fixes** (`src/lib/ai/provider.ts`): (1) fallback now fires on billing/credit-exhaustion errors, not just rate limits — so when Anthropic credits exhaust, graceful downgrade to configured Gemini instead of silent failure; (2) Gemini 2.5 `thinkingConfig.thinkingBudget = 0` to prevent "thinking" tokens eating into `maxOutputTokens` and truncating JSON responses.
+
 ## v0.38.3 — /more page fixed (Next 16) + PMCC tab on Options
 
 - **/more crashed with a server error since the Next 16 upgrade**: the page (a Server Component) called `getVisibleMoreGroups()` imported from the `"use client"` MoreNav module — Next 16 hard-errors on invoking client-module functions server-side. Nav data + filter moved to a server-safe `more-nav-data.tsx`; MoreNav keeps the interactive tile and re-exports for client consumers
