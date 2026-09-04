@@ -139,21 +139,34 @@ export async function getResolvedDecisions(opts?: {
   asOf?: Date;
   limit?: number;
 }): Promise<TradeDecisionRow[]> {
-  let query = supabaseAdmin
-    .from(TABLE)
-    .select("*")
-    .not("outcome", "is", null)
-    .order("expiry", { ascending: false });
+  // PostgREST caps a single response at 1000 rows regardless of .limit(), so a
+  // plain limit silently analyses only the most recent slice and reports it as
+  // the whole history — which inverts the headline expectancy. Page instead.
+  const want = opts?.limit ?? 2000;
+  const PAGE = 1000;
+  const rows: TradeDecisionRow[] = [];
 
-  if (opts?.symbol) query = query.eq("symbol", opts.symbol.toUpperCase());
-  if (opts?.strategy) query = query.eq("strategy", opts.strategy);
-  if (opts?.since) query = query.gte("decided_at", opts.since);
-  if (opts?.asOf) query = query.lte("resolved_at", opts.asOf.toISOString());
-  query = query.limit(opts?.limit ?? 2000);
+  for (let from = 0; from < want; from += PAGE) {
+    let query = supabaseAdmin
+      .from(TABLE)
+      .select("*")
+      .not("outcome", "is", null)
+      .order("expiry", { ascending: false })
+      .range(from, Math.min(from + PAGE, want) - 1);
 
-  const { data, error } = await query;
-  if (error) throw new Error(`getResolvedDecisions: ${error.message}`);
-  return (data ?? []) as TradeDecisionRow[];
+    if (opts?.symbol) query = query.eq("symbol", opts.symbol.toUpperCase());
+    if (opts?.strategy) query = query.eq("strategy", opts.strategy);
+    if (opts?.since) query = query.gte("decided_at", opts.since);
+    if (opts?.asOf) query = query.lte("resolved_at", opts.asOf.toISOString());
+
+    const { data: page, error: pageError } = await query;
+    if (pageError) throw new Error(`getResolvedDecisions: ${pageError.message}`);
+    if (!page?.length) break;
+    rows.push(...(page as TradeDecisionRow[]));
+    if (page.length < PAGE) break;
+  }
+
+  return rows;
 }
 
 export type DecisionStats = {
