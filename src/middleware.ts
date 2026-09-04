@@ -45,12 +45,15 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/plays") ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/csp-hunter") ||
+    pathname.startsWith("/desk") ||
     pathname.startsWith("/research") ||
     pathname.startsWith("/api/movers") ||
     pathname.startsWith("/api/bloodbath") ||
     pathname.startsWith("/api/recommendations") ||
     pathname.startsWith("/api/flow") ||
-    pathname.startsWith("/api/csp-hunter");
+    pathname.startsWith("/api/csp-hunter") ||
+    pathname.startsWith("/api/desk") ||
+    pathname.startsWith("/api/regime");
 
   // Redirect unauthenticated users to login
   if (

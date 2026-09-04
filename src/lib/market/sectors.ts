@@ -85,3 +85,17 @@ export function getAllSectorTickers(): string[] {
   }
   return [...all];
 }
+
+let tickerIndex: Map<string, Sector> | null = null;
+
+export function getSectorForTicker(symbol: string): Sector | undefined {
+  if (!tickerIndex) {
+    tickerIndex = new Map();
+    for (const s of SECTORS) {
+      for (const t of s.tickers) {
+        if (!tickerIndex.has(t)) tickerIndex.set(t, s);
+      }
+    }
+  }
+  return tickerIndex.get(symbol.toUpperCase());
+}

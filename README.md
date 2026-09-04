@@ -24,6 +24,9 @@ No paper trading simulators. No "educational" disclaimers hiding an empty app. T
 
 ## Features
 
+### Trading Desk (Decision Journal + Debate Verdict)
+The `/desk` page composes a full trading pipeline: Decision Journal journaling every recommendation ever surfaced and grading each against what actually happened (realized return, max drawdown, days held); Bull/Bear Debate Verdict producing deterministic ratings (BUY/OVERWEIGHT/HOLD/UNDERWEIGHT/SELL) with one batched LLM call narrating the top candidates' theses; Risk Desk vetting each candidate against portfolio constraints (assignment capacity, single-name/sector concentration, earnings clustering, liquidity); and Market Regime analysis (RISK_ON/NEUTRAL/RISK_OFF/VOLATILE) to auto-tighten scanner bands. Zero to one LLM call per component; gracefully degrades if AI is unavailable. New tables backfilled with 9,065 historical decisions from 255 scans.
+
 ### HOOD Theme Style (opt-in premium re-skin)
 Settings → Appearance → **Theme Style** switches the whole app between **Classic** (the default, unchanged) and **HOOD** — a Robinhood-leaning design system that composes with your existing Light/Dark/Auto choice. HOOD dark is true-black (#000) with near-black cards and 8%-white hairlines; HOOD light is paper-white with barely-there stone borders. Portfolio P&L jumps to 34–44px tabular numerals in vivid green or soft coral, secondary labels shrink to 10px uppercase micro-caps, tabs and sort chips become pills, and the header/bottom nav turn to frosted glass. Micro-motion — card rise-in, tab cross-fade, press-scale, shimmer skeletons — is entirely CSS and turns itself off under `prefers-reduced-motion`. The choice is per-device and applied before first paint.
 
@@ -240,6 +243,10 @@ npm run dev
 | `/api/briefing` | GET/POST | List audio briefings (7-day history); force-regenerate today's episode |
 | `/api/briefing/audio/[id]` | GET | Stream a briefing's MP3 (auth-gated, private bucket) |
 | `/api/cron/briefing` | GET | Generate an audio briefing episode (`?session=premarket\|midday\|close`, Vercel cron 3x/day) |
+| `/api/desk` | GET | Trading Desk pipeline: Decision Journal, Debate Verdict ratings, Risk Gate approvals, Market Regime |
+| `/api/journal` | GET | Decision Journal: all recommendations ever surfaced with realized outcomes (return, max drawdown, days held) |
+| `/api/cron/reflect` | GET | Grade all journaled decisions against realized P&L (Vercel cron) |
+| `/api/regime` | GET | Current Market Regime (RISK_ON/NEUTRAL/RISK_OFF/VOLATILE) + component scores (SPY RSI, VIX, breadth) |
 
 ---
 
@@ -259,6 +266,14 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.39.0** | Trading Desk — Decision Journal + Debate Verdict + Risk Gate + Market Regime; provider fallback fixes |
+| **v0.38.3** | /more page fixed for Next 16; PMCC tab on Options page |
+| **v0.38.2** | Biggest Movers for empty homes; second account allow-listed for brokerage features |
+| **v0.38.1** | HOOD is the default theme style |
+| **v0.38.0** | Premium home page + alert folder |
+| **v0.37.2** | Briefing player: playlist-first, auto-advance, true symmetry |
+| **v0.37.1** | HOOD actually looks like HOOD (comprehensive light-mode remap) |
+| **v0.37.0** | Briefings 3× a day + crash alerts restored to hourly |
 | **v0.36.0** | HOOD theme style — opt-in Robinhood-grade re-skin over both light and dark modes |
 | **v0.35.0** | Daily Audio Briefing — pre-market podcast curated to your portfolio, free TTS, offline player |
 | **v0.34.0** | Defense-first case studies — warning signs, exact order tickets, cost of inaction |

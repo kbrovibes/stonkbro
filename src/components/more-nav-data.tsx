@@ -45,6 +45,7 @@ export const MORE_GROUPS: MoreGroup[] = [
       { emoji: "📞", title: "Covered Calls", description: "Find optimal CCs", href: "/covered-calls" },
       { emoji: "🔄", title: "The Wheel", description: "Track wheel income", href: "/wheel" },
       { emoji: "🚦", title: "Trade Signals", description: "Roll/close alerts", href: "/signals" },
+      { emoji: "🏛️", title: "Trading Desk", description: "Regime, debate verdicts, risk gate", href: "/desk" },
     ],
   },
   {
