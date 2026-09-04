@@ -107,7 +107,15 @@
   --inset: rgba(255, 255, 255, 0.04);
   --control: rgba(255, 255, 255, 0.07);
 
+  /* The handoff's five text greys under the handoff's own names. These matter
+     because two of them collide with the app's semantic scale: the handoff's
+     `text-secondary` is bound above as `--text-muted`, and the handoff's
+     `text-muted` as `--text-subtle`. Anyone writing refresh markup from the
+     handoff reaches for these names, and without them would land one step
+     lighter or darker than the design without any error to notice. */
+  --text-primary: #F2F1EE;
   --text-body: #D6D7DA;
+  --text-secondary: #A7ABB4;
   --text-dim: #6E727B;
 
   --up: oklch(0.82 0.18 145);
