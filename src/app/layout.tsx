@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Geist_Mono, Black_Ops_One, Space_Grotesk } from "next/font/google";
+import { Plus_Jakarta_Sans, Geist_Mono, Black_Ops_One, Space_Grotesk, Sora, IBM_Plex_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -34,6 +34,23 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["400", "500", "600", "700"],
 });
 
+/* The REFRESH theme-style ships exactly two families: Sora for prose,
+   IBM Plex Mono for every number. Classic and HOOD still need the four
+   above, so these are additions, not replacements. */
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "stonkBRO",
   description: "Explosive stock discovery + options strategy automation",
@@ -63,7 +80,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} ${sora.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <head>
         <meta name="theme-color" content="#0E1014" />

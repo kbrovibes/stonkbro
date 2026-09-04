@@ -9,12 +9,16 @@ import { applyTheme, getStoredTheme } from "./theme";
  *   <html>; every visual difference lives in CSS (`hood.css` /
  *   `hood-motion.css`) scoped under that attribute, so both light and dark
  *   modes keep working.
+ * - `refresh` — the 2026 visual refresh. Sets `data-theme-style="refresh"`;
+ *   everything lives in `refresh.css` / `refresh-primitives.css`. Unlike the
+ *   other two it is DARK-ONLY: its token block outranks both `:root` and
+ *   `.dark`, so it renders identically in either mode.
  *
  * Persistence mirrors the font-theme pattern in `theme-fonts.ts`:
  * localStorage + an `applyX()` side-effect helper + an inline pre-paint
  * script so there is no flash of the wrong canvas.
  */
-export type ThemeStyle = "classic" | "hood";
+export type ThemeStyle = "classic" | "hood" | "refresh";
 
 export const THEME_STYLE_STORAGE_KEY = "stonkbro-theme-style";
 export const THEME_STYLE_ATTR = "data-theme-style";
@@ -31,11 +35,12 @@ export interface ThemeStyleOption {
 
 export const THEME_STYLES: ThemeStyleOption[] = [
   { key: "hood", label: "HOOD", hint: "True-black canvas, oversized money, pill controls. The default. Set per device." },
+  { key: "refresh", label: "Refresh", hint: "Dark-only. Three surface depths, amber signal, every number in mono. Set per device." },
   { key: "classic", label: "Classic", hint: "The original stonkBRO look. Set per device." },
 ];
 
 export function isThemeStyle(v: unknown): v is ThemeStyle {
-  return v === "classic" || v === "hood";
+  return v === "classic" || v === "hood" || v === "refresh";
 }
 
 export function getStoredThemeStyle(): ThemeStyle {
@@ -53,10 +58,10 @@ export function getStoredThemeStyle(): ThemeStyle {
 export function applyThemeStyle(style: ThemeStyle): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (style === "hood") root.setAttribute(THEME_STYLE_ATTR, "hood");
-  else root.removeAttribute(THEME_STYLE_ATTR);
-  // HOOD swaps the canvas (#000 / #FFF), so the PWA status-bar colour has to
-  // be recomputed. applyTheme() reads the attribute we just set.
+  if (style === "classic") root.removeAttribute(THEME_STYLE_ATTR);
+  else root.setAttribute(THEME_STYLE_ATTR, style);
+  // HOOD and REFRESH both swap the canvas, so the PWA status-bar colour has
+  // to be recomputed. applyTheme() reads the attribute we just set.
   applyTheme(getStoredTheme());
 }
 
@@ -73,4 +78,4 @@ export function setThemeStyle(style: ThemeStyle): void {
 }
 
 /** Inline pre-paint script source. Injected into <head> to prevent FOUC. */
-export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s!=='classic')document.documentElement.setAttribute('${THEME_STYLE_ATTR}','hood');}catch(e){}})();`;
+export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s==='classic')return;document.documentElement.setAttribute('${THEME_STYLE_ATTR}',s==='refresh'?'refresh':'hood');}catch(e){}})();`;
