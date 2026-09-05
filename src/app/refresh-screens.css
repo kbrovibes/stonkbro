@@ -9,11 +9,26 @@
    1. THE GATE. Refresh is an opt-in theme style, and every rule in the two
       files above is scoped under `[data-theme-style="refresh"]`. So a route
       cannot simply swap its markup for the refresh version — under HOOD or
-      Classic that markup would render as unstyled text. Instead each
-      refreshed route renders both trees, fetching its data once and handing
-      it to both, and these two classes decide which one is in the document.
-      The attribute is set by a pre-paint script in <head>, so the choice is
-      made before first paint and neither tree ever flashes.
+      Classic that markup would render as unstyled text.
+
+      These classes are one way to resolve that, not the required one. They
+      render both trees and hide one, which is flash-free but still commits
+      the hidden tree and runs its effects. That is fine for a static tree
+      and wrong for an expensive or side-effecting one, so the screens differ
+      on purpose:
+
+        · Portfolio and the Scanner mount a single tree, branching on
+          `useThemeStyle()`. Their classic trees are cheap enough that the
+          one hydration frame before the store settles costs nothing visible.
+        · Hindsight uses a local store with a `null` server snapshot instead,
+          because `useThemeStyle()` cannot say "not known yet" — its server
+          snapshot is a real style — and that screen's classic tree fires
+          backfill POSTs from its effects. One frame there is real broker
+          work, not a wasted render.
+
+      Prefer `useThemeStyle()`. Reach for a null-snapshot store only when a
+      one-frame classic mount has side effects. Do not "fix" a screen onto
+      these classes because this file offers them.
 
    2. Screen-specific motion that is not a primitive — currently the Pulse
       market-status dot.

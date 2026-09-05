@@ -43,6 +43,11 @@ export async function middleware(request: NextRequest) {
   const isGuestRoute =
     pathname === "/" ||
     pathname.startsWith("/plays") ||
+    // The refresh moved the market read off /plays and onto Home, so a guest
+    // who could previously see it on the scanner tab now has nowhere to. The
+    // holdings book gates on the session and returns empty for guests, so the
+    // page renders without tags or reordering.
+    pathname.startsWith("/home") ||
     pathname.startsWith("/today") ||
     pathname.startsWith("/csp-hunter") ||
     pathname.startsWith("/desk") ||
