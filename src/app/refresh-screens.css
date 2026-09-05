@@ -1,0 +1,104 @@
+/* ==========================================================================
+   REFRESH — screen-level CSS.
+   ==========================================================================
+
+   `refresh.css` holds the tokens and `refresh-primitives.css` the five
+   primitives. This file holds the two things a *screen* needs that neither
+   of those can own:
+
+   1. THE GATE. Refresh is an opt-in theme style, and every rule in the two
+      files above is scoped under `[data-theme-style="refresh"]`. So a route
+      cannot simply swap its markup for the refresh version — under HOOD or
+      Classic that markup would render as unstyled text. Instead each
+      refreshed route renders both trees, fetching its data once and handing
+      it to both, and these two classes decide which one is in the document.
+      The attribute is set by a pre-paint script in <head>, so the choice is
+      made before first paint and neither tree ever flashes.
+
+   2. Screen-specific motion that is not a primitive — currently the Pulse
+      market-status dot.
+
+   Unlayered on purpose, like the other two files: Tailwind's utilities live
+   in `@layer utilities`, and unlayered rules beat layered ones regardless of
+   specificity.
+   ========================================================================== */
+
+/* -- 1. The gate ---------------------------------------------------------- */
+
+.refresh-only {
+  display: none;
+}
+
+[data-theme-style="refresh"] .refresh-only {
+  display: block;
+}
+
+[data-theme-style="refresh"] .refresh-except {
+  display: none;
+}
+
+/* -- 2. Pulse movers list -------------------------------------------------- */
+
+/* `POSITION AT RISK` is the widest badge in the vocabulary and, like every
+   badge, it does not shrink. At the 440pt target it fits beside a ticker, a
+   sparkline and a percentage with room to spare; below about 380px it does
+   not, and something has to give. The sparkline goes, because it is the only
+   part of the row that carries no number — dropping it keeps the cause and
+   the price, and keeps the page from scrolling sideways. */
+@media (max-width: 380px) {
+  [data-theme-style="refresh"] [data-flip-list] .refresh-row > svg {
+    display: none;
+  }
+}
+
+/* -- 3. Pulse market-status dot ------------------------------------------- */
+
+/* Alive, not urgent: 0.5 → 1 → 0.5 across two seconds. Opacity only. */
+@keyframes refresh-status-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Pull-to-refresh spins the same 6px footprint, so nothing around it moves. */
+@keyframes refresh-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[data-theme-style="refresh"] .refresh-status-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+[data-theme-style="refresh"] .refresh-status-dot-live {
+  animation: refresh-status-pulse 2s var(--refresh-ease) infinite;
+}
+
+/* The ring is the dot with its fill removed and one quadrant cut away, at
+   the same 6px, so swapping to it on refresh costs no layout. */
+[data-theme-style="refresh"] .refresh-status-dot-busy {
+  background: none;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  animation: refresh-status-spin 600ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme-style="refresh"] .refresh-status-dot-live,
+  [data-theme-style="refresh"] .refresh-status-dot-busy {
+    animation: refresh-fade 120ms linear both;
+    transform: none;
+  }
+  [data-theme-style="refresh"] .refresh-status-dot-busy {
+    opacity: 0.5;
+  }
+}

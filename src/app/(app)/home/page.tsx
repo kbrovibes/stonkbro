@@ -9,8 +9,11 @@ import WatchlistWidget from "../WatchlistWidget";
 import UpcomingCatalysts from "../UpcomingCatalysts";
 import HomeBriefingCard from "@/components/briefing/HomeBriefingCard";
 import { hasPortfolioAccess } from "@/lib/portfolio-access";
+import { getHoldingBook } from "@/lib/portfolio-tags";
 import { getLatestBriefings } from "@/lib/db/briefings";
 import type { DailyBriefing } from "@/lib/briefing/types";
+import PulseScreen from "./PulseScreen";
+import { buildPulse, PULSE_INDEX_SYMBOLS } from "./pulse";
 
 export const dynamic = "force-dynamic";
 
@@ -48,23 +51,36 @@ export default async function DiscoverPage() {
     "NET", "SQ", "HOOD", "AFRM", "ABNB", "ARM", "SMCI", "MU",
     "LLY", "UNH", "BKNG", "WMT", "CAT", "GE", "MSTR", "RDDT",
   ];
-  const earningsSymbols = [...new Set([...allSymbols, ...EARNINGS_UNIVERSE])];
+  // Pulse ranks the whole scan universe, and the earnings calendar is one
+  // cached fetch filtered by symbol set, so widening it costs nothing.
+  const moverUniverse = [...new Set([...SCAN_UNIVERSE, ...allSymbols])];
+  const earningsSymbols = [...new Set([...allSymbols, ...EARNINGS_UNIVERSE, ...moverUniverse])];
   let upcomingEarnings: { symbol: string; earningsDate: string; daysUntil: number; timing: string; category: string }[] = [];
 
   // Quotes (watchlist symbols) and the earnings calendar both depend only on
-  // the symbol list, not on each other — fetch them concurrently.
-  const [allQuotes, earnings, briefing, moverQuotes] = await Promise.all([
+  // the symbol list, not on each other — fetch them concurrently. The
+  // holdings book is read alongside them and priced afterwards, so a broker
+  // round-trip never sits in front of the market data.
+  const [allQuotes, earnings, briefing, moverQuotes, indexQuotes, holdingBook] = await Promise.all([
     allSymbols.length > 0 ? getQuotes(allSymbols).catch(() => []) : Promise.resolve([]),
     getEarningsCalendar(earningsSymbols).catch(() => []),
     user && hasPortfolioAccess(user.email)
       ? getLatestBriefings(1).then((b): DailyBriefing | null => b[0] ?? null).catch(() => null)
       : Promise.resolve<DailyBriefing | null>(null),
-    // No watchlists (new user / guest) → the home screen would be empty.
-    // Fill it with the day's biggest movers from the scan universe instead.
-    watchlists.length === 0
-      ? getQuotes(SCAN_UNIVERSE).catch(() => [])
-      : Promise.resolve<QuoteData[]>([]),
+    // Pulse always needs these; without a watchlist the classic home fills
+    // its empty state with the same quotes rather than fetching twice.
+    getQuotes(moverUniverse).catch((): QuoteData[] => []),
+    getQuotes(PULSE_INDEX_SYMBOLS).catch((): QuoteData[] => []),
+    // Guests get an empty book — `getHoldingBook` gates on the session.
+    getHoldingBook(user).catch(() => ({ held: [], short: [] })),
   ]);
+
+  const pulse = await buildPulse({
+    universeQuotes: moverQuotes,
+    indexQuotes,
+    earnings,
+    book: holdingBook,
+  });
 
   if (allQuotes.length > 0) {
     const quoteMap = new Map(allQuotes.map((q) => [q.symbol, q]));
@@ -133,7 +149,19 @@ export default async function DiscoverPage() {
   ];
 
   return (
-    <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+    <>
+      {/* The refresh Pulse screen and the classic home are both rendered and
+          one is hidden in CSS. Refresh is an opt-in per-device theme style
+          held in localStorage, so the server cannot know which to build;
+          `<html data-theme-style>` is set by a pre-paint script, so the
+          choice still lands before first paint and neither tree flashes.
+          Both trees read the same already-fetched data — nothing is fetched
+          twice. See `src/app/refresh-screens.css`. */}
+      <div className="refresh-only">
+        <PulseScreen {...pulse} />
+      </div>
+
+      <div className="refresh-except flex flex-col flex-1 px-4 py-5 gap-5">
       {briefing && <HomeBriefingCard briefing={briefing} />}
 
       <div className="hood-stagger grid grid-cols-3 gap-2">
@@ -211,6 +239,7 @@ export default async function DiscoverPage() {
           </Link>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
