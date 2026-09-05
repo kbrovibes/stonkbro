@@ -46,9 +46,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/today") ||
     pathname.startsWith("/csp-hunter") ||
     pathname.startsWith("/desk") ||
-    // Primitives gallery for the visual refresh. Static, no data access.
-    // Delete with the route before the refresh merges to main.
-    pathname.startsWith("/refresh-lab") ||
     pathname.startsWith("/research") ||
     pathname.startsWith("/api/movers") ||
     pathname.startsWith("/api/bloodbath") ||

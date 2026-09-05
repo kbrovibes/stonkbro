@@ -83,7 +83,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${geistMono.variable} ${blackOpsOne.variable} ${spaceGrotesk.variable} ${sora.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <head>
-        <meta name="theme-color" content="#0E1014" />
+        <meta name="theme-color" content="#08090B" />
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_THEME_STYLE_SCRIPT }} />
       </head>

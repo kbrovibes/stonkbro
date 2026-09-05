@@ -161,6 +161,10 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/statusline.cjs\"'"
+  },
   "permissions": {
     "allow": [
       "Bash(npx @claude-flow*)",
@@ -175,7 +179,7 @@
   },
   "attribution": {
     "commit": "Co-Authored-By: RuFlo <ruv@ruv.net>",
-    "pr": "\ud83e\udd16 Generated with [RuFlo](https://github.com/ruvnet/ruflo)"
+    "pr": "🤖 Generated with [RuFlo](https://github.com/ruvnet/ruflo)"
   },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",

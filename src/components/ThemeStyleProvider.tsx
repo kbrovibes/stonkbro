@@ -5,6 +5,7 @@ import {
   applyThemeStyle,
   getStoredThemeStyle,
   isThemeStyle,
+  DEFAULT_THEME_STYLE,
   THEME_STYLE_ATTR,
   THEME_STYLE_EVENT,
   type ThemeStyle,
@@ -22,7 +23,7 @@ function getSnapshot(): ThemeStyle {
 }
 
 function getServerSnapshot(): ThemeStyle {
-  return "hood";
+  return DEFAULT_THEME_STYLE;
 }
 
 /**

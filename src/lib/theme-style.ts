@@ -24,8 +24,8 @@ export const THEME_STYLE_STORAGE_KEY = "stonkbro-theme-style";
 export const THEME_STYLE_ATTR = "data-theme-style";
 export const THEME_STYLE_EVENT = "stonkbro:theme-style-change";
 
-/** HOOD is the default for everyone; an explicit "classic" choice sticks. */
-export const DEFAULT_THEME_STYLE: ThemeStyle = "hood";
+/** The refresh is the default for everyone; an explicit choice of another style sticks. */
+export const DEFAULT_THEME_STYLE: ThemeStyle = "refresh";
 
 export interface ThemeStyleOption {
   key: ThemeStyle;
@@ -78,4 +78,4 @@ export function setThemeStyle(style: ThemeStyle): void {
 }
 
 /** Inline pre-paint script source. Injected into <head> to prevent FOUC. */
-export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s==='classic')return;document.documentElement.setAttribute('${THEME_STYLE_ATTR}',s==='refresh'?'refresh':'hood');}catch(e){}})();`;
+export const PRE_PAINT_THEME_STYLE_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STYLE_STORAGE_KEY}');if(s==='classic')return;document.documentElement.setAttribute('${THEME_STYLE_ATTR}',s==='hood'?'hood':'refresh');}catch(e){}})();`;
