@@ -8,7 +8,7 @@ import { readSnapshot, saveSnapshot } from "@/lib/client-cache";
 import { useOffline } from "@/lib/offline";
 import { usePrivacy } from "@/components/PrivacyProvider";
 import { maskValue, privateCount } from "@/lib/privacy";
-import { THEME_STYLE_ATTR, THEME_STYLE_EVENT } from "@/lib/theme-style";
+import { useThemeStyle } from "@/components/ThemeStyleProvider";
 import RefreshPortfolio from "@/components/portfolio/RefreshPortfolio";
 import type { ChainRowModel, MonthModel } from "@/components/portfolio/RefreshPortfolio";
 import type { RowBadge } from "@/components/refresh";
@@ -1141,16 +1141,11 @@ export default function PortfolioPage() {
   useRefreshEvent(fetchChains);
 
   // The refresh screen is a different layout, not a re-skin, so it is chosen
-  // here rather than in CSS. Read off <html>, which the pre-paint script has
-  // already set — no second source of truth for the stored style.
-  const [refreshStyle, setRefreshStyle] = useState(false);
-  useEffect(() => {
-    const read = () =>
-      setRefreshStyle(document.documentElement.getAttribute(THEME_STYLE_ATTR) === "refresh");
-    read();
-    window.addEventListener(THEME_STYLE_EVENT, read);
-    return () => window.removeEventListener(THEME_STYLE_EVENT, read);
-  }, []);
+  // in JS rather than by a marker class. `useThemeStyle` reads the <html>
+  // attribute the pre-paint script set; its server snapshot is the app
+  // default, so SSR and hydration render the classic tree and the swap
+  // happens once, straight after.
+  const refreshStyle = useThemeStyle() === "refresh";
 
   // Back online — replace the snapshot with the live payload.
   useEffect(() => {
