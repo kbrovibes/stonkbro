@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getQuote } from "@/lib/market/yahoo";
 import StockChart from "@/components/StockChart";
 import TickerCSPSection from "@/components/TickerCSPSection";
+import ResearchScreen from "@/components/refresh-screens/ResearchScreen";
 
 type Params = Promise<{ symbol: string }>;
 
@@ -50,7 +51,25 @@ export default async function TickerPage({ params }: { params: Params }) {
   const pctFrom52Low = ((quote.price - quote.fiftyTwoWeekLow) / quote.fiftyTwoWeekLow * 100).toFixed(1);
 
   return (
-    <div className="flex flex-col flex-1 px-4 py-5 gap-5">
+    <>
+      {/* Only one of the two trees below ever paints, decided in CSS before
+          first paint so neither flashes. Both read the same already-fetched
+          quote — nothing is fetched twice, and `ResearchScreen` waits on the
+          same attribute before it fetches the rest, so Classic and HOOD users
+          pay nothing for a screen they will not see.
+          See `src/app/refresh-screens.css`. */}
+      <div className="refresh-only flex-1">
+        <ResearchScreen
+          quote={{
+            symbol: quote.symbol,
+            name: quote.name,
+            price: quote.price,
+            changePct: quote.changePct,
+          }}
+        />
+      </div>
+
+    <div className="refresh-except flex flex-col flex-1 px-4 py-5 gap-5">
       {/* Back */}
       <Link href="/" className="flex items-center gap-1 text-sm text-stone-400 dark:text-text-faint hover:text-stone-600 w-fit">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -153,5 +172,6 @@ export default async function TickerPage({ params }: { params: Params }) {
         </Link>
       </div>
     </div>
+    </>
   );
 }
