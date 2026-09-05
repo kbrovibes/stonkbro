@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import OfflineGate from "@/components/OfflineGate";
+import { useThemeStyle } from "@/components/ThemeStyleProvider";
 import MarketTab from "./MarketTab";
 import ScannerTabs, { type ScannerTab } from "./ScannerTabs";
 import PMCCContent from "../pmcc-picks/PMCCContent";
+import ScannerScreen from "./refresh/ScannerScreen";
 
 type PlaysTab = "market" | "pmcc" | ScannerTab;
 
@@ -27,6 +29,12 @@ export default function PlaysPage() {
 
 function PlaysView() {
   const [tab, setTab] = useState<PlaysTab>("market");
+  const themeStyle = useThemeStyle();
+
+  // The refresh design puts the market read on Home/Pulse and gives this
+  // route to the scanner alone, with the five strategies as one segmented
+  // switch rather than five tabs. Classic and HOOD are untouched below.
+  if (themeStyle === "refresh") return <ScannerScreen />;
 
   return (
     <div className="flex flex-col flex-1">

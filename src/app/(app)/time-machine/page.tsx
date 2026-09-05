@@ -1,171 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import OfflineGate from "@/components/OfflineGate";
 import { usePrivacy } from "@/components/PrivacyProvider";
 import { maskValue, privateCount } from "@/lib/privacy";
 import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
+import { isThemeStyle, THEME_STYLE_ATTR, THEME_STYLE_EVENT, type ThemeStyle } from "@/lib/theme-style";
+import HindsightRefresh from "@/components/time-machine/HindsightRefresh";
 
-// =========================================================================
-// Types — mirrors GET /api/portfolio/time-machine response shape from spec
-// =========================================================================
-
-interface SnapshotPosition {
-  symbol: string;
-  units: number;
-  costBasis: number;
-  snapshotPrice: number;
-}
-interface SnapshotOption {
-  ticker: string;
-  underlying: string;
-  type: "CALL" | "PUT";
-  strike: number;
-  expiry: string;
-  units: number;
-  premiumCollected: number;
-}
-interface SimStockValue {
-  symbol: string;
-  units: number;
-  todayPrice: number;
-  value: number;
-}
-type OptionStatus = "live" | "exercised" | "assigned" | "expired-otm";
-interface SimOptionValue {
-  ticker: string;
-  status: OptionStatus;
-  value: number;
-  note?: string;
-  premiumCollected: number;
-}
-
-interface OptionRealizationItem {
-  date: string;
-  ticker: string;
-  underlying: string;
-  optionType: "CALL" | "PUT";
-  strike: number;
-  expiry: string;
-  side: "BUY" | "SELL";
-  units: number;
-  amount: number;
-}
-
-interface ExitAnalysisItem {
-  symbol: string;
-  unitsSold: number;
-  avgExitPrice: number;
-  exitProceeds: number;
-  todayPrice: number;
-  todayValueIfHeld: number;
-  diffPerShare: number;
-  totalDiff: number;
-  changePct: number;
-}
-
-interface StockRealizationItem {
-  date: string;
-  symbol: string;
-  units: number;
-  proceeds: number;
-  avgCost: number;
-  costBasis: number;
-  gain: number;
-  earliestBuyDate: string | null;
-  holdDays: number | null;
-  term: "ST" | "LT" | "skipped";
-}
-interface CashFlowItem { date: string; amount: number }
-interface DividendItem { date: string; symbol: string; amount: number }
-
-interface TimeMachineResult {
-  snapshotDate: string;
-  todayDate: string;
-  earliestAvailable?: string;
-  snapshot: {
-    positions: SnapshotPosition[];
-    options: SnapshotOption[];
-    cash: number;
-    total: number;
-  };
-  simulation: {
-    stockValues: SimStockValue[];
-    optionValues: SimOptionValue[];
-    cashStart: number;
-    deposits: CashFlowItem[];
-    withdrawals: CashFlowItem[];
-    dividends: DividendItem[];
-    interest: CashFlowItem[];
-    totalDepositsAdded: number;
-    totalWithdrawalsFunded: number;
-    cashFinal?: number;
-    cashBreakdown?: {
-      atSnapshot: number;
-      fromOptionReplay: number;
-      fromDeposits: number;
-      fromDividends: number;
-      fromInterest: number;
-      final: number;
-    };
-    total: number;
-  };
-  actual: {
-    total: number;
-    breakdown?: {
-      stocks: number;
-      options: number;
-      cash: number;
-      accountCount: number;
-      stockPositionCount: number;
-      optionPositionCount: number;
-      perAccount?: Array<{
-        id: string; name: string; institution: string; number: string;
-        stocks: number; options: number; cash: number; total: number;
-      }>;
-    };
-  };
-  delta: { absolute: number; pct: number; favorableToHold: boolean };
-  realizedGains?: {
-    options: number;
-    stocksShortTerm: number;
-    stocksLongTerm: number;
-    total: number;
-    estimatedTax: number;
-    taxBreakdown: {
-      stcgRate: number;
-      ltcgRate: number;
-      stcgBase: number;
-      ltcgBase: number;
-      stcgTax: number;
-      ltcgTax: number;
-    };
-    taxRateLabel: string;
-    optionsBreakdown?: OptionRealizationItem[];
-    stocksBreakdown?: StockRealizationItem[];
-  };
-  exitAnalysis?: ExitAnalysisItem[];
-  rsuVests?: {
-    items: Array<{ date: string; symbol: string; units: number; vestPrice: number; valueAtVest: number; source: "description" | "amzn-rule" }>;
-    totalUnitsBySymbol: Record<string, number>;
-    totalValueAtVest: number;
-    monthsWithVests: string[];
-  };
-  assumptions: string[];
-  payloadVersion?: number;
-  engine?: "forward" | "reverse";
-  reconciliation?: {
-    passed: boolean;
-    maxSharesDelta: number;
-    worstSymbol: string | null;
-    cashDelta: number;
-    mismatches: Array<{ symbol: string; reconstructed: number; actual: number; delta: number }>;
-    tolerance: { shares: number; cash: number };
-  };
-  /** ISO timestamp injected by the cached route; absent on live ?date= simulation. */
-  _computedAt?: string;
-}
+import type {
+  ExitAnalysisItem,
+  OptionStatus,
+  SnapshotMeta,
+  TimeMachineResult,
+} from "./types";
 
 // =========================================================================
 // Mock fixture — used until /api/portfolio/time-machine is wired up
@@ -215,10 +64,40 @@ const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
 // Page
 // =========================================================================
 
+/**
+ * Which theme style is live, or `null` until the client knows.
+ *
+ * DELIBERATELY NOT `useThemeStyle()`, which every other refreshed screen uses.
+ * That hook's server snapshot is `"hood"`, so the classic tree renders through
+ * hydration and then swaps — one frame, invisible, and fine on those screens.
+ * It is not fine here: this screen's classic tree auto-fires backfill POSTs
+ * from its effects, so a one-frame mount would kick off real broker work for
+ * a refresh user. A `null` server snapshot mounts neither tree until the
+ * client knows, which is the only version of this that is side-effect free.
+ *
+ * `refresh-screens.css` still gates both wrappers on paint; this is the gate
+ * that decides what actually mounts.
+ */
+function subscribeStyle(onChange: () => void) {
+  window.addEventListener(THEME_STYLE_EVENT, onChange);
+  return () => window.removeEventListener(THEME_STYLE_EVENT, onChange);
+}
+// Same normalisation as `useThemeStyle()`, via the same exported predicate:
+// Classic REMOVES the attribute rather than setting `"classic"`, and anything
+// unrecognised is Classic too. Only the SERVER snapshot is null.
+const readStyle = (): ThemeStyle => {
+  const attr = document.documentElement.getAttribute(THEME_STYLE_ATTR);
+  return isThemeStyle(attr) ? attr : "classic";
+};
+const readStyleOnServer = () => null;
+
 export default function TimeMachinePage() {
+  const themeStyle = useSyncExternalStore(subscribeStyle, readStyle, readStyleOnServer);
+  const isRefresh = themeStyle === "refresh";
   return (
     <OfflineGate label="Time Machine">
-      <TimeMachineView />
+      <div className="refresh-only">{isRefresh ? <HindsightRefresh /> : null}</div>
+      <div className="refresh-except">{themeStyle !== null && !isRefresh ? <TimeMachineView /> : null}</div>
     </OfflineGate>
   );
 }
@@ -244,7 +123,6 @@ function TimeMachineView() {
   const [regenerating, setRegenerating] = useState(false);
 
   // Backfilled monthly snapshots — drives the colored month-button strip.
-  type SnapshotMeta = { snapshotDate: string; deltaAbsolute: number; favorableToHold: boolean; computedAt: string; payloadVersion: number | null };
   const [snapshotList, setSnapshotList] = useState<SnapshotMeta[]>([]);
   const [earliestAvailableMeta, setEarliestAvailableMeta] = useState<string | null>(null);
   const [latestPayloadVersion, setLatestPayloadVersion] = useState<number | null>(null);

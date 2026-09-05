@@ -1,0 +1,341 @@
+/* ==========================================================================
+   REFRESH — the 2026 visual refresh, as an opt-in design system.
+   ==========================================================================
+
+   Activated by `data-theme-style="refresh"` on <html> (see
+   `src/lib/theme-style.ts`). When the attribute is absent NOTHING in this
+   file matches, so Classic and HOOD render exactly as they did before.
+
+   Like `hood.css`, everything here is intentionally unlayered CSS. Tailwind
+   v4 puts its utilities inside `@layer utilities`, and unlayered rules win
+   over layered ones regardless of specificity — that is how the remap layer
+   at the bottom can re-skin components that hardcode `bg-white` /
+   `text-stone-600` without forking a single one.
+
+   Two differences from HOOD worth knowing before you edit this file:
+
+   1. REFRESH IS DARK-ONLY. There is exactly one token block, and it beats
+      both `:root` and `.dark` from globals.css on specificity ((0,2,0) vs
+      (0,1,0)), so the page renders identically whichever mode the user is
+      in. Do not add a light variant.
+   2. It carries its own type. Sora for prose, IBM Plex Mono for every
+      number, with `tabular-nums` forced on the mono family — that is what
+      stops columns jittering as prices tick, and it is not optional.
+
+   Layout:
+     1. Tokens
+     2. Gradients + motion + geometry tokens
+     3. Tailwind theme extension (`bg-surface-2`, `text-text-dim`, …)
+     4. Ground + type
+     5. Remap layer (makes existing components inherit the new look)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Tokens
+   --------------------------------------------------------------------------
+   Two groups. The first BINDS the refresh palette onto the semantic names
+   globals.css already defines, so every existing component picks the new
+   look up for free. The second adds the refresh-only tokens that have no
+   equivalent in the old system.
+
+   Handoff name        →  bound to
+   ------------------     ------------------------------------------------
+   surface-0           →  --surface, --surface-sunken, --background
+   surface-1           →  --surface-elevated
+   surface-2           →  --surface-muted
+   hairline            →  --border
+   hairline-strong     →  --border-strong
+   text-primary        →  --text, --foreground
+   text-secondary      →  --text-muted
+   text-muted          →  --text-subtle
+   text-dim            →  --text-faint
+   up                  →  --gain
+   down                →  --loss
+   accent              →  --accent
+   -------------------------------------------------------------------------- */
+:root[data-theme-style="refresh"] {
+  --background: #08090B;
+  --foreground: #F2F1EE;
+
+  /* Surfaces — three depths, no shadows anywhere. Depth is surface + hairline. */
+  --surface: #08090B;
+  --surface-elevated: #131519;
+  --surface-muted: #1E2229;
+  --surface-sunken: #08090B;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.08);
+
+  --text: #F2F1EE;
+  --text-muted: #A7ABB4;
+  --text-subtle: #8B8F98;
+  --text-faint: #6E727B;
+  --text-inverse: #08090B;
+
+  --gain: oklch(0.82 0.18 145);
+  --gain-strong: oklch(0.82 0.18 145);
+  --gain-bg: rgba(120, 220, 150, 0.13);
+  --gain-border: rgba(120, 220, 150, 0.28);
+
+  --loss: oklch(0.68 0.19 25);
+  --loss-strong: oklch(0.68 0.19 25);
+  --loss-bg: rgba(255, 120, 110, 0.14);
+  --loss-border: rgba(255, 120, 110, 0.28);
+
+  --accent: oklch(0.80 0.16 85);
+  --accent-hover: oklch(0.80 0.16 85);
+  --accent-bg: rgba(255, 190, 60, 0.14);
+  --accent-border: oklch(0.80 0.16 85 / 0.35);
+
+  /* The logo square and market-status dot are amber here, not HOOD green. */
+  --brand: oklch(0.80 0.16 85);
+
+  /* ---- refresh-only tokens ------------------------------------------- */
+
+  /* The three depths again, under their handoff names. Use these in new
+     refresh markup; the semantic aliases above exist for old components. */
+  --surface-0: #08090B;
+  --surface-1: #131519;
+  --surface-2: #1E2229;
+  --surface-3: #22262D;
+  --raise-top: #191C22;
+
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.08);
+  --hairline-soft: rgba(255, 255, 255, 0.05); /* dividers inside grouped lists */
+  --inset: rgba(255, 255, 255, 0.04);
+  --control: rgba(255, 255, 255, 0.07);
+
+  /* The handoff's five text greys under the handoff's own names. These matter
+     because two of them collide with the app's semantic scale: the handoff's
+     `text-secondary` is bound above as `--text-muted`, and the handoff's
+     `text-muted` as `--text-subtle`. Anyone writing refresh markup from the
+     handoff reaches for these names, and without them would land one step
+     lighter or darker than the design without any error to notice. */
+  --text-primary: #F2F1EE;
+  --text-body: #D6D7DA;
+  --text-secondary: #A7ABB4;
+  --text-dim: #6E727B;
+
+  --up: oklch(0.82 0.18 145);
+  --up-bg: rgba(120, 220, 150, 0.13);
+  --down: oklch(0.68 0.19 25);
+  --down-bg: rgba(255, 120, 110, 0.14);
+  --assigned: oklch(0.72 0.15 300);
+  --warn-orange: oklch(0.76 0.16 55);
+
+  --neutral-bar: #2A2F37;
+  --chart-dim: #1A1D23;
+
+  /* Accent border at the three alphas the screens actually use. */
+  --accent-border-soft: oklch(0.80 0.16 85 / 0.28);
+  --accent-border-strong: oklch(0.80 0.16 85 / 0.5);
+
+  /* Pressed state for rows and cards. */
+  --pressed: #191C22;
+
+  /* Chrome (tab bar, docked composer). */
+  --chrome: rgba(12, 13, 16, 0.92);
+  --chrome-hairline: rgba(255, 255, 255, 0.07);
+}
+
+/* --------------------------------------------------------------------------
+   2. Gradients, geometry, motion
+   -------------------------------------------------------------------------- */
+:root[data-theme-style="refresh"] {
+  /* Marks the one card on a screen that carries the answer. */
+  --gradient-emphasis: linear-gradient(180deg, #191C22, #131519);
+  /* ROC bars: amber at the start running to green. */
+  --gradient-metric: linear-gradient(90deg, #FFC23D, oklch(0.82 0.18 145));
+
+  /* Area fill under hero charts: a vertical `up` ramp to nothing. */
+  --chart-area-from: 0.26;
+  --chart-area-to: 0;
+
+  --radius-badge: 9px;
+  --radius-inset: 10px;
+  --radius-control: 12px;
+  --radius-block: 16px;
+  --radius-row: 18px;
+  --radius-card: 20px;
+  --radius-composer: 22px;
+
+  --gutter: 22px;
+
+  --refresh-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-press: 120ms;
+  --dur-mask: 140ms;
+  --dur-chip: 180ms;
+  --dur-flip: 240ms;
+  --dur-flash: 300ms;
+  --dur-enter: 340ms;
+  --dur-bar: 400ms;
+  --dur-metric: 500ms;
+  --dur-count: 600ms;
+}
+
+/* --------------------------------------------------------------------------
+   3. Tailwind theme extension
+   --------------------------------------------------------------------------
+   `inline` so the utility emits `var(--surface-2)` rather than a copy of the
+   value — the utility then resolves per theme-style, and outside refresh it
+   simply has nothing to resolve to. Same trick globals.css uses.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-raise-top: var(--raise-top);
+
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-hairline-soft: var(--hairline-soft);
+  --color-inset: var(--inset);
+  --color-control: var(--control);
+
+  --color-text-body: var(--text-body);
+  --color-text-dim: var(--text-dim);
+
+  --color-up: var(--up);
+  --color-up-bg: var(--up-bg);
+  --color-down: var(--down);
+  --color-down-bg: var(--down-bg);
+  --color-assigned: var(--assigned);
+  --color-warn-orange: var(--warn-orange);
+  --color-neutral-bar: var(--neutral-bar);
+  --color-chart-dim: var(--chart-dim);
+
+  --font-refresh-sans: var(--font-sora), system-ui, -apple-system, sans-serif;
+  --font-refresh-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  /* `font-refresh-mono` alone gives tabular figures — the `--font-*--*`
+     suffix is Tailwind v4's way of attaching properties to a family. */
+  --font-refresh-mono--font-variant-numeric: tabular-nums;
+  --font-refresh-mono--font-feature-settings: "tnum" 1;
+}
+
+/* --------------------------------------------------------------------------
+   4. Ground and type
+   --------------------------------------------------------------------------
+   `body` in globals.css resolves its font from `--app-font`, which
+   ThemeFontProvider sets from the user's Settings choice. Refresh ships two
+   families and no third, so it overrides that — a higher-specificity
+   unlayered rule, not a change to globals.css.
+   -------------------------------------------------------------------------- */
+:root[data-theme-style="refresh"] body {
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-sora), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every number, eyebrow label, and ticker symbol. Tabular figures are the
+   whole point: without them a price tick shifts the column. */
+[data-theme-style="refresh"] .font-mono,
+[data-theme-style="refresh"] .refresh-mono {
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Uppercase mono label above a value. 9–11px, wide tracking, text-dim. */
+[data-theme-style="refresh"] .refresh-eyebrow {
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Sora headings tighten; the reference never sets a positive tracking on prose. */
+[data-theme-style="refresh"] .refresh-title {
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+[data-theme-style="refresh"] .refresh-heading {
+  font-size: 19px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-theme-style="refresh"] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   5. REMAP LAYER
+   --------------------------------------------------------------------------
+   The app's light mode is written in hardcoded palette utilities
+   (bg-white, text-stone-*, text-sky-*, text-emerald-*) with tokens only on
+   the `dark:` variants. Refresh is dark-only, so a user in LIGHT mode would
+   otherwise get paper-white cards on a near-black ground.
+
+   Same structure as hood.css's remap layer, and for the same reason:
+   text/status remaps apply in both modes (each light class is tier-paired
+   with a `dark:` token class that resolves to the same variable), while
+   surface/border remaps are LIGHT-ONLY — in dark mode the `dark:` variants
+   already point at tokens, and some pair a different surface than the light
+   class implies.
+   -------------------------------------------------------------------------- */
+
+/* Text tiers */
+:root[data-theme-style="refresh"] .text-stone-900,
+:root[data-theme-style="refresh"] .text-stone-800 { color: var(--text); }
+:root[data-theme-style="refresh"] .text-stone-700,
+:root[data-theme-style="refresh"] .text-stone-600 { color: var(--text-muted); }
+:root[data-theme-style="refresh"] .text-stone-500 { color: var(--text-subtle); }
+:root[data-theme-style="refresh"] .text-stone-400,
+:root[data-theme-style="refresh"] .text-stone-300 { color: var(--text-faint); }
+
+/* Status colours */
+:root[data-theme-style="refresh"] .text-emerald-600,
+:root[data-theme-style="refresh"] .text-emerald-700 { color: var(--up); }
+:root[data-theme-style="refresh"] .text-rose-600,
+:root[data-theme-style="refresh"] .text-rose-500,
+:root[data-theme-style="refresh"] .text-rose-700,
+:root[data-theme-style="refresh"] .text-red-600,
+:root[data-theme-style="refresh"] .text-red-500,
+:root[data-theme-style="refresh"] .text-red-700 { color: var(--down); }
+
+/* Every sky-blue action goes amber */
+:root[data-theme-style="refresh"] .text-sky-500,
+:root[data-theme-style="refresh"] .text-sky-600,
+:root[data-theme-style="refresh"] .text-sky-700,
+:root[data-theme-style="refresh"] .text-sky-800,
+:root[data-theme-style="refresh"] .text-blue-600 { color: var(--accent); }
+
+/* Filled amber actions need near-black labels, never white */
+:root[data-theme-style="refresh"] .bg-accent { color: var(--surface-0); }
+
+/* Surfaces & borders — light mode only (dark: variants are already tokens) */
+:root[data-theme-style="refresh"]:not(.dark) .bg-white { background-color: var(--surface-1); }
+:root[data-theme-style="refresh"]:not(.dark) .bg-stone-50,
+:root[data-theme-style="refresh"]:not(.dark) .bg-stone-100 { background-color: var(--surface-2); }
+:root[data-theme-style="refresh"]:not(.dark) .bg-sky-50,
+:root[data-theme-style="refresh"]:not(.dark) .bg-sky-100 { background-color: var(--accent-bg); }
+:root[data-theme-style="refresh"]:not(.dark) .bg-emerald-50,
+:root[data-theme-style="refresh"]:not(.dark) .bg-emerald-100 { background-color: var(--up-bg); }
+:root[data-theme-style="refresh"]:not(.dark) .bg-rose-50,
+:root[data-theme-style="refresh"]:not(.dark) .bg-red-50 { background-color: var(--down-bg); }
+:root[data-theme-style="refresh"]:not(.dark) .border-stone-100 { border-color: var(--hairline-soft); }
+:root[data-theme-style="refresh"]:not(.dark) .border-stone-200 { border-color: var(--hairline); }
+:root[data-theme-style="refresh"]:not(.dark) .border-emerald-200 { border-color: var(--gain-border); }
+:root[data-theme-style="refresh"]:not(.dark) .border-sky-200 { border-color: var(--accent-border); }
+:root[data-theme-style="refresh"]:not(.dark) .border-red-200,
+:root[data-theme-style="refresh"]:not(.dark) .border-rose-200 { border-color: var(--loss-border); }
+
+/* No shadows anywhere. Depth comes from the three surfaces and the hairlines. */
+:root[data-theme-style="refresh"] .shadow-sm,
+:root[data-theme-style="refresh"] .shadow,
+:root[data-theme-style="refresh"] .shadow-md,
+:root[data-theme-style="refresh"] .shadow-lg,
+:root[data-theme-style="refresh"] .shadow-xl { box-shadow: none; }

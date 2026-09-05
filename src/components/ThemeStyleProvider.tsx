@@ -4,6 +4,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import {
   applyThemeStyle,
   getStoredThemeStyle,
+  isThemeStyle,
+  DEFAULT_THEME_STYLE,
   THEME_STYLE_ATTR,
   THEME_STYLE_EVENT,
   type ThemeStyle,
@@ -16,19 +18,19 @@ function subscribe(onChange: () => void) {
 
 /** The DOM attribute is the source of truth — the pre-paint script sets it. */
 function getSnapshot(): ThemeStyle {
-  return document.documentElement.getAttribute(THEME_STYLE_ATTR) === "hood"
-    ? "hood"
-    : "classic";
+  const attr = document.documentElement.getAttribute(THEME_STYLE_ATTR);
+  return isThemeStyle(attr) ? attr : "classic";
 }
 
 function getServerSnapshot(): ThemeStyle {
-  return "hood";
+  return DEFAULT_THEME_STYLE;
 }
 
 /**
  * Read the active theme style from any client component.
  *
- * Prefer plain `hood-*` marker classes (styled in `hood.css`) over this hook:
+ * Prefer plain `hood-*` / `refresh-*` marker classes (styled in `hood.css` /
+ * `refresh.css`) over this hook:
  * marker classes work in Server Components and never flash. Reach for the
  * hook only when the difference genuinely needs JavaScript — e.g. the
  * Settings selector, or motion that has to be skipped outright.

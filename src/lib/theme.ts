@@ -28,12 +28,15 @@ export function applyTheme(mode: ThemeMode): void {
   document.documentElement.classList.toggle("dark", resolved === "dark");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
-    // HOOD swaps the canvas to true-black / paper-white, so the status-bar
-    // colour follows the active theme style (see `theme-style.ts`).
-    const hood = document.documentElement.getAttribute("data-theme-style") === "hood";
-    const content = resolved === "dark"
-      ? (hood ? "#000000" : "#0E1014")
-      : (hood ? "#FFFFFF" : "#FAFAF9");
+    // HOOD swaps the canvas to true-black / paper-white and REFRESH forces
+    // its own near-black in both modes, so the status-bar colour follows the
+    // active theme style (see `theme-style.ts`).
+    const style = document.documentElement.getAttribute("data-theme-style");
+    const content = style === "refresh"
+      ? "#08090B"
+      : resolved === "dark"
+        ? (style === "hood" ? "#000000" : "#0E1014")
+        : (style === "hood" ? "#FFFFFF" : "#FAFAF9");
     meta.setAttribute("content", content);
   }
 }
