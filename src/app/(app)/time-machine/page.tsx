@@ -6,7 +6,7 @@ import OfflineGate from "@/components/OfflineGate";
 import { usePrivacy } from "@/components/PrivacyProvider";
 import { maskValue, privateCount } from "@/lib/privacy";
 import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
-import { THEME_STYLE_ATTR, THEME_STYLE_EVENT } from "@/lib/theme-style";
+import { isThemeStyle, THEME_STYLE_ATTR, THEME_STYLE_EVENT, type ThemeStyle } from "@/lib/theme-style";
 import HindsightRefresh from "@/components/time-machine/HindsightRefresh";
 
 import type {
@@ -67,19 +67,28 @@ const STATUS_STYLES: Record<OptionStatus, { bg: string; label: string }> = {
 /**
  * Which theme style is live, or `null` until the client knows.
  *
- * `refresh-screens.css` gates the two trees on paint, but this screen cannot
- * mount both: the classic tree auto-fires backfill POSTs from its effects, so
- * mounting it under a refresh user would run real work behind a hidden div.
- * Returning `null` through hydration means exactly one tree is ever mounted.
+ * DELIBERATELY NOT `useThemeStyle()`, which every other refreshed screen uses.
+ * That hook's server snapshot is `"hood"`, so the classic tree renders through
+ * hydration and then swaps — one frame, invisible, and fine on those screens.
+ * It is not fine here: this screen's classic tree auto-fires backfill POSTs
+ * from its effects, so a one-frame mount would kick off real broker work for
+ * a refresh user. A `null` server snapshot mounts neither tree until the
+ * client knows, which is the only version of this that is side-effect free.
+ *
+ * `refresh-screens.css` still gates both wrappers on paint; this is the gate
+ * that decides what actually mounts.
  */
 function subscribeStyle(onChange: () => void) {
   window.addEventListener(THEME_STYLE_EVENT, onChange);
   return () => window.removeEventListener(THEME_STYLE_EVENT, onChange);
 }
-// Classic REMOVES the attribute rather than setting `"classic"`, so a missing
-// attribute is Classic — not "not known yet". Only the server snapshot is
-// null, which is what keeps either tree from mounting through hydration.
-const readStyle = () => document.documentElement.getAttribute(THEME_STYLE_ATTR) ?? "classic";
+// Same normalisation as `useThemeStyle()`, via the same exported predicate:
+// Classic REMOVES the attribute rather than setting `"classic"`, and anything
+// unrecognised is Classic too. Only the SERVER snapshot is null.
+const readStyle = (): ThemeStyle => {
+  const attr = document.documentElement.getAttribute(THEME_STYLE_ATTR);
+  return isThemeStyle(attr) ? attr : "classic";
+};
 const readStyleOnServer = () => null;
 
 export default function TimeMachinePage() {
