@@ -8,6 +8,10 @@ import { readSnapshot, saveSnapshot } from "@/lib/client-cache";
 import { useOffline } from "@/lib/offline";
 import { usePrivacy } from "@/components/PrivacyProvider";
 import { maskValue, privateCount } from "@/lib/privacy";
+import { THEME_STYLE_ATTR, THEME_STYLE_EVENT } from "@/lib/theme-style";
+import RefreshPortfolio from "@/components/portfolio/RefreshPortfolio";
+import type { ChainRowModel, MonthModel } from "@/components/portfolio/RefreshPortfolio";
+import type { RowBadge } from "@/components/refresh";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
 
 // Last successful payload, kept in localStorage so the page is readable in
@@ -137,6 +141,210 @@ function fmtMonth(m: string) {
 function fmtMonthShort(m: string) {
   const [year, month] = m.split("-");
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short" });
+}
+
+/* -- refresh design: formatting + model derivation ------------------------- */
+
+/** `AUG 2026` — the month eyebrow on a refresh month card. */
+function fmtMonthEyebrow(m: string): string {
+  const [year, month] = m.split("-");
+  return new Date(Number(year), Number(month) - 1)
+    .toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    .toUpperCase();
+}
+
+/** `AUG 14` — the date a month's collateral peak was struck. */
+function fmtPeakDate(d: string): string {
+  return new Date(`${d}T00:00:00`)
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .toUpperCase();
+}
+
+function monthKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function nextMonthKey(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+}
+
+/** The chain's opening contract — the one carrying strike and size. */
+function firstContractLeg(chain: OptionChain): OptionLeg | null {
+  return chain.legs.find(l => l.type === "SELL" || l.type === "BUY") ?? null;
+}
+
+/** `<TICKER> <STRIKE>P × <QTY>`. */
+function contractLabel(chain: OptionChain): string {
+  const leg = firstContractLeg(chain);
+  const suffix = chain.option_type.toUpperCase() === "PUT" ? "P" : "C";
+  if (!leg) return chain.underlying;
+  const units = Math.abs(leg.units);
+  return `${chain.underlying} ${leg.strike}${suffix}${units > 1 ? ` × ${units}` : ""}`;
+}
+
+/**
+ * Every month the account has either realized premium in or locked collateral
+ * during, newest first, with the trailing 8-month premium window each card's
+ * bar series needs.
+ *
+ * Collateral peaks are computed across all chains rather than per year: a put
+ * opened in December still ties up capital in January, and slicing the input
+ * by year would hide that.
+ */
+function buildMonthModels(chains: OptionChain[]): MonthModel[] {
+  const peaks = computePutCapitalPeaks(chains);
+
+  const byMonth = new Map<string, { pnl: number; chains: OptionChain[] }>();
+  for (const c of chains) {
+    if (!c.close_month) continue;
+    if (c.status !== "CLOSED" && c.status !== "EXPIRED") continue;
+    const entry = byMonth.get(c.close_month) ?? { pnl: 0, chains: [] };
+    entry.pnl += c.net_pnl;
+    entry.chains.push(c);
+    byMonth.set(c.close_month, entry);
+  }
+
+  const current = monthKeyOf(new Date());
+  const keys = new Set<string>([...byMonth.keys(), ...peaks.keys(), current]);
+  const ascending = Array.from(keys).sort();
+
+  // A continuous run, so an 8-wide window is 8 real months rather than the
+  // last 8 months that happened to have activity.
+  const series: string[] = [];
+  const last = ascending[ascending.length - 1];
+  for (let k = ascending[0]; k <= last && series.length < 600; k = nextMonthKey(k)) series.push(k);
+
+  const premiumAt = (k: string) => byMonth.get(k)?.pnl ?? 0;
+
+  return Array.from(keys)
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const cap = peaks.get(key);
+      const pnl = premiumAt(key);
+      const idx = series.indexOf(key);
+      const window = idx >= 0 ? series.slice(Math.max(0, idx - 7), idx + 1) : [key];
+      const positions = cap ? getPutPositionsOnDate(chains, cap.peakDate) : [];
+      return {
+        key,
+        label: fmtMonthEyebrow(key),
+        premium: pnl,
+        onCollateralPct: cap && cap.peak > 0 ? (pnl / cap.peak) * 100 : null,
+        peak: cap?.peak ?? 0,
+        peakDateLabel: cap ? fmtPeakDate(cap.peakDate) : null,
+        peakPositions: positions.map((p, i) => ({
+          key: `${p.underlying}-${p.strike}-${i}`,
+          label: `${p.underlying} ${p.strike}P × ${p.units}`,
+          collateral: p.collateral,
+        })),
+        closed: (byMonth.get(key)?.chains ?? [])
+          .slice()
+          .sort((a, b) => b.net_pnl - a.net_pnl)
+          .map((c, i) => ({ key: `${c.underlying}-${i}`, label: contractLabel(c), pnl: c.net_pnl })),
+        bars: window.map(premiumAt),
+      };
+    });
+}
+
+/** `CSP` / `CC` / `LEAPS` / `LONG` — what the position actually is. */
+function structureBadge(chain: OptionChain): string {
+  if (isLeaps(chain)) return "LEAPS";
+  const isPut = chain.option_type.toUpperCase() === "PUT";
+  const short = chain.open_units !== 0 ? chain.open_units < 0 : chain.direction === "SELL";
+  if (!short) return isPut ? "LONG PUT" : "LONG CALL";
+  return isPut ? "CSP" : "CC";
+}
+
+/** Collateral a chain still ties up. Short puts only — calls and longs lock nothing. */
+function chainCollateral(chain: OptionChain): number | null {
+  if (chain.option_type.toUpperCase() !== "PUT" || chain.open_units >= 0) return null;
+  const leg = findOpenLeg(chain);
+  if (!leg) return null;
+  return leg.strike * 100 * Math.abs(chain.open_units);
+}
+
+function openRowModel(chain: OptionChain, i: number): ChainRowModel {
+  const leg = findOpenLeg(chain);
+  const badges: RowBadge[] = [{ label: structureBadge(chain), tone: "info" }];
+  if (chain.institution) badges.push({ label: chain.institution.toUpperCase(), tone: "fact" });
+  const units = Math.abs(chain.open_units);
+  return {
+    key: `open-${chain.underlying}-${i}`,
+    ticker: contractLabel(chain),
+    badges,
+    caption: [
+      leg ? `exp ${fmtDate(leg.expiry)}` : null,
+      units > 0 ? `${units} contract${units !== 1 ? "s" : ""}` : null,
+      chain.roll_count > 0 ? `${chain.roll_count} roll${chain.roll_count !== 1 ? "s" : ""}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    pnl: chain.net_pnl,
+    collateral: chainCollateral(chain),
+    risk: false,
+  };
+}
+
+function closedRowModel(chain: OptionChain, i: number): ChainRowModel {
+  const ann = annualizedReturnPct(chain);
+  const badges: RowBadge[] = [{ label: structureBadge(chain), tone: "info" }];
+  if (chain.status === "EXPIRED") badges.push({ label: "EXPIRED", tone: "fact" });
+  return {
+    key: `closed-${chain.underlying}-${i}`,
+    ticker: contractLabel(chain),
+    badges,
+    caption: [
+      chain.end_date ? `closed ${fmtDate(chain.end_date)}` : null,
+      ann !== null ? `${ann >= 0 ? "+" : ""}${ann.toFixed(1)}% ann.` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    pnl: chain.net_pnl,
+    collateral: null,
+    risk: false,
+  };
+}
+
+function assignedRowModel(chain: OptionChain, i: number): ChainRowModel {
+  return {
+    key: `assigned-${chain.underlying}-${i}`,
+    ticker: contractLabel(chain),
+    badges: [
+      { label: structureBadge(chain), tone: "info" },
+      { label: "ASSIGNED", tone: "risk" },
+    ],
+    caption: [
+      chain.end_date ? `assigned ${fmtDate(chain.end_date)}` : null,
+      `opened ${fmtDate(chain.start_date)}`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    pnl: chain.net_pnl,
+    collateral: null,
+    risk: true,
+  };
+}
+
+function leapsRowModel(chain: OptionChain, i: number): ChainRowModel {
+  const expiry = chain.legs[0]?.expiry ?? null;
+  const dte = expiry ? daysBetween(new Date().toISOString().split("T")[0], expiry) : null;
+  return {
+    key: `leaps-${chain.underlying}-${i}`,
+    ticker: contractLabel(chain),
+    badges: [
+      { label: "LEAPS", tone: "info" },
+      ...(chain.status === "OPEN" ? [] : [{ label: chain.status, tone: "fact" as const }]),
+    ],
+    caption: [
+      expiry ? `exp ${fmtDate(expiry)}` : null,
+      dte !== null && dte > 0 ? `${dte} DTE` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    pnl: chain.net_pnl,
+    collateral: null,
+    risk: false,
+  };
 }
 
 type FilterTab = "Monthly" | "Open" | "Closed" | "Assigned" | "LEAPS" | "Archive";
@@ -932,6 +1140,18 @@ export default function PortfolioPage() {
   useEffect(() => { fetchChains(); }, [fetchChains]);
   useRefreshEvent(fetchChains);
 
+  // The refresh screen is a different layout, not a re-skin, so it is chosen
+  // here rather than in CSS. Read off <html>, which the pre-paint script has
+  // already set — no second source of truth for the stored style.
+  const [refreshStyle, setRefreshStyle] = useState(false);
+  useEffect(() => {
+    const read = () =>
+      setRefreshStyle(document.documentElement.getAttribute(THEME_STYLE_ATTR) === "refresh");
+    read();
+    window.addEventListener(THEME_STYLE_EVENT, read);
+    return () => window.removeEventListener(THEME_STYLE_EVENT, read);
+  }, []);
+
   // Back online — replace the snapshot with the live payload.
   useEffect(() => {
     const onOnline = () => fetchChains();
@@ -940,6 +1160,7 @@ export default function PortfolioPage() {
   }, [fetchChains]);
 
   if (loading) {
+    if (refreshStyle) return <RefreshPortfolio loading />;
     return (
       <div className="flex flex-col gap-4 p-4">
         <div className="h-24 bg-stone-100 dark:bg-surface-muted rounded-2xl animate-pulse" />
@@ -1053,6 +1274,46 @@ export default function PortfolioPage() {
     filter === "Open"     ? sortedOpen.filter(c => !instFilter || c.institution === instFilter) :
     filter === "Closed"   ? sortedClosed :
     filter === "Assigned" ? assigned : [];
+
+  if (refreshStyle) {
+    const allMonths = buildMonthModels(chains);
+    const yearMonths = allMonths.filter(m => m.key.startsWith(currentYear));
+    const thisMonth = allMonths.find(m => m.key === monthKeyOf(new Date())) ?? null;
+    // Return on the largest collateral the year ever demanded — the honest
+    // denominator, since that peak is what had to be available all along.
+    const peakThisYear = yearMonths.reduce((max, m) => Math.max(max, m.peak), 0);
+
+    return (
+      <RefreshPortfolio
+        broker={
+          fromSnapshot
+            ? "OFFLINE SNAPSHOT"
+            : institutions.length === 1
+              ? institutions[0]
+              : institutions.length > 1
+                ? `${institutions.length} brokers`
+                : null
+        }
+        syncAge={chainsAsOf ? fmtAge(chainsAsOf) : null}
+        syncing={refreshing}
+        syncError={refreshError}
+        onSync={() => fetchChains(true)}
+        premiumYtd={closedPnl}
+        monthDelta={chains.length > 0 ? (thisMonth?.premium ?? 0) : null}
+        monthDeltaLabel={new Date().toLocaleDateString("en-US", { month: "short" })}
+        returnOnPeakPct={peakThisYear > 0 ? (closedPnl / peakThisYear) * 100 : null}
+        openCount={open.length}
+        assignedCount={assigned.length}
+        collateralLocked={capitalLocked}
+        months={yearMonths}
+        archiveMonths={allMonths}
+        openRows={sortedOpen.map(openRowModel)}
+        closedRows={sortedClosed.map(closedRowModel)}
+        assignedRows={assigned.map(assignedRowModel)}
+        leapsRows={leaps.map(leapsRowModel)}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col">
