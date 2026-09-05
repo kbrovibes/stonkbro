@@ -76,7 +76,10 @@ function subscribeStyle(onChange: () => void) {
   window.addEventListener(THEME_STYLE_EVENT, onChange);
   return () => window.removeEventListener(THEME_STYLE_EVENT, onChange);
 }
-const readStyle = () => document.documentElement.getAttribute(THEME_STYLE_ATTR);
+// Classic REMOVES the attribute rather than setting `"classic"`, so a missing
+// attribute is Classic — not "not known yet". Only the server snapshot is
+// null, which is what keeps either tree from mounting through hydration.
+const readStyle = () => document.documentElement.getAttribute(THEME_STYLE_ATTR) ?? "classic";
 const readStyleOnServer = () => null;
 
 export default function TimeMachinePage() {
