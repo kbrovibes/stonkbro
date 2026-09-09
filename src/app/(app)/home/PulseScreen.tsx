@@ -1,48 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { DataRow, MonoNumber, Sparkline, SplitBar, prefersReducedMotion } from "@/components/refresh";
-import type { RowBadge } from "@/components/refresh";
+import { useEffect, useState } from "react";
+import { MonoNumber, Sparkline, SplitBar } from "@/components/refresh";
 import {
   easternDateLabel,
   getMarketStatus,
   marketStatusLabel,
-  type MarketStatus,
 } from "@/lib/market/market-status";
+import PulseBriefingCard from "./PulseBriefingCard";
+import PulseFeatureRow from "./PulseFeatureRow";
+import TickerCardGrid from "./TickerCardGrid";
+import type { PulseMover, PulseScreenProps, PulseTicker } from "./pulse-types";
 
-/* -- props -------------------------------------------------------------- */
-
-export type PulseTile = {
-  symbol: string;
-  changePct: number;
-  points: number[];
-};
-
-export type PulseMover = {
-  symbol: string;
-  price: number;
-  changePct: number;
-  /** Derived cause. Null when nothing was derivable — never invented. */
-  badge: string | null;
-  caption: string | null;
-  points: number[];
-  held: boolean;
-  atRisk: boolean;
-};
-
-export type PulseScreenProps = {
-  /** `FRI SEP 4`, computed server-side so SSR and hydration agree. */
-  dateLabel: string;
-  status: MarketStatus;
-  hero: { name: string; level: number; changePct: number } | null;
-  breadth: { advancing: number; declining: number };
-  tiles: PulseTile[];
-  movers: PulseMover[];
-  /** Everything that cleared the mover filter, not just what is listed. */
-  moverTotal: number;
-};
+export type {
+  PulseBriefing,
+  PulseFeature,
+  PulseMover,
+  PulseScreenProps,
+  PulseTicker,
+  PulseTile,
+  PulseWatchlist,
+} from "./pulse-types";
 
 /* -- helpers ------------------------------------------------------------ */
 
@@ -54,9 +32,10 @@ function signed(n: number, places: number): string {
 
 const toneOf = (changePct: number) => (changePct >= 0 ? "var(--up)" : "var(--down)");
 
-/** How many rows are in the document before the sentinel grows the list. */
-const WINDOW = 20;
-const FLIP_MS = 240;
+function avgReturn(tickers: readonly PulseTicker[]): number | undefined {
+  if (tickers.length === 0) return undefined;
+  return tickers.reduce((sum, t) => sum + t.changePct, 0) / tickers.length;
+}
 
 /* -- the screen --------------------------------------------------------- */
 
@@ -68,9 +47,12 @@ export default function PulseScreen({
   tiles,
   movers,
   moverTotal,
+  briefing,
+  features,
+  watchlists,
+  winners,
+  losers,
 }: PulseScreenProps) {
-  const router = useRouter();
-
   /* Market status is a clock reading, not fetched data, so the header keeps
      itself honest on a timer instead of waiting for the next navigation. */
   const [clock, setClock] = useState({ dateLabel, status });
@@ -105,24 +87,9 @@ export default function PulseScreen({
     return () => clearTimeout(id);
   }, [busy]);
 
-  /* The list virtualises past ~20 rows. */
-  const [visible, setVisible] = useState(WINDOW);
-  const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el || visible >= movers.length || typeof IntersectionObserver !== "function") return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) setVisible((v) => v + WINDOW);
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [visible, movers.length]);
-
-  useFlip(movers);
-
-  const shown = movers.slice(0, visible);
   const dotTone =
     clock.status === "OPEN" ? "var(--up)" : clock.status === "CLOSED" ? "var(--text-dim)" : "var(--accent)";
+  const marketDown = !hero && tiles.length === 0 && movers.length === 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", paddingBottom: 24 }}>
@@ -254,133 +221,48 @@ export default function PulseScreen({
         </div>
       ) : null}
 
-      {/* A feed outage leaves nothing to show and no spinner to show it
-          with — the render is complete, the data simply is not there. One
-          line says so rather than an orphaned heading over empty space. */}
-      {!hero && tiles.length === 0 && movers.length === 0 ? (
-        <p style={{ padding: "8px var(--gutter)", fontSize: 13, color: "var(--text-secondary)" }}>
-          Market data is unavailable right now.
-        </p>
-      ) : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {briefing ? <PulseBriefingCard briefing={briefing} /> : null}
 
-      {/* ---- movers ---- */}
-      {movers.length === 0 ? null : (
-      <div
-        style={{
-          padding: "0 var(--gutter) 12px",
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <h2 className="refresh-heading">Explosive movers</h2>
-        {moverTotal > 0 ? (
-          <Link
-            href="/explosive"
-            className="refresh-mono refresh-pressable"
-            style={{
-              display: "inline-block",
-              fontSize: 11,
-              lineHeight: "14px",
-              color: "var(--accent)",
-              // The label is 11px type; the hit area is 44pt regardless.
-              padding: "15px 0 15px 15px",
-              margin: "-15px 0",
-            }}
-          >
-            ALL {moverTotal}
-          </Link>
+        <PulseFeatureRow features={features} />
+
+        {/* A feed outage leaves nothing to show and no spinner to show it
+            with — the render is complete, the data simply is not there. One
+            line says so rather than an orphaned heading over empty space. */}
+        {marketDown ? (
+          <p style={{ padding: "0 var(--gutter)", fontSize: 13, color: "var(--text-secondary)" }}>
+            Market data is unavailable right now.
+          </p>
         ) : null}
-      </div>
-      )}
 
-      <div data-flip-list style={{ padding: "0 var(--gutter)", display: "flex", flexDirection: "column", gap: 10 }}>
-        {shown.map((mover, i) => (
-          <div key={mover.symbol} data-flip-key={mover.symbol}>
-            <DataRow
-              ticker={mover.symbol}
-              badges={badgesFor(mover)}
-              caption={mover.caption ?? undefined}
-              risk={mover.atRisk}
-              index={i}
-              onPress={() => router.push(`/ticker/${mover.symbol}`)}
-              sparkline={
-                mover.points.length > 1 ? (
-                  <Sparkline points={mover.points} color={toneOf(mover.changePct)} />
-                ) : undefined
-              }
-              value={
-                <MonoNumber
-                  value={mover.changePct}
-                  size={18}
-                  weight={600}
-                  color={toneOf(mover.changePct)}
-                  format={(n) => signed(n, 1)}
-                  suffix="%"
-                />
-              }
-              subValue={
-                <MonoNumber
-                  value={mover.price}
-                  size={11}
-                  weight={400}
-                  color="var(--text-dim)"
-                  decimals={2}
-                />
-              }
-            />
-          </div>
+        <TickerCardGrid
+          title="Explosive movers"
+          tickers={movers}
+          action={moverTotal > 0 ? { label: `All ${moverTotal}`, href: "/explosive" } : undefined}
+        />
+
+        {watchlists.map((wl) => (
+          <TickerCardGrid
+            key={wl.id}
+            title={wl.name}
+            tickers={wl.tickers}
+            avgReturn={avgReturn(wl.tickers)}
+            action={{ label: "Manage", href: "/watchlists" }}
+          />
         ))}
-        {visible < movers.length ? <div ref={sentinel} style={{ height: 1 }} /> : null}
+
+        {watchlists.length === 0 ? (
+          <>
+            <TickerCardGrid
+              title="Today's winners"
+              tickers={winners}
+              avgReturn={avgReturn(winners)}
+              action={{ label: "Watchlists", href: "/watchlists" }}
+            />
+            <TickerCardGrid title="Today's losers" tickers={losers} avgReturn={avgReturn(losers)} />
+          </>
+        ) : null}
       </div>
     </div>
   );
-}
-
-/**
- * At most one tag per row, risk first — a row that is both held and
- * threatened is telling you about the threat, and two badges would push the
- * ticker out of the head.
- */
-function badgesFor(mover: PulseMover): RowBadge[] {
-  if (mover.atRisk) return [{ label: "POSITION AT RISK", tone: "risk" }];
-  if (mover.held) return [{ label: "HELD", tone: "info" }];
-  if (mover.badge) return [{ label: mover.badge, tone: "info" }];
-  return [];
-}
-
-/**
- * FLIP on the movers list: measure where every row was, let React reorder
- * them, then invert each row to its old position and play it home over
- * 240ms. Transform only, and skipped entirely under reduced motion — there
- * the rows simply appear in their new order.
- */
-function useFlip(movers: readonly PulseMover[]) {
-  const previous = useRef(new Map<string, number>());
-
-  const measure = useCallback(() => {
-    const rows = document.querySelectorAll<HTMLElement>("[data-flip-list] [data-flip-key]");
-    const next = new Map<string, number>();
-    const reduced = prefersReducedMotion();
-
-    for (const row of rows) {
-      const key = row.dataset.flipKey;
-      if (!key) continue;
-      const top = row.getBoundingClientRect().top;
-      next.set(key, top);
-
-      const was = previous.current.get(key);
-      if (reduced || was === undefined) continue;
-      const delta = was - top;
-      if (Math.abs(delta) < 1) continue;
-      row.animate(
-        [{ transform: `translateY(${delta}px)` }, { transform: "translateY(0)" }],
-        { duration: FLIP_MS, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
-      );
-    }
-    previous.current = next;
-  }, []);
-
-  useLayoutEffect(measure, [movers, measure]);
 }

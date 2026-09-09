@@ -75,19 +75,22 @@ export default async function DiscoverPage() {
     getHoldingBook(user).catch(() => ({ held: [], short: [] })),
   ]);
 
-  const pulse = await buildPulse({
-    universeQuotes: moverQuotes,
-    indexQuotes,
-    earnings,
-    book: holdingBook,
-  });
-
   if (allQuotes.length > 0) {
     const quoteMap = new Map(allQuotes.map((q) => [q.symbol, q]));
     for (const wl of watchlists) {
       wl.quotes = wl.symbols.map((s) => quoteMap.get(s)).filter(Boolean) as QuoteData[];
     }
   }
+
+  const pulse = await buildPulse({
+    universeQuotes: moverQuotes,
+    indexQuotes,
+    earnings,
+    book: holdingBook,
+    watchlists,
+    briefing,
+    access: { signedIn: Boolean(user), portfolio: Boolean(user && hasPortfolioAccess(user.email)) },
+  });
 
   upcomingEarnings = earnings
     .filter((e) => e.category === "this_week" || e.category === "next_week")

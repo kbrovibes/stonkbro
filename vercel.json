@@ -131,6 +131,26 @@
     {
       "path": "/api/cron/reflect",
       "schedule": "0 23 * * 1-5"
+    },
+    {
+      "path": "/api/cron/leaps-pmcc",
+      "schedule": "20 14 * * 1-5"
+    },
+    {
+      "path": "/api/cron/leaps-pmcc",
+      "schedule": "30 20 * * 1-5"
+    },
+    {
+      "path": "/api/cron/paper?session=open",
+      "schedule": "40 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/paper?session=midday",
+      "schedule": "30 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/paper?session=close",
+      "schedule": "50 19 * * 1-5"
     }
   ]
 }

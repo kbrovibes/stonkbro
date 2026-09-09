@@ -41,11 +41,24 @@ export const MORE_GROUPS: MoreGroup[] = [
     links: [
       { emoji: "💡", title: "Suggestions", description: "CSP, CC, PMCC ideas", href: "/suggestions" },
       { emoji: "🎯", title: "PMCC Picks", description: "Top-ranked PMCC setups", href: "/pmcc-picks" },
+      { emoji: "📈", title: "LEAPS Lab", description: "Daily LEAPS scan + return grid", href: "/plays?s=leaps" },
+      { emoji: "💵", title: "PMCC Income", description: "Monthly income on a capital budget", href: "/plays?s=pmcc" },
       { emoji: "🔎", title: "PMCC Scanner", description: "Scan PMCC opportunities", href: "/scanner" },
       { emoji: "📞", title: "Covered Calls", description: "Find optimal CCs", href: "/covered-calls" },
       { emoji: "🔄", title: "The Wheel", description: "Track wheel income", href: "/wheel" },
       { emoji: "🚦", title: "Trade Signals", description: "Roll/close alerts", href: "/signals" },
       { emoji: "🏛️", title: "Trading Desk", description: "Regime, debate verdicts, risk gate", href: "/desk" },
+    ],
+  },
+  {
+    label: "Paper",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+      </svg>
+    ),
+    links: [
+      { emoji: "🧪", title: "Paper Trading", description: "10 bots, $100K each, trading daily", href: "/paper" },
     ],
   },
   {
@@ -57,6 +70,7 @@ export const MORE_GROUPS: MoreGroup[] = [
       </svg>
     ),
     links: [
+      { emoji: "🎙️", title: "Daily Briefing", description: "3x-daily audio market podcast", href: "/briefing" },
       { emoji: "📊", title: "Portfolio", description: "Live P&L tracking", href: "/portfolio" },
       { emoji: "🧠", title: "Portfolio Manager", description: "AI ratings + $100K plan", href: "/portfolio-manager" },
       { emoji: "⏰", title: "Hindsight", description: "What-if portfolio simulator", href: "/time-machine" },

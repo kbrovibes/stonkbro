@@ -52,21 +52,7 @@
   display: none;
 }
 
-/* -- 2. Pulse movers list -------------------------------------------------- */
-
-/* `POSITION AT RISK` is the widest badge in the vocabulary and, like every
-   badge, it does not shrink. At the 440pt target it fits beside a ticker, a
-   sparkline and a percentage with room to spare; below about 380px it does
-   not, and something has to give. The sparkline goes, because it is the only
-   part of the row that carries no number — dropping it keeps the cause and
-   the price, and keeps the page from scrolling sideways. */
-@media (max-width: 380px) {
-  [data-theme-style="refresh"] [data-flip-list] .refresh-row > svg {
-    display: none;
-  }
-}
-
-/* -- 3. Pulse market-status dot ------------------------------------------- */
+/* -- 2. Pulse market-status dot ------------------------------------------- */
 
 /* Alive, not urgent: 0.5 → 1 → 0.5 across two seconds. Opacity only. */
 @keyframes refresh-status-pulse {

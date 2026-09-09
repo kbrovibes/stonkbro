@@ -52,6 +52,13 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/csp-hunter") ||
     pathname.startsWith("/desk") ||
     pathname.startsWith("/research") ||
+    // Paper trading is a public leaderboard; the run endpoint enforces its
+    // own admin / cron auth inside the handler.
+    pathname.startsWith("/paper") ||
+    pathname.startsWith("/api/paper") ||
+    // Home ticker cards fetch their sparklines client-side; guests see the
+    // same cards, and the data is public market history.
+    pathname.startsWith("/api/sparklines") ||
     pathname.startsWith("/api/movers") ||
     pathname.startsWith("/api/bloodbath") ||
     pathname.startsWith("/api/recommendations") ||

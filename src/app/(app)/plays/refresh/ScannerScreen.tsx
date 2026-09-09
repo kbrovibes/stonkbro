@@ -15,20 +15,26 @@
  * |---------|-------------------------------------------|---------------|
  * | CSP     | GET /api/csp-hunter → candidates           | client-side   |
  * | CALLS   | GET /api/csp-hunter → callCandidates       | client-side   |
- * | PMCC    | GET /api/pmcc-scan?sector=…               | in the query  |
- * | LEAPS   | GET /api/csp-hunter → leapsCandidates      | client-side   |
+ * | PMCC    | <PmccIncome /> — GET /api/pmcc-income     | none          |
+ * | LEAPS   | <LeapsLab /> — GET /api/leaps             | none          |
  * | WKLY    | GET /api/csp-hunter/weekly-recap          | client-side   |
  *
  * CSP Hunter scans one universe for all three of its sections in a single
  * run, so the sector chips filter its results rather than narrowing the scan —
  * narrowing it would write a sector-limited scan into the shared history the
- * existing /plays reads. PMCC's endpoint takes a sector, so there the chip is
- * the query.
+ * existing /plays reads. LEAPS and PMCC are decision tools on the daily
+ * LEAPS + PMCC scan (spec 59); they own the screen below the switch.
+ *
+ * `/plays?s=leaps` deep-links a segment. `useSearchParams` needs a Suspense
+ * boundary, which is the only reason the default export is a wrapper.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChipRow, SegmentedSwitch } from "@/components/refresh";
 import { cachedFetchJson, invalidateCache } from "@/lib/client-cache";
+import LeapsLab from "./leaps/LeapsLab";
+import PmccIncome from "./pmcc/PmccIncome";
 import ScanStatusBlock, { type ScanState } from "./ScanStatusBlock";
 import SetupCard, { SetupCardSkeleton } from "./SetupCard";
 import { useFlipList } from "./useFlipList";
@@ -108,8 +114,25 @@ function ago(ts: number): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+function isStrategy(s: string | null): s is Strategy {
+  return STRATEGIES.some((x) => x.key === s);
+}
+
+function StrategyFromUrl() {
+  const s = useSearchParams().get("s");
+  return <ScannerScreenInner initialStrategy={isStrategy(s) ? s : "csp"} />;
+}
+
 export default function ScannerScreen() {
-  const [strategy, setStrategy] = useState<Strategy>("csp");
+  return (
+    <Suspense fallback={<ScannerScreenInner initialStrategy="csp" />}>
+      <StrategyFromUrl />
+    </Suspense>
+  );
+}
+
+function ScannerScreenInner({ initialStrategy }: { initialStrategy: Strategy }) {
+  const [strategy, setStrategy] = useState<Strategy>(initialStrategy);
   const [sector, setSector] = useState<SectorKey>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [fitsOnly, setFitsOnly] = useState(true);
@@ -338,87 +361,95 @@ export default function ScannerScreen() {
         />
       </div>
 
-      <div style={{ paddingBottom: 16 }}>
-        <ChipRow
-          chips={SECTOR_CHIPS}
-          active={sector}
-          onChange={chooseSector}
-          variant="outlined"
-          gutter={GUTTER}
-          aria-label="Sector"
-        />
-      </div>
+      {strategy === "leaps" ? (
+        <LeapsLab />
+      ) : strategy === "pmcc" ? (
+        <PmccIncome />
+      ) : (
+        <>
+          <div style={{ paddingBottom: 16 }}>
+            <ChipRow
+              chips={SECTOR_CHIPS}
+              active={sector}
+              onChange={chooseSector}
+              variant="outlined"
+              gutter={GUTTER}
+              aria-label="Sector"
+            />
+          </div>
 
-      <div style={{ margin: `0 ${GUTTER}px 18px` }}>
-        <ScanStatusBlock
-          state={state}
-          telemetry={shownTelemetry}
-          setupCount={results.length}
-          noun={strategy === "wkly" ? "PICKS" : "SETUPS"}
-          lastDurationMs={lastRun[strategy] ?? null}
-          dataAge={dataAge}
-          onScan={onScan}
-        />
-      </div>
+          <div style={{ margin: `0 ${GUTTER}px 18px` }}>
+            <ScanStatusBlock
+              state={state}
+              telemetry={shownTelemetry}
+              setupCount={results.length}
+              noun={strategy === "wkly" ? "PICKS" : "SETUPS"}
+              lastDurationMs={lastRun[strategy] ?? null}
+              dataAge={dataAge}
+              onScan={onScan}
+            />
+          </div>
 
-      <div
-        style={{
-          padding: `0 ${GUTTER}px 10px`,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          gap: 12,
-        }}
-      >
-        <h2 className="refresh-heading">{HEADINGS[strategy]}</h2>
-        {capitalFilterable && (
-          <button
-            type="button"
-            onClick={() => setFitsOnly((v) => !v)}
-            className="refresh-mono"
+          <div
             style={{
-              flex: "none",
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              color: fitsOnly ? "var(--accent)" : "var(--text-dim)",
-              background: "none",
-              border: "none",
-              padding: "14px 0 14px 14px",
-              margin: "-14px 0",
+              padding: `0 ${GUTTER}px 10px`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              gap: 12,
             }}
-            aria-pressed={fitsOnly}
           >
-            {fitsOnly ? "FITS CAPITAL" : "ALL SETUPS"}
-          </button>
-        )}
-      </div>
+            <h2 className="refresh-heading">{HEADINGS[strategy]}</h2>
+            {capitalFilterable && (
+              <button
+                type="button"
+                onClick={() => setFitsOnly((v) => !v)}
+                className="refresh-mono"
+                style={{
+                  flex: "none",
+                  fontSize: 11,
+                  letterSpacing: "0.08em",
+                  color: fitsOnly ? "var(--accent)" : "var(--text-dim)",
+                  background: "none",
+                  border: "none",
+                  padding: "14px 0 14px 14px",
+                  margin: "-14px 0",
+                }}
+                aria-pressed={fitsOnly}
+              >
+                {fitsOnly ? "FITS CAPITAL" : "ALL SETUPS"}
+              </button>
+            )}
+          </div>
 
-      <div style={{ padding: `0 ${GUTTER}px`, display: "flex", flexDirection: "column", gap: 10 }}>
-        {results.map((setup, i) => (
-          <SetupCard
-            key={setup.id}
-            setup={setup}
-            rank={i + 1}
-            index={i}
-            fill={barFill(setup, leader)}
-            expanded={expanded === setup.id}
-            onToggle={() => setExpanded((prev) => (prev === setup.id ? null : setup.id))}
-            registerRef={registerRef(setup.id)}
-          />
-        ))}
+          <div style={{ padding: `0 ${GUTTER}px`, display: "flex", flexDirection: "column", gap: 10 }}>
+            {results.map((setup, i) => (
+              <SetupCard
+                key={setup.id}
+                setup={setup}
+                rank={i + 1}
+                index={i}
+                fill={barFill(setup, leader)}
+                expanded={expanded === setup.id}
+                onToggle={() => setExpanded((prev) => (prev === setup.id ? null : setup.id))}
+                registerRef={registerRef(setup.id)}
+              />
+            ))}
 
-        {scanning && <SetupCardSkeleton />}
+            {scanning && <SetupCardSkeleton />}
 
-        {!scanning && results.length === 0 && (
-          <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)", padding: "6px 2px" }}>
-            {all.length > 0
-              ? "Nothing in this sector at your capital. Try another sector, or turn the capital filter off."
-              : strategy === "wkly"
-                ? "No picks recorded this week yet."
-                : "No setups from the last scan. Run one from the block above."}
-          </p>
-        )}
-      </div>
+            {!scanning && results.length === 0 && (
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)", padding: "6px 2px" }}>
+                {all.length > 0
+                  ? "Nothing in this sector at your capital. Try another sector, or turn the capital filter off."
+                  : strategy === "wkly"
+                    ? "No picks recorded this week yet."
+                    : "No setups from the last scan. Run one from the block above."}
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
