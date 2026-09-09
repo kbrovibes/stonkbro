@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as db from "@/lib/db/paper";
+import { identityFor } from "@/lib/paper/identity";
 import { getProfile } from "@/lib/paper/profiles";
 import { START_CASH } from "@/lib/paper/types";
 
@@ -14,11 +15,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ prof
   const requested = searchParams.get("date");
 
   try {
-    const [accounts, dates, series, winRate] = await Promise.all([
+    const [accounts, dates, series, winRate, memories] = await Promise.all([
       db.getAccounts(),
       db.getAvailableDates(profileId),
       db.getCloseSeries(400, profileId),
       db.getClosedTradeStats(profileId),
+      db.getMemories(profileId).catch(() => []),
     ]);
     const date = requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && dates.includes(requested) ? requested : dates[0] ?? null;
     const [snapshot, trades, note] = date
@@ -29,6 +31,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ prof
 
     return NextResponse.json({
       profile: { id: profile.id, name: profile.name, tagline: profile.tagline, style: profile.style, plan: profile.plan, margin: profile.margin },
+      identity: (() => {
+        const i = identityFor(profile.id);
+        return { role: i.role, creed: i.creed, hue: i.hue };
+      })(),
+      memories: memories.map((m) => ({
+        kind: m.kind, headline: m.headline, detail: m.detail,
+        weight: m.weight, hits: m.hits, firstSeen: m.firstSeen, lastSeen: m.lastSeen,
+      })),
       account: account
         ? { cash: account.cash, realizedPnl: account.realizedPnl, fees: account.fees, interest: account.interest, startedOn: account.startedOn }
         : null,

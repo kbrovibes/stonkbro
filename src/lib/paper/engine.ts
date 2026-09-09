@@ -6,6 +6,7 @@
 import {
   equityOf,
   executeOrder,
+  isClosingOrder,
   isOpen,
   marginUsed,
   markPositions,
@@ -14,6 +15,7 @@ import {
   type BrokerState,
   type FillEnv,
 } from "./broker";
+import { makeRoom, REJECTED_FOR_FUNDS } from "./funding";
 import { chargeInterest, settleExpiries } from "./settlement";
 import { buildContext } from "./context";
 import { loadChains, makeView, type HeldContract, type MarketData } from "./market";
@@ -52,11 +54,11 @@ function heldContracts(positions: Position[]): HeldContract[] {
   const seen = new Set<string>();
   const out: HeldContract[] = [];
   for (const p of positions) {
-    if (!isOpen(p) || p.kind === "stock" || !p.expiry) continue;
-    const key = `${p.symbol}:${p.expiry}`;
+    if (!isOpen(p) || p.kind === "stock" || !p.expiry || p.strike == null) continue;
+    const key = `${p.symbol}:${p.kind}:${p.strike}:${p.expiry}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ symbol: p.symbol, expiry: p.expiry });
+    out.push({ symbol: p.symbol, expiry: p.expiry, kind: p.kind, strike: p.strike });
   }
   return out;
 }
@@ -86,7 +88,26 @@ export async function runProfile(input: ProfileRunInput): Promise<ProfileRunResu
   if (input.trade) {
     if (input.session === "close") trades.push(...settleExpiries(state, env));
     orders = strategy.decide(buildContext(contextArgs));
-    for (const o of orders) trades.push(executeOrder(state, o, env));
+
+    // Closes before opens: a batch that sells to fund a buy must sell first.
+    const closing = new Map(orders.map((o) => [o, isClosingOrder(state, o)]));
+    const ordered = [...orders].sort((a, b) => Number(closing.get(b)) - Number(closing.get(a)));
+    const protectedIds = new Set(
+      ordered.map((o) => o.positionId).filter((id): id is string => typeof id === "string"),
+    );
+
+    for (const o of ordered) {
+      let filled = executeOrder(state, o, env);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (filled.status !== "rejected" || !REJECTED_FOR_FUNDS.test(filled.reason)) break;
+        const freed = makeRoom(state, env, protectedIds, `${o.symbol} — ${o.reason}`);
+        if (freed.length === 0) break;
+        trades.push(...freed);
+        markPositions(state.positions, view);
+        filled = executeOrder(state, o, env);
+      }
+      trades.push(filled);
+    }
     markPositions(state.positions, view);
     if (input.session === "close") {
       const interest = chargeInterest(state, env);

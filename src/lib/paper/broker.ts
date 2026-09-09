@@ -144,7 +144,7 @@ function reject(env: FillEnv, profileId: string, o: Order, why: string): Trade {
   });
 }
 
-function sameContract(p: Position, o: Order): boolean {
+export function sameContract(p: Position, o: Order): boolean {
   return (
     p.symbol === o.symbol &&
     p.kind === o.kind &&
@@ -153,9 +153,27 @@ function sameContract(p: Position, o: Order): boolean {
   );
 }
 
-function findPosition(state: BrokerState, o: Order, side: Side): Position | undefined {
+export function findPosition(state: BrokerState, o: Order, side: Side): Position | undefined {
   if (o.positionId) return state.positions.find((p) => p.id === o.positionId && isOpen(p));
   return state.positions.find((p) => isOpen(p) && p.side === side && sameContract(p, o));
+}
+
+/** True when the order reduces an existing position rather than opening risk. */
+export function isClosingOrder(state: BrokerState, o: Order): boolean {
+  return !!findPosition(state, o, o.action === "buy" ? "short" : "long");
+}
+
+/** What one unit of this position would fill at right now, or null with no quote. */
+export function closingPrice(p: Position, env: FillEnv): number | null {
+  if (p.kind === "stock") {
+    const px = env.view.price(p.symbol);
+    return px && px > 0 ? px : null;
+  }
+  if (p.strike == null || !p.expiry) return null;
+  const c = env.view.option(p.symbol, p.kind, p.strike, p.expiry);
+  if (!c || (c.bid <= 0 && c.ask <= 0)) return null;
+  const slip = 0.25 * Math.max(0, c.ask - c.bid);
+  return p.side === "long" ? Math.max(0.01, c.mid - slip) : c.mid + slip;
 }
 
 function fillPrice(o: Order, env: FillEnv): { price: number; contract: OptionContract | null } | null {
@@ -271,6 +289,42 @@ export function openPosition(
   return p;
 }
 
+/**
+ * Would filling this order leave a short call with nothing behind it?
+ *
+ * Strategies already close the short leg before the cover, but that is an
+ * ordering convention, and a convention is not a guarantee — if the short-call
+ * close is rejected for any reason, the order that removes the cover would
+ * still fill and turn a covered position into a naked one. This is the
+ * backstop: the broker simply will not do it.
+ */
+function wouldStrandShortCall(state: BrokerState, o: Order, qty: number): boolean {
+  if (o.action !== "sell") return false;
+  if (o.kind !== "stock" && o.kind !== "call") return false;
+  const shorts = state.positions.filter(
+    (p) => isOpen(p) && p.side === "short" && p.kind === "call" && p.symbol === o.symbol,
+  );
+  if (shorts.length === 0) return false;
+
+  const closing = findPosition(state, o, "long");
+  if (!closing) return false;
+
+  const shares =
+    state.positions
+      .filter((p) => isOpen(p) && p.side === "long" && p.kind === "stock" && p.symbol === o.symbol)
+      .reduce((s, p) => s + p.qty, 0) - (o.kind === "stock" ? qty : 0);
+
+  const needed = shorts.reduce((s, p) => s + p.qty, 0);
+  const longCalls = state.positions
+    .filter(
+      (p) => isOpen(p) && p.side === "long" && p.kind === "call" && p.symbol === o.symbol &&
+        shorts.every((sc) => (p.expiry ?? "") >= (sc.expiry ?? "")),
+    )
+    .reduce((s, p) => s + p.qty - (o.kind === "call" && p.id === closing.id ? qty : 0), 0);
+
+  return Math.floor(shares / 100) + longCalls < needed;
+}
+
 /** Fill one order against the state, or return a rejection trade. */
 export function executeOrder(state: BrokerState, o: Order, env: FillEnv): Trade {
   const profileId = state.account.profileId;
@@ -285,6 +339,9 @@ export function executeOrder(state: BrokerState, o: Order, env: FillEnv): Trade 
 
   if (closing) {
     const qty = Math.min(o.qty, closing.qty);
+    if (wouldStrandShortCall(state, o, qty)) {
+      return reject(env, profileId, o, "Would leave a short call uncovered");
+    }
     if (o.action === "buy") {
       const released = ((closing.meta.marginHeld ?? 0) * qty) / closing.qty;
       const cost = price * mult * qty + fees;

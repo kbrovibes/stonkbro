@@ -1,5 +1,5 @@
 import type { Order, Strategy, StrategyContext } from "../types";
-import { Budget, buyStock, fmtPct, num, price, stocks } from "./helpers";
+import { Budget, buyStock, fmtPct, fmtUsd, num, price, stocks } from "./helpers";
 
 function basketChangePct(ctx: StrategyContext): number | null {
   const moves = ctx.profile.universe.map((s) => ctx.quote(s)?.changePct).filter((c): c is number => c != null);
@@ -54,6 +54,15 @@ export const shadow: Strategy = {
     const takePct = num(ctx, "takePct", 10);
     const dipPct = num(ctx, "dipPct", -3);
     const addPct = num(ctx, "addPct", 25);
+    const floor = num(ctx, "equityFloor", 0);
+    const maxBorrowPct = num(ctx, "maxBorrowPct", 50);
+
+    // The floor comes first, before any rule that could add risk. Adding into
+    // a drawdown is the plan; adding into a drawdown that is already breaking
+    // the account is not.
+    if (floor > 0 && ctx.equity <= floor && ctx.cash < 0) {
+      return raise(ctx, -ctx.cash, `Equity ${fmtUsd(ctx.equity)} at or under the ${fmtUsd(floor)} floor — selling down to zero borrowing`);
+    }
 
     if (last != null && ctx.equity >= last * (1 + takePct / 100) && ctx.cash < 0) {
       ctx.state.lastRebalanceEquity = ctx.equity;
@@ -67,11 +76,22 @@ export const shadow: Strategy = {
     }
 
     const move = basketChangePct(ctx);
+    const borrowed = Math.max(0, -ctx.cash);
+    const borrowCeiling = (ctx.equity * maxBorrowPct) / 100;
     if (move != null && move < dipPct && ctx.state.lastAddDate !== ctx.date) {
+      if (floor > 0 && ctx.equity <= floor * 1.05) {
+        ctx.state.lastAddDate = ctx.date;
+        return [];
+      }
+      if (borrowed >= borrowCeiling) {
+        ctx.state.lastAddDate = ctx.date;
+        return [];
+      }
       ctx.state.lastAddDate = ctx.date;
       const names = ctx.profile.universe.filter((s) => price(ctx, s));
       const budget = new Budget(ctx.buyingPower);
-      const per = (ctx.equity * addPct) / 100 / names.length;
+      const room = Math.max(0, borrowCeiling - borrowed);
+      const per = Math.min((ctx.equity * addPct) / 100, room) / names.length;
       const orders: Order[] = [];
       for (const symbol of names) {
         const o = buyStock(ctx, symbol, per, budget, `Basket ${fmtPct(move)} on the day — adding ${addPct}% of equity on margin`);

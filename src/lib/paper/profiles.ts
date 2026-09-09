@@ -15,7 +15,7 @@ export const PMCC_UNIVERSE = [...new Set(SECTORS.flatMap((s) => s.tickers))];
 export const PROFILES: Profile[] = [
   {
     id: "index-dca",
-    name: "Index DCA",
+    name: "Atlas",
     tagline: "Buys the index every morning and never looks back",
     style: ["stocks", "no-margin", "index"],
     plan: [
@@ -30,7 +30,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "sector-rotator",
-    name: "Sector Rotation",
+    name: "Compass",
     tagline: "Top three SPDR sectors by 20-day return, rebalanced weekly",
     style: ["stocks", "no-margin", "sector"],
     plan: [
@@ -45,7 +45,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "megacap-momentum",
-    name: "Mega-cap Momentum",
+    name: "Northstar",
     tagline: "Trend-following the twenty largest names, eight at a time",
     style: ["stocks", "no-margin", "momentum"],
     plan: [
@@ -61,7 +61,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "margin-bull",
-    name: "Margin Bull",
+    name: "Booster",
     tagline: "Momentum on 1.6× leverage with a hard equity floor",
     style: ["stocks", "margin", "momentum"],
     plan: [
@@ -77,7 +77,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "dip-buyer",
-    name: "Dip Buyer",
+    name: "Salvage",
     tagline: "Buys sharp one-day drops and oversold names, sells inside two weeks",
     style: ["stocks", "no-margin", "contrarian"],
     plan: [
@@ -92,7 +92,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "put-seller",
-    name: "Naked Put Seller",
+    name: "Breakwater",
     tagline: "Eight short puts at a time, 0.15–0.25 delta, managed at 50%",
     style: ["options", "margin", "income"],
     plan: [
@@ -101,14 +101,15 @@ export const PROFILES: Profile[] = [
       "1 contract per $10K of strike notional (minimum 1).",
       "Margin per contract = max(20% × spot − OTM amount, 10% × strike) × 100 + premium, never exceeding buying power.",
       "Buy back at 50% of the credit, at 21 DTE, or when the put's delta exceeds 0.50 — then immediately sell a new one.",
+      "If equity falls under $85K, stop opening new puts and let the book run down.",
     ],
     universe: DEFAULT_UNIVERSE,
-    params: { universeSize: 25, maxPrice: 400, targetPositions: 8, minDelta: 0.15, maxDelta: 0.25, minDte: 21, maxDte: 45, notionalUsd: 10000 },
+    params: { universeSize: 25, maxPrice: 400, targetPositions: 8, minDelta: 0.15, maxDelta: 0.25, minDte: 21, maxDte: 45, notionalUsd: 10000, equityFloor: 85000 },
     margin: true,
   },
   {
     id: "wheel",
-    name: "The Wheel",
+    name: "Wheelhouse",
     tagline: "Cash-secured puts on five names, covered calls when assigned",
     style: ["options", "no-margin", "income"],
     plan: [
@@ -123,7 +124,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "pmcc-operator",
-    name: "PMCC Operator",
+    name: "Longview",
     tagline: "Deep LEAPS calls with monthly short calls written against them",
     style: ["options", "no-margin", "growth"],
     plan: [
@@ -139,7 +140,7 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "spy-condor",
-    name: "SPY Weekly Iron Condor",
+    name: "Canopy",
     tagline: "One defined-risk condor on SPY every week, risking 2% of equity",
     style: ["options", "margin", "neutral"],
     plan: [
@@ -155,17 +156,19 @@ export const PROFILES: Profile[] = [
   },
   {
     id: "growth-shadow",
-    name: "Growth Shadow",
+    name: "Vector",
     tagline: "A proxy basket for a public growth fund — not its actual book",
     style: ["mixed", "margin", "growth"],
     plan: [
       "Basket: NVDA TSLA PLTR AMD RKLB HOOD COIN ASTS — a proxy for a public growth fund, not its actual holdings.",
       "Equal weight at start and on the first session of each month.",
       "On any day the basket is down more than 3%, add 25% of equity across the basket on margin.",
+      "Never borrow more than 50% of equity, and stop adding once within 5% of the floor.",
+      "If equity falls under $85K, sell down to zero borrowing.",
       "When equity is up 10% from the last rebalance, sell down to zero borrowing.",
     ],
     universe: GROWTH_BASKET,
-    params: { dipPct: -3, addPct: 25, takePct: 10 },
+    params: { dipPct: -3, addPct: 25, takePct: 10, equityFloor: 85000, maxBorrowPct: 50 },
     margin: true,
   },
 ];

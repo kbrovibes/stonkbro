@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { addDays, etToday } from "@/lib/paper/dates";
+import type { MemoryEntry } from "@/lib/paper/memory";
 import type { Account, Position, Profile, ProfileNote, Session, Snapshot, Trade } from "@/lib/paper/types";
 import { MARGIN_LIMIT, SESSION_ORDER, START_CASH } from "@/lib/paper/types";
 
@@ -86,6 +88,19 @@ export interface NoteRow {
   stats: Record<string, unknown>;
 }
 
+export interface MemoryRow {
+  id: string;
+  profile_id: string;
+  kind: MemoryEntry["kind"];
+  headline: string;
+  detail: string | null;
+  weight: number;
+  hits: number;
+  first_seen: string;
+  last_seen: string;
+  stats: Record<string, unknown> | null;
+}
+
 export interface RunRow {
   id: string;
   run_date: string;
@@ -128,6 +143,20 @@ function toPosition(r: PositionRow): Position {
     realizedPnl: num(r.realized_pnl),
     status: r.status,
     meta: r.meta ?? {},
+  };
+}
+
+function toMemory(r: MemoryRow): MemoryEntry {
+  return {
+    profileId: r.profile_id,
+    kind: r.kind,
+    headline: r.headline,
+    detail: r.detail,
+    weight: num(r.weight),
+    hits: num(r.hits),
+    firstSeen: r.first_seen,
+    lastSeen: r.last_seen,
+    stats: r.stats ?? {},
   };
 }
 
@@ -390,4 +419,43 @@ export async function getLastRun(): Promise<RunRow | null> {
     .from("paper_runs").select("*").order("started_at", { ascending: false }).limit(1);
   fail("getLastRun", error);
   return ((data ?? []) as RunRow[])[0] ?? null;
+}
+
+/* -- memory ------------------------------------------------------------------- */
+
+export async function getMemories(profileId?: string): Promise<MemoryEntry[]> {
+  let q = supabaseAdmin.from("paper_memory").select("*").order("last_seen", { ascending: false });
+  if (profileId) q = q.eq("profile_id", profileId);
+  const { data, error } = await q;
+  fail("getMemories", error);
+  return ((data ?? []) as MemoryRow[]).map(toMemory);
+}
+
+export async function upsertMemories(entries: MemoryEntry[]): Promise<void> {
+  if (entries.length === 0) return;
+  const rows = entries.map((e) => ({
+    profile_id: e.profileId, kind: e.kind, headline: e.headline, detail: e.detail, weight: e.weight,
+    hits: e.hits, first_seen: e.firstSeen, last_seen: e.lastSeen, stats: e.stats,
+  }));
+  const { error } = await supabaseAdmin.from("paper_memory").upsert(rows, { onConflict: "profile_id,kind,headline" });
+  fail("upsertMemories", error);
+}
+
+export async function getMemoryCounts(): Promise<Map<string, number>> {
+  const { data, error } = await supabaseAdmin.from("paper_memory").select("profile_id");
+  fail("getMemoryCounts", error);
+  const out = new Map<string, number>();
+  for (const r of (data ?? []) as Array<{ profile_id: string }>) out.set(r.profile_id, (out.get(r.profile_id) ?? 0) + 1);
+  return out;
+}
+
+/** Positions whose `closed_at` lands on `date` as New York reads it. */
+export async function getPositionsClosedOn(date: string): Promise<Position[]> {
+  const { data, error } = await supabaseAdmin
+    .from("paper_positions").select("*").eq("status", "closed")
+    .gte("closed_at", `${addDays(date, -1)}T00:00:00Z`).lt("closed_at", `${addDays(date, 2)}T00:00:00Z`);
+  fail("getPositionsClosedOn", error);
+  return ((data ?? []) as PositionRow[])
+    .map(toPosition)
+    .filter((p) => p.closedAt !== null && etToday(new Date(p.closedAt)) === date);
 }

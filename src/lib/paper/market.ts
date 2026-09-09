@@ -9,6 +9,7 @@ import { tradierGetExpirations, tradierGetOptionsChain } from "@/lib/market/trad
 import type { OptionContract, QuoteData } from "@/lib/market/types";
 import { getOptionsChain, getQuotes } from "@/lib/market/yahoo";
 import { dteOn } from "./dates";
+import { expiriesForNeeds, generateChain, type SyntheticConfig } from "./synthetic";
 import type { ChainNeed, MarketView } from "./types";
 
 export interface MarketData {
@@ -20,11 +21,15 @@ export interface MarketData {
   expirations: Map<string, string[]>;
   fetchedExpiries: Set<string>;
   errors: string[];
+  /** Set by the backfill harness: chains are modelled, never fetched. */
+  synthetic?: SyntheticConfig;
 }
 
 export interface HeldContract {
   symbol: string;
   expiry: string;
+  kind: "call" | "put";
+  strike: number;
 }
 
 const hasTradier = (): boolean => !!process.env.TRADIER_API_TOKEN;
@@ -131,8 +136,31 @@ async function loadMockChains(data: MarketData, symbols: string[]): Promise<void
  * each need resolves to ONE expiry (nearest its target) and each held contract
  * to its exact expiry; a (symbol, expiry) pair is fetched at most once per run.
  */
+/** Backfill mode: build the chain the needs describe instead of fetching one. */
+function loadSyntheticChains(data: MarketData, needs: ChainNeed[], held: HeldContract[]): void {
+  const config = data.synthetic;
+  if (!config) return;
+  const symbols = [...new Set([...needs.map((n) => n.symbol), ...held.map((h) => h.symbol)])];
+  for (const symbol of symbols) {
+    const spot = data.quotes.get(symbol)?.price;
+    if (!spot || spot <= 0) continue;
+    const pinned = held
+      .filter((h) => h.symbol === symbol)
+      .map((h) => ({ type: h.kind, strike: h.strike, expiry: h.expiry }));
+    const expiries = expiriesForNeeds(needs.filter((n) => n.symbol === symbol), data.date);
+    const key = `${symbol}:${expiries.join(",")}:${pinned.length}`;
+    if (data.fetchedExpiries.has(key)) continue;
+    data.fetchedExpiries.add(key);
+    if (expiries.length === 0 && pinned.length === 0) continue;
+    data.expirations.set(symbol, expiries);
+    const vol = config.vol.get(symbol) ?? 0.32;
+    addContracts(data, symbol, generateChain({ symbol, expiries, pinned }, spot, data.date, vol));
+  }
+}
+
 export async function loadChains(data: MarketData, needs: ChainNeed[], held: HeldContract[]): Promise<void> {
   const symbols = [...new Set([...needs.map((n) => n.symbol), ...held.map((h) => h.symbol)])];
+  if (data.synthetic) return loadSyntheticChains(data, needs, held);
   if (!hasTradier()) return loadMockChains(data, symbols);
 
   await inBatches(

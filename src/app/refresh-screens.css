@@ -103,3 +103,54 @@
     opacity: 0.5;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Paper desk
+   --------------------------------------------------------------------------
+   The only screen in the refresh that has a genuine two-column form on a wide
+   viewport: ten bots read as a board, not a list, once there is room for two
+   of them side by side. Everything else on the screen stays single-column and
+   mobile-first, so these are the only media queries the screen needs.
+   -------------------------------------------------------------------------- */
+[data-theme-style="refresh"] .paper-board {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 30px;
+}
+
+[data-theme-style="refresh"] .paper-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  /* The chart and the rulebook are different lengths; neither should stretch. */
+  align-items: start;
+}
+
+/* Wide tables (positions) scroll inside their card, never the page. */
+[data-theme-style="refresh"] .paper-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+[data-theme-style="refresh"] .paper-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+[data-theme-style="refresh"] .paper-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--hairline);
+  border-left: 1px solid var(--hairline);
+}
+
+[data-theme-style="refresh"] .paper-stats > * {
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+@media (min-width: 860px) {
+  [data-theme-style="refresh"] .paper-board { grid-template-columns: 1fr 1fr; }
+  [data-theme-style="refresh"] .paper-split { grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  [data-theme-style="refresh"] .paper-stats { grid-template-columns: repeat(4, 1fr); }
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as db from "@/lib/db/paper";
+import { identityFor } from "@/lib/paper/identity";
 import { PROFILES } from "@/lib/paper/profiles";
 import { START_CASH } from "@/lib/paper/types";
 
@@ -7,11 +8,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [accounts, latest, series, lastRun] = await Promise.all([
+    const [accounts, latest, series, lastRun, memoryCounts] = await Promise.all([
       db.getAccounts(),
       db.getLatestSnapshots(),
       db.getCloseSeries(40),
       db.getLastRun(),
+      db.getMemoryCounts().catch(() => new Map<string, number>()),
     ]);
 
     let asOf: string | null = null;
@@ -29,8 +31,11 @@ export async function GET() {
       const snapshot = latest.get(p.id) ?? null;
       const points = (series.get(p.id) ?? []).map((pt) => ({ date: pt.date, equity: pt.equity }));
       const equity = snapshot ? Number(snapshot.equity) : START_CASH;
+      const identity = identityFor(p.id);
       return {
         profile: { id: p.id, name: p.name, tagline: p.tagline, style: p.style, plan: p.plan, margin: p.margin },
+        identity: { role: identity.role, creed: identity.creed, hue: identity.hue },
+        memoryCount: memoryCounts.get(p.id) ?? 0,
         account: account
           ? { cash: account.cash, realizedPnl: account.realizedPnl, fees: account.fees, interest: account.interest, startedOn: account.startedOn }
           : null,

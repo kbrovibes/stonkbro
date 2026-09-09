@@ -221,3 +221,148 @@ short TTLs.
 - [ ] Re-running the same session is a no-op for trades.
 - [ ] Leaderboard renders ten rows with sparklines; profile page shows positions, trades, notes for a chosen day.
 - [ ] `npx tsc --noEmit` and `npx eslint` clean on touched files.
+
+---
+
+# Spec 60a: The desk grows up — personas, memory, funding, floors, backfill
+
+Shipped in v0.41.0, on top of everything above. Nothing in the original spec
+was replaced: the ten profile ids, the broker, the session model and the DB
+tables are unchanged. This section is additive.
+
+## Personas (`src/lib/paper/identity.ts`)
+`profiles.ts` keeps the rulebook — universe, params, the written plan.
+`identity.ts` keeps the character, keyed by profile id: a `role` label (two or
+three words under the name), a `creed` (the bot's founding belief), a `hue`
+(rank chip and selection tint), and a `face` config. A profile with no entry
+falls back to a neutral face and its own tagline, so nothing breaks when a
+profile is added.
+
+Display names changed; **every `profile_id` is unchanged**, so accounts,
+positions, trades, snapshots and notes carry over with no data migration:
+
+| id | Name | Role |
+|---|---|---|
+| `index-dca` | Atlas | Index only |
+| `sector-rotator` | Compass | Sector rotation |
+| `megacap-momentum` | Northstar | Mega-cap momentum |
+| `margin-bull` | Booster | Leveraged momentum |
+| `dip-buyer` | Salvage | Dip buying |
+| `put-seller` | Breakwater | Naked puts |
+| `wheel` | Wheelhouse | The wheel |
+| `pmcc-operator` | Longview | LEAPS and short calls |
+| `spy-condor` | Canopy | Weekly iron condor |
+| `growth-shadow` | Vector | Growth basket |
+
+`src/components/paper/BotAvatar.tsx` draws the portrait as inline SVG from the
+face config (disc, shirt, skin, hair style, accessory, beard). No image
+assets, no CDN, no new dependency.
+
+## Memory (`src/lib/paper/memory.ts`, table `paper_memory`)
+Separate from the daily `paper_notes`: notes are what happened today, memory
+is what the bot carries. Six kinds:
+
+| Kind | What it captures |
+|---|---|
+| `creed` | The founding belief. Never earned, never lost. |
+| `conviction` | A belief the record keeps confirming. |
+| `lesson` | Something learned from how a trade went. |
+| `scar` | A loss worth not repeating. |
+| `streak` | A run of days in one direction. |
+| `milestone` | An equity or trade-count threshold crossed. |
+
+Migration `supabase/migrations/20260909010000_paper_memory.sql` (applied):
+`paper_memory` (id uuid pk, profile_id text references `paper_profiles` on
+delete cascade, kind text checked against the six values, headline text,
+detail text, weight numeric default 1, hits int default 1, first_seen date,
+last_seen date, stats jsonb, created_at) with `unique (profile_id, kind,
+headline)` and an index on (profile_id, last_seen desc). RLS: authenticated
+read, service_role manage — the same shape as the other `paper_*` tables.
+
+Memories are derived from each close and upserted on the unique key:
+re-observing one bumps `hits` and `last_seen` instead of inserting a
+duplicate, so a repeated lesson gets heavier rather than the list getting
+longer. The runner writes memories after the close session.
+
+**Hard rule: memory is never read back into order generation.** Strategies
+decide from quotes, history and account state exactly as before. Memory is
+character, not signal.
+
+## Buying power (`src/lib/paper/funding.ts`)
+The original spec logged a rejected order and moved on, which is not what a
+trader does. Every profile now shares one behaviour: an order refused for
+buying power closes the weakest thing already on the book, then retries.
+"Weakest" is the worst unrealised return across candidates. Two guards, both
+absolute:
+
+1. Nothing closes that would leave a short call uncovered — shares backing a
+   covered call and the long LEAPS under a PMCC are untouchable while the
+   short call is open.
+2. Multi-leg structures close as a whole; a single wing is never lifted off a
+   condor.
+
+Both the funding sale and the funded trade record `reason` text saying what
+happened. `src/lib/paper/engine.ts` executes closing orders before opening
+ones, so a bot's own exits free capital within the same session.
+`scripts/validate-paper-funding.ts` asserts the behaviour across 14 checks.
+
+## Equity floors
+- **Vector** (`growth-shadow`) previously added 25% of equity on margin on
+  every 3% basket drop with no limit. It now stops adding within 5% of an
+  **$85,000 equity floor**, never borrows more than **50% of equity**, and
+  sells down to zero borrowing under the floor.
+- **Breakwater** (`put-seller`) stops opening new puts under the same $85,000
+  floor.
+
+## Backfill harness (local only)
+No provider serves a historical option chain, so the harness models one.
+`src/lib/paper/synthetic.ts` prices chains with Black–Scholes off realised
+volatility from the bars. `src/lib/paper/backfill.ts` replays past sessions
+**entirely in memory** against recorded daily bars and never touches Supabase.
+`src/lib/paper/invariants.ts` holds the safety checks shared by the validator
+and the report.
+
+| Script | Purpose |
+|---|---|
+| `scripts/paper-fetch-bars.ts` | Cache the daily bars a window needs |
+| `scripts/paper-backfill.ts` | Replay a window across all ten bots |
+| `scripts/paper-report.ts` | Write the HTML + Markdown report |
+| `scripts/validate-paper-invariants.ts` | Assert the engine's safety invariants |
+| `scripts/validate-paper-funding.ts` | Assert the buying-power behaviour |
+
+The harness is an analysis tool: it runs from `scripts/`, writes nothing to
+the database, and is wired to no cron and no route. Synthetic chains are a
+model, not recorded quotes — backfilled option results are indicative and are
+not comparable to the live sessions the crons record. Output lives in
+`reports/`.
+
+## UI additions
+- **`/paper`** — a ranked two-column board: avatar, rank number, persona name
+  and role per bot, replacing the plain `DataRow` list.
+- **`/paper/[profileId]`** — a hero with the avatar and creed, a four-cell
+  stat strip, the equity chart beside a Rulebook card, and four counted tabs:
+  **Soul**, **Positions**, **Trades**, **Journal**. Positions render as a
+  table — position, type, qty, avg, mark, market value, unrealized.
+- `GET /api/paper` returns identity per bot; `GET /api/paper/[profileId]`
+  returns identity and memory alongside the existing payload. Both stay
+  public reads.
+
+## Files
+| File | Action |
+|---|---|
+| `src/lib/paper/{identity,memory,funding,backfill,synthetic,invariants}.ts` | Create |
+| `src/components/paper/BotAvatar.tsx` | Create |
+| `supabase/migrations/20260909010000_paper_memory.sql` | Create |
+| `scripts/paper-{fetch-bars,backfill,report}.ts`, `scripts/validate-paper-{invariants,funding}.ts` | Create |
+| `src/lib/paper/{profiles,engine,broker,runner,market}.ts`, `src/lib/paper/strategies/{shadow,puts}.ts` | Edit |
+| `src/lib/db/paper.ts`, `src/app/api/paper/route.ts`, `src/app/api/paper/[profileId]/route.ts` | Edit |
+| `src/app/(app)/paper/PaperLeaderboard.tsx`, `src/app/(app)/paper/[profileId]/{ProfileScreen,ProfileSections}.tsx` | Edit |
+
+## Acceptance
+- [ ] Renaming the profiles changes no `profile_id`; existing accounts, positions and snapshots still resolve.
+- [ ] Every bot renders an avatar, including one with no `identity.ts` entry (neutral fallback).
+- [ ] Re-deriving the same memory on a second close bumps `hits` instead of inserting a row.
+- [ ] No strategy module imports `memory.ts`.
+- [ ] `scripts/validate-paper-funding.ts` passes all 14 checks; `scripts/validate-paper-invariants.ts` passes.
+- [ ] A backfill run issues zero Supabase calls.
+- [ ] `npx tsc --noEmit` and `npx eslint` clean on touched files.

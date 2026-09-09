@@ -31,7 +31,13 @@ A daily cron scans ~120 liquid names for the best LEAPS to buy, scoring each on 
 Enter a budget (default $20K) and the PMCC finder ranks the day's setups by monthly income: spreads affordable, est. monthly and annual income, annualized ROC, and a per-spread breakdown of the LEAPS you buy versus the call you sell (debit, credit, breakeven, spread width, max profit at short expiry, IV, open interest). Re-ranks instantly as the budget changes. Lives on the Options page under PMCC.
 
 ### Paper Trading (10 bots, $100K each)
-Ten paper-trading profiles — Index DCA, Sector Rotation, Mega-cap Momentum, Margin Bull, Dip Buyer, Naked Put Seller, The Wheel, PMCC Operator, SPY Weekly Iron Condor and an iofund-style Growth Shadow — each with a written plan, start with $100,000 cash and a $200,000 margin line. Three crons a day (open, midday, close) mark every account to market on live quotes and chains, let each bot act on its rules, fill at the quote, settle expiries, charge margin interest, and persist every trade. The close run writes a daily snapshot plus highlights, learnings and a short narrative per bot and a desk-wide note. `/paper` is a leaderboard with equity sparklines; tap a bot for its positions, trades and notes on any day. Paper tab in the bottom nav.
+Ten paper-trading bots — Atlas (index DCA), Compass (sector rotation), Northstar (mega-cap momentum), Booster (leveraged momentum), Salvage (dip buying), Breakwater (naked puts), Wheelhouse (the wheel), Longview (LEAPS and short calls), Canopy (weekly iron condor) and Vector (growth basket) — each with a written plan, a drawn face and a creed, start with $100,000 cash and a $200,000 margin line. Three crons a day (open, midday, close) mark every account to market on live quotes and chains, let each bot act on its rules, fill at the quote, settle expiries, charge margin interest, and persist every trade. A bot refused for buying power closes its weakest holding to fund the trade — never one that covers a short call, never one leg of a multi-leg group. The close run writes a daily snapshot plus highlights, learnings and a short narrative per bot and a desk-wide note. `/paper` is a ranked board of avatars; tap a bot for its hero, rulebook, equity chart and four tabs — Soul, Positions, Trades, Journal. Paper tab in the bottom nav.
+
+### Bot Memory (Soul)
+Every paper bot keeps a persistent memory alongside the daily notes: its founding **creed**, **convictions** the record keeps confirming, **lessons** from how trades went, **scars** worth not repeating, **streaks**, and **milestones** crossed. Memories are derived after each close and deduplicated — re-observing one bumps its hit count instead of adding a row, so a repeated lesson gets heavier rather than the list getting longer. Memory never feeds back into order generation; it is character, not signal.
+
+### Paper Backfill Harness
+A local harness replays past paper sessions entirely in memory against recorded daily bars, without touching Supabase. Because no provider serves a historical option chain, `src/lib/paper/synthetic.ts` models one with Black–Scholes off realised volatility. Run it from `scripts/`: `paper-fetch-bars.ts` caches the bars, `paper-backfill.ts` replays a window across all ten bots, `paper-report.ts` writes the HTML and Markdown report, and `validate-paper-invariants.ts` / `validate-paper-funding.ts` assert the engine's safety rules. Backfilled option results are modelled, not recorded quotes.
 
 ### Trading Desk (Decision Journal + Debate Verdict)
 The `/desk` page composes a full trading pipeline: Decision Journal journaling every recommendation ever surfaced and grading each against what actually happened (realized return, max drawdown, days held); Bull/Bear Debate Verdict producing deterministic ratings (BUY/OVERWEIGHT/HOLD/UNDERWEIGHT/SELL) with one batched LLM call narrating the top candidates' theses; Risk Desk vetting each candidate against portfolio constraints (assignment capacity, single-name/sector concentration, earnings clustering, liquidity); and Market Regime analysis (RISK_ON/NEUTRAL/RISK_OFF/VOLATILE) to auto-tighten scanner bands. Zero to one LLM call per component; gracefully degrades if AI is unavailable. New tables backfilled with 9,065 historical decisions from 255 scans.
@@ -155,8 +161,11 @@ src/
     db/                   Database layer (positions, watchlists, settings, research)
     market/               Yahoo Finance integration (quotes, options chains)
     options/              Options math (PMCC grading, signal generation)
+    paper/                Paper-trading desk (profiles, identity, broker, engine,
+                          strategies, memory, funding, backfill harness)
     research/             Claude AI analysis engine
     notifications/        Email service (Resend)
+scripts/                  Local harness: paper backfill, report, validators
 ```
 
 **Key principles:**
@@ -260,8 +269,8 @@ npm run dev
 | `/api/leaps/grid?symbol=X&expiry=Y&strikes=a,b` | GET | Live-priced strikes plus the quarter × stock-move return grid for each (IV held constant) |
 | `/api/pmcc-income?budget=20000` | GET | PMCC setups from the latest scan ranked for a capital budget with the LEAPS vs short-call breakdown |
 | `/api/cron/leaps-pmcc` | GET | Daily LEAPS + PMCC scan across ~110 liquid names (Vercel cron, 2×/day) |
-| `/api/paper` | GET | Paper-trading leaderboard: ten bots, accounts, latest snapshots, equity series, desk note |
-| `/api/paper/[profileId]?date=` | GET | One bot's account, positions, trades and notes for a day, plus its equity history |
+| `/api/paper` | GET | Paper-trading board: ten bots with identity (name, role, creed, face), accounts, latest snapshots, equity series, desk note |
+| `/api/paper/[profileId]?date=` | GET | One bot's identity, memory, account, positions, trades and notes for a day, plus its equity history |
 | `/api/paper/run` | POST | Run a paper session now (`{session}`; admin or cron bearer, job-tracked) |
 | `/api/cron/paper?session=open\|midday\|close` | GET | Mark, trade, settle and snapshot all ten bots (Vercel cron 3×/day; close also writes notes) |
 | `/api/regime` | GET | Current Market Regime (RISK_ON/NEUTRAL/RISK_OFF/VOLATILE) + component scores (SPY RSI, VIX, breadth) |
@@ -284,6 +293,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.41.0** | Paper desk personas + persistent bot memory, buying-power management, equity floors, backfill harness |
 | **v0.40.0** | LEAPS Lab + PMCC Income finder; Paper Trading with 10 bots; home card grid + podcast restored |
 | **v0.39.0** | Trading Desk — Decision Journal + Debate Verdict + Risk Gate + Market Regime; provider fallback fixes |
 | **v0.38.3** | /more page fixed for Next 16; PMCC tab on Options page |

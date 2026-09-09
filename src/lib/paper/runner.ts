@@ -11,6 +11,7 @@ import type { BrokerState } from "./broker";
 import { etToday, isWeekend, monthStart, weekStart } from "./dates";
 import { buildSnapshot, runProfile } from "./engine";
 import { loadHistories, loadQuotes, newMarketData } from "./market";
+import { buildMemories } from "./memory";
 import { addNarratives, buildDeskNote, buildProfileNote } from "./notes";
 import { PROFILES, allQuoteSymbols } from "./profiles";
 import { SESSION_ORDER, type Account, type ProfileNote, type Session, type Snapshot, type Trade } from "./types";
@@ -70,6 +71,34 @@ async function writeNotes(date: string, snapshots: Snapshot[], accounts: Map<str
   const desk = buildDeskNote(notes, PROFILES, date);
   const withNarratives = await addNarratives(notes, desk, PROFILES, date);
   await db.upsertNotes([...withNarratives.notes, withNarratives.desk]);
+}
+
+/** What the day taught each bot. Never feeds back into orders — this is character, not signal. */
+async function writeMemories(date: string, snapshots: Snapshot[], accounts: Map<string, Account>): Promise<void> {
+  const [todays, closedToday, existing, series] = await Promise.all([
+    db.getTradesOnDate(date).then((rows) => rows.map(toTrade)),
+    db.getPositionsClosedOn(date),
+    db.getMemories(),
+    db.getCloseSeries(400),
+  ]);
+  const updated = PROFILES.flatMap((profile) => {
+    const snapshot = snapshots.find((s) => s.profileId === profile.id);
+    const account = accounts.get(profile.id);
+    if (!snapshot || !account) return [];
+    return buildMemories(
+      {
+        profile,
+        account,
+        snapshot,
+        trades: todays.filter((t) => t.profileId === profile.id),
+        closedToday: closedToday.filter((p) => p.profileId === profile.id),
+        series: (series.get(profile.id) ?? []).map((pt) => ({ date: pt.date, equity: pt.equity })),
+        existing: existing.filter((m) => m.profileId === profile.id),
+      },
+      date,
+    );
+  });
+  await db.upsertMemories(updated);
 }
 
 export async function runPaperSession(opts: RunOptions): Promise<RunSummary> {
@@ -153,6 +182,12 @@ export async function runPaperSession(opts: RunOptions): Promise<RunSummary> {
         await writeNotes(date, snapshots, accounts);
       } catch (e) {
         summary.errors.push(`notes: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      await progress("Updating memory");
+      try {
+        await writeMemories(date, snapshots, accounts);
+      } catch (e) {
+        summary.errors.push(`memory: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 

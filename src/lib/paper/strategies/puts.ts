@@ -57,6 +57,10 @@ export const putSeller: Strategy = {
     const slots = target - stillOpen.size;
     if (slots <= 0) return orders;
 
+    // Under the floor the book only shrinks. Exits above still run; nothing new opens.
+    const floor = num(ctx, "equityFloor", 0);
+    if (floor > 0 && ctx.equity <= floor) return orders;
+
     const reopen = exits.filter((e) => e.reopen).map((e) => e.order.symbol);
     const candidates = [...new Set([...reopen, ...putUniverse(ctx)])].filter((s) => !stillOpen.has(s));
     const released = shortOptions(ctx, "put")
