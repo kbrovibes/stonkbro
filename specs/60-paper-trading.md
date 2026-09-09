@@ -295,7 +295,7 @@ buying power closes the weakest thing already on the book, then retries.
 "Weakest" is the worst unrealised return across candidates. Two guards, both
 absolute:
 
-1. Nothing closes that would leave a short call uncovered — shares backing a
+1. Nothing closes that would leave a short leg uncovered — shares backing a
    covered call and the long LEAPS under a PMCC are untouchable while the
    short call is open.
 2. Multi-leg structures close as a whole; a single wing is never lifted off a
@@ -304,17 +304,17 @@ absolute:
 Both the funding sale and the funded trade record `reason` text saying what
 happened. `src/lib/paper/engine.ts` executes closing orders before opening
 ones, so a bot's own exits free capital within the same session.
-`scripts/validate-paper-funding.ts` asserts the behaviour across 19 checks.
+`scripts/validate-paper-funding.ts` asserts the behaviour across 26 checks.
 
 ## The broker will not strand a short call
 The funding guard above picks candidates; `executeOrder` in
 `src/lib/paper/broker.ts` enforces the same rule on every order however it
-arrives. It rejects anything that would leave a short call uncovered —
+arrives. It rejects anything that would leave a short leg uncovered —
 selling the shares behind a covered call, or closing the LEAPS under a PMCC
 while the short leg is still open. Strategies already close the short leg
 first, but that was a convention rather than a guarantee: if the short-leg
 close were ever rejected, the cover would still have been sold. The rejection
-reason reads `Would leave a short call uncovered`.
+reason reads `Would leave a short leg uncovered`.
 
 ## Equity floors
 - **Vector** (`growth-shadow`) previously added 25% of equity on margin on
@@ -373,7 +373,50 @@ not comparable to the live sessions the crons record. Output lives in
 - [ ] Every bot renders an avatar, including one with no `identity.ts` entry (neutral fallback).
 - [ ] Re-deriving the same memory on a second close bumps `hits` instead of inserting a row.
 - [ ] No strategy module imports `memory.ts`.
-- [ ] `executeOrder` rejects a sale of covered shares and a close of a PMCC LEAPS while the short call is open, with reason `Would leave a short call uncovered`.
-- [ ] `scripts/validate-paper-funding.ts` passes all 19 checks; `scripts/validate-paper-invariants.ts` passes.
+- [ ] `executeOrder` rejects a sale of covered shares and a close of a PMCC LEAPS while the short call is open, with reason `Would leave a short leg uncovered`.
+- [ ] `scripts/validate-paper-funding.ts` passes all 26 checks; `scripts/validate-paper-invariants.ts` passes.
 - [ ] A backfill run issues zero Supabase calls.
 - [ ] `npx tsc --noEmit` and `npx eslint` clean on touched files.
+
+---
+
+## Spec 60b: post-audit hardening
+
+A static read of the strategy source found three routes to an uncovered short
+position that neither a rising nor a falling simulated month could reach, plus
+two ways a bot could undo its own de-risking. All five are closed.
+
+### Broker rules
+
+1. **No sale may strand a short leg.** `executeOrder` refuses to sell shares or
+   a long call backing an open short call, and refuses to lift any leg of a
+   `meta.group` while a short leg of that group is open. Reason:
+   `Would leave a short leg uncovered`. This is what protects a condor's wings,
+   where the stranded leg is a short put rather than a short call.
+2. **No short call may be written uncovered.** Reason: `No shares or
+   longer-dated long call to cover this short call`. Cover must outlive the
+   short it backs, so a long call counts only when it expires no earlier than
+   the longest-dated short on the book. Needed because `marginMode: "covered"`
+   declares zero margin, so nothing else would reject the write.
+
+### Strategy rules
+
+3. **A tick that de-risks does nothing else.** `momentum.ts` excluded the
+   positions it was selling from its holdings count, which opened a slot, then
+   re-bought at the full position weight against buying power that still
+   included the whole margin line. Booster's equity floor never actually held.
+4. **Total short-put obligation is capped.** Contract sizing rounds down to
+   whole contracts, so one contract on an expensive name writes more notional
+   than the per-contract heuristic asked for. `maxBookNotionalPct` (250)
+   bounds the book.
+
+### Acceptance
+
+- [ ] A PMCC whose buy-to-close is rejected cannot then sell its LEAPS.
+- [ ] A rejected buy-to-close cannot be followed by a second short call
+      against the same LEAPS.
+- [ ] A condor cannot sell a wing while its short leg is open.
+- [ ] `scripts/validate-paper-funding.ts` scenarios 6-8 reproduce each of the
+      above directly and pass.
+- [ ] The August backfill is unchanged to the dollar, confirming none of these
+      guards alter behaviour that was already correct.
