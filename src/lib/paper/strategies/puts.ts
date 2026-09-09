@@ -67,6 +67,13 @@ export const putSeller: Strategy = {
       .filter((p) => exits.some((e) => e.order.positionId === p.id))
       .reduce((s, p) => s + (p.meta.marginHeld ?? 0) - (p.meta.mark ?? p.avgPrice) * 100 * p.qty, 0);
     const budget = new Budget(ctx.buyingPower + Math.max(0, released));
+    // Every short put is an obligation to buy the stock. The sizing heuristic
+    // below rounds down to whole contracts, and one contract on an expensive
+    // name is more notional than the heuristic asked for — so the book carries
+    // a ceiling on total obligation as well as a per-trade target.
+    const bookCeiling = (ctx.equity * num(ctx, "maxBookNotionalPct", 250)) / 100;
+    let bookNotional = shortOptions(ctx, "put").reduce((s, p) => s + (p.strike ?? 0) * 100 * p.qty, 0);
+
     let opened = 0;
     for (const symbol of candidates) {
       if (opened >= slots) break;
@@ -76,8 +83,11 @@ export const putSeller: Strategy = {
       if (!found || found.delta < minDelta || found.delta > maxDelta) continue;
       const c = found.contract;
       const qty = Math.max(1, Math.floor(notional / (c.strike * 100)));
+      const obligation = c.strike * 100 * qty;
+      if (bookNotional + obligation > bookCeiling) continue;
       const margin = nakedPutMargin(spot, c.strike, c.mid, qty);
       if (!budget.spend(margin)) continue;
+      bookNotional += obligation;
       orders.push({
         symbol, kind: "put", action: "sell", qty, strike: c.strike, expiry: c.expiry,
         reason: `Sold ${found.delta.toFixed(2)}Δ put, ${c.dte} DTE, ${(c.mid / c.strike * 365 / c.dte * 100).toFixed(0)}% annualised`,

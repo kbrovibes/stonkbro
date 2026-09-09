@@ -304,7 +304,17 @@ absolute:
 Both the funding sale and the funded trade record `reason` text saying what
 happened. `src/lib/paper/engine.ts` executes closing orders before opening
 ones, so a bot's own exits free capital within the same session.
-`scripts/validate-paper-funding.ts` asserts the behaviour across 14 checks.
+`scripts/validate-paper-funding.ts` asserts the behaviour across 19 checks.
+
+## The broker will not strand a short call
+The funding guard above picks candidates; `executeOrder` in
+`src/lib/paper/broker.ts` enforces the same rule on every order however it
+arrives. It rejects anything that would leave a short call uncovered —
+selling the shares behind a covered call, or closing the LEAPS under a PMCC
+while the short leg is still open. Strategies already close the short leg
+first, but that was a convention rather than a guarantee: if the short-leg
+close were ever rejected, the cover would still have been sold. The rejection
+reason reads `Would leave a short call uncovered`.
 
 ## Equity floors
 - **Vector** (`growth-shadow`) previously added 25% of equity on margin on
@@ -363,6 +373,7 @@ not comparable to the live sessions the crons record. Output lives in
 - [ ] Every bot renders an avatar, including one with no `identity.ts` entry (neutral fallback).
 - [ ] Re-deriving the same memory on a second close bumps `hits` instead of inserting a row.
 - [ ] No strategy module imports `memory.ts`.
-- [ ] `scripts/validate-paper-funding.ts` passes all 14 checks; `scripts/validate-paper-invariants.ts` passes.
+- [ ] `executeOrder` rejects a sale of covered shares and a close of a PMCC LEAPS while the short call is open, with reason `Would leave a short call uncovered`.
+- [ ] `scripts/validate-paper-funding.ts` passes all 19 checks; `scripts/validate-paper-invariants.ts` passes.
 - [ ] A backfill run issues zero Supabase calls.
 - [ ] `npx tsc --noEmit` and `npx eslint` clean on touched files.

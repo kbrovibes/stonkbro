@@ -301,10 +301,21 @@ Verification commands, all passing:
     npx tsx scripts/paper-report.ts
     npm run build
 
+The static audit DID arrive, late, and found three unbounded-loss paths no simulated month
+could reach (two in Longview, one in Canopy) plus Booster re-levering in the tick it de-risks
+and Breakwater having no ceiling on total obligation. All five are fixed; the naked-leg paths
+are covered by regression tests in `scripts/validate-paper-funding.ts` scenarios 6-8.
+
 Known gaps, deliberately left:
-- The static strategy audit subagent never returned a report. The invariant checks in
-  `src/lib/paper/invariants.ts` cover the same ground empirically and are stronger, but a
-  line-by-line read of the strategies has not been done.
+- Vector falls 28% below its starting capital over 2025-01-15 to 2025-04-08, past the 25% line
+  the invariant checks draw. Its floor fires and it de-levers, but it is the desk's
+  highest-variance sleeve and it behaves like one. Reported in the report, not tuned away.
+- Booster's re-lever fix is a control-flow change with no empirical proof: momentum signals
+  never fired in either stress window, so it never had positions to de-risk.
+- Lower-severity audit findings not acted on: fixed-dollar clips that do not scale with equity
+  (Atlas, Salvage, Longview, Wheelhouse), Wheelhouse locking its five names on first run and
+  never revisiting, Breakwater re-selling a just-rolled loser with no cooldown, and settlement
+  bypassing the buying-power check so a cash-only account can be pushed negative.
 - Wheelhouse traded on 1 of 21 August days. That is rule-faithful (it sells 30–45 DTE puts
   that expire in September) but it means the wheel is barely exercised by a one-month window.
 - The board is two columns inside the app's 672px shell, which is narrower than the

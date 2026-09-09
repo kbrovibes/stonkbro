@@ -60,8 +60,13 @@ export function momentum(): Strategy {
       const exiting = new Set(orders.map((o) => o.positionId).filter((id): id is string => !!id));
       if (floor > 0) {
         const d = deleverage(ctx, floor, exiting);
-        for (const o of d) exiting.add(o.positionId!);
-        orders.push(...d);
+        if (d.length > 0) {
+          // De-risking and re-entering in the same tick makes the floor
+          // decorative: the sale cuts borrowing and the replacement puts it
+          // straight back. A tick that de-risks does nothing else.
+          orders.push(...d);
+          return orders;
+        }
       }
       if (ctx.session !== "open") return orders;
 

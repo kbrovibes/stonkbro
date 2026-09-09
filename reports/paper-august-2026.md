@@ -197,22 +197,27 @@ SPY buy & hold +2.35% · QQQ buy & hold +4.13%
 - Booster +$1,289 — Held, no trades.
 - Vector −$5,476 — Bought 20 COIN @ 178.64 — Basket −3.7% on the day — adding 25% of equity on margin (and 7 more trades)
 
-## Stress test: 2025-03-10 to 2025-04-08 (SPY −12.53%)
+## Stress test: 2025-01-15 to 2025-04-08 (SPY −15.90%)
 
 | Bot | Role | Return | Lowest equity | Trades |
 |---|---|--:|--:|--:|
-| Vector | Growth basket | −16.94% | $83,064 | 105 |
-| Salvage | Dip buying | −15.84% | $82,523 | 90 |
-| Compass | Sector rotation | −15.28% | $84,718 | 21 |
-| Atlas | Index only | −12.29% | $87,712 | 64 |
-| Breakwater | Naked puts | −4.00% | $96,000 | 88 |
-| Longview | LEAPS and short calls | −2.39% | $96,508 | 37 |
-| Canopy | Weekly iron condor | −2.13% | $97,870 | 24 |
+| Vector | Growth basket | −27.97% | $72,032 | 164 |
+| Atlas | Index only | −18.83% | $81,169 | 74 |
+| Compass | Sector rotation | −16.26% | $83,742 | 36 |
+| Salvage | Dip buying | −15.18% | $83,347 | 208 |
+| Breakwater | Naked puts | −10.42% | $89,579 | 216 |
+| Canopy | Weekly iron condor | −1.93% | $98,069 | 56 |
+| Longview | LEAPS and short calls | −1.89% | $97,012 | 86 |
 | Northstar | Mega-cap momentum | +0.00% | $100,000 | 0 |
 | Booster | Leveraged momentum | +0.00% | $100,000 | 0 |
-| Wheelhouse | The wheel | +0.28% | $99,627 | 5 |
+| Wheelhouse | The wheel | +0.00% | $99,112 | 23 |
 
-- Vector: Equity $84,586 at or under the $85,000 floor — selling down to zero borrowing
+- Vector: Equity $84,961 at or under the $85,000 floor — selling down to zero borrowing
+- Vector: Equity $84,201 at or under the $85,000 floor — selling down to zero borrowing
+- Vector: Equity $82,599 at or under the $85,000 floor — selling down to zero borrowing
+
+**What the stress window broke** (all of these held every day of August):
+- Nobody blew up: Vector fell -28.0% below start
 
 ## Safety checks
 

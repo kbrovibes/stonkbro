@@ -289,40 +289,92 @@ export function openPosition(
   return p;
 }
 
-/**
- * Would filling this order leave a short call with nothing behind it?
- *
- * Strategies already close the short leg before the cover, but that is an
- * ordering convention, and a convention is not a guarantee — if the short-call
- * close is rejected for any reason, the order that removes the cover would
- * still fill and turn a covered position into a naked one. This is the
- * backstop: the broker simply will not do it.
- */
-function wouldStrandShortCall(state: BrokerState, o: Order, qty: number): boolean {
-  if (o.action !== "sell") return false;
-  if (o.kind !== "stock" && o.kind !== "call") return false;
-  const shorts = state.positions.filter(
-    (p) => isOpen(p) && p.side === "short" && p.kind === "call" && p.symbol === o.symbol,
+/** Long calls on `symbol` that outlive every open short call on it. */
+function coveringCalls(state: BrokerState, symbol: string, shorts: Position[]): Position[] {
+  return state.positions.filter(
+    (p) => isOpen(p) && p.side === "long" && p.kind === "call" && p.symbol === symbol &&
+      shorts.every((sc) => (p.expiry ?? "") >= (sc.expiry ?? "")),
   );
-  if (shorts.length === 0) return false;
+}
 
+function openShortCalls(state: BrokerState, symbol: string): Position[] {
+  return state.positions.filter(
+    (p) => isOpen(p) && p.side === "short" && p.kind === "call" && p.symbol === symbol,
+  );
+}
+
+function longShares(state: BrokerState, symbol: string): number {
+  return state.positions
+    .filter((p) => isOpen(p) && p.side === "long" && p.kind === "stock" && p.symbol === symbol)
+    .reduce((s, p) => s + p.qty, 0);
+}
+
+/**
+ * Would filling this order leave a short leg with nothing behind it?
+ *
+ * Strategies close the short leg before the cover, but that is an ordering
+ * convention, and a convention is not a guarantee: if the short close is
+ * rejected for any reason — most often for buying power — the order that
+ * removes the cover would still fill and turn a defined position into an
+ * open-ended one. Two shapes are refused here.
+ *
+ *   · Selling shares or the long call behind an open short call.
+ *   · Selling one leg of a multi-leg group while a short leg of that same
+ *     group is still open. That is what protects a condor's wings, where the
+ *     stranded leg would be a short put rather than a short call.
+ */
+function wouldStrandShortLeg(state: BrokerState, o: Order, qty: number): boolean {
+  if (o.action !== "sell") return false;
   const closing = findPosition(state, o, "long");
   if (!closing) return false;
 
-  const shares =
-    state.positions
-      .filter((p) => isOpen(p) && p.side === "long" && p.kind === "stock" && p.symbol === o.symbol)
-      .reduce((s, p) => s + p.qty, 0) - (o.kind === "stock" ? qty : 0);
+  const group = typeof closing.meta.group === "string" ? closing.meta.group : null;
+  if (group) {
+    const shortLegsLeft = state.positions.some(
+      (p) => isOpen(p) && p.side === "short" && p.meta.group === group,
+    );
+    if (shortLegsLeft) return true;
+  }
 
-  const needed = shorts.reduce((s, p) => s + p.qty, 0);
-  const longCalls = state.positions
+  if (o.kind !== "stock" && o.kind !== "call") return false;
+  const shorts = openShortCalls(state, o.symbol);
+  if (shorts.length === 0) return false;
+
+  const shares = longShares(state, o.symbol) - (o.kind === "stock" ? qty : 0);
+  const calls = coveringCalls(state, o.symbol, shorts).reduce(
+    (s, p) => s + p.qty - (o.kind === "call" && p.id === closing.id ? qty : 0),
+    0,
+  );
+  return Math.floor(shares / 100) + calls < shorts.reduce((s, p) => s + p.qty, 0);
+}
+
+/**
+ * Would writing this short call be uncovered?
+ *
+ * `marginMode: "covered"` declares a margin requirement of zero, so without
+ * this the buying-power test has nothing to reject and a naked call opens for
+ * free. A strategy that re-writes after a failed buy-to-close would then stack
+ * a ratio spread one contract per session, and everything past the first
+ * contract would be naked.
+ *
+ * Cover has to outlive the short it backs, so a long call only counts when it
+ * expires no earlier than the longest-dated short on the book.
+ */
+function wouldWriteUncoveredCall(state: BrokerState, o: Order): boolean {
+  if (o.action !== "sell" || o.kind !== "call") return false;
+  if (findPosition(state, o, "long")) return false;
+
+  const shorts = openShortCalls(state, o.symbol);
+  const wanted = shorts.reduce((s, p) => s + p.qty, 0) + o.qty;
+  const lastExpiry = [o.expiry ?? "", ...shorts.map((p) => p.expiry ?? "")].reduce((a, b) => (a > b ? a : b));
+  const calls = state.positions
     .filter(
       (p) => isOpen(p) && p.side === "long" && p.kind === "call" && p.symbol === o.symbol &&
-        shorts.every((sc) => (p.expiry ?? "") >= (sc.expiry ?? "")),
+        (p.expiry ?? "") >= lastExpiry,
     )
-    .reduce((s, p) => s + p.qty - (o.kind === "call" && p.id === closing.id ? qty : 0), 0);
+    .reduce((s, p) => s + p.qty, 0);
 
-  return Math.floor(shares / 100) + longCalls < needed;
+  return Math.floor(longShares(state, o.symbol) / 100) + calls < wanted;
 }
 
 /** Fill one order against the state, or return a rejection trade. */
@@ -339,8 +391,8 @@ export function executeOrder(state: BrokerState, o: Order, env: FillEnv): Trade 
 
   if (closing) {
     const qty = Math.min(o.qty, closing.qty);
-    if (wouldStrandShortCall(state, o, qty)) {
-      return reject(env, profileId, o, "Would leave a short call uncovered");
+    if (wouldStrandShortLeg(state, o, qty)) {
+      return reject(env, profileId, o, "Would leave a short leg uncovered");
     }
     if (o.action === "buy") {
       const released = ((closing.meta.marginHeld ?? 0) * qty) / closing.qty;
@@ -368,6 +420,9 @@ export function executeOrder(state: BrokerState, o: Order, env: FillEnv): Trade 
   }
 
   if (o.kind === "stock") return reject(env, profileId, o, "Short stock is not supported");
+  if (wouldWriteUncoveredCall(state, o)) {
+    return reject(env, profileId, o, "No shares or longer-dated long call to cover this short call");
+  }
   const meta: PositionMeta = { ...(o.meta ?? {}) };
   if (meta.marginMode === "naked" && o.kind === "put" && spot && o.strike != null) {
     meta.marginHeld = nakedPutMargin(spot, o.strike, price, o.qty);

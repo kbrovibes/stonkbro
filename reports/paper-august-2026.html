@@ -690,53 +690,53 @@ quoted verbatim from the trade log.</p>
 
 <h2>Stress test: the worst stretch in the data</h2>
 <p class="lede">August was a rising market, which flatters everything. So the same ten bots were run
-again over the worst 21-day window the price history contains — 2025-03-10 to
-2025-04-08, when SPY fell −12.53%. Nobody was rescued; the question is
-whether the rules degraded safely.</p>
+again over the hardest stretch the price history contains — 2025-01-15 to
+2025-04-08, 58 sessions in which SPY fell −15.90%.
+Nobody was rescued; the question is whether the rules degraded safely.</p>
 <table>
   <thead><tr><th>Bot</th><th>Role</th><th>Return</th><th>Lowest equity</th><th>Trades</th></tr></thead>
   <tbody><tr>
       <td class="who"><b>Vector</b></td>
       <td class="muted">Growth basket</td>
-      <td class="num neg">−16.94%</td>
-      <td class="num muted">$83,064</td>
-      <td class="num muted">105</td>
-    </tr><tr>
-      <td class="who"><b>Salvage</b></td>
-      <td class="muted">Dip buying</td>
-      <td class="num neg">−15.84%</td>
-      <td class="num muted">$82,523</td>
-      <td class="num muted">90</td>
-    </tr><tr>
-      <td class="who"><b>Compass</b></td>
-      <td class="muted">Sector rotation</td>
-      <td class="num neg">−15.28%</td>
-      <td class="num muted">$84,718</td>
-      <td class="num muted">21</td>
+      <td class="num neg">−27.97%</td>
+      <td class="num muted">$72,032</td>
+      <td class="num muted">164</td>
     </tr><tr>
       <td class="who"><b>Atlas</b></td>
       <td class="muted">Index only</td>
-      <td class="num neg">−12.29%</td>
-      <td class="num muted">$87,712</td>
-      <td class="num muted">64</td>
+      <td class="num neg">−18.83%</td>
+      <td class="num muted">$81,169</td>
+      <td class="num muted">74</td>
+    </tr><tr>
+      <td class="who"><b>Compass</b></td>
+      <td class="muted">Sector rotation</td>
+      <td class="num neg">−16.26%</td>
+      <td class="num muted">$83,742</td>
+      <td class="num muted">36</td>
+    </tr><tr>
+      <td class="who"><b>Salvage</b></td>
+      <td class="muted">Dip buying</td>
+      <td class="num neg">−15.18%</td>
+      <td class="num muted">$83,347</td>
+      <td class="num muted">208</td>
     </tr><tr>
       <td class="who"><b>Breakwater</b></td>
       <td class="muted">Naked puts</td>
-      <td class="num neg">−4.00%</td>
-      <td class="num muted">$96,000</td>
-      <td class="num muted">88</td>
-    </tr><tr>
-      <td class="who"><b>Longview</b></td>
-      <td class="muted">LEAPS and short calls</td>
-      <td class="num neg">−2.39%</td>
-      <td class="num muted">$96,508</td>
-      <td class="num muted">37</td>
+      <td class="num neg">−10.42%</td>
+      <td class="num muted">$89,579</td>
+      <td class="num muted">216</td>
     </tr><tr>
       <td class="who"><b>Canopy</b></td>
       <td class="muted">Weekly iron condor</td>
-      <td class="num neg">−2.13%</td>
-      <td class="num muted">$97,870</td>
-      <td class="num muted">24</td>
+      <td class="num neg">−1.93%</td>
+      <td class="num muted">$98,069</td>
+      <td class="num muted">56</td>
+    </tr><tr>
+      <td class="who"><b>Longview</b></td>
+      <td class="muted">LEAPS and short calls</td>
+      <td class="num neg">−1.89%</td>
+      <td class="num muted">$97,012</td>
+      <td class="num muted">86</td>
     </tr><tr>
       <td class="who"><b>Northstar</b></td>
       <td class="muted">Mega-cap momentum</td>
@@ -752,14 +752,20 @@ whether the rules degraded safely.</p>
     </tr><tr>
       <td class="who"><b>Wheelhouse</b></td>
       <td class="muted">The wheel</td>
-      <td class="num pos">+0.28%</td>
-      <td class="num muted">$99,627</td>
-      <td class="num muted">5</td>
+      <td class="num pos">+0.00%</td>
+      <td class="num muted">$99,112</td>
+      <td class="num muted">23</td>
     </tr></tbody>
 </table>
 <div class="dis" style="margin-top:18px">
       <h5>The equity floor did its job</h5>
-      <div class="side"><em>Vector: Equity $84,586 at or under the $85,000 floor — selling down to zero borrowing</em></div>
+      <div class="side"><em>Vector: Equity $84,961 at or under the $85,000 floor — selling down to zero borrowing</em></div><div class="side"><em>Vector: Equity $84,201 at or under the $85,000 floor — selling down to zero borrowing</em></div><div class="side"><em>Vector: Equity $82,599 at or under the $85,000 floor — selling down to zero borrowing</em></div>
+    </div>
+<div class="chk bad" style="margin-top:18px">
+      <h5><span class="badge">broke</span>What the stress window broke</h5>
+      <p>These held every day of August and did not hold here. This is the honest cost of the
+      window being harder, not a check being wrong.</p>
+      <ul><li class="neg">Nobody blew up: Vector fell -28.0% below start</li></ul>
     </div>
 
 <h2>Safety checks</h2>
@@ -799,5 +805,5 @@ rulebooks. Expand nothing — if a line is not green, it broke.</p>
 <h2>What this does not prove</h2>
 <div class="caveat"><ul><li>This is a simulation on recorded daily bars, not a live track record. No order was ever sent to a broker.</li><li>Option chains for August 2026 no longer exist to fetch, so every option price here is modelled with Black–Scholes off the underlying's own realised volatility, with a crude linear skew. Real quotes would differ, and the options bots are the ones most affected by that.</li><li>A daily bar has no intraday path. The open session fills at the open and the close session at the close, which are real prices; the midday session fills at the day's high–low midpoint, which is only knowable after the close. Midday decisions therefore carry a sliver of hindsight.</li><li>Fills assume the whole order trades at one price. Slippage is a quarter of the modelled bid–ask spread on options and zero on stock, and there is no market impact, no partial fill, and no gap risk between sessions.</li><li>Dividends, borrow costs on shares, and early assignment on American options are not modelled. Margin interest is, at 8% APR on borrowed cash.</li><li>One month is not evidence that a strategy works. August 2026 was a rising market, which flatters anything long and penalises anything hedged or in cash. The stress-test section is the partial answer to that, and it is still only one more window.</li><li>Win rate counts closed positions, so a bot still holding its winners shows a lower win rate than it has earned.</li></ul></div>
 
-<footer>stonkbro paper desk · simulation, not a track record · 2026-09-09T11:45:08.730Z</footer>
+<footer>stonkbro paper desk · simulation, not a track record · 2026-09-09T12:03:40.748Z</footer>
 </div></body></html>

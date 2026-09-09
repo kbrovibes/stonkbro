@@ -101,10 +101,11 @@ export const PROFILES: Profile[] = [
       "1 contract per $10K of strike notional (minimum 1).",
       "Margin per contract = max(20% × spot − OTM amount, 10% × strike) × 100 + premium, never exceeding buying power.",
       "Buy back at 50% of the credit, at 21 DTE, or when the put's delta exceeds 0.50 — then immediately sell a new one.",
+      "Never let total put obligation exceed 2.5× equity.",
       "If equity falls under $85K, stop opening new puts and let the book run down.",
     ],
     universe: DEFAULT_UNIVERSE,
-    params: { universeSize: 25, maxPrice: 400, targetPositions: 8, minDelta: 0.15, maxDelta: 0.25, minDte: 21, maxDte: 45, notionalUsd: 10000, equityFloor: 85000 },
+    params: { universeSize: 25, maxPrice: 400, targetPositions: 8, minDelta: 0.15, maxDelta: 0.25, minDte: 21, maxDte: 45, notionalUsd: 10000, equityFloor: 85000, maxBookNotionalPct: 250 },
     margin: true,
   },
   {

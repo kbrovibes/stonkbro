@@ -323,6 +323,7 @@ interface Stress {
   benchmark: number;
   rows: Array<{ name: string; role: string; returnPct: number; low: number; trades: number }>;
   floorQuotes: string[];
+  broke: string[];
 }
 
 function stressHtml(stress: Stress | null): string {
@@ -330,9 +331,9 @@ function stressHtml(stress: Stress | null): string {
   const worst = [...stress.rows].sort((a, b) => a.returnPct - b.returnPct);
   return `<h2>Stress test: the worst stretch in the data</h2>
 <p class="lede">August was a rising market, which flatters everything. So the same ten bots were run
-again over the worst 21-day window the price history contains — ${esc(stress.file.from)} to
-${esc(stress.file.to)}, when SPY fell ${pct(stress.benchmark)}. Nobody was rescued; the question is
-whether the rules degraded safely.</p>
+again over the hardest stretch the price history contains — ${esc(stress.file.from)} to
+${esc(stress.file.to)}, ${stress.file.days.length} sessions in which SPY fell ${pct(stress.benchmark)}.
+Nobody was rescued; the question is whether the rules degraded safely.</p>
 <table>
   <thead><tr><th>Bot</th><th>Role</th><th>Return</th><th>Lowest equity</th><th>Trades</th></tr></thead>
   <tbody>${worst
@@ -354,6 +355,16 @@ ${
       ${stress.floorQuotes.map((q) => `<div class="side"><em>${esc(q)}</em></div>`).join("")}
     </div>`
     : ""
+}
+${
+  stress.broke.length > 0
+    ? `<div class="chk bad" style="margin-top:18px">
+      <h5><span class="badge">broke</span>What the stress window broke</h5>
+      <p>These held every day of August and did not hold here. This is the honest cost of the
+      window being harder, not a check being wrong.</p>
+      <ul>${stress.broke.map((b) => `<li class="neg">${esc(b)}</li>`).join("")}</ul>
+    </div>`
+    : `<p class="meta" style="margin-top:16px">Every safety check that held in August also held here.</p>`
 }`;
 }
 
@@ -668,6 +679,13 @@ function markdown(file: RunFile, stats: Stats[], benchmark: { label: string; pct
     out.push("");
     for (const q of stress.floorQuotes) out.push(`- ${q}`);
     out.push("");
+    if (stress.broke.length > 0) {
+      out.push(`**What the stress window broke** (all of these held every day of August):`);
+      for (const b of stress.broke) out.push(`- ${b}`);
+      out.push("");
+    } else {
+      out.push(`Every safety check that held in August also held here.\n`);
+    }
   }
   out.push(`## Safety checks\n`);
   for (const g of safety) {
@@ -714,10 +732,13 @@ function loadStress(path: string | undefined): Stress | null {
       ),
     ),
   ].slice(0, 3);
+  const broke = checkInvariants(file.profiles as unknown as CheckedProfile[], file.days.length)
+    .flatMap((g) => g.lines.filter((l) => !l.ok).map((l) => `${g.title}: ${l.text}`));
   return {
     file,
     benchmark: windowReturn("SPY", file.from, file.to),
     floorQuotes,
+    broke,
     rows: file.profiles.map((p) => {
       const curve = p.snapshots.map((s) => s.equity);
       const end = curve[curve.length - 1] ?? START;
@@ -737,7 +758,7 @@ function main(): void {
   const file: RunFile = JSON.parse(readFileSync(path, "utf8"));
   const stats = file.profiles.map(statsFor);
   const benchmark = benchmarkReturns();
-  const stress = loadStress(process.argv[3] ?? ".cache/paper-backfill-2025-03-10-2025-04-08.json");
+  const stress = loadStress(process.argv[3] ?? ".cache/paper-backfill-2025-01-15-2025-04-08.json");
 
   const notes = [
     "This is a simulation on recorded daily bars, not a live track record. No order was ever sent to a broker.",

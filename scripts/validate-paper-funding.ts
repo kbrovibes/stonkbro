@@ -10,7 +10,7 @@
  * Run: npx tsx scripts/validate-paper-funding.ts
  */
 import type { OptionContract } from "../src/lib/market/types";
-import { executeOrder, type BrokerState, type FillEnv } from "../src/lib/paper/broker";
+import { executeOrder, isOpen as isOpenish, type BrokerState, type FillEnv } from "../src/lib/paper/broker";
 import { makeRoom } from "../src/lib/paper/funding";
 import { MARGIN_LIMIT, type Account, type Position, type PositionMeta } from "../src/lib/paper/types";
 
@@ -56,6 +56,24 @@ function stock(symbol: string, qty: number, avgPrice: number, meta: PositionMeta
     strike: null, expiry: null, avgPrice, openedAt: "2026-08-01T13:35:00.000Z",
     closedAt: null, closePrice: null, realizedPnl: 0, status: "open",
     meta: { ...meta, mark, markValue: qty * mark },
+  };
+}
+
+function longCall(symbol: string, strike: number, expiry: string, qty = 1, meta: PositionMeta = {}): Position {
+  return {
+    id: `p${++seq}`, profileId: "test", symbol, kind: "call", side: "long", qty,
+    strike, expiry, avgPrice: 20, openedAt: "2026-08-01T13:35:00.000Z",
+    closedAt: null, closePrice: null, realizedPnl: 0, status: "open",
+    meta: { ...meta, mark: 18, markValue: 1800 * qty },
+  };
+}
+
+function shortPut(symbol: string, strike: number, meta: PositionMeta = {}): Position {
+  return {
+    id: `p${++seq}`, profileId: "test", symbol, kind: "put", side: "short", qty: 1,
+    strike, expiry: "2026-09-04", avgPrice: 2, openedAt: "2026-08-01T13:35:00.000Z",
+    closedAt: null, closePrice: null, realizedPnl: 0, status: "open",
+    meta: { ...meta, mark: 3, markValue: -300, marginHeld: 0 },
   };
 }
 
@@ -151,5 +169,66 @@ console.log("\n5. The broker refuses to strand a short call, whatever the strate
   check("and then the shares can be sold", after.status === "filled", after.reason);
 }
 
-console.log(failures === 0 ? "\nAll funding checks passed." : `\n${failures} check(s) FAILED.`);
+console.log("\n6. A PMCC cannot sell the LEAPS out from under its own short call");
+{
+  // The path an audit found and no simulated month reached: cash is near zero
+  // because something else settled against the account, the buy-to-close is
+  // rejected for buying power, and the LEAPS sale needs no buying power at all.
+  const leaps = longCall("LEAP", 60, "2027-10-15");
+  const short = shortCall("LEAP", 120, { marginMode: "covered", marginHeld: 0 });
+  const state: BrokerState = { account: account(1), positions: [leaps, short] };
+  const e = env();
+
+  const close = executeOrder(
+    state,
+    { symbol: "LEAP", kind: "call", action: "buy", qty: 1, strike: 120, expiry: "2026-09-04", positionId: short.id, reason: "unwinding the structure" },
+    e,
+  );
+  check("the buy-to-close is rejected with no cash", close.status === "rejected", close.reason);
+
+  const sellLeaps = executeOrder(
+    state,
+    { symbol: "LEAP", kind: "call", action: "sell", qty: 1, strike: 60, expiry: "2027-10-15", positionId: leaps.id, reason: "LEAPS delta fell under 0.55" },
+    e,
+  );
+  check("selling the LEAPS is refused, not filled", sellLeaps.status === "rejected", sellLeaps.reason);
+  check("the short call still has its cover", state.positions.find((p) => p.id === leaps.id)?.status === "open");
+}
+
+console.log("\n7. A failed buy-to-close cannot become a ratio spread");
+{
+  const leaps = longCall("LEAP", 60, "2027-10-15");
+  const short = shortCall("LEAP", 120, { marginMode: "covered", marginHeld: 0 });
+  const state: BrokerState = { account: account(50_000), positions: [leaps, short] };
+
+  const second = executeOrder(
+    state,
+    { symbol: "LEAP", kind: "call", action: "sell", qty: 1, strike: 130, expiry: "2026-09-04", reason: "re-writing after a failed close", meta: { marginMode: "covered", marginHeld: 0 } },
+    env(),
+  );
+  check("a second short call against one LEAPS is refused", second.status === "rejected", second.reason);
+  check("the rejection names the missing cover", /cover/i.test(second.reason), second.reason);
+  check("only one short call is open", state.positions.filter((p) => p.kind === "call" && p.side === "short" && isOpenish(p)).length === 1);
+}
+
+console.log("\n8. A condor cannot sell its wings while a short leg is open");
+{
+  const shortP = shortPut("COVER", 45, { group: "condor-9" });
+  const longP = {
+    ...shortPut("COVER", 40, { group: "condor-9" }),
+    side: "long" as const,
+    meta: { group: "condor-9", mark: 1, markValue: 100 },
+  };
+  const state: BrokerState = { account: account(0), positions: [shortP, longP] };
+
+  const sellWing = executeOrder(
+    state,
+    { symbol: "COVER", kind: "put", action: "sell", qty: 1, strike: 40, expiry: "2026-09-04", positionId: longP.id, reason: "cutting the condor" },
+    env(),
+  );
+  check("the protective wing cannot be sold first", sellWing.status === "rejected", sellWing.reason);
+  check("the short put keeps its wing", state.positions.find((p) => p.id === longP.id)?.status === "open");
+}
+
+console.log(failures === 0 ? "\nAll safety checks passed." : `\n${failures} check(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);
