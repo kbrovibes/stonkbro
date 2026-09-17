@@ -6,6 +6,7 @@ import OfflineBanner from "@/components/OfflineBanner";
 import PrivacyProvider from "@/components/PrivacyProvider";
 import BiometricLock from "@/components/BiometricLock";
 import { getUser } from "@/lib/auth";
+import { getSettings } from "@/lib/db/settings";
 import { isPiiLocked } from "@/lib/privacy-server";
 import { BIOMETRIC_LOCK_ENABLED } from "@/lib/feature-flags";
 
@@ -21,6 +22,8 @@ export default async function AppLayout({
   // any signed-in user needs to be able to find it to ask.
   const showPortfolio = !isGuest;
   const piiLocked = await isPiiLocked();
+  const settings = isGuest ? null : await getSettings(user.id).catch(() => null);
+  const bottomNavTabs = (settings?.bottom_nav_tabs as string[] | null | undefined) ?? null;
 
   return (
     <PrivacyProvider initialLocked={piiLocked}>
@@ -47,7 +50,7 @@ export default async function AppLayout({
           {children}
         </PullToRefresh>
       </main>
-      <BottomNav showPortfolio={showPortfolio} isGuest={isGuest} />
+      <BottomNav showPortfolio={showPortfolio} isGuest={isGuest} customTabs={bottomNavTabs} />
       </BiometricLock>
     </PrivacyProvider>
   );

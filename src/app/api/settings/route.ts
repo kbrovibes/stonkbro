@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase-server";
 import { PII_LOCK_COOKIE } from "@/lib/privacy";
+import { hasApprovedPortfolioAccess } from "@/lib/portfolio-access";
+import { availableNavDestinations, NAV_DESTINATIONS } from "@/lib/nav-destinations";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const navOptions = availableNavDestinations(await hasApprovedPortfolioAccess(user.id, user.email));
 
   const { data } = await supabase
     .from("user_settings")
@@ -19,7 +23,7 @@ export async function GET() {
   // Never ship the PIN to the client — expose only whether one exists.
   if (data) {
     const { privacy_pin, ...rest } = data;
-    return NextResponse.json({ settings: { ...rest, has_privacy_pin: !!privacy_pin } });
+    return NextResponse.json({ settings: { ...rest, has_privacy_pin: !!privacy_pin }, navOptions });
   }
 
   return NextResponse.json({
@@ -33,7 +37,9 @@ export async function GET() {
       alert_earnings: true,
       alert_recommendations: true,
       alert_frequency: "three_daily",
+      bottom_nav_tabs: null,
     },
+    navOptions,
   });
 }
 
@@ -46,6 +52,19 @@ export async function POST(request: Request) {
 
   // `has_privacy_pin` is a derived GET-only field; never persist it.
   delete body.has_privacy_pin;
+
+  if (typeof body.bottom_nav_tabs !== "undefined" && body.bottom_nav_tabs !== null) {
+    const tabs = body.bottom_nav_tabs;
+    const validHrefs = new Set(NAV_DESTINATIONS.map((d) => d.href));
+    if (
+      !Array.isArray(tabs) ||
+      tabs.length > 4 ||
+      tabs.some((h) => typeof h !== "string" || !validHrefs.has(h)) ||
+      new Set(tabs).size !== tabs.length
+    ) {
+      return NextResponse.json({ error: "bottom_nav_tabs must be up to 4 unique, known destinations" }, { status: 400 });
+    }
+  }
 
   // While the privacy lock is on, the PIN itself is immutable — otherwise
   // whoever is holding the locked phone could overwrite it and unlock.

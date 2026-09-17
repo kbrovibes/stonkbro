@@ -11,6 +11,7 @@ import { Group, Row, ActionRow, Toggle, inputClass, selectClass } from "./ui";
 import BrokerageSection from "./BrokerageSection";
 import BiometricSection from "./BiometricSection";
 import AdminAccessSection from "./AdminAccessSection";
+import BottomNavSection from "./BottomNavSection";
 
 // ---------------------------------------------------------------------------
 
@@ -329,6 +330,8 @@ export default function SettingsPage() {
             />
           </Row>
         </Group>
+
+        <BottomNavSection />
 
         <BrokerageSection />
 

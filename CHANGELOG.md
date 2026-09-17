@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.44.0 — Customizable bottom nav, and three small fixes
+
+- **Pick your own bottom nav**: Settings → Bottom nav lets you choose what fills the 4 middle slots (Home and More stay fixed) from the app's full page list — e.g. drop Learn, add LEAPS Lab. Synced to your account (`user_settings.bottom_nav_tabs`), so it follows you across devices. Anyone who never customizes sees the exact same icons/order as before — the 4 known defaults keep their original hand-drawn icons, and only a newly-picked destination renders as an emoji (the same visual language the More menu already uses for it)
+- **Briefing prev/next were backwards**: the buttons walked the chronological (oldest-first) queue, but the playlist displays newest-first — so "Next" jumped to a *newer* episode instead of the one below it in the list. Manual prev/next now walk the same order the list renders in, so "next" always means "the row below this one." Auto-advance-on-end is unaffected — it still continues oldest-to-newest within a day, which is what "keep playing forward" should mean there
+- **More page tiles shrunk**: smaller icons/text, 5 per row instead of 4, on the `/more` "View All" grid
+- **Confirmed the roll-ordering fix from the last release is live**: a screenshot showed an NBIS chain still displaying SELL, SELL, BUY — that was the cached option-chain scan from before the fix deployed, not a remaining bug. Triggered a fresh scan; the cache now reflects the correct SELL, BUY, SELL order
+
 ## v0.43.2 — Found the actual reason briefing TTS kept failing
 
 - **The real root cause of "Stream closed before the synthesis completed"**: `msedge-tts` interpolates the transcript directly into an SSML/XML template with zero escaping. Any transcript containing a bare `&` — routine market-recap phrasing like "S&P 500" — sends malformed XML that Microsoft's server rejects mid-stream. `premarket` briefings happened to phrase it as "S and P" and never hit this; `midday`/`close` routinely wrote "S&P" and failed almost every time. Verified directly: the literal transcript text that failed in production reproduces the exact same error unescaped, and succeeds cleanly once `&`/`</`/`>` are escaped before reaching the library. The v0.43.0 chunking fix was real and worth keeping (guards against the separate 90s-timeout failure mode) but wasn't the actual fix for this one — escaping is

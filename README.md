@@ -92,6 +92,9 @@ Track your premium income machine. Starting capital ($20k default), total premiu
 ### Watchlist Management
 Create named watchlists, add/remove tickers, set a default. Your default watchlist drives the Discovery dashboard. Persisted in Supabase with row-level security.
 
+### Customizable Bottom Nav
+Home and More stay fixed; pick what fills the 4 tabs between them from the app's full page list (Settings → Bottom nav) — synced to your account, so it follows you across devices. The 4 defaults keep their original icons; anything else you pick renders as an emoji.
+
 ### Automated Alerts (Cron)
 Vercel cron job runs 3x daily on market days (9:30am, 12pm, 3:30pm ET). Checks all users' positions, generates alerts, and sends email briefings via Resend. Morning briefing included.
 
@@ -298,6 +301,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.44.0** | Customizable bottom nav (pick your 4 middle tabs); briefing prev/next order fix; smaller More page tiles |
 | **v0.43.2** | Root cause of briefing TTS failures: unescaped `&` in transcripts (e.g. "S&P 500") breaking msedge-tts's SSML |
 | **v0.43.1** | Portfolio access approval no longer half-fails silently when SnapTrade registration errors |
 | **v0.43.0** | Daily Briefing: chunked/retrying TTS fixes near-total midday/close audio failures, single playlist, tap-to-play cover, prev/next, 3-state auto-play |

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getVisibleMoreGroups } from "@/components/more-nav-data";
+import { DEFAULT_BOTTOM_NAV_TABS, findNavDestination } from "@/lib/nav-destinations";
 
 const tabs = [
   {
@@ -81,21 +82,45 @@ const guestTabs = [
   },
 ];
 
+// The four middle slots' original SVGs, keyed by href — reused so a user
+// who never customizes their nav sees the exact same icons as before.
+// Anything else picked from the full destination list renders its emoji
+// instead (the same visual language the More menu already uses for it).
+const KNOWN_MIDDLE_ICONS: Record<string, (active: boolean) => React.ReactElement> = {
+  "/plays": tabs[1].icon,
+  "/paper": tabs[2].icon,
+  "/portfolio": portfolioTabs[0].icon,
+  "/learn": learnTab.icon,
+};
+
 export default function BottomNav({
   isGuest = false,
   showPortfolio = false,
+  customTabs = null,
 }: {
   showPortfolio?: boolean;
   isGuest?: boolean;
+  /** Up to 4 hrefs picked in Settings → Bottom nav; null/absent uses DEFAULT_BOTTOM_NAV_TABS. */
+  customTabs?: string[] | null;
 }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-  // Order: Home · Options · Paper · Portfolio · Learn · More
-  const visibleTabs = isGuest
-    ? guestTabs
-    : showPortfolio
-      ? [...tabs, ...portfolioTabs, learnTab]
-      : [...tabs, learnTab];
+
+  const middleTabs = (customTabs ?? DEFAULT_BOTTOM_NAV_TABS).map((href) => {
+    const known = KNOWN_MIDDLE_ICONS[href];
+    if (known) {
+      return { name: findNavDestination(href)?.title ?? href, href, icon: known };
+    }
+    const dest = findNavDestination(href);
+    return {
+      name: dest?.title ?? href,
+      href,
+      icon: () => <span className="text-[18px] leading-none">{dest?.emoji ?? "•"}</span>,
+    };
+  });
+
+  // Order: Home · (up to 4 customizable slots) · More
+  const visibleTabs = isGuest ? guestTabs : [tabs[0], ...middleTabs];
   const moreGroups = getVisibleMoreGroups(showPortfolio);
 
   // Close popup whenever the route changes

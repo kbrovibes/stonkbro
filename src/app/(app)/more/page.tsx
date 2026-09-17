@@ -18,7 +18,7 @@ export default async function MorePage() {
             <span className="text-xs font-bold text-stone-700 dark:text-text-muted uppercase tracking-wide">{group.label}</span>
             <span className="text-[10px] text-stone-400 dark:text-text-faint">{group.links.length}</span>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-1.5">
             {group.links.map((link) => (
               <MoreTile key={link.href} link={link} />
             ))}

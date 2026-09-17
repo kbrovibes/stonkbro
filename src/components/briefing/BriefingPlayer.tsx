@@ -106,12 +106,18 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
 
   const selected = briefings.find((b) => b.id === selectedId) ?? briefings[0] ?? null;
 
-  // Chronological (oldest first), audio-only — the order autoplay and the
-  // prev/next buttons move through. Newest is last, matching how a queue
-  // that "continues forward" should read.
+  // Chronological (oldest first), audio-only — what auto-advance-on-end
+  // walks through, since "continue playing forward" means oldest-to-newest
+  // within a day (premarket -> midday -> close).
   const flatQueue = [...briefings]
     .filter((b) => b.audio_path)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+  // Display order (newest first, same as `briefings`/the rendered playlist),
+  // audio-only — what the manual prev/next buttons walk through, so "next"
+  // always means "the row below this one in the list" and never flips
+  // depending on how auto-advance happens to be sorted internally.
+  const displayQueue = briefings.filter((b) => b.audio_path);
 
   // Read the saved mode after mount, not in a lazy useState initializer —
   // localStorage isn't available during SSR, and seeding state from it at
@@ -267,18 +273,20 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
     audio.currentTime = Math.min(Math.max(0, audio.currentTime + delta), audio.duration);
   }, []);
 
-  /** Manual prev/next — always moves through the full chronological queue,
-   *  regardless of the autoplay mode (that only governs what happens when a
-   *  clip ends on its own). */
+  /** Manual prev/next — always walks `displayQueue`, the same newest-first
+   *  order the playlist renders in, so "next" always means "the row below
+   *  this one" and "prev" always means "the row above" — independent of the
+   *  autoplay mode, and independent of the separate oldest-first order
+   *  auto-advance-on-end uses internally. */
   const goToOffset = useCallback(
     (delta: 1 | -1) => {
       const cur = briefings.find((b) => b.id === selectedId) ?? briefings[0];
       if (!cur) return;
-      const i = flatQueue.findIndex((b) => b.id === cur.id);
-      const target = i >= 0 ? flatQueue[i + delta] : undefined;
+      const i = displayQueue.findIndex((b) => b.id === cur.id);
+      const target = i >= 0 ? displayQueue[i + delta] : undefined;
       if (target) void playBriefing(target);
     },
-    // flatQueue is derived fresh each render from `briefings`, so it's an
+    // displayQueue is derived fresh each render from `briefings`, so it's an
     // intentional omission — including it would just re-add `briefings`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [briefings, selectedId, playBriefing]
@@ -366,10 +374,10 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   // arrives in that order from the API. Each row carries its own date/session
   // in its subtitle now that there's no per-day section header to supply it.
   const playlist = briefings;
-  const canPrev = flatQueue.findIndex((b) => b.id === selected.id) > 0;
+  const canPrev = displayQueue.findIndex((b) => b.id === selected.id) > 0;
   const canNext = (() => {
-    const i = flatQueue.findIndex((b) => b.id === selected.id);
-    return i >= 0 && i < flatQueue.length - 1;
+    const i = displayQueue.findIndex((b) => b.id === selected.id);
+    return i >= 0 && i < displayQueue.length - 1;
   })();
 
   return (
