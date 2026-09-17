@@ -2,23 +2,35 @@
  * Text-to-speech via the free Microsoft Edge Read Aloud endpoint (msedge-tts,
  * no API key). Output is deliberately low-bitrate mono MP3 to keep files ~1MB.
  *
- * The free endpoint is unreliable on a single long call — "midday" and
- * "close" transcripts (2.2–3.2k chars, no shorter than "premarket" ones that
- * succeed) were failing on essentially every run, either timing out or
- * having the stream close before turn.end. There's no documented length
- * limit to target directly, so instead of guessing at one, the transcript is
- * chunked into small (~450 char) sentence-aligned pieces, each synthesized
- * independently with its own retry, and the resulting MP3 buffers
- * concatenated — small enough that whatever intermittent limit or flakiness
- * the endpoint has, a chunk rarely hits it, and a failed chunk gets one
- * fresh-connection retry rather than failing the whole briefing.
+ * Root cause of "midday"/"close" briefings almost always having no audio:
+ * `msedge-tts` interpolates the input text directly into an SSML/XML
+ * template with zero escaping (see `_SSMLTemplate` in the package). A
+ * transcript that says "S&P 500" — routine market-recap phrasing — sends a
+ * bare `&`, which breaks the XML server-side and the connection closes
+ * before completing ("Stream closed before the synthesis completed (no
+ * turn.end received)"). `premarket` transcripts happened to phrase it as
+ * "S and P" and so never hit this; `midday`/`close` regularly wrote "S&P".
+ * Escaping `&`, `<`, `>` before it ever reaches the library is the actual
+ * fix for that failure mode.
+ *
+ * Chunking is a second, independent hardening: the transcript is split into
+ * small (~450 char) sentence-aligned pieces, each synthesized on its own
+ * connection with its own retry, and the resulting MP3 buffers
+ * concatenated. That's what makes the 90s single-call timeout (the other
+ * observed failure) unlikely to recur, and keeps one bad chunk from failing
+ * the whole briefing.
  */
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 import { BRIEFING_AUDIO_KBPS, BRIEFING_RATE, BRIEFING_VOICE } from "./types";
 
 const CHUNK_TIMEOUT_MS = 30_000;
 const CHUNK_TARGET_CHARS = 450;
-const CHUNK_RETRIES = 2;
+const CHUNK_RETRIES = 3;
+
+/** msedge-tts embeds this raw in an XML/SSML template with no escaping of its own. */
+function escapeForSsml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 /** Splits on sentence boundaries, then greedily packs sentences into chunks
  *  no longer than the target — never splitting a sentence mid-way. */
@@ -48,7 +60,7 @@ async function synthesizeChunk(text: string): Promise<Buffer> {
   const tts = new MsEdgeTTS();
   try {
     await tts.setMetadata(BRIEFING_VOICE, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-    const { audioStream } = tts.toStream(text, { rate: BRIEFING_RATE });
+    const { audioStream } = tts.toStream(escapeForSsml(text), { rate: BRIEFING_RATE });
 
     return await new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];

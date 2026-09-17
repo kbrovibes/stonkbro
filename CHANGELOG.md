@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.43.2 — Found the actual reason briefing TTS kept failing
+
+- **The real root cause of "Stream closed before the synthesis completed"**: `msedge-tts` interpolates the transcript directly into an SSML/XML template with zero escaping. Any transcript containing a bare `&` — routine market-recap phrasing like "S&P 500" — sends malformed XML that Microsoft's server rejects mid-stream. `premarket` briefings happened to phrase it as "S and P" and never hit this; `midday`/`close` routinely wrote "S&P" and failed almost every time. Verified directly: the literal transcript text that failed in production reproduces the exact same error unescaped, and succeeds cleanly once `&`/`</`/`>` are escaped before reaching the library. The v0.43.0 chunking fix was real and worth keeping (guards against the separate 90s-timeout failure mode) but wasn't the actual fix for this one — escaping is
+- Re-ran the backfill after this fix; the remaining "close" sessions that failed even after chunking (all failing with the identical ampersand-triggered error) now synthesize successfully
+
 ## v0.43.1 — Portfolio access approval could silently half-fail
 
 - **Approving a request updated the DB before registering the SnapTrade identity** — when that registration step failed, the request was already marked `approved` with no credentials behind it: it vanished from the pending list (nothing left to approve), the requester could never connect, and neither admin surface showed any error. Reordered so the request only flips to `approved` once SnapTrade registration actually succeeds; a failure now leaves it pending and surfaces the real error message in both the alert banner and Settings, instead of failing silently. The one request this happened to in production was reset back to pending
