@@ -10,6 +10,7 @@ import {
   failBriefing,
   getBriefingById,
   insertBriefing,
+  listMissingAudio,
   uploadBriefingAudio,
 } from "@/lib/db/briefings";
 import { getLatestChainScan } from "@/lib/db/portfolio-chain-scans";
@@ -284,4 +285,40 @@ export async function generateDailyBriefing(opts: {
     }
     throw e;
   }
+}
+
+/**
+ * Re-runs TTS (only) for every completed briefing that has a transcript but
+ * no audio — the transcript is already written and good, so there's no
+ * reason to re-call the AI or re-gather market context, just retry the part
+ * that actually failed. Safe to call repeatedly: rows that already have
+ * audio are never touched.
+ */
+export async function backfillMissingAudio(): Promise<
+  { id: string; briefing_date: string; session: string | null; ok: boolean; error?: string }[]
+> {
+  const rows = await listMissingAudio();
+  const results: { id: string; briefing_date: string; session: string | null; ok: boolean; error?: string }[] = [];
+
+  for (const row of rows) {
+    if (!row.transcript) continue;
+    try {
+      const { buffer, durationS } = await synthesizeBriefing(row.transcript);
+      const audioPath = `${row.briefing_date}/${row.id}.mp3`;
+      await uploadBriefingAudio(audioPath, buffer);
+      await completeBriefing(row.id, {
+        audio_path: audioPath,
+        audio_bytes: buffer.length,
+        audio_duration_s: Math.round(durationS),
+        voice: BRIEFING_VOICE,
+        error_message: null,
+      });
+      results.push({ id: row.id, briefing_date: row.briefing_date, session: row.session, ok: true });
+    } catch (e) {
+      const message = `TTS failed: ${e instanceof Error ? e.message : String(e)}`;
+      await completeBriefing(row.id, { error_message: message });
+      results.push({ id: row.id, briefing_date: row.briefing_date, session: row.session, ok: false, error: message });
+    }
+  }
+  return results;
 }

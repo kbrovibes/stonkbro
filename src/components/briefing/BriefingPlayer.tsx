@@ -11,6 +11,17 @@ import {
 
 const AUDIO_CACHE = "briefing-audio";
 const SPEEDS = [1, 1.25, 1.5];
+const AUTOPLAY_MODE_KEY = "briefing-autoplay-mode";
+
+/** off = stop after the current clip. same-day = continue within the day
+ *  (default). across-days = keep going into earlier days too. */
+type AutoplayMode = "off" | "same-day" | "across-days";
+const AUTOPLAY_CYCLE: AutoplayMode[] = ["same-day", "across-days", "off"];
+const AUTOPLAY_LABEL: Record<AutoplayMode, string> = {
+  "same-day": "Auto-play",
+  "across-days": "Auto-play (all days)",
+  off: "Auto-play off",
+};
 
 const ACTION_BADGE: Record<BriefingAction["kind"], string> = {
   close: "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300",
@@ -37,6 +48,15 @@ function fmtDate(dateStr: string): string {
   return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
+    day: "numeric",
+  });
+}
+
+/** `Wed, Sep 17` — compact date for a single-list playlist row. */
+function fmtDateShort(dateStr: string): string {
+  return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
     day: "numeric",
   });
 }
@@ -78,11 +98,47 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [autoplayMode, setAutoplayMode] = useState<AutoplayMode>("same-day");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrls = useRef<Map<string, string>>(new Map());
+  const autoStarted = useRef(false);
 
   const selected = briefings.find((b) => b.id === selectedId) ?? briefings[0] ?? null;
+
+  // Chronological (oldest first), audio-only — the order autoplay and the
+  // prev/next buttons move through. Newest is last, matching how a queue
+  // that "continues forward" should read.
+  const flatQueue = [...briefings]
+    .filter((b) => b.audio_path)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+  // Read the saved mode after mount, not in a lazy useState initializer —
+  // localStorage isn't available during SSR, and seeding state from it at
+  // render time would make the server and first client render disagree
+  // (the button's label). One-time read of an external, browser-only
+  // source, which is what this rule's own guidance carves out.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(AUTOPLAY_MODE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved === "off" || saved === "same-day" || saved === "across-days") setAutoplayMode(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const cycleAutoplay = useCallback(() => {
+    setAutoplayMode((prev) => {
+      const next = AUTOPLAY_CYCLE[(AUTOPLAY_CYCLE.indexOf(prev) + 1) % AUTOPLAY_CYCLE.length];
+      try {
+        localStorage.setItem(AUTOPLAY_MODE_KEY, next);
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof caches === "undefined") return;
@@ -156,7 +212,7 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   }, [playing, selected, speedIdx, ensureAudioSrc]);
 
   const playBriefing = useCallback(
-    async (b: DailyBriefing) => {
+    async (b: DailyBriefing, opts?: { silent?: boolean }) => {
       const audio = audioRef.current;
       if (!audio) return;
       audio.pause();
@@ -176,7 +232,10 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
         audio.playbackRate = SPEEDS[speedIdx];
         await audio.play();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Playback failed");
+        // A silent call is an autoplay-on-load attempt — browsers routinely
+        // block those with no prior user gesture, which isn't a real error
+        // worth surfacing; the episode is still loaded and ready to tap play.
+        if (!opts?.silent) setError(e instanceof Error ? e.message : "Playback failed");
       } finally {
         setLoadingAudio(false);
       }
@@ -187,15 +246,20 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   /** When an episode ends, continue with the day's next episode; stop after the day's last one. */
   const handleEnded = useCallback(() => {
     setPlaying(false);
+    if (autoplayMode === "off") return;
     const cur = briefings.find((b) => b.id === selectedId) ?? briefings[0];
     if (!cur) return;
-    const dayQueue = briefings
-      .filter((b) => b.briefing_date === cur.briefing_date && b.audio_path)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
-    const i = dayQueue.findIndex((b) => b.id === cur.id);
-    const next = i >= 0 ? dayQueue[i + 1] : undefined;
+    const queue =
+      autoplayMode === "across-days"
+        ? flatQueue
+        : flatQueue.filter((b) => b.briefing_date === cur.briefing_date);
+    const i = queue.findIndex((b) => b.id === cur.id);
+    const next = i >= 0 ? queue[i + 1] : undefined;
     if (next) void playBriefing(next);
-  }, [briefings, selectedId, playBriefing]);
+    // flatQueue is derived fresh each render from `briefings`, so it's an
+    // intentional omission below — including it would just re-add `briefings`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoplayMode, briefings, selectedId, playBriefing]);
 
   const skip = useCallback((delta: number) => {
     const audio = audioRef.current;
@@ -203,10 +267,38 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
     audio.currentTime = Math.min(Math.max(0, audio.currentTime + delta), audio.duration);
   }, []);
 
+  /** Manual prev/next — always moves through the full chronological queue,
+   *  regardless of the autoplay mode (that only governs what happens when a
+   *  clip ends on its own). */
+  const goToOffset = useCallback(
+    (delta: 1 | -1) => {
+      const cur = briefings.find((b) => b.id === selectedId) ?? briefings[0];
+      if (!cur) return;
+      const i = flatQueue.findIndex((b) => b.id === cur.id);
+      const target = i >= 0 ? flatQueue[i + delta] : undefined;
+      if (target) void playBriefing(target);
+    },
+    // flatQueue is derived fresh each render from `briefings`, so it's an
+    // intentional omission — including it would just re-add `briefings`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [briefings, selectedId, playBriefing]
+  );
+
   const setSpeed = useCallback((idx: number) => {
     setSpeedIdx(idx);
     if (audioRef.current) audioRef.current.playbackRate = SPEEDS[idx];
   }, []);
+
+  // Auto-play the newest episode as soon as the page has one to play.
+  // Browsers routinely block programmatic playback with no prior user
+  // gesture — that's expected here, not an error, so a rejected play() just
+  // leaves the episode loaded and paused, ready for a tap.
+  useEffect(() => {
+    if (autoStarted.current || !selected?.audio_path) return;
+    autoStarted.current = true;
+    void playBriefing(selected, { silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
 
   const download = useCallback(async () => {
     if (!selected?.audio_path) return;
@@ -270,19 +362,15 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
   const displayDuration = duration || selected.audio_duration_s || 0;
   const mood = selected.mood ?? "quiet";
 
-  // Newest day first; episodes within a day in generation order (= playback order).
-  const playlistGroups: { date: string; rows: DailyBriefing[] }[] = [];
-  for (const b of briefings) {
-    let g = playlistGroups.find((x) => x.date === b.briefing_date);
-    if (!g) {
-      g = { date: b.briefing_date, rows: [] };
-      playlistGroups.push(g);
-    }
-    g.rows.push(b);
-  }
-  for (const g of playlistGroups) {
-    g.rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
-  }
+  // One continuous playlist, newest episode first — `briefings` already
+  // arrives in that order from the API. Each row carries its own date/session
+  // in its subtitle now that there's no per-day section header to supply it.
+  const playlist = briefings;
+  const canPrev = flatQueue.findIndex((b) => b.id === selected.id) > 0;
+  const canNext = (() => {
+    const i = flatQueue.findIndex((b) => b.id === selected.id);
+    return i >= 0 && i < flatQueue.length - 1;
+  })();
 
   return (
     <div className="flex flex-col gap-5">
@@ -297,9 +385,39 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
 
       {/* Cover + meta */}
       <div className="flex flex-col items-center gap-4">
-        <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-2xl overflow-hidden shadow-xl shadow-stone-300/40 dark:shadow-black/40">
+        <button
+          type="button"
+          onClick={togglePlay}
+          disabled={!selected.audio_path || loadingAudio}
+          aria-label={playing ? "Pause" : "Play"}
+          className="group relative w-56 h-56 sm:w-64 sm:h-64 rounded-2xl overflow-hidden shadow-xl shadow-stone-300/40 dark:shadow-black/40 disabled:cursor-default"
+        >
           <BriefingArt seed={artSeed(selected)} mood={mood} className="w-full h-full" />
-        </div>
+          {selected.audio_path && (
+            <span
+              className={`absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 group-active:bg-black/40 transition-colors ${playing ? "" : "sm:bg-black/10"}`}
+            >
+              <span
+                className={`w-14 h-14 rounded-full bg-white/90 text-stone-900 flex items-center justify-center shadow-lg transition-opacity ${
+                  playing ? "opacity-0 group-hover:opacity-100" : "opacity-90 group-hover:opacity-100"
+                }`}
+              >
+                {loadingAudio ? (
+                  <span className="w-5 h-5 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                ) : playing ? (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                    <polygon points="8,6.2 18,12 8,17.8" />
+                  </svg>
+                )}
+              </span>
+            </span>
+          )}
+        </button>
         <div className="text-center px-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint">
             {fmtDate(selected.briefing_date)} · {fmtHour(selected.created_at)}
@@ -349,7 +467,18 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
                 {SPEEDS[speedIdx]}x
               </button>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => goToOffset(-1)}
+                disabled={!canPrev}
+                aria-label="Previous episode"
+                className="text-stone-700 dark:text-text-muted disabled:opacity-30"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M6 5h2v14H6zM19 5 8 12l11 7z" />
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={() => skip(-15)}
@@ -395,6 +524,17 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
               >
                 15↻
               </button>
+              <button
+                type="button"
+                onClick={() => goToOffset(1)}
+                disabled={!canNext}
+                aria-label="Next episode"
+                className="text-stone-700 dark:text-text-muted disabled:opacity-30"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M16 5h2v14h-2zM5 5l11 7-11 7z" />
+                </svg>
+              </button>
             </div>
             <div className="flex-1 flex justify-end">
               <button
@@ -410,6 +550,16 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
           {downloaded.has(selected.id) && (
             <p className="text-center text-[10px] text-stone-400 dark:text-text-faint">Saved for offline</p>
           )}
+          <button
+            type="button"
+            onClick={cycleAutoplay}
+            className="mx-auto flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full border border-stone-200 dark:border-border-subtle text-[10px] font-semibold text-stone-500 dark:text-text-subtle"
+          >
+            <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+            </svg>
+            {AUTOPLAY_LABEL[autoplayMode]}
+          </button>
         </div>
       ) : (
         <div className="mx-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-950/40 px-4 py-3">
@@ -510,56 +660,54 @@ export default function BriefingPlayer({ initialBriefings }: { initialBriefings:
         </div>
       )}
 
-      {/* Playlist — every episode, grouped by day. Rows within a day run in
-          generation order (the same order auto-advance plays them). */}
-      <div className="flex flex-col gap-2 pb-4">
+      {/* Playlist — one continuous list, newest first. Each row carries its
+          own date since there's no per-day section header anymore; auto-play
+          and the prev/next buttons walk it in chronological (oldest-first)
+          order via flatQueue. */}
+      <div className="flex flex-col gap-1.5 pb-4">
         <h3 className="text-[10px] uppercase tracking-wider font-semibold text-stone-400 dark:text-text-faint px-1">
           Playlist
         </h3>
-        {playlistGroups.map((group) => (
-          <div key={group.date} className="flex flex-col gap-1.5">
-            <p className="text-[10px] font-semibold text-stone-400 dark:text-text-faint px-1 mt-1">
-              {fmtDate(group.date)}
-            </p>
-            {group.rows.map((b) => {
-              const isCurrent = b.id === selected.id;
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => (isCurrent ? togglePlay() : playBriefing(b))}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left border transition-colors ${
-                    isCurrent
-                      ? "bg-stone-50 dark:bg-surface-muted border-stone-300 dark:border-border-default"
-                      : "bg-white dark:bg-surface-elevated border-stone-100 dark:border-border-subtle hover:border-stone-200 dark:hover:border-border-default"
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                    <BriefingArt seed={artSeed(b)} mood={b.mood ?? "quiet"} className="w-full h-full" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-stone-900 dark:text-text truncate">
-                      {b.title ?? "Daily briefing"}
-                    </p>
-                    <p className="text-[10px] text-stone-400 dark:text-text-faint">
-                      {b.session ? `${BRIEFING_SESSIONS[b.session].label} · ` : ""}
-                      {fmtHour(b.created_at)}
-                      {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
-                      {downloaded.has(b.id) ? " · ✓ saved" : ""}
-                    </p>
-                  </div>
-                  {isCurrent ? (
-                    <span className="text-[10px] font-bold text-stone-900 dark:text-text flex-shrink-0">
-                      {playing ? "❚❚" : "▶"}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-stone-300 dark:text-text-faint flex-shrink-0">▶</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {playlist.map((b) => {
+          const isCurrent = b.id === selected.id;
+          return (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => (isCurrent ? togglePlay() : playBriefing(b))}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left border transition-colors ${
+                isCurrent
+                  ? "bg-stone-50 dark:bg-surface-muted border-stone-300 dark:border-border-default"
+                  : "bg-white dark:bg-surface-elevated border-stone-100 dark:border-border-subtle hover:border-stone-200 dark:hover:border-border-default"
+              }`}
+            >
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                <BriefingArt seed={artSeed(b)} mood={b.mood ?? "quiet"} className="w-full h-full" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-stone-900 dark:text-text truncate">
+                  {b.title ?? "Daily briefing"}
+                </p>
+                <p className="text-[10px] text-stone-400 dark:text-text-faint">
+                  {fmtDateShort(b.briefing_date)}
+                  {b.session ? ` · ${BRIEFING_SESSIONS[b.session].label}` : ""} · {fmtHour(b.created_at)}
+                  {b.audio_duration_s ? ` · ${fmtTime(b.audio_duration_s)}` : ""}
+                  {downloaded.has(b.id) ? " · ✓ saved" : ""}
+                  {!b.audio_path ? " · no audio" : ""}
+                </p>
+              </div>
+              {isCurrent ? (
+                <span className="text-[10px] font-bold text-stone-900 dark:text-text flex-shrink-0">
+                  {playing ? "❚❚" : "▶"}
+                </span>
+              ) : (
+                <span className="text-[10px] text-stone-300 dark:text-text-faint flex-shrink-0">
+                  {b.audio_path ? "▶" : "—"}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Regenerate */}

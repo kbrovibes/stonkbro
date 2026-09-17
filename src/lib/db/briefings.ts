@@ -104,6 +104,19 @@ export async function getLatestBriefings(limit = 30): Promise<DailyBriefing[]> {
   return rows.filter((row, i) => row.status === "completed" || i === 0).slice(0, limit);
 }
 
+/** Completed briefings with a transcript but no audio — TTS failed at generation time. */
+export async function listMissingAudio(): Promise<DailyBriefing[]> {
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("*")
+    .eq("status", "completed")
+    .is("audio_path", null)
+    .not("transcript", "is", null)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`listMissingAudio: ${error.message}`);
+  return (data ?? []) as DailyBriefing[];
+}
+
 export async function uploadBriefingAudio(path: string, buffer: Buffer): Promise<void> {
   const { error } = await supabaseAdmin.storage
     .from(BRIEFING_BUCKET)
