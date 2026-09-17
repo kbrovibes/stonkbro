@@ -54,15 +54,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "userId and decision are required" }, { status: 400 });
     }
 
-    const updated = await decideAccessRequest(userId, decision, auth.user.id);
-
+    // Register the SnapTrade identity BEFORE flipping status to "approved" —
+    // otherwise a failure here (as happened once in production) leaves the
+    // request stuck "approved" with no usable credentials behind it: the
+    // request vanishes from the pending list, the requester can never
+    // connect, and nothing indicates anything went wrong. If this throws,
+    // the request stays pending so the admin can just retry.
     if (decision === "approved") {
       const creds = await registerSnapTradeUser(userId);
       await storeUserSnapTradeCredentials(userId, creds);
     }
 
+    const updated = await decideAccessRequest(userId, decision, auth.user.id);
     return NextResponse.json({ request: updated });
   } catch (e) {
+    console.error("[PortfolioAccess] Decision failed:", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Failed to record decision" },
       { status: 500 }

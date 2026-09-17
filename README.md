@@ -298,6 +298,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.43.1** | Portfolio access approval no longer half-fails silently when SnapTrade registration errors |
 | **v0.43.0** | Daily Briefing: chunked/retrying TTS fixes near-total midday/close audio failures, single playlist, tap-to-play cover, prev/next, 3-state auto-play |
 | **v0.42.0** | Portfolio opened up: request/approve access flow, per-user encrypted SnapTrade linking, ticker Price/Stats chart tabs, option-chain roll-ordering and split-position fixes, paper desk cash + overall return |
 | **v0.41.0** | Paper desk personas + persistent bot memory, buying-power management, equity floors, backfill harness |

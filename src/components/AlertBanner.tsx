@@ -71,17 +71,25 @@ export default function AlertBanner() {
   };
 
   const [deciding, setDeciding] = useState<string | null>(null);
+  const [decideError, setDecideError] = useState<string | null>(null);
   const decide = (a: Alert, decision: "approved" | "denied") => {
     if (!a.symbol) return; // symbol carries the requester's user_id for this kind
     setDeciding(a.id);
+    setDecideError(null);
     fetch("/api/admin/portfolio-access", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: a.symbol, decision }),
     })
-      .then((r) => {
-        if (r.ok) ack(a.id);
+      .then(async (r) => {
+        if (r.ok) {
+          ack(a.id);
+          return;
+        }
+        const body = await r.json().catch(() => ({}));
+        setDecideError(body.error || `${decision === "approved" ? "Approve" : "Deny"} failed (${r.status})`);
       })
+      .catch(() => setDecideError("Network error — try again"))
       .finally(() => setDeciding(null));
   };
 
@@ -210,7 +218,7 @@ export default function AlertBanner() {
                               disabled={deciding === a.id}
                               className="text-[11px] font-bold text-emerald-600 dark:text-gain disabled:opacity-40"
                             >
-                              Approve
+                              {deciding === a.id ? "Working…" : "Approve"}
                             </button>
                             <button
                               onClick={() => decide(a, "denied")}
@@ -219,6 +227,9 @@ export default function AlertBanner() {
                             >
                               Deny
                             </button>
+                            {decideError && (
+                              <p className="text-[10px] text-rose-600 dark:text-loss text-right max-w-[9rem]">{decideError}</p>
+                            )}
                           </>
                         ) : (
                           <>

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.43.1 — Portfolio access approval could silently half-fail
+
+- **Approving a request updated the DB before registering the SnapTrade identity** — when that registration step failed, the request was already marked `approved` with no credentials behind it: it vanished from the pending list (nothing left to approve), the requester could never connect, and neither admin surface showed any error. Reordered so the request only flips to `approved` once SnapTrade registration actually succeeds; a failure now leaves it pending and surfaces the real error message in both the alert banner and Settings, instead of failing silently. The one request this happened to in production was reset back to pending
+- **Approve/Deny going semi-transparent together on a single click read as "both got clicked"** — that's the shared submit-lock (correct, prevents a double-submit), but the clicked button's label now changes to "Working…" so it's unambiguous which action actually fired
+
 ## v0.43.0 — Daily Briefing: reliable audio, single playlist, auto-play
 
 - **Fixed why "midday" and "close" briefings almost never had audio**: every single one for weeks had failed TTS synthesis (`TTS timed out after 90s` or the stream closing before completion) while "premarket" always worked, even though the transcripts aren't meaningfully longer. The free Microsoft Edge TTS endpoint is just unreliable on one long call. `synthesizeBriefing` now chunks the transcript into small (~450 char) sentence-aligned pieces, synthesizes each independently with its own retry, and concatenates the results — verified against a ~2.7k-char transcript (8 chunks, ~1s each after the first). A new one-off route (`/api/cron/briefing-backfill`, not on any schedule) re-runs TTS on every existing briefing that has a transcript but no audio, without re-generating the script
