@@ -10,6 +10,7 @@ import { useThemeStyle } from "@/components/ThemeStyleProvider";
 import { Group, Row, ActionRow, Toggle, inputClass, selectClass } from "./ui";
 import BrokerageSection from "./BrokerageSection";
 import BiometricSection from "./BiometricSection";
+import AdminAccessSection from "./AdminAccessSection";
 
 // ---------------------------------------------------------------------------
 
@@ -330,6 +331,8 @@ export default function SettingsPage() {
         </Group>
 
         <BrokerageSection />
+
+        <AdminAccessSection />
 
         <PrivacyPinSection />
 

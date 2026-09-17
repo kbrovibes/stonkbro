@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BotAvatar from "@/components/paper/BotAvatar";
-import { MonoNumber, SegmentedSwitch, Sparkline } from "@/components/refresh";
+import { MonoNumber, SegmentedSwitch, Sparkline, StatTile } from "@/components/refresh";
 import { useCachedJson } from "@/lib/client-cache";
 import { dateEyebrow, money, relativeTime, sessionLabel, signedMoney, signedPct, tone } from "./format";
 import RunSessionControl from "./RunSessionControl";
@@ -14,6 +14,7 @@ export interface LeaderboardProfile {
   memoryCount: number;
   series: Array<{ date: string; equity: number }>;
   equity: number;
+  cash: number;
   dayPnl: number;
   dayPct: number;
   totalPnl: number;
@@ -142,6 +143,12 @@ export default function PaperLeaderboard({ isAdmin }: { isAdmin: boolean }) {
   const memories = data ? data.profiles.reduce((s, p) => s + p.memoryCount, 0) : 0;
   const done = data?.lastRun?.status === "completed";
 
+  const totalEquity = data ? data.profiles.reduce((s, p) => s + p.equity, 0) : 0;
+  const totalCash = data ? data.profiles.reduce((s, p) => s + p.cash, 0) : 0;
+  const totalStartCash = data ? data.startCash * data.profiles.length : 0;
+  const combinedBaseline = metric === "today" ? totalEquity - combined : totalStartCash;
+  const combinedPct = combinedBaseline > 0 ? (combined / combinedBaseline) * 100 : 0;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, padding: "12px var(--gutter) 28px" }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
@@ -167,19 +174,34 @@ export default function PaperLeaderboard({ isAdmin }: { isAdmin: boolean }) {
       </header>
 
       <section>
-        <MonoNumber
-          value={combined}
-          size={52}
-          weight={600}
-          letterSpacing="-0.04em"
-          color={tone(combined)}
-          format={signedMoney}
-          style={{ lineHeight: 0.95 }}
-        />
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <MonoNumber
+            value={combined}
+            size={52}
+            weight={600}
+            letterSpacing="-0.04em"
+            color={tone(combined)}
+            format={signedMoney}
+            style={{ lineHeight: 0.95 }}
+          />
+          <MonoNumber
+            value={combinedPct}
+            size={17}
+            weight={600}
+            color={tone(combinedPct)}
+            prefix={combinedPct >= 0 ? "+" : ""}
+            suffix="%"
+            countUp={false}
+          />
+        </div>
         <div className="refresh-mono" style={{ ...EYEBROW, marginTop: 8 }}>
           {data
             ? `${data.profiles.length} BOTS · $${startMillions.toFixed(1)}M START · ${memories} MEMORIES`
             : "10 BOTS · $1.0M START"}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <StatTile label="Portfolio value" value={<MonoNumber value={totalEquity} size={17} weight={600} format={money} countUp={false} />} />
+          <StatTile label="Cash" value={<MonoNumber value={totalCash} size={17} weight={600} format={money} countUp={false} />} />
         </div>
       </section>
 

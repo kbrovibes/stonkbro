@@ -62,7 +62,22 @@ export const MORE_GROUPS: MoreGroup[] = [
     ],
   },
   {
+    // Unlike the group below, Portfolio itself is reachable by anyone
+    // signed in — the invite-only gate lives on the page now (a
+    // request-access prompt), not in the nav, so people can actually find
+    // it to ask.
     label: "Portfolio",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+      </svg>
+    ),
+    links: [
+      { emoji: "📊", title: "Portfolio", description: "Live P&L tracking", href: "/portfolio" },
+    ],
+  },
+  {
+    label: "Portfolio Insights",
     requiresPortfolio: true,
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -71,7 +86,6 @@ export const MORE_GROUPS: MoreGroup[] = [
     ),
     links: [
       { emoji: "🎙️", title: "Daily Briefing", description: "3x-daily audio market podcast", href: "/briefing" },
-      { emoji: "📊", title: "Portfolio", description: "Live P&L tracking", href: "/portfolio" },
       { emoji: "🧠", title: "Portfolio Manager", description: "AI ratings + $100K plan", href: "/portfolio-manager" },
       { emoji: "⏰", title: "Hindsight", description: "What-if portfolio simulator", href: "/time-machine" },
     ],

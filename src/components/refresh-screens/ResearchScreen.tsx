@@ -23,6 +23,8 @@ import {
   BarSeries,
   HeroChart,
   MonoNumber,
+  PriceChart,
+  SegmentedSwitch,
   prefersReducedMotion,
   subscribeRaf,
 } from "@/components/refresh";
@@ -37,6 +39,12 @@ import type {
 /** Characters per second the answer reveals at, and a ceiling on the whole reveal. */
 const REVEAL_CPS = 220;
 const REVEAL_MAX_MS = 2600;
+
+/** The chart card's two views: price history (default) and the IV/IVR/RSI/VOL snapshot. */
+const CHART_VIEW_SEGMENTS = [
+  { key: "price", label: "Price" },
+  { key: "stats", label: "Stats" },
+] as const;
 
 const monoFont = "var(--font-refresh-mono)";
 
@@ -201,6 +209,7 @@ export default function ResearchScreen({ quote }: { quote: ResearchScreenQuote }
   const [asking, setAsking] = useState(false);
   const [chainOpen, setChainOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [chartView, setChartView] = useState<"price" | "stats">("price");
 
   const earningsRef = useRef<HTMLDivElement | null>(null);
   const latestRef = useRef<HTMLDivElement | null>(null);
@@ -416,17 +425,32 @@ export default function ResearchScreen({ quote }: { quote: ResearchScreenQuote }
             padding: "16px 16px 12px",
           }}
         >
-          {snapshot && snapshot.chart.length > 1 ? (
-            <HeroChart points={snapshot.chart} height={110} />
-          ) : (
-            <div style={{ height: 110, borderRadius: 12, background: "var(--chart-dim)", opacity: 0.45 }} />
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-            <StripStat label="IV" value={snapshot?.iv ?? null} decimals={1} />
-            <StripStat label="IVR" value={snapshot?.ivRank ?? null} decimals={0} />
-            <StripStat label="RSI" value={snapshot?.rsi ?? null} decimals={0} />
-            <StripStat label="VOL" value={snapshot?.relativeVolume ?? null} decimals={1} suffix="×" />
+          <div style={{ marginBottom: 12 }}>
+            <SegmentedSwitch
+              segments={CHART_VIEW_SEGMENTS}
+              active={chartView}
+              onChange={setChartView}
+              aria-label="Chart view"
+            />
           </div>
+
+          {chartView === "price" ? (
+            <PriceChart symbol={symbol} currentPrice={price} changePct={changePct} />
+          ) : (
+            <>
+              {snapshot && snapshot.chart.length > 1 ? (
+                <HeroChart points={snapshot.chart} height={110} />
+              ) : (
+                <div style={{ height: 110, borderRadius: 12, background: "var(--chart-dim)", opacity: 0.45 }} />
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                <StripStat label="IV" value={snapshot?.iv ?? null} decimals={1} />
+                <StripStat label="IVR" value={snapshot?.ivRank ?? null} decimals={0} />
+                <StripStat label="RSI" value={snapshot?.rsi ?? null} decimals={0} />
+                <StripStat label="VOL" value={snapshot?.relativeVolume ?? null} decimals={1} suffix="×" />
+              </div>
+            </>
+          )}
         </div>
       </div>
 

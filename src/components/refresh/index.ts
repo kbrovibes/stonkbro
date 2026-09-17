@@ -36,4 +36,6 @@ export type {
 export { default as Sparkline, HeroChart } from "./Sparkline";
 export type { HeroChartProps, SparklineProps } from "./Sparkline";
 
+export { default as PriceChart } from "./PriceChart";
+
 export { prefersReducedMotion, subscribeRaf } from "./raf";

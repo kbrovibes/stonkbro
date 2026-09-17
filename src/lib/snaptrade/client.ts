@@ -26,6 +26,22 @@ const connApi = new ConnectionsApi(config);
 const UID = process.env.SNAPTRADE_USER_ID!;
 const USEC = process.env.SNAPTRADE_USER_SECRET!;
 
+/**
+ * A SnapTrade end-user identity. Every exported function below takes this
+ * as an optional trailing parameter and falls back to the app's own
+ * hardcoded UID/USEC when omitted — so every existing (owner) call site is
+ * unchanged, and an approved user's own portfolio is reached only by
+ * explicitly passing their own credentials in.
+ */
+export interface SnapTradeCreds {
+  userId: string;
+  userSecret: string;
+}
+
+function resolveCreds(creds?: SnapTradeCreds): SnapTradeCreds {
+  return creds ?? { userId: UID, userSecret: USEC };
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -92,8 +108,9 @@ export interface BrokerageConnection {
   created_date: string;
 }
 
-export async function listConnections(): Promise<BrokerageConnection[]> {
-  const res = await connApi.listBrokerageAuthorizations({ userId: UID, userSecret: USEC });
+export async function listConnections(creds?: SnapTradeCreds): Promise<BrokerageConnection[]> {
+  const { userId, userSecret } = resolveCreds(creds);
+  const res = await connApi.listBrokerageAuthorizations({ userId, userSecret });
   return ((res.data as any[]) ?? []).map((c: any) => ({
     id: c.id ?? "",
     brokerage: c.brokerage?.display_name ?? c.brokerage?.name ?? c.name ?? "Unknown",
@@ -111,10 +128,14 @@ export async function listConnections(): Promise<BrokerageConnection[]> {
  * via `reconnect`. Accounts on the new connection flow into every existing
  * portfolio function automatically — they all iterate getAccounts().
  */
-export async function getConnectPortalUrl(opts: { broker?: string; reconnect?: string } = {}): Promise<string> {
+export async function getConnectPortalUrl(
+  opts: { broker?: string; reconnect?: string } = {},
+  creds?: SnapTradeCreds,
+): Promise<string> {
+  const { userId, userSecret } = resolveCreds(creds);
   const res = await authApi.loginSnapTradeUser({
-    userId: UID,
-    userSecret: USEC,
+    userId,
+    userSecret,
     ...(opts.broker ? { broker: opts.broker } : {}),
     ...(opts.reconnect ? { reconnect: opts.reconnect } : {}),
     connectionType: "read",
@@ -125,8 +146,24 @@ export async function getConnectPortalUrl(opts: { broker?: string; reconnect?: s
   return url;
 }
 
-export async function getAccounts(): Promise<Account[]> {
-  const res = await accountApi.listUserAccounts({ userId: UID, userSecret: USEC });
+/**
+ * Registers a brand-new SnapTrade end-user for an approved app user. Uses
+ * only the app-level clientId/consumerKey (not any existing end-user's
+ * creds) — this is how a second, third, Nth real person gets their own
+ * isolated SnapTrade identity to link their own brokerage against.
+ */
+export async function registerSnapTradeUser(appUserId: string): Promise<SnapTradeCreds> {
+  const res = await authApi.registerSnapTradeUser({ userId: appUserId });
+  const data = res.data as { userId?: string; userSecret?: string };
+  if (!data.userId || !data.userSecret) {
+    throw new Error("SnapTrade did not return a userId/userSecret pair");
+  }
+  return { userId: data.userId, userSecret: data.userSecret };
+}
+
+export async function getAccounts(creds?: SnapTradeCreds): Promise<Account[]> {
+  const { userId, userSecret } = resolveCreds(creds);
+  const res = await accountApi.listUserAccounts({ userId, userSecret });
   return ((res.data as any[]) ?? []).map((a: any) => ({
     id: a.id,
     name: a.name,
@@ -135,10 +172,11 @@ export async function getAccounts(): Promise<Account[]> {
   }));
 }
 
-export async function getPositions(accounts: Account[]): Promise<Position[]> {
+export async function getPositions(accounts: Account[], creds?: SnapTradeCreds): Promise<Position[]> {
+  const { userId, userSecret } = resolveCreds(creds);
   const all = await Promise.all(
     accounts.map(async (acct) => {
-      const res = await accountApi.getUserAccountPositions({ userId: UID, userSecret: USEC, accountId: acct.id });
+      const res = await accountApi.getUserAccountPositions({ userId, userSecret, accountId: acct.id });
       const positions = (res.data as any[]) ?? [];
       return positions.map((p: any): Position => {
         const sym: string = p.symbol?.symbol?.symbol ?? p.symbol?.ticker ?? "UNKNOWN";
@@ -168,10 +206,11 @@ export async function getPositions(accounts: Account[]): Promise<Position[]> {
   return all.flat().sort((a, b) => b.market_value - a.market_value);
 }
 
-export async function getOptionPositions(accounts: Account[]): Promise<OptionPosition[]> {
+export async function getOptionPositions(accounts: Account[], creds?: SnapTradeCreds): Promise<OptionPosition[]> {
+  const { userId, userSecret } = resolveCreds(creds);
   const all = await Promise.all(
     accounts.map(async (acct) => {
-      const res = await optApi.listOptionHoldings({ userId: UID, userSecret: USEC, accountId: acct.id });
+      const res = await optApi.listOptionHoldings({ userId, userSecret, accountId: acct.id });
       const opts = (res.data as any[]) ?? [];
       return opts.map((o: any): OptionPosition => {
         const sym = o.symbol?.option_symbol;
@@ -195,10 +234,11 @@ export async function getOptionPositions(accounts: Account[]): Promise<OptionPos
   return all.flat();
 }
 
-export async function getBalances(accounts: Account[]): Promise<Balance[]> {
+export async function getBalances(accounts: Account[], creds?: SnapTradeCreds): Promise<Balance[]> {
+  const { userId, userSecret } = resolveCreds(creds);
   const all = await Promise.all(
     accounts.map(async (acct) => {
-      const res = await accountApi.getUserAccountBalance({ userId: UID, userSecret: USEC, accountId: acct.id });
+      const res = await accountApi.getUserAccountBalance({ userId, userSecret, accountId: acct.id });
       const bals = (res.data as any[]) ?? [];
       return bals.map((b: any): Balance => ({
         account_name: acct.name,
@@ -212,12 +252,12 @@ export async function getBalances(accounts: Account[]): Promise<Balance[]> {
   return all.flat();
 }
 
-export async function getPortfolio(): Promise<PortfolioData> {
-  const accounts = await getAccounts();
+export async function getPortfolio(creds?: SnapTradeCreds): Promise<PortfolioData> {
+  const accounts = await getAccounts(creds);
   const [positions, options, balances] = await Promise.all([
-    getPositions(accounts),
-    getOptionPositions(accounts),
-    getBalances(accounts),
+    getPositions(accounts, creds),
+    getOptionPositions(accounts, creds),
+    getBalances(accounts, creds),
   ]);
 
   const totalMV = positions.reduce((s, p) => s + p.market_value, 0);
@@ -242,15 +282,16 @@ export async function getPortfolio(): Promise<PortfolioData> {
   };
 }
 
-export async function getTransactions(startDate = "2026-01-01") {
+export async function getTransactions(startDate = "2026-01-01", creds?: SnapTradeCreds) {
   const end = new Date().toISOString().split("T")[0];
   const start = startDate;
-  const accounts = await getAccounts();
+  const accounts = await getAccounts(creds);
+  const { userId, userSecret } = resolveCreds(creds);
   const all = await Promise.all(
     accounts.map(async (acct) => {
       const res = await accountApi.getAccountActivities({
-        userId: UID,
-        userSecret: USEC,
+        userId,
+        userSecret,
         accountId: acct.id,
         startDate: start,
         endDate: end,
@@ -296,22 +337,24 @@ async function fetchActivitiesWindow(
   endISO: string,
   depth = 0,
   hooks?: ChainScanHooks,
+  creds?: SnapTradeCreds,
 ): Promise<any[]> {
   // Only poll the cancel flag near the top of the recursion tree — a DB
   // read per leaf window would be wasteful.
   if (depth <= 2) await hooks?.checkCancelled?.();
   if (depth > 0) await new Promise((r) => setTimeout(r, ACTIVITIES_CALL_SPACING_MS));
+  const { userId, userSecret } = resolveCreds(creds);
   let res;
   try {
     res = await accountApi.getAccountActivities({
-      userId: UID, userSecret: USEC, accountId,
+      userId, userSecret, accountId,
       startDate: startISO, endDate: endISO,
     });
   } catch (e) {
     if (!String(e).includes("429")) throw e;
     await new Promise((r) => setTimeout(r, RATE_LIMIT_WINDOW_WAIT_MS));
     res = await accountApi.getAccountActivities({
-      userId: UID, userSecret: USEC, accountId,
+      userId, userSecret, accountId,
       startDate: startISO, endDate: endISO,
     });
   }
@@ -326,8 +369,8 @@ async function fetchActivitiesWindow(
       // Sequential on purpose — parallel halves compound into a request burst
       // that exceeds SnapTrade's per-minute rate limit once history is deep
       // enough to need several split levels (SDK gives up after 3 retries).
-      const left = await fetchActivitiesWindow(accountId, startISO, midDt, depth + 1, hooks);
-      const right = await fetchActivitiesWindow(accountId, midDt, endISO, depth + 1, hooks);
+      const left = await fetchActivitiesWindow(accountId, startISO, midDt, depth + 1, hooks, creds);
+      const right = await fetchActivitiesWindow(accountId, midDt, endISO, depth + 1, hooks, creds);
       // Dedupe by id (midpoint day may appear in both halves)
       const seen = new Set<string>();
       const out: any[] = [];
@@ -350,27 +393,28 @@ async function fetchActivitiesWindow(
  */
 export async function getAllActivitiesTagged(
   startDate = "2010-01-01",
-  hooks?: ChainScanHooks
+  hooks?: ChainScanHooks,
+  creds?: SnapTradeCreds,
 ): Promise<any[]> {
   const endDate = new Date().toISOString().slice(0, 10);
-  const accounts = await getAccounts();
+  const accounts = await getAccounts(creds);
   const all: any[] = [];
   for (const acct of accounts) {
     await hooks?.checkCancelled?.();
     await hooks?.progress?.(`${acct.institution}: fetching activity history…`);
-    const txs = await fetchActivitiesWindow(acct.id, startDate, endDate, 0, hooks);
+    const txs = await fetchActivitiesWindow(acct.id, startDate, endDate, 0, hooks, creds);
     for (const t of txs) t._institution = acct.institution;
     all.push(...txs);
   }
   return all;
 }
 
-export async function getAllActivities(startDate = "2010-01-01"): Promise<any[]> {
+export async function getAllActivities(startDate = "2010-01-01", creds?: SnapTradeCreds): Promise<any[]> {
   const endDate = new Date().toISOString().slice(0, 10);
-  const accounts = await getAccounts();
+  const accounts = await getAccounts(creds);
   const all: any[] = [];
   for (const acct of accounts) {
-    all.push(...(await fetchActivitiesWindow(acct.id, startDate, endDate)));
+    all.push(...(await fetchActivitiesWindow(acct.id, startDate, endDate, 0, undefined, creds)));
   }
   return all;
 }
@@ -385,7 +429,14 @@ export interface OptionLeg {
   amount: number; // positive = received, negative = paid
 }
 
+export interface ChainSplitLink {
+  id: string;
+  date: string;
+  units: number;
+}
+
 export interface OptionChain {
+  id: string; // stable within one scan — underlying+type+institution+first leg
   underlying: string;
   option_type: string;  // "CALL" | "PUT"
   institution?: string; // brokerage the contract lives at; absent on pre-v0.29 cached scans
@@ -398,14 +449,28 @@ export interface OptionChain {
   roll_count: number;
   close_month: string | null; // "YYYY-MM" of end_date, for monthly grouping
   direction: "SELL" | "BUY"; // first action — SELL = short/income, BUY = long/directional
+
+  // A short position that gets PARTLY bought back, with the bought-back
+  // quantity re-sold into a different strike/expiry the same trip, splits
+  // into two chains rather than merging into one: the remaining quantity is
+  // still this same contract's own story, and the rolled-off quantity starts
+  // a new, independent lineage. (A close that zeroes the whole position
+  // still merges into one chain, same as before — split is only for a
+  // partial roll.) These fields are how the two halves stay linked.
+  splitFrom: ChainSplitLink | null; // set on the child: which chain it split off from
+  splitInto: ChainSplitLink[]; // set on the parent: which chains split off from it
+  groupId: string; // shared by every chain descended from the same origin, via full rolls or splits
+  groupStatus: "OPEN" | "CLOSED" | "EXPIRED" | "ASSIGNED"; // OPEN if any member of the group is still open
+  groupNetPnl: number; // net_pnl summed across every chain in the group — "was the overall trade profitable"
 }
 
 export async function getOptionChains(
   startDate = "2026-01-01",
   hooks?: ChainScanHooks,
+  creds?: SnapTradeCreds,
 ): Promise<OptionChain[]> {
   const end = new Date().toISOString().split("T")[0];
-  const accounts = await getAccounts();
+  const accounts = await getAccounts(creds);
 
   // SnapTrade caps each getAccountActivities call at 1000 records, so use the
   // recursive window-splitter to make sure no option transactions are dropped
@@ -417,7 +482,7 @@ export async function getOptionChains(
   for (const acct of accounts) {
     await hooks?.checkCancelled?.();
     await hooks?.progress?.(`${acct.institution}: fetching activities…`);
-    const txs = await fetchActivitiesWindow(acct.id, startDate, end, 0, hooks);
+    const txs = await fetchActivitiesWindow(acct.id, startDate, end, 0, hooks, creds);
     for (const t of txs) t._institution = acct.institution;
     allRaw.push(txs);
   }
@@ -549,29 +614,63 @@ export async function getOptionChains(
   const result: OptionChain[] = [];
   const daysBetween = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) / 86400000;
 
+  // Populated inside buildChain below (every raw contract node → the final
+  // chain it ended up part of), then used after the whole scan to turn the
+  // split edges recorded per-group into id-based links between chains.
+  const nodeToChain = new Map<ContractChain, OptionChain>();
+  // Raw-contract split edges from the partial-roll detection below, keyed by
+  // the contract whose partial close spawned the edge (one contract can
+  // split more than once over its life, hence an array of targets).
+  const splitNext = new Map<ContractChain, { to: ContractChain; date: string; units: number }[]>();
+
   const buildChain = (seq: ContractChain[], root: ContractChain): OptionChain => {
-    const allLegs = seq.flatMap(c => c.legs).sort((a, b) => {
-      const d = a.date.localeCompare(b.date);
-      if (d !== 0) return d;
-      const rank = (t: string) => t === "BUY" ? 1 : 0;
-      return rank(a.type) - rank(b.type);
-    });
+    // `seq` is sorted by start_date ascending (roll lineage order, oldest
+    // contract first) and each contract's own `legs` array is already
+    // chronological — built by walking the globally date-sorted
+    // transactions one contract at a time. Concatenating in that order,
+    // untouched, is what keeps a roll's story straight: the BUY that closes
+    // the old contract lands before the SELL that opens its successor even
+    // when both happen on the same date (SnapTrade gives day granularity,
+    // not a timestamp, so same-day is the common case for a roll).
+    //
+    // Re-sorting this flattened list by date again — as this used to do,
+    // with SELL/EXPIRATION/ASSIGNMENT ranked before BUY on a tie — reorders
+    // exactly that boundary: a same-day close-then-reopen roll would render
+    // as SELL, SELL, BUY instead of SELL, BUY, SELL, because the tie-break
+    // was designed for a different case (disambiguating a single contract's
+    // own same-day open+close, handled by the identical tie-break in the
+    // transaction parse above, not for this cross-contract merge). Roll
+    // pairing already guarantees a successor's sell event is never earlier
+    // than its predecessor's close (`gap < 0` is rejected during pairing),
+    // so no per-leg sort is needed here at all.
+    const allLegs = seq.flatMap(c => c.legs);
     const net_pnl = seq.reduce((s, c) => s + c.net_pnl, 0);
     const end_date = root.end_date;
-    return {
+    const firstLeg = allLegs[0];
+    const chain: OptionChain = {
+      id: `${root.underlying}|${root.option_type}|${root.institution}|${firstLeg.date}|${firstLeg.strike}|${firstLeg.expiry}`,
       underlying: root.underlying,
       option_type: root.option_type,
       institution: root.institution,
       legs: allLegs,
       net_pnl,
       status: root.status,
-      start_date: allLegs[0].date,
+      start_date: firstLeg.date,
       end_date,
       open_units: root.open_units,
       roll_count: seq.length - 1,
       close_month: end_date ? end_date.substring(0, 7) : null,
       direction: seq[0].first_action === "BUY" ? "BUY" : "SELL",
+      // Filled in once every chain in the scan exists: split links need the
+      // target chain's id, and group rollups need every member's net_pnl.
+      splitFrom: null,
+      splitInto: [],
+      groupId: "",
+      groupStatus: root.status,
+      groupNetPnl: net_pnl,
     };
+    for (const node of seq) nodeToChain.set(node, chain);
+    return chain;
   };
 
   for (const contracts of displayGroups.values()) {
@@ -606,6 +705,40 @@ export async function getOptionChains(
       if (best) { best.consumed = true; rollNext.set(c, best.node); }
     }
 
+    // Partial rolls: a BUY that reduces a short's own running count without
+    // zeroing it — e.g. buying back 2 of 5 short calls and re-selling those
+    // 2 at a new strike/expiry the same trip, leaving 3 of the original
+    // still open. Unlike a full close, the contract's own remaining
+    // quantity keeps living in its own chain (it never actually closed), so
+    // this can't merge into one chain the way a full roll does — instead it
+    // links two independent chains together after the fact, via splitNext.
+    // Runs after the full-roll pass above and only claims what that pass
+    // left unconsumed, so a genuine full roll is never reinterpreted as a
+    // partial one.
+    for (const c of shorts) {
+      let running = 0;
+      for (const leg of c.legs) {
+        if (leg.type === "OPTIONEXPIRATION" || leg.type === "OPTIONASSIGNMENT") { running = 0; continue; }
+        running += leg.units;
+        if (leg.type !== "BUY" || running === 0) continue;
+        const units = Math.abs(leg.units);
+        let best: SellEvent | null = null;
+        let bestScore = Infinity;
+        for (const ev of sellEvents) {
+          if (ev.consumed || ev.node === c) continue;
+          const gap = daysBetween(leg.date, ev.date);
+          if (gap < 0 || gap > ROLL_WINDOW_DAYS) continue;
+          const score = gap * 10000 + (ev.units === units ? 0 : 5000) + Math.abs(ev.node.strike - c.strike);
+          if (score < bestScore) { bestScore = score; best = ev; }
+        }
+        if (best) {
+          best.consumed = true;
+          if (!splitNext.has(c)) splitNext.set(c, []);
+          splitNext.get(c)!.push({ to: best.node, date: leg.date, units });
+        }
+      }
+    }
+
     // Group contracts into lineage trees by following successors to the root.
     const rootOf = (c: ContractChain): ContractChain => {
       let cur = c;
@@ -628,21 +761,83 @@ export async function getOptionChains(
     for (const [root, nodes] of trees) {
       nodes.sort((a, b) => a.start_date.localeCompare(b.start_date));
       // Settle stale history: split off the oldest contracts until the
-      // remaining chain spans ≤ MAX_CHAIN_DAYS. The live (root) contract is
-      // never split off.
-      const chainEnd = root.end_date ?? today;
-      while (
-        nodes.length > 1 &&
-        nodes[0] !== root &&
-        daysBetween(nodes[0].start_date, chainEnd) > MAX_CHAIN_DAYS
-      ) {
-        const stale = nodes.shift()!;
-        result.push(buildChain([stale], stale));
+      // remaining chain spans ≤ MAX_CHAIN_DAYS, so a closed chain's realized
+      // premium attributes to the month it actually closed in rather than
+      // the month the position first opened, potentially years earlier.
+      //
+      // Only settled roots get this treatment. A still-OPEN root has no
+      // end_date and so no close_month to attribute anything to — trimming
+      // it doesn't serve that purpose, it only fragments a position that
+      // has been continuously rolled (never gone flat) into a fake "closed"
+      // chain plus a fake "new" open one. Open shows the full roll lineage
+      // back to origin, however long it's been running; only a chain that
+      // has actually settled gets bounded for monthly reporting.
+      if (root.status !== "OPEN") {
+        const chainEnd = root.end_date ?? today;
+        while (
+          nodes.length > 1 &&
+          nodes[0] !== root &&
+          daysBetween(nodes[0].start_date, chainEnd) > MAX_CHAIN_DAYS
+        ) {
+          const stale = nodes.shift()!;
+          result.push(buildChain([stale], stale));
+        }
       }
       result.push(buildChain(nodes, root));
     }
 
     for (const c of longs) result.push(buildChain([c], c));
+  }
+
+  // Every chain now exists, so raw-contract split edges can resolve to the
+  // ids of the chains on either side.
+  for (const [fromNode, edges] of splitNext) {
+    const fromChain = nodeToChain.get(fromNode);
+    if (!fromChain) continue;
+    for (const edge of edges) {
+      const toChain = nodeToChain.get(edge.to);
+      if (!toChain || toChain === fromChain) continue;
+      fromChain.splitInto.push({ id: toChain.id, date: edge.date, units: edge.units });
+      toChain.splitFrom = { id: fromChain.id, date: edge.date, units: edge.units };
+    }
+  }
+
+  // groupId = the id of the oldest ancestor reachable by walking splitFrom
+  // links backward. Every chain descended from one origin — whether by a
+  // full roll (already merged into a single chain) or a split (which isn't
+  // merged) — ends up sharing one groupId.
+  const chainById = new Map(result.map((c) => [c.id, c]));
+  const groupIdOf = (chain: OptionChain): string => {
+    let cur = chain;
+    const seen = new Set<string>([cur.id]);
+    while (cur.splitFrom) {
+      const parent = chainById.get(cur.splitFrom.id);
+      if (!parent || seen.has(parent.id)) break;
+      seen.add(parent.id);
+      cur = parent;
+    }
+    return cur.id;
+  };
+  for (const chain of result) chain.groupId = groupIdOf(chain);
+
+  // Roll up status and P&L across every chain sharing a groupId — "is the
+  // overall trade (across every split) still open, and was it profitable".
+  const groups = new Map<string, OptionChain[]>();
+  for (const chain of result) {
+    if (!groups.has(chain.groupId)) groups.set(chain.groupId, []);
+    groups.get(chain.groupId)!.push(chain);
+  }
+  for (const members of groups.values()) {
+    if (members.length < 2) continue; // solo chains keep their own numbers, set above
+    const groupNetPnl = members.reduce((s, m) => s + m.net_pnl, 0);
+    const anyOpen = members.some((m) => m.status === "OPEN");
+    const groupStatus: OptionChain["groupStatus"] = anyOpen
+      ? "OPEN"
+      : [...members].sort((a, b) => (b.end_date ?? "").localeCompare(a.end_date ?? ""))[0].status;
+    for (const m of members) {
+      m.groupNetPnl = groupNetPnl;
+      m.groupStatus = groupStatus;
+    }
   }
 
   return result.sort((a, b) => b.start_date.localeCompare(a.start_date));

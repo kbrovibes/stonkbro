@@ -13,6 +13,7 @@ import RefreshPortfolio from "@/components/portfolio/RefreshPortfolio";
 import type { ChainRowModel, MonthModel } from "@/components/portfolio/RefreshPortfolio";
 import type { RowBadge } from "@/components/refresh";
 import type { OptionChain, OptionLeg } from "@/lib/snaptrade/client";
+import { RequestAccessPrompt, ConnectBrokeragePrompt } from "./AccessGate";
 
 // Last successful payload, kept in localStorage so the page is readable in
 // airplane mode. Browser-local only — never synced anywhere.
@@ -255,6 +256,20 @@ function structureBadge(chain: OptionChain): string {
   return isPut ? "CSP" : "CC";
 }
 
+/**
+ * `split trade, still open · $1.2K total` — shown on either side of a
+ * partial roll (some contracts rolled to a new strike/expiry, the rest left
+ * open under the original one), so each half is legible as part of one
+ * bigger trade rather than two unrelated positions. `null` for a chain that
+ * was never split.
+ */
+function splitNote(chain: OptionChain): string | null {
+  if (!chain.splitFrom && chain.splitInto.length === 0) return null;
+  const overall = chain.groupStatus === "OPEN" ? "still open" : "closed";
+  const sign = chain.groupNetPnl >= 0 ? "+" : "−";
+  return `split trade, ${overall} overall · ${sign}${fmtK(Math.abs(chain.groupNetPnl))} total`;
+}
+
 /** Collateral a chain still ties up. Short puts only — calls and longs lock nothing. */
 function chainCollateral(chain: OptionChain): number | null {
   if (chain.option_type.toUpperCase() !== "PUT" || chain.open_units >= 0) return null;
@@ -267,6 +282,7 @@ function openRowModel(chain: OptionChain, i: number): ChainRowModel {
   const leg = findOpenLeg(chain);
   const badges: RowBadge[] = [{ label: structureBadge(chain), tone: "info" }];
   if (chain.institution) badges.push({ label: chain.institution.toUpperCase(), tone: "fact" });
+  if (chain.splitFrom || chain.splitInto.length > 0) badges.push({ label: "SPLIT", tone: "fact" });
   const units = Math.abs(chain.open_units);
   return {
     key: `open-${chain.underlying}-${i}`,
@@ -276,6 +292,7 @@ function openRowModel(chain: OptionChain, i: number): ChainRowModel {
       leg ? `exp ${fmtDate(leg.expiry)}` : null,
       units > 0 ? `${units} contract${units !== 1 ? "s" : ""}` : null,
       chain.roll_count > 0 ? `${chain.roll_count} roll${chain.roll_count !== 1 ? "s" : ""}` : null,
+      splitNote(chain),
     ]
       .filter(Boolean)
       .join(" · "),
@@ -289,6 +306,7 @@ function closedRowModel(chain: OptionChain, i: number): ChainRowModel {
   const ann = annualizedReturnPct(chain);
   const badges: RowBadge[] = [{ label: structureBadge(chain), tone: "info" }];
   if (chain.status === "EXPIRED") badges.push({ label: "EXPIRED", tone: "fact" });
+  if (chain.splitFrom || chain.splitInto.length > 0) badges.push({ label: "SPLIT", tone: "fact" });
   return {
     key: `closed-${chain.underlying}-${i}`,
     ticker: contractLabel(chain),
@@ -296,6 +314,7 @@ function closedRowModel(chain: OptionChain, i: number): ChainRowModel {
     caption: [
       chain.end_date ? `closed ${fmtDate(chain.end_date)}` : null,
       ann !== null ? `${ann >= 0 ? "+" : ""}${ann.toFixed(1)}% ann.` : null,
+      splitNote(chain),
     ]
       .filter(Boolean)
       .join(" · "),
@@ -306,16 +325,19 @@ function closedRowModel(chain: OptionChain, i: number): ChainRowModel {
 }
 
 function assignedRowModel(chain: OptionChain, i: number): ChainRowModel {
+  const badges: RowBadge[] = [
+    { label: structureBadge(chain), tone: "info" },
+    { label: "ASSIGNED", tone: "risk" },
+  ];
+  if (chain.splitFrom || chain.splitInto.length > 0) badges.push({ label: "SPLIT", tone: "fact" });
   return {
     key: `assigned-${chain.underlying}-${i}`,
     ticker: contractLabel(chain),
-    badges: [
-      { label: structureBadge(chain), tone: "info" },
-      { label: "ASSIGNED", tone: "risk" },
-    ],
+    badges,
     caption: [
       chain.end_date ? `assigned ${fmtDate(chain.end_date)}` : null,
       `opened ${fmtDate(chain.start_date)}`,
+      splitNote(chain),
     ]
       .filter(Boolean)
       .join(" · "),
@@ -1168,18 +1190,32 @@ export default function PortfolioPage() {
   }
 
   if (error) {
+    if (error === "Access restricted") return <RequestAccessPrompt />;
+    if (error.startsWith("409:")) return <ConnectBrokeragePrompt />;
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 p-8 text-center">
         <div className="text-3xl">🔒</div>
         <p className="text-stone-700 dark:text-text-muted font-medium">{error}</p>
-        {error === "Access restricted" && (
-          <p className="text-xs text-stone-400 dark:text-text-faint">This page is only available for certain accounts.</p>
-        )}
       </div>
     );
   }
 
-  if (!chains) return offline ? <OfflineNotice label="Portfolio" /> : null;
+  if (!chains) {
+    if (offline) return <OfflineNotice label="Portfolio" />;
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 p-8 text-center">
+        <div className="text-3xl">⚠️</div>
+        <p className="text-stone-700 dark:text-text-muted font-medium">Couldn&apos;t load your portfolio</p>
+        <button
+          type="button"
+          onClick={() => fetchChains()}
+          className="text-xs font-semibold text-sky-600 dark:text-accent hover:underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   const open     = chains.filter(c => c.status === "OPEN");
   const currentYear = new Date().getFullYear().toString();

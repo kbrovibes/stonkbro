@@ -66,6 +66,8 @@ Log your trades with full multi-leg support. PMCC with a LEAPS call and short ca
 ### Portfolio (Live P&L)
 See your actual P&L calculated from Supabase positions + live Yahoo Finance quotes. Summary cards for total P&L, premium collected, and active position count. Each position card breaks down individual leg performance. Multiple brokerages (Fidelity, Chase, …) link through SnapTrade from Settings → Brokerages and aggregate into one portfolio.
 
+Portfolio is invite-only, but requestable: anyone signed in sees the nav entry and can ask for access from the page itself. The owner approves or denies from the alert banner or Settings, and approval registers the requester as their own isolated SnapTrade end-user — they link their own brokerage through SnapTrade's own hosted portal (this app never sees their brokerage login), and their SnapTrade identity is stored AES-256-GCM-encrypted with no client-readable path to it, ever.
+
 ### Portfolio Manager
 AI-driven daily research for every stock in your connected SnapTrade portfolio. Each ticker gets a STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL rating with confidence, thesis, reasons, risks, and a suggested action — pulled from a single batched AI call that also produces a $100K reallocation plan (SELL/TRIM/HOLD/ADD/BUY) treating your current holdings as redeployable capital. Runs at market open and ride-alongs on the close cron; "Re-run now" button for on-demand. Expandable-row table with color-coded ratings, RSI/SMA/MACD/52w technicals, and Yahoo Finance headlines per ticker.
 
@@ -249,7 +251,10 @@ npm run dev
 | `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
 | `/api/options?symbol=X` | GET | Fetch PMCC setups for a symbol |
 | `/api/signals` | GET | Check active positions for trade alerts |
-| `/api/portfolio/connections` | GET/POST | List SnapTrade brokerage connections; generate a Connection Portal link to add/fix one |
+| `/api/portfolio/connections` | GET/POST | List SnapTrade brokerage connections; generate a Connection Portal link to add/fix one (owner) |
+| `/api/portfolio/access-request` | GET/POST | Check your own Portfolio access-request status; file (or re-file) a request |
+| `/api/portfolio/connect` | POST | An approved non-owner's own SnapTrade connect-portal link |
+| `/api/admin/portfolio-access` | GET/POST | Admin-only: list pending access requests; approve/deny one (approval registers a new SnapTrade end-user) |
 | `/api/taxes` | GET/POST/DELETE | Quarterly estimated-tax insights from realized chains; record/delete one-off payments |
 | `/api/jobs` | GET/POST | List async jobs + running count; request cooperative cancel of a running job |
 | `/api/taxes/equities` | GET/POST | Stock-sale scan freshness; sync sell history via FIFO lot engine (job-tracked) |
@@ -293,6 +298,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.42.0** | Portfolio opened up: request/approve access flow, per-user encrypted SnapTrade linking, ticker Price/Stats chart tabs, option-chain roll-ordering and split-position fixes, paper desk cash + overall return |
 | **v0.41.0** | Paper desk personas + persistent bot memory, buying-power management, equity floors, backfill harness |
 | **v0.40.0** | LEAPS Lab + PMCC Income finder; Paper Trading with 10 bots; home card grid + podcast restored |
 | **v0.39.0** | Trading Desk — Decision Journal + Debate Verdict + Risk Gate + Market Regime; provider fallback fixes |

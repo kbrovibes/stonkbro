@@ -31,6 +31,7 @@ export async function GET() {
       const snapshot = latest.get(p.id) ?? null;
       const points = (series.get(p.id) ?? []).map((pt) => ({ date: pt.date, equity: pt.equity }));
       const equity = snapshot ? Number(snapshot.equity) : START_CASH;
+      const cash = snapshot ? Number(snapshot.cash) : START_CASH;
       const identity = identityFor(p.id);
       return {
         profile: { id: p.id, name: p.name, tagline: p.tagline, style: p.style, plan: p.plan, margin: p.margin },
@@ -47,6 +48,7 @@ export async function GET() {
           : null,
         series: points,
         equity,
+        cash,
         dayPnl: snapshot ? Number(snapshot.day_pnl) : 0,
         dayPct: snapshot && equity - Number(snapshot.day_pnl) > 0 ? (Number(snapshot.day_pnl) / (equity - Number(snapshot.day_pnl))) * 100 : 0,
         totalPnl: snapshot ? Number(snapshot.total_pnl) : 0,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { getPortfolio, getTransactions, getOptionChains, getAllActivities } from "@/lib/snaptrade/client";
+import { getPortfolio, getTransactions, getOptionChains, getAllActivities, type SnapTradeCreds } from "@/lib/snaptrade/client";
 import {
   CHAIN_CACHE_START_DATE,
   getLatestChainScan,
@@ -9,6 +9,7 @@ import {
   markChainScanFailed,
 } from "@/lib/db/portfolio-chain-scans";
 import { runTracked } from "@/lib/jobs/tracker";
+import { getUserSnapTradeCredentials } from "@/lib/db/user-snaptrade-credentials";
 
 // Serve the cron-cached chain scan up to this age; covers weekends.
 const CHAIN_CACHE_MAX_AGE_HOURS = 72;
@@ -18,14 +19,32 @@ export const dynamic = "force-dynamic";
 // window (65s) on 429, so deep option-chain pulls legitimately run minutes.
 export const maxDuration = 300;
 
-import { hasPortfolioAccess } from "@/lib/portfolio-access";
+import { hasPortfolioAccess, hasApprovedPortfolioAccess } from "@/lib/portfolio-access";
 
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPortfolioAccess(user.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // The owner (hardcoded allowlist) always uses the app's own SnapTrade
+  // identity and the cron-cached chain scan, exactly as before. An approved
+  // non-owner user reads their own SnapTrade identity and never touches the
+  // shared cache — `portfolio_chain_scans` has no per-user column, so
+  // caching for them is a live-fetch-only feature for now.
+  const isOwner = hasPortfolioAccess(user.email);
+  if (!isOwner && !(await hasApprovedPortfolioAccess(user.id, user.email))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let creds: SnapTradeCreds | undefined;
+  if (!isOwner) {
+    const own = await getUserSnapTradeCredentials(user.id);
+    if (!own) {
+      return NextResponse.json({ error: "Not connected", detail: "Link your brokerage first." }, { status: 409 });
+    }
+    creds = own;
+  }
 
   const { searchParams } = new URL(req.url);
   const include = searchParams.get("include") ?? "portfolio";
@@ -33,14 +52,14 @@ export async function GET(req: Request) {
   try {
     if (include === "transactions") {
       const startDate = searchParams.get("startDate") ?? "2026-01-01";
-      const transactions = await getTransactions(startDate);
+      const transactions = await getTransactions(startDate, creds);
       return NextResponse.json({ transactions });
     }
 
     if (include === "option-chains") {
       const startDate = searchParams.get("startDate") ?? "2026-01-01";
       const forceRefresh = searchParams.get("refresh") === "1";
-      const cacheable = startDate === CHAIN_CACHE_START_DATE;
+      const cacheable = isOwner && startDate === CHAIN_CACHE_START_DATE;
 
       if (cacheable && !forceRefresh) {
         try {
@@ -70,10 +89,11 @@ export async function GET(req: Request) {
           getOptionChains(startDate, {
             checkCancelled: ctx.checkCancelled,
             progress: ctx.progress,
-          })
+          }, creds)
       );
 
-      // Store the live result so the next load is a cache hit (best-effort).
+      // Store the live result so the next load is a cache hit (best-effort,
+      // owner only — see the cache note above).
       if (cacheable) {
         try {
           const scanId = await insertChainScan("manual");
@@ -91,7 +111,7 @@ export async function GET(req: Request) {
     }
 
     if (include === "debug-all-txns") {
-      const activities = await getAllActivities("2010-01-01");
+      const activities = await getAllActivities("2010-01-01", creds);
       const totalCount = activities.length;
 
       // Compute earliest/latest date range
@@ -125,7 +145,7 @@ export async function GET(req: Request) {
     if (include === "debug-txns") {
       const startDate = searchParams.get("startDate") ?? "2025-01-01";
       const underlying = searchParams.get("underlying")?.toUpperCase();
-      const txns = await getTransactions(startDate);
+      const txns = await getTransactions(startDate, creds);
       const optionTxns = txns.filter((t: any) => t.option_symbol != null);
       const filtered = underlying
         ? optionTxns.filter((t: any) =>
@@ -147,7 +167,7 @@ export async function GET(req: Request) {
       })));
     }
 
-    const portfolio = await getPortfolio();
+    const portfolio = await getPortfolio(creds);
     return NextResponse.json(portfolio);
   } catch (err: any) {
     const status = err?.response?.status;

@@ -6,7 +6,6 @@ import OfflineBanner from "@/components/OfflineBanner";
 import PrivacyProvider from "@/components/PrivacyProvider";
 import BiometricLock from "@/components/BiometricLock";
 import { getUser } from "@/lib/auth";
-import { hasPortfolioAccess } from "@/lib/portfolio-access";
 import { isPiiLocked } from "@/lib/privacy-server";
 import { BIOMETRIC_LOCK_ENABLED } from "@/lib/feature-flags";
 
@@ -16,8 +15,11 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await getUser();
-  const showPortfolio = hasPortfolioAccess(user?.email);
   const isGuest = !user;
+  // The invite-only gate now lives on the Portfolio page itself (a
+  // request-access prompt for anyone not yet approved), not in the nav —
+  // any signed-in user needs to be able to find it to ask.
+  const showPortfolio = !isGuest;
   const piiLocked = await isPiiLocked();
 
   return (

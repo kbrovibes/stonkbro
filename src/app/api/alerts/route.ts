@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { getRecentAlerts, acknowledgeAlert, acknowledgeAllAlerts } from "@/lib/db/alerts";
+import { isAdmin } from "@/lib/db/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,12 @@ export async function GET(req: Request) {
 
   try {
     const alerts = await getRecentAlerts(hours, unacked);
-    return NextResponse.json({ alerts });
+    // access_request alerts name a requester's email — the alerts table's
+    // RLS lets any signed-in user read every row, so this is the only gate
+    // keeping "so-and-so wants Portfolio access" admin-only.
+    const admin = await isAdmin(user.id);
+    const visible = admin ? alerts : alerts.filter((a) => a.kind !== "access_request");
+    return NextResponse.json({ alerts: visible });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Failed to load alerts" },

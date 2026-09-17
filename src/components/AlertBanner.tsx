@@ -70,6 +70,21 @@ export default function AlertBanner() {
     }).catch(() => {});
   };
 
+  const [deciding, setDeciding] = useState<string | null>(null);
+  const decide = (a: Alert, decision: "approved" | "denied") => {
+    if (!a.symbol) return; // symbol carries the requester's user_id for this kind
+    setDeciding(a.id);
+    fetch("/api/admin/portfolio-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: a.symbol, decision }),
+    })
+      .then((r) => {
+        if (r.ok) ack(a.id);
+      })
+      .finally(() => setDeciding(null));
+  };
+
   if (alerts.length === 0) return null;
 
   const sorted = [...alerts].sort((a, b) =>
@@ -82,7 +97,11 @@ export default function AlertBanner() {
   const top = sorted[0];
   const hasCritical = top.severity === "critical";
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
-  const symbols = [...new Set(alerts.map((a) => a.symbol).filter((s): s is string => !!s))];
+  const symbols = [
+    ...new Set(
+      alerts.filter((a) => a.kind !== "access_request").map((a) => a.symbol).filter((s): s is string => !!s)
+    ),
+  ];
   const symbolSummary =
     symbols.slice(0, 3).join(", ") + (symbols.length > 3 ? ` +${symbols.length - 3}` : "");
 
@@ -125,7 +144,7 @@ export default function AlertBanner() {
             </span>
             <span className="min-w-0">
               <span className="block text-[13px] font-bold text-stone-900 dark:text-text truncate">
-                {locked ? HIDDEN_ALERT : top.title}
+                {locked && top.kind !== "access_request" ? HIDDEN_ALERT : top.title}
               </span>
               <span className="block text-[11px] text-stone-400 dark:text-text-subtle truncate">
                 {summaryParts.join(" · ")}
@@ -163,32 +182,61 @@ export default function AlertBanner() {
                       : "bg-amber-500 dark:bg-amber-400"
                   }`}
                 />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-stone-900 dark:text-text leading-snug">
-                    {locked ? HIDDEN_ALERT : a.title}
-                  </p>
-                  {!locked && (
-                    <p className="text-[11px] text-stone-500 dark:text-text-subtle leading-snug mt-0.5 line-clamp-2">
-                      {a.body}
-                    </p>
-                  )}
-                  {!locked && a.action && (
-                    <p className="text-[11px] font-semibold text-stone-700 dark:text-text-muted leading-snug mt-1">
-                      👉 {a.action}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <Link href={a.url} className="text-[11px] font-bold text-sky-600 dark:text-accent">
-                    Open
-                  </Link>
-                  <button
-                    onClick={() => ack(a.id)}
-                    className="text-[11px] text-stone-400 dark:text-text-faint hover:text-stone-600 dark:hover:text-text-subtle"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+                {(() => {
+                  const isAccessRequest = a.kind === "access_request";
+                  const hidden = locked && !isAccessRequest;
+                  return (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-stone-900 dark:text-text leading-snug">
+                          {hidden ? HIDDEN_ALERT : a.title}
+                        </p>
+                        {!hidden && (
+                          <p className="text-[11px] text-stone-500 dark:text-text-subtle leading-snug mt-0.5 line-clamp-2">
+                            {a.body}
+                          </p>
+                        )}
+                        {!hidden && a.action && (
+                          <p className="text-[11px] font-semibold text-stone-700 dark:text-text-muted leading-snug mt-1">
+                            👉 {a.action}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {isAccessRequest ? (
+                          <>
+                            <button
+                              onClick={() => decide(a, "approved")}
+                              disabled={deciding === a.id}
+                              className="text-[11px] font-bold text-emerald-600 dark:text-gain disabled:opacity-40"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => decide(a, "denied")}
+                              disabled={deciding === a.id}
+                              className="text-[11px] text-red-500 dark:text-loss disabled:opacity-40"
+                            >
+                              Deny
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Link href={a.url} className="text-[11px] font-bold text-sky-600 dark:text-accent">
+                              Open
+                            </Link>
+                            <button
+                              onClick={() => ack(a.id)}
+                              className="text-[11px] text-stone-400 dark:text-text-faint hover:text-stone-600 dark:hover:text-text-subtle"
+                            >
+                              Dismiss
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
