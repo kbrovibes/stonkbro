@@ -8,6 +8,8 @@ import { maskValue, privateCount } from "@/lib/privacy";
 import { PAYLOAD_VERSION as CURRENT_PAYLOAD_VERSION } from "@/lib/time-machine/version";
 import { isThemeStyle, THEME_STYLE_ATTR, THEME_STYLE_EVENT, type ThemeStyle } from "@/lib/theme-style";
 import HindsightRefresh from "@/components/time-machine/HindsightRefresh";
+import { useSort } from "@/hooks/useSort";
+import { SortTh } from "@/components/table/SortTh";
 
 import type {
   ExitAnalysisItem,
@@ -110,6 +112,38 @@ function TimeMachineView() {
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
   const [optionsRealizationOpen, setOptionsRealizationOpen] = useState(false);
   const [stocksRealizationOpen, setStocksRealizationOpen] = useState(false);
+  type OptionLegSortKey = "date" | "side" | "contract" | "units" | "amount";
+  const optionLegSort = useSort<import("./types").OptionRealizationItem, OptionLegSortKey>(
+    data?.realizedGains?.optionsBreakdown ?? [],
+    (o, key) => {
+      switch (key) {
+        case "date": return o.date;
+        case "side": return o.side;
+        case "contract": return `${o.underlying} ${o.optionType} ${o.strike}`;
+        case "units": return o.units;
+        case "amount": return o.amount;
+      }
+    },
+    "date",
+    { ascKeys: ["date", "side", "contract"] }
+  );
+  type StockSellSortKey = "date" | "symbol" | "units" | "proceeds" | "avgCost" | "gain" | "term";
+  const stockSellSort = useSort<import("./types").StockRealizationItem, StockSellSortKey>(
+    data?.realizedGains?.stocksBreakdown ?? [],
+    (s, key) => {
+      switch (key) {
+        case "date": return s.date;
+        case "symbol": return s.symbol;
+        case "units": return s.units;
+        case "proceeds": return s.proceeds;
+        case "avgCost": return s.avgCost;
+        case "gain": return s.gain;
+        case "term": return s.term;
+      }
+    },
+    "date",
+    { ascKeys: ["date", "symbol", "term"] }
+  );
   type SortCol = "symbol" | "units" | "snapshotPrice" | "todayPrice" | "snapshotValue" | "todayValue" | "returnPct" | "contribution";
   const DEFAULT_COL_ORDER: SortCol[] = ["symbol", "units", "snapshotPrice", "todayPrice", "snapshotValue", "todayValue", "returnPct", "contribution"];
   const COL_ORDER_KEY = "tm-col-order-v1";
@@ -1327,15 +1361,15 @@ function TimeMachineView() {
                       <table className="w-full text-[10px]">
                         <thead className="text-stone-400 dark:text-text-faint bg-stone-50 dark:bg-surface">
                           <tr>
-                            <th className="px-2 py-1 text-left font-medium">Date</th>
-                            <th className="px-2 py-1 text-left font-medium">Side</th>
-                            <th className="px-2 py-1 text-left font-medium">Contract</th>
-                            <th className="px-2 py-1 text-right font-medium">Units</th>
-                            <th className="px-2 py-1 text-right font-medium">Net cash</th>
+                            <SortTh label="Date" sortKey="date" align="left" currentKey={optionLegSort.sortKey} currentDir={optionLegSort.sortDir} onToggle={optionLegSort.toggleSort} />
+                            <SortTh label="Side" sortKey="side" align="left" currentKey={optionLegSort.sortKey} currentDir={optionLegSort.sortDir} onToggle={optionLegSort.toggleSort} />
+                            <SortTh label="Contract" sortKey="contract" align="left" currentKey={optionLegSort.sortKey} currentDir={optionLegSort.sortDir} onToggle={optionLegSort.toggleSort} />
+                            <SortTh label="Units" sortKey="units" currentKey={optionLegSort.sortKey} currentDir={optionLegSort.sortDir} onToggle={optionLegSort.toggleSort} />
+                            <SortTh label="Net cash" sortKey="amount" currentKey={optionLegSort.sortKey} currentDir={optionLegSort.sortDir} onToggle={optionLegSort.toggleSort} />
                           </tr>
                         </thead>
                         <tbody>
-                          {data.realizedGains.optionsBreakdown!.map((o, i) => (
+                          {optionLegSort.sorted.map((o, i) => (
                             <tr key={i} className="border-t border-stone-50 dark:border-border-subtle">
                               <td className="px-2 py-1 text-stone-600 dark:text-text-muted tabular-nums">{fmtDateShort(o.date)}</td>
                               <td className="px-2 py-1">
@@ -1368,17 +1402,17 @@ function TimeMachineView() {
                       <table className="w-full text-[10px]">
                         <thead className="text-stone-400 dark:text-text-faint bg-stone-50 dark:bg-surface">
                           <tr>
-                            <th className="px-2 py-1 text-left font-medium">Date</th>
-                            <th className="px-2 py-1 text-left font-medium">Symbol</th>
-                            <th className="px-2 py-1 text-right font-medium">Units</th>
-                            <th className="px-2 py-1 text-right font-medium">Proceeds</th>
-                            <th className="px-2 py-1 text-right font-medium">Avg cost</th>
-                            <th className="px-2 py-1 text-right font-medium">Gain</th>
-                            <th className="px-2 py-1 text-center font-medium">Term</th>
+                            <SortTh label="Date" sortKey="date" align="left" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Symbol" sortKey="symbol" align="left" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Units" sortKey="units" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Proceeds" sortKey="proceeds" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Avg cost" sortKey="avgCost" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Gain" sortKey="gain" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} />
+                            <SortTh label="Term" sortKey="term" align="left" currentKey={stockSellSort.sortKey} currentDir={stockSellSort.sortDir} onToggle={stockSellSort.toggleSort} className="!text-center" />
                           </tr>
                         </thead>
                         <tbody>
-                          {data.realizedGains.stocksBreakdown!.map((s, i) => (
+                          {stockSellSort.sorted.map((s, i) => (
                             <tr key={i} className="border-t border-stone-50 dark:border-border-subtle">
                               <td className="px-2 py-1 text-stone-600 dark:text-text-muted tabular-nums">{fmtDateShort(s.date)}</td>
                               <td className="px-2 py-1 font-semibold text-stone-900 dark:text-text">{s.symbol}</td>

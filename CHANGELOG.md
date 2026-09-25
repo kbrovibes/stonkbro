@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.46.0 — Tables are sortable, click any column header
+
+- **Paper Trading Lab**: a bot's Positions table is now click-to-sort on every column (was hard-sorted by position size). Trades — previously a plain description-row list, one day at a time — is now a real sortable table (Time / Trade / Reason / Amount). The Paper home leaderboard's board is now a sortable table (Bot / Trend / Positions / Equity / Today / Total) instead of card rows ranked only by the Today/Total toggle
+- **Options page**: all 3 tabs (CSP, Calls, LEAPS) sortable on every column, defaulting to the scan's original rank ordering
+- **Admin dashboard**: the token usage table is sortable
+- **Hindsight (Time Machine)**: the two realized-gains breakdown tables (options legs, stock sells) are now sortable; the positions table already had its own sort and is untouched
+- Deliberately left alone: the LEAPS scenario grid (a price/time matrix, not a record table — sorting would break its meaning) and the "biggest regrets" exit-analysis cards (intentionally pre-ranked top-N lists, not column tables)
+- New shared primitives for future tables: `src/hooks/useSort.ts` (sort state) and `src/components/table/SortTh.tsx` (Tailwind sortable header)
+- Known gap: on the Options page, the "Rationale" text list under each table still follows the scan's original order even when the table above it is re-sorted
+
 ## v0.45.1 — Open Contracts cards show strike/DTE without expanding
 
 - **Strike and days-to-expiry are now in the card head, not just the expanded detail**: the Open tab's collapsed card previously showed only the underlying, ticker type, and a date range — strike and expiry lived inside the tap-to-expand leg table. The head now shows the live (post-roll) strike and DTE directly, e.g. `NBIS CALL · $280 · 24 DTE`

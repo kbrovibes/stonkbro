@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useSort } from "@/hooks/useSort";
+import { SortTh } from "@/components/table/SortTh";
 
 interface TokenUsageRow {
   email: string;
@@ -30,6 +32,8 @@ interface AdminData {
   defaultProvider: string;
   availableProviders: { claude: boolean; gemini: boolean };
 }
+
+type UsageSortKey = "rank" | "email" | "provider" | "feature" | "calls" | "tokens" | "cost";
 
 export default function AdminDashboard() {
   const [data, setData] = useState<AdminData | null>(null);
@@ -79,14 +83,40 @@ export default function AdminDashboard() {
     setSwitching(false);
   }
 
-  function estimateCost(provider: string, input: number, output: number): string {
+  function estimateCostValue(provider: string, input: number, output: number): number {
     // Rough estimates per 1M tokens
     if (provider === "claude") {
-      return (input * 3 / 1_000_000 + output * 15 / 1_000_000).toFixed(4);
+      return input * 3 / 1_000_000 + output * 15 / 1_000_000;
     }
     // Gemini Flash is much cheaper
-    return (input * 0.075 / 1_000_000 + output * 0.3 / 1_000_000).toFixed(4);
+    return input * 0.075 / 1_000_000 + output * 0.3 / 1_000_000;
   }
+
+  function estimateCost(provider: string, input: number, output: number): string {
+    return estimateCostValue(provider, input, output).toFixed(4);
+  }
+
+  const usageIndexed = useMemo(() => (data?.usage ?? []).map((row, i) => ({ ...row, _idx: i })), [data?.usage]);
+  const { sorted: sortedUsage, sortKey: usageSortKey, sortDir: usageSortDir, toggleSort: toggleUsageSort } = useSort<
+    TokenUsageRow & { _idx: number },
+    UsageSortKey
+  >(
+    usageIndexed,
+    (row, key) => {
+      switch (key) {
+        case "rank": return row._idx;
+        case "email": return row.email;
+        case "provider": return row.provider;
+        case "feature": return row.feature;
+        case "calls": return row.call_count;
+        case "tokens": return row.total_input + row.total_output;
+        case "cost": return estimateCostValue(row.provider, row.total_input, row.total_output);
+      }
+    },
+    "rank",
+    { defaultDir: "asc", ascKeys: ["email", "provider", "feature"] }
+  );
+  const usageSortProps = { currentKey: usageSortKey, currentDir: usageSortDir, onToggle: toggleUsageSort, className: "text-[10px] font-semibold uppercase tracking-wide" };
 
   return (
     <div className="flex flex-col flex-1 px-4 py-6">
@@ -160,16 +190,16 @@ export default function AdminDashboard() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-stone-100 dark:border-border-subtle">
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">User</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Provider</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Feature</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Calls</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Tokens</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-semibold text-stone-400 dark:text-text-faint uppercase tracking-wide">Est. $</th>
+                        <SortTh<UsageSortKey> label="User" sortKey="email" {...usageSortProps} />
+                        <SortTh<UsageSortKey> label="Provider" sortKey="provider" {...usageSortProps} />
+                        <SortTh<UsageSortKey> label="Feature" sortKey="feature" {...usageSortProps} />
+                        <SortTh<UsageSortKey> label="Calls" sortKey="calls" align="right" {...usageSortProps} />
+                        <SortTh<UsageSortKey> label="Tokens" sortKey="tokens" align="right" {...usageSortProps} />
+                        <SortTh<UsageSortKey> label="Est. $" sortKey="cost" align="right" {...usageSortProps} />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100/80">
-                      {data.usage.map((row, i) => (
+                      {sortedUsage.map((row, i) => (
                         <tr key={i} className="hover:bg-stone-50 dark:hover:bg-surface-muted">
                           <td className="px-3 py-2 text-stone-700 dark:text-text-muted truncate max-w-[100px]">{row.email}</td>
                           <td className="px-3 py-2">

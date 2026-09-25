@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import BotAvatar from "@/components/paper/BotAvatar";
 import { MonoNumber, SegmentedSwitch, Sparkline, StatTile } from "@/components/refresh";
 import { useCachedJson } from "@/lib/client-cache";
+import { useSort, type SortDir } from "@/hooks/useSort";
 import { dateEyebrow, money, relativeTime, sessionLabel, signedMoney, signedPct, tone } from "./format";
 import RunSessionControl from "./RunSessionControl";
 
@@ -72,48 +73,93 @@ function DeskNotes({ desk }: { desk: LeaderboardPayload["desk"] }) {
   );
 }
 
-function BoardRow({ rank, row, metric, onPress }: {
+const BOARD_TH: React.CSSProperties = {
+  fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-dim)",
+  fontWeight: 500, textAlign: "right", padding: "0 0 8px 14px", whiteSpace: "nowrap",
+};
+
+type BoardSortKey = "name" | "positions" | "equity" | "today" | "total";
+
+/** A `<th>` matching BOARD_TH whose label is a click-to-sort toggle. */
+function BoardSortTh({
+  label, sortKey, currentKey, currentDir, onToggle, align = "right", thStyle,
+}: {
+  label: string;
+  sortKey: BoardSortKey;
+  currentKey: BoardSortKey;
+  currentDir: SortDir;
+  onToggle: (key: BoardSortKey) => void;
+  align?: "left" | "right";
+  thStyle?: React.CSSProperties;
+}) {
+  const active = currentKey === sortKey;
+  const arrow = !active ? "↕" : currentDir === "asc" ? "↑" : "↓";
+  return (
+    <th style={{ ...BOARD_TH, textAlign: align, ...thStyle }}>
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer",
+          background: "none", border: "none", padding: 0, font: "inherit",
+          color: active ? "var(--text-primary)" : "var(--text-dim)",
+          justifyContent: align === "right" ? "flex-end" : "flex-start",
+          width: align === "right" ? "100%" : undefined,
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ fontSize: 8, opacity: active ? 1 : 0.4 }}>{arrow}</span>
+      </button>
+    </th>
+  );
+}
+
+function BoardRow({ rank, row, onPress }: {
   rank: number;
   row: LeaderboardProfile;
-  metric: Metric;
   onPress: () => void;
 }) {
-  const value = metric === "today" ? row.dayPct : row.totalReturnPct;
   const points = row.series.map((p) => p.equity);
   return (
-    <button
-      type="button"
+    <tr
       onClick={onPress}
       className="refresh-pressable"
-      style={{
-        display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
-        padding: "13px 14px 13px 10px", background: "none", color: "inherit",
-        border: "none", borderTop: "1px solid var(--hairline-soft)",
-        borderLeft: `2px solid ${rank === 1 ? row.identity.hue : "transparent"}`,
-      }}
+      style={{ cursor: "pointer", borderTop: "1px solid var(--hairline-soft)" }}
     >
-      <span className="refresh-mono" style={{ ...EYEBROW, width: 20, flex: "none" }}>
-        {String(rank).padStart(2, "0")}
-      </span>
-      <BotAvatar profileId={row.profile.id} size={38} ring="hairline" />
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", color: "var(--text-primary)" }}>
-          {row.profile.name}
+      <td style={{ padding: "10px 0 10px 10px", borderLeft: `2px solid ${rank === 1 ? row.identity.hue : "transparent"}` }}>
+        <span className="refresh-mono" style={{ ...EYEBROW, fontSize: 11 }}>{String(rank).padStart(2, "0")}</span>
+      </td>
+      <td style={{ padding: "10px 0 10px 14px" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <BotAvatar profileId={row.profile.id} size={32} ring="hairline" />
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, lineHeight: "19px", color: "var(--text-primary)" }}>
+              {row.profile.name}
+            </span>
+            <span style={{ display: "block", fontSize: 12, lineHeight: "16px", color: "var(--text-dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {row.identity.role}
+            </span>
+          </span>
         </span>
-        <span style={{ display: "block", fontSize: 12.5, lineHeight: "17px", color: "var(--text-dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {row.identity.role}
-        </span>
-      </span>
-      {points.length >= 2 ? (
-        <span style={{ flex: "none", width: 54, opacity: 0.75 }}><Sparkline points={points} /></span>
-      ) : null}
-      <span style={{ flex: "none", textAlign: "right" }}>
+      </td>
+      <td style={{ padding: "10px 0 10px 14px", textAlign: "right" }}>
+        {points.length >= 2 ? (
+          <span style={{ display: "inline-block", width: 54, opacity: 0.75 }}><Sparkline points={points} /></span>
+        ) : null}
+      </td>
+      <td style={{ padding: "10px 0 10px 14px", textAlign: "right" }}>
+        <MonoNumber value={row.openPositions} size={13} weight={500} countUp={false} />
+      </td>
+      <td style={{ padding: "10px 0 10px 14px", textAlign: "right" }}>
         <MonoNumber value={row.equity} size={14.5} weight={600} format={(n) => money(n)} countUp={false} />
-        <span style={{ display: "block", marginTop: 2 }}>
-          <MonoNumber value={value} size={12.5} weight={600} color={tone(value)} format={(n) => signedPct(n)} countUp={false} />
-        </span>
-      </span>
-    </button>
+      </td>
+      <td style={{ padding: "10px 0 10px 14px", textAlign: "right" }}>
+        <MonoNumber value={row.dayPct} size={13} weight={600} color={tone(row.dayPct)} format={(n) => signedPct(n)} countUp={false} />
+      </td>
+      <td style={{ padding: "10px 14px 10px 14px", textAlign: "right" }}>
+        <MonoNumber value={row.totalReturnPct} size={13} weight={600} color={tone(row.totalReturnPct)} format={(n) => signedPct(n)} countUp={false} />
+      </td>
+    </tr>
   );
 }
 
@@ -132,11 +178,20 @@ export default function PaperLeaderboard({ isAdmin }: { isAdmin: boolean }) {
     return () => window.clearInterval(id);
   }, []);
 
-  const ranked = useMemo(() => {
-    if (!data) return [];
-    const key = metric === "today" ? "dayPct" : "totalReturnPct";
-    return [...data.profiles].sort((a, b) => b[key] - a[key]);
-  }, [data, metric]);
+  const { sorted: ranked, sortKey: boardSortKey, sortDir: boardSortDir, toggleSort: toggleBoardSort } = useSort<LeaderboardProfile, BoardSortKey>(
+    data?.profiles ?? [],
+    (p, key) => {
+      switch (key) {
+        case "name": return p.profile.name;
+        case "positions": return p.openPositions;
+        case "equity": return p.equity;
+        case "today": return p.dayPct;
+        case "total": return p.totalReturnPct;
+      }
+    },
+    "total",
+    { ascKeys: ["name"] }
+  );
 
   const combined = data ? data.profiles.reduce((s, p) => s + (metric === "today" ? p.dayPnl : p.totalPnl), 0) : 0;
   const startMillions = data ? (data.startCash * data.profiles.length) / 1_000_000 : 1;
@@ -216,24 +271,42 @@ export default function PaperLeaderboard({ isAdmin }: { isAdmin: boolean }) {
             <h2 className="refresh-heading" style={{ margin: "4px 0 0" }}>The board</h2>
           </div>
           <span className="refresh-mono" style={{ ...EYEBROW, letterSpacing: "0.1em" }}>
-            {metric === "today" ? "BY TODAY" : "BY TOTAL RETURN"}
+            SORTED BY {boardSortKey.toUpperCase()} {boardSortDir === "asc" ? "↑" : "↓"}
           </span>
         </div>
-        <div className="paper-board" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
-          {!data
-            ? Array.from({ length: 10 }, (_, i) => (
-                <div key={i} className="refresh-skeleton" style={{ height: 64, borderTop: "1px solid var(--hairline-soft)" }} aria-hidden="true" />
-              ))
-            : ranked.map((row, i) => (
-                <BoardRow
-                  key={row.profile.id}
-                  rank={i + 1}
-                  row={row}
-                  metric={metric}
-                  onPress={() => router.push(`/paper/${row.profile.id}`)}
-                />
-              ))}
-        </div>
+        {!data ? (
+          <div className="paper-board" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
+            {Array.from({ length: 10 }, (_, i) => (
+              <div key={i} className="refresh-skeleton" style={{ height: 64, borderTop: "1px solid var(--hairline-soft)" }} aria-hidden="true" />
+            ))}
+          </div>
+        ) : (
+          <div className="paper-scroll" style={{ borderBottom: "1px solid var(--hairline-soft)" }}>
+            <table className="refresh-mono" style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+              <thead>
+                <tr>
+                  <BoardSortTh label="#" sortKey="name" align="left" thStyle={{ paddingLeft: 10 }} currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                  <BoardSortTh label="Bot" sortKey="name" align="left" currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                  <th style={{ ...BOARD_TH, textAlign: "right" }}>Trend</th>
+                  <BoardSortTh label="Positions" sortKey="positions" currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                  <BoardSortTh label="Equity" sortKey="equity" currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                  <BoardSortTh label="Today" sortKey="today" currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                  <BoardSortTh label="Total" sortKey="total" align="right" thStyle={{ paddingRight: 14 }} currentKey={boardSortKey} currentDir={boardSortDir} onToggle={toggleBoardSort} />
+                </tr>
+              </thead>
+              <tbody>
+                {ranked.map((row, i) => (
+                  <BoardRow
+                    key={row.profile.id}
+                    rank={i + 1}
+                    row={row}
+                    onPress={() => router.push(`/paper/${row.profile.id}`)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <DeskNotes desk={data?.desk ?? null} />

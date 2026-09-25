@@ -1,6 +1,7 @@
 "use client";
 
 import { MonoNumber } from "@/components/refresh";
+import { useSort, type SortDir } from "@/hooks/useSort";
 import { clockTime, expiryLabel, money, sessionLabel, signedMoney, signedPct, tone } from "../format";
 
 export interface MarkedPositionView {
@@ -56,14 +57,6 @@ const CARD: React.CSSProperties = {
   background: "var(--surface-1)",
   border: "1px solid var(--hairline)",
   overflow: "hidden",
-};
-
-const ROW: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  padding: "12px 16px",
-  borderTop: "1px solid var(--hairline-soft)",
 };
 
 function Empty({ text }: { text: string }) {
@@ -173,22 +166,74 @@ const TD: React.CSSProperties = {
   borderTop: "1px solid var(--hairline-soft)", whiteSpace: "nowrap",
 };
 
+/** A `<th>` matching the local TH style whose label is a click-to-sort toggle. */
+function SortTh<K extends string>({
+  label, sortKey, currentKey, currentDir, onToggle, align = "right", thStyle,
+}: {
+  label: string;
+  sortKey: K;
+  currentKey: K;
+  currentDir: SortDir;
+  onToggle: (key: K) => void;
+  align?: "left" | "right";
+  thStyle?: React.CSSProperties;
+}) {
+  const active = currentKey === sortKey;
+  const arrow = !active ? "↕" : currentDir === "asc" ? "↑" : "↓";
+  return (
+    <th style={{ ...TH, textAlign: align, ...thStyle }}>
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer",
+          background: "none", border: "none", padding: 0, font: "inherit",
+          color: active ? "var(--text-primary)" : "var(--text-dim)",
+          justifyContent: align === "right" ? "flex-end" : "flex-start",
+          width: align === "right" ? "100%" : undefined,
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ fontSize: 8, opacity: active ? 1 : 0.4 }}>{arrow}</span>
+      </button>
+    </th>
+  );
+}
+
+type PositionSortKey = "position" | "type" | "qty" | "avg" | "mark" | "value" | "pnl";
+
 export function PositionsTable({ positions }: { positions: MarkedPositionView[] }) {
+  const { sorted, sortKey, sortDir, toggleSort } = useSort<MarkedPositionView, PositionSortKey>(
+    positions,
+    (p, key) => {
+      switch (key) {
+        case "position": return positionLabel(p);
+        case "type": return typeLabel(p);
+        case "qty": return Math.abs(p.qty);
+        case "avg": return p.avgPrice;
+        case "mark": return p.mark;
+        case "value": return Math.abs(p.value);
+        case "pnl": return p.pnl;
+      }
+    },
+    "value",
+    { ascKeys: ["position", "type"] }
+  );
   if (positions.length === 0) return <div style={CARD}><Empty text="No open positions." /></div>;
-  const sorted = [...positions].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const sortProps = { currentKey: sortKey, currentDir: sortDir, onToggle: toggleSort };
   return (
     <div style={{ ...CARD, padding: "14px 16px 4px" }}>
       <div className="paper-scroll">
         <table className="refresh-mono" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
           <thead>
             <tr>
-              <th style={{ ...TH, textAlign: "left", paddingLeft: 0 }}>Position</th>
-              <th style={{ ...TH, textAlign: "left" }}>Type</th>
-              <th style={TH}>Qty</th>
-              <th style={TH}>Avg</th>
-              <th style={TH}>Mark</th>
-              <th style={TH}>Market value</th>
-              <th style={TH}>Unrealized</th>
+              <SortTh<PositionSortKey> label="Position" sortKey="position" align="left" thStyle={{ paddingLeft: 0 }} {...sortProps} />
+              <SortTh<PositionSortKey> label="Type" sortKey="type" align="left" {...sortProps} />
+              <SortTh<PositionSortKey> label="Qty" sortKey="qty" {...sortProps} />
+              <SortTh<PositionSortKey> label="Avg" sortKey="avg" {...sortProps} />
+              <SortTh<PositionSortKey> label="Mark" sortKey="mark" {...sortProps} />
+              <SortTh<PositionSortKey> label="Market value" sortKey="value" {...sortProps} />
+              <SortTh<PositionSortKey> label="Unrealized" sortKey="pnl" {...sortProps} />
             </tr>
           </thead>
           <tbody>
@@ -234,32 +279,58 @@ function tradeLabel(t: TradeView): string {
   }
 }
 
+type TradeSortKey = "time" | "trade" | "reason" | "amount";
+
 export function TradesList({ trades }: { trades: TradeView[] }) {
+  const { sorted, sortKey, sortDir, toggleSort } = useSort<TradeView, TradeSortKey>(
+    trades,
+    (t, key) => {
+      switch (key) {
+        case "time": return t.ts;
+        case "trade": return tradeLabel(t);
+        case "reason": return t.reason;
+        case "amount": return t.amount;
+      }
+    },
+    "time",
+    { ascKeys: ["time", "trade", "reason"] }
+  );
   if (trades.length === 0) return <div style={CARD}><Empty text="No trades on this day." /></div>;
+  const sortProps = { currentKey: sortKey, currentDir: sortDir, onToggle: toggleSort };
   return (
-    <div style={CARD}>
-      {trades.map((t, i) => {
-        const rejected = t.status === "rejected";
-        return (
-          <div key={t.id} style={{ ...ROW, alignItems: "flex-start", borderTop: i === 0 ? "none" : ROW.borderTop }}>
-            <div className="refresh-mono" style={{ flex: "none", width: 62, fontSize: 11, color: "var(--text-dim)", lineHeight: "20px" }}>
-              {clockTime(t.ts)}
-              <div style={{ fontSize: 9, letterSpacing: "0.1em" }}>{sessionLabel(t.session)}</div>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="refresh-mono" style={{ fontSize: 14, fontWeight: 600, lineHeight: "20px", color: rejected ? "var(--down)" : "var(--text-primary)" }}>
-                {tradeLabel(t)}
-              </div>
-              <div style={{ fontSize: 12.5, lineHeight: "17px", color: "var(--text-dim)", marginTop: 2 }}>{t.reason}</div>
-            </div>
-            {!rejected && t.amount !== 0 ? (
-              <span className="refresh-mono" style={{ flex: "none", fontSize: 13, fontWeight: 600, color: tone(t.amount), lineHeight: "20px" }}>
-                {signedMoney(t.amount)}
-              </span>
-            ) : null}
-          </div>
-        );
-      })}
+    <div style={{ ...CARD, padding: "14px 16px 4px" }}>
+      <div className="paper-scroll">
+        <table className="refresh-mono" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+          <thead>
+            <tr>
+              <SortTh<TradeSortKey> label="Time" sortKey="time" align="left" thStyle={{ paddingLeft: 0 }} {...sortProps} />
+              <SortTh<TradeSortKey> label="Trade" sortKey="trade" align="left" {...sortProps} />
+              <SortTh<TradeSortKey> label="Reason" sortKey="reason" align="left" {...sortProps} />
+              <SortTh<TradeSortKey> label="Amount" sortKey="amount" {...sortProps} />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((t) => {
+              const rejected = t.status === "rejected";
+              return (
+                <tr key={t.id}>
+                  <td style={{ ...TD, textAlign: "left", paddingLeft: 0, color: "var(--text-dim)", fontSize: 11 }}>
+                    {clockTime(t.ts)}
+                    <div style={{ fontSize: 9, letterSpacing: "0.1em" }}>{sessionLabel(t.session)}</div>
+                  </td>
+                  <td style={{ ...TD, textAlign: "left", fontWeight: 600, fontSize: 13, color: rejected ? "var(--down)" : "var(--text-primary)" }}>
+                    {tradeLabel(t)}
+                  </td>
+                  <td style={{ ...TD, textAlign: "left", color: "var(--text-dim)", fontSize: 12 }}>{t.reason}</td>
+                  <td style={{ ...TD, color: tone(t.amount), fontWeight: 600 }}>
+                    {!rejected && t.amount !== 0 ? signedMoney(t.amount) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

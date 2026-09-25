@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRefreshEvent } from "@/hooks/useRefreshEvent";
+import { useSort } from "@/hooks/useSort";
+import { SortTh } from "@/components/table/SortTh";
 import Link from "next/link";
 import OfflineGate from "@/components/OfflineGate";
 
@@ -294,7 +296,26 @@ function OptionsView() {
   );
 }
 
+type CspSortKey = "rank" | "symbol" | "dte" | "strike" | "premium" | "aroc";
+
 function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claudeAnalysis: string | null }) {
+  const indexed = useMemo(() => candidates.map((c, i) => ({ ...c, _idx: i })), [candidates]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort<Candidate & { _idx: number }, CspSortKey>(
+    indexed,
+    (c, key) => {
+      switch (key) {
+        case "rank": return c._idx;
+        case "symbol": return c.symbol;
+        case "dte": return c.dte;
+        case "strike": return c.strike;
+        case "premium": return c.premium;
+        case "aroc": return c.aroc;
+      }
+    },
+    "rank",
+    { defaultDir: "asc", ascKeys: ["symbol"] }
+  );
+  const sortProps = { currentKey: sortKey, currentDir: sortDir, onToggle: toggleSort, className: "text-[10px] font-bold uppercase" };
   if (candidates.length === 0) {
     return <EmptyState message="No CSP candidates in this scan." />;
   }
@@ -305,15 +326,15 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Premium</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Return</th>
+                <SortTh<CspSortKey> label="Stock" sortKey="symbol" {...sortProps} />
+                <SortTh<CspSortKey> label="DTE" sortKey="dte" {...sortProps} />
+                <SortTh<CspSortKey> label="Strike" sortKey="strike" align="right" {...sortProps} />
+                <SortTh<CspSortKey> label="Premium" sortKey="premium" align="right" {...sortProps} />
+                <SortTh<CspSortKey> label="Return" sortKey="aroc" align="right" {...sortProps} />
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
-              {candidates.map((c, idx) => (
+              {sorted.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
@@ -365,7 +386,26 @@ function CSPTab({ candidates, claudeAnalysis }: { candidates: Candidate[]; claud
   );
 }
 
+type CallsSortKey = "rank" | "symbol" | "dte" | "strike" | "breakeven" | "ret50";
+
 function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
+  const indexed = useMemo(() => candidates.map((c, i) => ({ ...c, _idx: i })), [candidates]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort<CallCandidate & { _idx: number }, CallsSortKey>(
+    indexed,
+    (c, key) => {
+      switch (key) {
+        case "rank": return c._idx;
+        case "symbol": return c.symbol;
+        case "dte": return c.dte;
+        case "strike": return c.strike;
+        case "breakeven": return c.breakeven;
+        case "ret50": return c.outcome50pct?.returnPct ?? -Infinity;
+      }
+    },
+    "rank",
+    { defaultDir: "asc", ascKeys: ["symbol"] }
+  );
+  const sortProps = { currentKey: sortKey, currentDir: sortDir, onToggle: toggleSort, className: "text-[10px] font-bold uppercase" };
   if (candidates.length === 0) {
     return <EmptyState message="No call candidates in this scan." />;
   }
@@ -376,15 +416,15 @@ function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Breakeven</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">50% Ret</th>
+                <SortTh<CallsSortKey> label="Stock" sortKey="symbol" {...sortProps} />
+                <SortTh<CallsSortKey> label="DTE" sortKey="dte" {...sortProps} />
+                <SortTh<CallsSortKey> label="Strike" sortKey="strike" align="right" {...sortProps} />
+                <SortTh<CallsSortKey> label="Breakeven" sortKey="breakeven" align="right" {...sortProps} />
+                <SortTh<CallsSortKey> label="50% Ret" sortKey="ret50" align="right" {...sortProps} />
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
-              {candidates.map((c, idx) => (
+              {sorted.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
@@ -429,7 +469,26 @@ function CallsTab({ candidates }: { candidates: CallCandidate[] }) {
   );
 }
 
+type LeapsSortKey = "rank" | "symbol" | "dte" | "strike" | "confidence" | "breakeven";
+
 function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
+  const indexed = useMemo(() => candidates.map((c, i) => ({ ...c, _idx: i })), [candidates]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort<CallCandidate & { _idx: number }, LeapsSortKey>(
+    indexed,
+    (c, key) => {
+      switch (key) {
+        case "rank": return c._idx;
+        case "symbol": return c.symbol;
+        case "dte": return c.dte;
+        case "strike": return c.strike;
+        case "confidence": return c.score ?? -Infinity;
+        case "breakeven": return c.breakeven;
+      }
+    },
+    "rank",
+    { defaultDir: "asc", ascKeys: ["symbol"] }
+  );
+  const sortProps = { currentKey: sortKey, currentDir: sortDir, onToggle: toggleSort, className: "text-[10px] font-bold uppercase" };
   if (candidates.length === 0) {
     return <EmptyState message="No LEAPS candidates in this scan." />;
   }
@@ -440,15 +499,15 @@ function LeapsTab({ candidates }: { candidates: CallCandidate[] }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-stone-50 dark:bg-surface border-b border-stone-100 dark:border-border-subtle">
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">Stock</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase">DTE</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Strike</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Confidence</th>
-                <th className="px-3 py-2.5 text-[10px] font-bold text-stone-500 dark:text-text-subtle uppercase text-right">Breakeven</th>
+                <SortTh<LeapsSortKey> label="Stock" sortKey="symbol" {...sortProps} />
+                <SortTh<LeapsSortKey> label="DTE" sortKey="dte" {...sortProps} />
+                <SortTh<LeapsSortKey> label="Strike" sortKey="strike" align="right" {...sortProps} />
+                <SortTh<LeapsSortKey> label="Confidence" sortKey="confidence" align="right" {...sortProps} />
+                <SortTh<LeapsSortKey> label="Breakeven" sortKey="breakeven" align="right" {...sortProps} />
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-border-subtle">
-              {candidates.map((c, idx) => (
+              {sorted.map((c, idx) => (
                 <tr key={`${c.symbol}-${idx}`} className="group hover:bg-stone-50/50 dark:hover:bg-surface-muted/50 transition-colors">
                   <td className="px-3 py-3">
                     <Link href={`/ticker/${c.symbol}`} className="block">
