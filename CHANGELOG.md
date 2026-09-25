@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.47.0 — Paper Lab bots get a full-history Portfolio tab
+
+- **Each bot's page now has a Portfolio tab** alongside Soul/Positions/Trades/Journal — the latter four are all scoped to whatever single day is selected via the date chips, which meant a bot with no trades on the currently-selected day (margin-bull, reported) looked completely empty even with weeks of real history
+- **Realized P&L, closed positions, win rate, and total trade count** — all-time summary stats at the top of the new tab
+- **Closed Positions table** (new, sortable): every position the bot has ever closed, with entry price, exit price, open/close dates, realized $, and return % per trade
+- **Full trade history** (reuses the sortable Trades table): every buy/sell the bot has ever made, at its own price and date — not scoped to one day. For a DCA-style bot this is exactly "what price did each buy happen at": every leg is its own row
+- New backend: `getAllTradesFor`/`getAllPositionsFor` (no date filter) in `src/lib/db/paper.ts`, and `GET /api/paper/[profileId]/portfolio`, fetched only when the tab is opened
+- Verified against margin-bull's real data: 24 trades (Sep 9–24), 4 closed positions (–$5,570 realized), 5 open — all now visible, none of it required inventing new cost-basis math since positions already carry a `realizedPnl` booked at close
+
 ## v0.46.0 — Tables are sortable, click any column header
 
 - **Paper Trading Lab**: a bot's Positions table is now click-to-sort on every column (was hard-sorted by position size). Trades — previously a plain description-row list, one day at a time — is now a real sortable table (Time / Trade / Reason / Amount). The Paper home leaderboard's board is now a sortable table (Bot / Trend / Positions / Equity / Today / Total) instead of card rows ranked only by the Today/Total toggle

@@ -22,6 +22,7 @@ import {
   type TabDef,
   type TradeView,
 } from "./ProfileSections";
+import PortfolioTab from "./PortfolioTab";
 
 interface ProfilePayload {
   profile: { id: string; name: string; tagline: string; style: string[]; plan: string[]; margin: boolean };
@@ -43,7 +44,7 @@ interface ProfilePayload {
 
 const START = 100_000;
 const MARGIN = 200_000;
-type TabKey = "soul" | "positions" | "trades" | "journal";
+type TabKey = "soul" | "positions" | "trades" | "portfolio" | "journal";
 
 export default function ProfileScreen({ profileId }: { profileId: string }) {
   const [date, setDate] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export default function ProfileScreen({ profileId }: { profileId: string }) {
     { key: "soul", label: "Soul", count: data.memories.length },
     { key: "positions", label: "Positions", count: data.positions.length },
     { key: "trades", label: "Trades", count: data.trades.length },
+    { key: "portfolio", label: "Portfolio" },
     { key: "journal", label: "Journal", count: data.note ? 1 : 0 },
   ];
 
@@ -151,6 +153,7 @@ export default function ProfileScreen({ profileId }: { profileId: string }) {
           {tab === "soul" ? <SoulList memories={data.memories} /> : null}
           {tab === "positions" ? <PositionsTable positions={data.positions} /> : null}
           {tab === "trades" ? <TradesList trades={data.trades} /> : null}
+          {tab === "portfolio" ? <PortfolioTab profileId={profile.id} /> : null}
           {tab === "journal" ? <JournalBlock note={data.note} /> : null}
         </div>
       </section>

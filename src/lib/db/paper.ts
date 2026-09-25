@@ -224,6 +224,14 @@ export async function getOpenPositions(): Promise<Position[]> {
   return ((data ?? []) as PositionRow[]).map(toPosition);
 }
 
+/** Every position a profile has ever held, open or closed — the full-portfolio view. */
+export async function getAllPositionsFor(profileId: string): Promise<Position[]> {
+  const { data, error } = await supabaseAdmin
+    .from("paper_positions").select("*").eq("profile_id", profileId).order("opened_at", { ascending: false });
+  fail("getAllPositionsFor", error);
+  return ((data ?? []) as PositionRow[]).map(toPosition);
+}
+
 export async function upsertPositions(positions: Position[]): Promise<void> {
   if (positions.length === 0) return;
   const rows = positions.map((p) => ({
@@ -250,6 +258,14 @@ export async function getTradesFor(profileId: string, date: string): Promise<Tra
   const { data, error } = await supabaseAdmin
     .from("paper_trades").select("*").eq("profile_id", profileId).eq("trade_date", date).order("ts", { ascending: true });
   fail("getTradesFor", error);
+  return (data ?? []) as TradeRow[];
+}
+
+/** Every trade a profile has ever made, oldest first — the full-portfolio view. */
+export async function getAllTradesFor(profileId: string): Promise<TradeRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from("paper_trades").select("*").eq("profile_id", profileId).order("ts", { ascending: true });
+  fail("getAllTradesFor", error);
   return (data ?? []) as TradeRow[];
 }
 

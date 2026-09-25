@@ -365,7 +365,7 @@ export function JournalBlock({ note }: { note: NoteView | null }) {
 export interface TabDef {
   key: string;
   label: string;
-  count: number;
+  count?: number;
 }
 
 export function TabBar({ tabs, active, onChange }: {
@@ -394,16 +394,18 @@ export function TabBar({ tabs, active, onChange }: {
             }}
           >
             {t.label}
-            <span
-              className="refresh-mono"
-              style={{
-                fontSize: 10.5, padding: "1px 6px", borderRadius: 6,
-                background: on ? "var(--accent-bg)" : "var(--inset)",
-                color: on ? "var(--accent)" : "var(--text-dim)",
-              }}
-            >
-              {t.count}
-            </span>
+            {t.count !== undefined ? (
+              <span
+                className="refresh-mono"
+                style={{
+                  fontSize: 10.5, padding: "1px 6px", borderRadius: 6,
+                  background: on ? "var(--accent-bg)" : "var(--inset)",
+                  color: on ? "var(--accent)" : "var(--text-dim)",
+                }}
+              >
+                {t.count}
+              </span>
+            ) : null}
           </button>
         );
       })}
