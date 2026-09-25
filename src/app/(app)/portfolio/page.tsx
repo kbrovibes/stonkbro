@@ -294,6 +294,7 @@ function chainCollateral(chain: OptionChain): number | null {
 
 function openRowModel(chain: OptionChain, i: number): ChainRowModel {
   const leg = findOpenLeg(chain);
+  const dte = leg ? daysBetween(new Date().toISOString().split("T")[0], leg.expiry) : null;
   const badges: RowBadge[] = [{ label: structureBadge(chain), tone: "info" }];
   if (chain.institution) badges.push({ label: chain.institution.toUpperCase(), tone: "fact" });
   if (chain.splitFrom || chain.splitInto.length > 0) badges.push({ label: "SPLIT", tone: "fact" });
@@ -303,7 +304,7 @@ function openRowModel(chain: OptionChain, i: number): ChainRowModel {
     ticker: openContractLabel(chain, leg),
     badges,
     caption: [
-      leg ? `exp ${fmtDate(leg.expiry)}` : null,
+      dte !== null ? `${dte} DTE` : null,
       units > 0 ? `${units} contract${units !== 1 ? "s" : ""}` : null,
       chain.roll_count > 0 ? `${chain.roll_count} roll${chain.roll_count !== 1 ? "s" : ""}` : null,
       splitNote(chain),
@@ -636,7 +637,17 @@ function PnlChart({
   );
 }
 
-function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstitutionClick?: (inst: string) => void }) {
+function ChainCard({
+  chain,
+  onInstitutionClick,
+  isOpenTab = false,
+}: {
+  chain: OptionChain;
+  onInstitutionClick?: (inst: string) => void;
+  /** True on the Open tab, where every card is already OPEN/short-or-long is
+   * clutter and the live strike/DTE is worth the head-row space instead. */
+  isOpenTab?: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [liveQuote, setLiveQuote] = useState<{ bid: number; mid: number; ask: number } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -656,6 +667,7 @@ function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstit
     : null;
 
   const openLeg = findOpenLeg(chain);
+  const openDte = openLeg ? daysBetween(new Date().toISOString().split("T")[0], openLeg.expiry) : null;
   // Capital locked only applies to short PUTs (calls/longs don't lock collateral)
   const isPut = chain.option_type.toUpperCase() === "PUT";
   const capitalLocked = isPut && isShortChain && isOpenWithUnits && openLeg
@@ -705,12 +717,21 @@ function ChainCard({ chain, onInstitutionClick }: { chain: OptionChain; onInstit
             <span className="font-bold text-stone-900 dark:text-text text-sm">
               {chain.underlying} {chain.option_type}
             </span>
-            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chain.direction === "SELL" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"}`}>
-              {chain.direction === "SELL" ? "SHORT" : "LONG"}
-            </span>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[chain.status] ?? "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"}`}>
-              {chain.status}
-            </span>
+            {isOpenTab && openLeg && (
+              <span className="text-xs font-semibold text-stone-500 dark:text-text-subtle whitespace-nowrap">
+                ${privateCount(locked, openLeg.strike)}{openDte !== null ? ` · ${openDte} DTE` : ""}
+              </span>
+            )}
+            {!isOpenTab && (
+              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chain.direction === "SELL" ? "bg-emerald-50 dark:bg-gain-bg text-emerald-700 dark:text-gain-strong" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"}`}>
+                {chain.direction === "SELL" ? "SHORT" : "LONG"}
+              </span>
+            )}
+            {!isOpenTab && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_BADGE[chain.status] ?? "bg-stone-100 dark:bg-surface-muted text-stone-500 dark:text-text-subtle"}`}>
+                {chain.status}
+              </span>
+            )}
             {chain.roll_count > 0 && (
               <span className="text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded font-medium">
                 {chain.roll_count} roll{chain.roll_count !== 1 ? "s" : ""}
@@ -1543,6 +1564,7 @@ export default function PortfolioPage() {
             <ChainCard
               key={i}
               chain={c}
+              isOpenTab={filter === "Open"}
               onInstitutionClick={filter === "Open" ? (inst) => setInstFilter(prev => prev === inst ? null : inst) : undefined}
             />
           ))

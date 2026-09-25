@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.45.1 — Open Contracts cards show strike/DTE without expanding
+
+- **Strike and days-to-expiry are now in the card head, not just the expanded detail**: the Open tab's collapsed card previously showed only the underlying, ticker type, and a date range — strike and expiry lived inside the tap-to-expand leg table. The head now shows the live (post-roll) strike and DTE directly, e.g. `NBIS CALL · $280 · 24 DTE`
+- **Dropped the `OPEN` status badge and `SHORT`/`LONG` badge on the Open tab**: both are redundant there (everything on that tab is open by definition, and the badge just repeated what SELL/BUY-first already implies) — freed up head-row space for the strike/DTE instead. Closed and Assigned tabs are unchanged, since status there does vary row to row
+- Applied the same DTE-over-raw-expiry change to the refresh-theme row caption for consistency, since v0.44.1 already fixed that theme's ticker to show the live strike
+
 ## v0.45.0 — Every bottom-nav destination gets a real glyph
 
 - **Settings → Bottom nav's picker fell back to an emoji for anything beyond the original 4 defaults**: LEAPS Lab and every other page you could newly assign to a middle slot rendered its `/more` emoji instead of a proper icon, since only Options/Paper/Portfolio/Learn had one. Added `src/components/nav-icons.tsx` — a single `NAV_ICONS` map with a dedicated stroke-icon glyph for all 23 nav-eligible destinations, keyed by href. `BottomNav.tsx` now reads from it (and warns in dev console if a destination is ever picked without a matching glyph), so a newly added page that skips registering one doesn't silently ship emoji-only
