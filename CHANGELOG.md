@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.45.0 — Every bottom-nav destination gets a real glyph
+
+- **Settings → Bottom nav's picker fell back to an emoji for anything beyond the original 4 defaults**: LEAPS Lab and every other page you could newly assign to a middle slot rendered its `/more` emoji instead of a proper icon, since only Options/Paper/Portfolio/Learn had one. Added `src/components/nav-icons.tsx` — a single `NAV_ICONS` map with a dedicated stroke-icon glyph for all 23 nav-eligible destinations, keyed by href. `BottomNav.tsx` now reads from it (and warns in dev console if a destination is ever picked without a matching glyph), so a newly added page that skips registering one doesn't silently ship emoji-only
+
 ## v0.44.1 — Open contracts showed the wrong strike after a roll
 
 - **Portfolio's Open tab showed a rolled position's original strike, not its current one**: an option chain that's been rolled (bought-to-close, sold-to-open a new strike/expiry) is tracked as one continuous lineage, but the row's ticker label always read the strike off the very first leg ever opened — for a position rolled ~10 times since June, that meant a "NBIS 350C" label next to a caption showing the correct (much later) current expiry. Verified against SnapTrade's live `listOptionHoldings` directly that the underlying data (both the cached scan and the roll-chain derivation) was already correct — this was a display-only bug in `contractLabel`. Open rows now use the chain's actual currently-live leg (`openContractLabel`); closed/assigned/LEAPS rows are unaffected, since those don't roll or intentionally label by the trade's original contract
