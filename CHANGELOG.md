@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.44.1 — Open contracts showed the wrong strike after a roll
+
+- **Portfolio's Open tab showed a rolled position's original strike, not its current one**: an option chain that's been rolled (bought-to-close, sold-to-open a new strike/expiry) is tracked as one continuous lineage, but the row's ticker label always read the strike off the very first leg ever opened — for a position rolled ~10 times since June, that meant a "NBIS 350C" label next to a caption showing the correct (much later) current expiry. Verified against SnapTrade's live `listOptionHoldings` directly that the underlying data (both the cached scan and the roll-chain derivation) was already correct — this was a display-only bug in `contractLabel`. Open rows now use the chain's actual currently-live leg (`openContractLabel`); closed/assigned/LEAPS rows are unaffected, since those don't roll or intentionally label by the trade's original contract
+
 ## v0.44.0 — Customizable bottom nav, and three small fixes
 
 - **Pick your own bottom nav**: Settings → Bottom nav lets you choose what fills the 4 middle slots (Home and More stay fixed) from the app's full page list — e.g. drop Learn, add LEAPS Lab. Synced to your account (`user_settings.bottom_nav_tabs`), so it follows you across devices. Anyone who never customizes sees the exact same icons/order as before — the 4 known defaults keep their original hand-drawn icons, and only a newly-picked destination renders as an emoji (the same visual language the More menu already uses for it)

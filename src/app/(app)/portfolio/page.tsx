@@ -185,6 +185,20 @@ function contractLabel(chain: OptionChain): string {
 }
 
 /**
+ * `<TICKER> <STRIKE>P × <QTY>` for a chain that's still open — using the
+ * strike currently live (post-roll) instead of `contractLabel`'s original
+ * opening strike, which for a rolled chain is a contract that's long since
+ * closed.
+ */
+function openContractLabel(chain: OptionChain, openLeg: { strike: number } | null): string {
+  const suffix = chain.option_type.toUpperCase() === "PUT" ? "P" : "C";
+  const strike = openLeg?.strike ?? firstContractLeg(chain)?.strike;
+  if (strike == null) return chain.underlying;
+  const units = Math.abs(chain.open_units);
+  return `${chain.underlying} ${strike}${suffix}${units > 1 ? ` × ${units}` : ""}`;
+}
+
+/**
  * Every month the account has either realized premium in or locked collateral
  * during, newest first, with the trailing 8-month premium window each card's
  * bar series needs.
@@ -286,7 +300,7 @@ function openRowModel(chain: OptionChain, i: number): ChainRowModel {
   const units = Math.abs(chain.open_units);
   return {
     key: `open-${chain.underlying}-${i}`,
-    ticker: contractLabel(chain),
+    ticker: openContractLabel(chain, leg),
     badges,
     caption: [
       leg ? `exp ${fmtDate(leg.expiry)}` : null,
