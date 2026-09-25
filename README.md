@@ -301,6 +301,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.46.0** | Tables are sortable app-wide — Paper Trading Lab (positions, trades, leaderboard rebuilt into real tables), Options page, Admin dashboard, Hindsight realized-gains breakdowns |
 | **v0.44.0** | Customizable bottom nav (pick your 4 middle tabs); briefing prev/next order fix; smaller More page tiles |
 | **v0.43.2** | Root cause of briefing TTS failures: unescaped `&` in transcripts (e.g. "S&P 500") breaking msedge-tts's SSML |
 | **v0.43.1** | Portfolio access approval no longer half-fails silently when SnapTrade registration errors |
