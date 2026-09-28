@@ -4,6 +4,7 @@
  * chain call per (symbol, expiry). Tradier allows ~120 requests a minute, so
  * history and chain fetches go 5 at a time with a pause between batches.
  */
+import { getEarningsCalendar } from "@/lib/market/earnings";
 import { getHistory, type DailyBar } from "@/lib/market/history";
 import { tradierGetExpirations, tradierGetOptionsChain } from "@/lib/market/tradier";
 import type { OptionContract, QuoteData } from "@/lib/market/types";
@@ -23,6 +24,8 @@ export interface MarketData {
   errors: string[];
   /** Set by the backfill harness: chains are modelled, never fetched. */
   synthetic?: SyntheticConfig;
+  /** Live earnings calendar by symbol. Absent in backfill, where the pattern table stands in. */
+  earnings?: Map<string, { earningsDate: string; timing: string }>;
 }
 
 export interface HeldContract {
@@ -63,6 +66,15 @@ export async function loadQuotes(data: MarketData, symbols: string[]): Promise<v
     for (const q of await getQuotes(missing)) if (q.price > 0) data.quotes.set(q.symbol, q);
   } catch (e) {
     data.errors.push(`quotes: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+export async function loadEarnings(data: MarketData, symbols: string[]): Promise<void> {
+  try {
+    const events = await getEarningsCalendar([...new Set(symbols)]);
+    data.earnings = new Map(events.map((e) => [e.symbol, { earningsDate: e.earningsDate, timing: e.timing }]));
+  } catch (e) {
+    data.errors.push(`earnings: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 

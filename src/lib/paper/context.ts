@@ -1,7 +1,8 @@
 import type { DailyBar } from "@/lib/market/history";
 import type { OptionContract } from "@/lib/market/types";
 import { buyingPower, contractDelta, equityOf, isOpen, type BrokerState } from "./broker";
-import { dteOn } from "./dates";
+import { earningsDateSync } from "@/lib/market/earnings";
+import { daysBetween, dteOn } from "./dates";
 import { returnPct as retPct, rsi14 as rsi, sma as smaOf } from "./indicators";
 import { findContract, type MarketData } from "./market";
 import { bsDelta } from "./pricing";
@@ -98,5 +99,12 @@ export function buildContext(a: ContextArgs): StrategyContext {
     deltaOf: (p) => positionDelta(p, data),
     chain: (symbol) => data.chains.get(symbol) ?? [],
     dte: (expiry) => dteOn(expiry, a.date),
+    earnings: (symbol) => {
+      if (!data.earnings) return earningsDateSync(symbol, a.date);
+      const ev = data.earnings.get(symbol);
+      if (!ev) return null;
+      const daysUntil = daysBetween(a.date, ev.earningsDate);
+      return daysUntil < 0 ? null : { ...ev, daysUntil };
+    },
   };
 }

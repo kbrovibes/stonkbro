@@ -10,7 +10,7 @@ import * as db from "@/lib/db/paper";
 import type { BrokerState } from "./broker";
 import { etToday, isWeekend, monthStart, weekStart } from "./dates";
 import { buildSnapshot, runProfile } from "./engine";
-import { loadHistories, loadQuotes, newMarketData } from "./market";
+import { loadEarnings, loadHistories, loadQuotes, newMarketData } from "./market";
 import { buildMemories } from "./memory";
 import { addNarratives, buildDeskNote, buildProfileNote } from "./notes";
 import { PROFILES, allQuoteSymbols } from "./profiles";
@@ -41,7 +41,8 @@ export interface RunSummary {
   errors: string[];
 }
 
-const INDICATOR_PROFILES = ["sector-rotator", "megacap-momentum", "margin-bull", "dip-buyer"];
+const EARNINGS_PROFILES = ["earnings-swing"];
+const INDICATOR_PROFILES = ["sector-rotator", "megacap-momentum", "margin-bull", "dip-buyer", "leaps-trader", "earnings-swing"];
 
 function firstSessionFlags(runs: db.RunRow[], date: string, session: Session): { week: boolean; month: boolean } {
   const earlierToday = runs.some((r) => r.run_date === date && SESSION_ORDER[r.session] < SESSION_ORDER[session]);
@@ -135,6 +136,7 @@ export async function runPaperSession(opts: RunOptions): Promise<RunSummary> {
     const data = newMarketData(date);
     const held = openPositions.map((p) => p.symbol);
     await loadQuotes(data, [...allQuoteSymbols(), ...held]);
+    await loadEarnings(data, PROFILES.filter((p) => EARNINGS_PROFILES.includes(p.id)).flatMap((p) => p.universe));
     await progress("Fetching history");
     const indicatorSymbols = PROFILES.filter((p) => INDICATOR_PROFILES.includes(p.id)).flatMap((p) => p.universe);
     await loadHistories(data, [...new Set([...indicatorSymbols, ...held])]);

@@ -298,6 +298,29 @@ function categorize(
 }
 
 // ---------------------------------------------------------------------------
+// Sync lookup — for callers (like the Paper Trading Lab's engine) that can't
+// await a network call mid-decision. Same reporting-pattern table as the mock
+// fallback above, no I/O.
+// ---------------------------------------------------------------------------
+
+export type EarningsDateSync = {
+  earningsDate: string;
+  daysUntil: number;
+  timing: "before_market" | "after_market" | "unknown";
+};
+
+/** The next upcoming earnings date for `symbol` as of `asOfDate` (`YYYY-MM-DD`), pure and synchronous. */
+export function earningsDateSync(symbol: string, asOfDate: string): EarningsDateSync | null {
+  const [y, m, d] = asOfDate.split("-").map(Number);
+  const now = new Date(y, (m ?? 1) - 1, d ?? 1);
+  const result = mockEarningsDate(symbol, now);
+  if (!result) return null;
+  const eventDate = new Date(result.earningsDate);
+  const daysUntil = Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return { earningsDate: result.earningsDate, daysUntil, timing: result.timing };
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.48.0 — Two new Paper Lab bots: Updraft (LEAPS + calls) and Afterburner (earnings plays)
+
+- **Updraft** (`leaps-trader`) — long calls only, never sells premium. A core book of up to 4 LEAPS (~0.75Δ, 12–18 months, ≤$12K each) plus up to 4 swing calls (~0.55Δ, 30–60 DTE) on names breaking out (20-day return over 8%, above the 50-day). LEAPS close under 0.55Δ; swing calls close at +60%, −40% or 10 DTE
+- **Afterburner** (`earnings-swing`) — one big options bet on every report in the next 5 days. Trend picks the structure: long call (uptrend), long put (downtrend), or long strangle (no clear side). Targets the first expiry 1–10 days after the print, ~8% of equity per leg (≤$15K), holds through the report and closes 2 trading days later or at +75% / −50%
+- **Every Afterburner entry spells out its thesis in the trade reason**: report date and timing, trend read (20-day return, distance from the 50-day), the move the ATM straddle is pricing through that expiry, strike delta, breakeven vs spot, and dollars at risk as % of equity. The Trades tab, Journal and narrative all pick this up
+- **Live earnings dates**: the cron now loads the earnings calendar (Alpha Vantage, falling back to the pattern table) into the run's market data, exposed to strategies as `ctx.earnings(symbol)`. Backfills use the synchronous pattern table (`earningsDateSync`) since they can't fetch mid-simulation
+- Both bots load price history for their trend reads (`INDICATOR_PROFILES`)
+
 ## v0.47.0 — Paper Lab bots get a full-history Portfolio tab
 
 - **Each bot's page now has a Portfolio tab** alongside Soul/Positions/Trades/Journal — the latter four are all scoped to whatever single day is selected via the date chips, which meant a bot with no trades on the currently-selected day (margin-bull, reported) looked completely empty even with weeks of real history

@@ -118,7 +118,7 @@ export function buildDeskNote(notes: ProfileNote[], profiles: Profile[], date: s
   };
 }
 
-const SYSTEM = `You write end-of-day notes for a paper-trading desk of ten rule-based bots. Each bot follows a fixed written plan; you never invent trades or numbers — use only the facts given. Plain, specific, a little dry. No emojis, no headers, no bullet points. Return ONLY JSON.`;
+const SYSTEM = `You write end-of-day notes for a paper-trading desk of rule-based bots. Each bot follows a fixed written plan; you never invent trades or numbers — use only the facts given. Plain, specific, a little dry. No emojis, no headers, no bullet points. Return ONLY JSON.`;
 
 function extractJson(text: string): unknown {
   const start = text.indexOf("{");

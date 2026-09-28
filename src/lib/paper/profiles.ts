@@ -11,6 +11,8 @@ export const MEGACAPS = [
 export const GROWTH_BASKET = ["NVDA", "TSLA", "PLTR", "AMD", "RKLB", "HOOD", "COIN", "ASTS"];
 export const DIP_UNIVERSE = DEFAULT_UNIVERSE.filter((s) => !ETFS.includes(s));
 export const PMCC_UNIVERSE = [...new Set(SECTORS.flatMap((s) => s.tickers))];
+export const CALL_UNIVERSE = [...new Set([...MEGACAPS, ...GROWTH_BASKET])];
+export const EARNINGS_UNIVERSE = [...new Set([...MEGACAPS, ...GROWTH_BASKET, "MU", "CRWD", "SMCI", "DIS"])];
 
 export const PROFILES: Profile[] = [
   {
@@ -171,6 +173,49 @@ export const PROFILES: Profile[] = [
     universe: GROWTH_BASKET,
     params: { dipPct: -3, addPct: 25, takePct: 10, equityFloor: 85000, maxBorrowPct: 50 },
     margin: true,
+  },
+  {
+    id: "leaps-trader",
+    name: "Updraft",
+    tagline: "All calls, no premium selling — LEAPS for the core, swing calls for breakouts",
+    style: ["options", "no-margin", "growth"],
+    plan: [
+      "Universe: mega-caps plus the growth basket, $20–$400.",
+      "Core: up to 4 LEAPS calls, ~0.75Δ, 12–18 months out, one per name, at most $12,000 each.",
+      "Swing: up to 4 shorter calls, ~0.55Δ, 30–60 DTE, on names with a fresh breakout — 20-day return over 8% and above the 50-day SMA.",
+      "Close a LEAPS when its delta falls under 0.55.",
+      "Close a swing call at +60% profit, −40% loss, or 10 DTE — whichever comes first.",
+      "Never writes an option against anything it holds — long calls only.",
+    ],
+    universe: CALL_UNIVERSE,
+    params: {
+      coreNames: 4, swingNames: 4, minPrice: 20, maxPrice: 400,
+      leapsDelta: 0.75, leapsMinDte: 365, leapsMaxDte: 550, maxLeapsUsd: 12000,
+      swingDelta: 0.55, swingMinDte: 30, swingMaxDte: 60, maxSwingUsd: 6000,
+      breakoutReturnPct: 8, takePct: 60, stopPct: -40, swingMinDteExit: 10,
+    },
+    margin: false,
+  },
+  {
+    id: "earnings-swing",
+    name: "Afterburner",
+    tagline: "One big options bet on every earnings report inside the next week",
+    style: ["options", "no-margin", "momentum"],
+    plan: [
+      "Universe: the mega-caps, growth names and chipmakers most likely to move hard on earnings.",
+      "Each session, find names reporting within the next 5 trading days that aren't already in a play.",
+      "Trend sets the bet: above the 50-day SMA with a 20-day return over 5% buys calls; the mirror image buys puts; anything in between buys a strangle — a call and a put together.",
+      "Target the first expiry after the report, 1–10 days past it.",
+      "Size each side at 8% of equity, capped at $15,000 a leg.",
+      "Hold through the report. Close 2 trading days after, or sooner at +75% profit or −50% loss.",
+      "One play per name per earnings date — no averaging in.",
+    ],
+    universe: EARNINGS_UNIVERSE,
+    params: {
+      lookaheadDays: 5, sizePct: 8, maxSizeUsd: 15000, holdDaysAfter: 2,
+      takePct: 75, stopPct: -50, trendReturnPct: 5, minDteAfter: 1, maxDteAfter: 10,
+    },
+    margin: false,
   },
 ];
 

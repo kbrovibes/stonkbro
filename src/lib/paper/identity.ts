@@ -102,6 +102,18 @@ export const IDENTITY: Record<string, BotIdentity> = {
     hue: "#E0604F",
     face: { bg: "#33191A", shirt: "#8C3327", skin: "#5E3A24", hair: "#141110", hairStyle: "spike", accessory: "none", beard: false },
   },
+  "leaps-trader": {
+    role: "LEAPS and calls",
+    creed: "Options are just leverage with an expiry. I only ever buy — never sell what I can't replace.",
+    hue: "#6FC28C",
+    face: { bg: "#173023", shirt: "#2F6E4B", skin: "#E3B58C", hair: "#241C16", hairStyle: "wave", accessory: "none", beard: false },
+  },
+  "earnings-swing": {
+    role: "Earnings plays",
+    creed: "The print moves more than the quarter did. Size it like you mean it, then let it go.",
+    hue: "#E85D75",
+    face: { bg: "#331821", shirt: "#8C3752", skin: "#C08350", hair: "#171412", hairStyle: "spike", accessory: "visor", beard: false },
+  },
 };
 
 export function identityFor(profileId: string): BotIdentity {

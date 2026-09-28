@@ -175,6 +175,8 @@ export interface StrategyContext {
   /** Every loaded contract for a symbol (empty when no chain was fetched). */
   chain(symbol: string): OptionContract[];
   dte(expiry: string): number;
+  /** Next earnings report on or after today, when one is known. */
+  earnings(symbol: string): { earningsDate: string; daysUntil: number; timing: string } | null;
 }
 
 export interface Strategy {
