@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.49.0 — Earnings Play: four priced option trades for every report this week
+
+- **New `/earnings-play` page** (More → Discover): every report this week and next across 113 liquid names, grouped by day, plus an "analyze any ticker" box. On a weekend "this week" means the week about to start
+- **Per-ticker page `/earnings-play/[symbol]`** prices four structures off the live Tradier chain for the first expiry after the report, chosen by the setup's lean — bullish: long call, bull call spread, bull put credit spread, plus a strangle (or iron condor when premium is rich); bearish mirrors it; neutral: straddle, strangle, condor and a lean spread — and ranks them by average P&L across a 5–10% move (weighted toward the lean) per dollar at risk
+- **Every strategy shows**: the exact contracts (strike, expiry, bid/ask, assumed fill, IV, Δ, OI), cost or credit, P&L if the stock rises or falls 5–10%, max gain/loss held to expiry, a P&L curve with the 5–10% zones shaded, a −10…+10% scenario table with return on risk, breakevens at exit, and written why / how it wins / how it loses / exit plan / watch-outs (wide markets, thin OI, early assignment)
+- **Exit-day pricing model** (`src/lib/options/earnings-model.ts`, pure): each leg repriced with Black–Scholes at midday on the first session after the report. IV crush is estimated by splitting the front expiry's IV into base vol plus a one-day event jump, using the next expiry as the second equation (falls back to realized vol ex-earnings days). Fills assume 10% of the spread off mid each way plus $0.65/contract
+- **Setup read**: trend/momentum/MACD/RSI/news combine into a −1…+1 lean with each driver's weight shown; the market-implied move (ATM straddle) is compared with the stock's actual reaction to its last four reports — real report dates and EPS surprises from Nasdaq's earnings-surprise feed (`src/lib/market/earnings-history.ts`), falling back to a labeled estimate; recent headlines; a 3-month chart with the priced move and ±5/±10% marks; and an AI-written thesis (read / watch / risks) for signed-in users
+- Report timing (before open / after close) now falls back to the known reporting-pattern table (`knownTiming`) when the calendar feed doesn't say; unknown timing enters the session before and exits the session after
+- Analysis cached 15 min per ticker per day, thesis 1 h, weekly list 30 min
+- Paper Trading nav blurb now says 12 bots
+
 ## v0.48.0 — Two new Paper Lab bots: Updraft (LEAPS + calls) and Afterburner (earnings plays)
 
 - **Updraft** (`leaps-trader`) — long calls only, never sells premium. A core book of up to 4 LEAPS (~0.75Δ, 12–18 months, ≤$12K each) plus up to 4 swing calls (~0.55Δ, 30–60 DTE) on names breaking out (20-day return over 8%, above the 50-day). LEAPS close under 0.55Δ; swing calls close at +60%, −40% or 10 DTE

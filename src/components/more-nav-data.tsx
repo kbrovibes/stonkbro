@@ -28,6 +28,7 @@ export const MORE_GROUPS: MoreGroup[] = [
       { emoji: "📡", title: "Sector Discovery", description: "Browse stocks by sector theme", href: "/sectors" },
       { emoji: "💥", title: "Explosive Finder", description: "AI search for 10x stocks", href: "/explosive" },
       { emoji: "📅", title: "Earnings Calendar", description: "Earnings plays this week", href: "/earnings" },
+      { emoji: "🎲", title: "Earnings Play", description: "4 priced option trades per report", href: "/earnings-play" },
       { emoji: "⭐", title: "Watchlists", description: "Organize tickers", href: "/watchlists" },
     ],
   },
@@ -58,7 +59,7 @@ export const MORE_GROUPS: MoreGroup[] = [
       </svg>
     ),
     links: [
-      { emoji: "🧪", title: "Paper Trading", description: "10 bots, $100K each, trading daily", href: "/paper" },
+      { emoji: "🧪", title: "Paper Trading", description: "12 bots, $100K each, trading daily", href: "/paper" },
     ],
   },
   {

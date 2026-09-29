@@ -24,6 +24,9 @@ No paper trading simulators. No "educational" disclaimers hiding an empty app. T
 
 ## Features
 
+### Earnings Play (4 priced option trades per report)
+`/earnings-play` lists every report this week and next across 113 liquid names (plus an "analyze any ticker" box). Each ticker page prices four option structures off the live chain for the first expiry after the report — picked by the setup's lean (e.g. long call, bull call spread, bull put credit spread, strangle/condor when bullish) — and shows what each makes or loses on a 5–10% move either way if closed the session after the print: contracts with bid/ask/IV/Δ/OI, a P&L curve, a scenario table, breakevens, max gain/loss at expiry, and why/how-it-wins/how-it-loses/exit-plan text. Legs are repriced with Black–Scholes after an IV crush estimated from the front-vs-next-expiry term structure. The setup read combines trend/momentum/news into a scored lean, compares the options-implied move with the stock's actual reactions to its last four reports (real report dates and EPS surprises), and adds an AI-written thesis for signed-in users.
+
 ### LEAPS Lab (daily LEAPS scan + return grid)
 A daily cron scans ~120 liquid names for the best LEAPS to buy, scoring each on liquidity, moderate IV, momentum and 52-week proximity with a one-line "why it ranks". Pick any ticker (pinned or from the scan) and the Lab prices the recommended, ITM and OTM strikes from the live chain and renders a grid — quarters to expiry across, stock move from −30% to +100% down — of what each contract returns, IV held constant. Pin tickers, add your own strikes, compare two strikes (with a delta grid between them), and keep notes; pins persist along with the recommendation captured at pin time. Lives on the Options page under LEAPS.
 
@@ -249,6 +252,8 @@ npm run dev
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/research` | POST | Run Claude AI analysis on up to 20 symbols |
+| `/api/earnings-play` | GET | Earnings reports this week and next across the watchlist, with quotes |
+| `/api/earnings-play/[symbol]` | GET | Four priced earnings strategies, scenario P&L, setup read and AI thesis for one ticker |
 | `/api/bloodbath` | GET | Pullback scan: cron-cached drawdowns off 4-week peaks (`?refresh=1` for live) |
 | `/api/cron/bloodbath` | GET | Scheduled scan + AI verdicts, 3× weekdays (Vercel cron) |
 | `/api/bloodbath/verdict` | POST | Batched AI dip verdicts for up to 12 tickers |
@@ -302,6 +307,7 @@ npm run dev
 
 | Version | Milestone |
 |---|---|
+| **v0.49.0** | Earnings Play — four priced option strategies per upcoming report with 5–10% move scenarios, IV-crush model, past-reaction history and AI thesis |
 | **v0.48.0** | Two new Paper Lab bots — Updraft (LEAPS + breakout calls) and Afterburner (earnings plays with the full thesis on every trade); live earnings calendar feeds the paper engine |
 | **v0.47.0** | Paper Lab bots get a full-history Portfolio tab — every trade ever made, every closed position's realized P&L and return %, independent of the day picker |
 | **v0.46.0** | Tables are sortable app-wide — Paper Trading Lab (positions, trades, leaderboard rebuilt into real tables), Options page, Admin dashboard, Hindsight realized-gains breakdowns |

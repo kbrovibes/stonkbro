@@ -309,6 +309,11 @@ export type EarningsDateSync = {
   timing: "before_market" | "after_market" | "unknown";
 };
 
+/** Whether `symbol` usually reports before the open or after the close, when the pattern table knows. */
+export function knownTiming(symbol: string): "before_market" | "after_market" | "unknown" {
+  return REPORTING_PATTERNS[symbol]?.timing ?? "unknown";
+}
+
 /** The next upcoming earnings date for `symbol` as of `asOfDate` (`YYYY-MM-DD`), pure and synchronous. */
 export function earningsDateSync(symbol: string, asOfDate: string): EarningsDateSync | null {
   const [y, m, d] = asOfDate.split("-").map(Number);
